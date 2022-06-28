@@ -1,0 +1,30 @@
+//导入名字空间
+import console; 
+
+/*
+.Net 名字空间可导入为 aardio 库名字空间。
+右键点下面的 System ，然后点「跳转到定义」，
+可以看到这个库的源代码只有一句 dotNet.import("System")
+*/
+import System; 
+
+//用 System 名字空间下面的类构造对象实例，.Net 名字空间一般首字母大写。
+var uri = System.Uri("https://www.aardio.com/test?q=aardio")
+
+//读或写 .Net 对象的实例属性
+console.log( uri.Host );
+
+//建议右键点下面的名字空间，然后点「跳转到定义」看下源代码怎么写的。
+import System.IO; //.Net 名字空间按 .Net 规范命名，aardio 名字空间则统一为首字母小写的小驼峰规范。
+
+//创建 System.IO.FileStream 对象实例，注意 aardio 格式的路径要用 io.fullpath 转换为完整路径。
+var fs = System.IO.File.Create( io.fullpath("/.testStream.txt") );
+//var fs = System.IO.FileStream(io.fullpath("/.testStream.txt"),System.IO.FileMode.Create);
+//aardio 文件路径开始为单个斜杆（或反斜杠）表示应用程序根目录，相当于 C# 的 System.AppDomain.CurrentDomain.BaseDirectory
+
+var buf = raw.buffer("测试一下");//buffer 也就是 .Net 中的字节数组
+fs.Write(buf,0,#buf);
+fs.Close();
+
+import win.dlg.message;
+win.dlg.message().doModal(string.load("/.testStream.txt"));

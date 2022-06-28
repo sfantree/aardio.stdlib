@@ -1,0 +1,28 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(parent=...; text="aardio Form";right=349;bottom=249 )
+winform.add(
+progress1={ bottom=58;max=100;text="progress";left=21;top=38;font=LOGFONT( name="宋体";h=-12 );z=1;right=308;min=0;edge=1;cls="progress" };
+button={ bottom=163;text="button";left=106;top=138;font=LOGFONT( name="宋体";h=-12 );z=2;right=219;cls="button" }
+)
+/*}}*/
+
+winform.button.oncommand = function(id,event){
+
+    ret = win.invoke(
+        function(hwnd){
+            import win.ui;
+            var progress1 = win.ui.ctrl.progress(,{} );
+            progress1.hwnd = hwnd
+            for(i=1;100){
+                progress1.pos = i
+                sleep(50)
+            }
+        },winform.progress1.hwnd
+    )
+   
+}
+
+winform.show()
+win.loopMessage();
+return winform;

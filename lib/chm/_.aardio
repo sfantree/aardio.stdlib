@@ -1,0 +1,48 @@
+import fsys;
+import process.popen;
+import chm.compiler;
+namespace chm;
+  
+//反编译CHM文件的函数
+function decompile(src,outdir,...){
+	if( ! ( src && ..string.endWith(src,".chm",true ) ) ){
+		return null,"CHM文件路径错误"
+	}
+	
+	if(!outdir){
+		outdir = ..string.left(src,-5);
+	} 
+    var out = ..io.createDir(outdir);
+    if( !out ){
+    	return null,"创建目录失败:" + outdir;
+    }
+
+    var prcs = ..process.popen( "HH.EXE" 
+    	,"-decompile",..fsys.shortpath(out) ,..fsys.shortpath(src),... );
+ 
+    if(prcs){ 
+        
+		var ret,out,err = prcs.waitOne() 
+		sleep(10)
+
+		if(#err){
+			prcs.close();
+			return null,err;
+		} 
+		
+		var ok = prcs.process.getExitCode() == 0;
+		prcs.close();
+		return ok,out;
+	}
+}	
+ 
+explore = function(chm,path){
+	..process.execute("hh.exe","mk:@MSITStore:" + ..fsys.shortpath(chm) + "::" + path);
+}
+
+/**intellisense(chm)
+decompile(.("CHM文件路径","输出目录") = 反编译CHM文件\n输出目录为可选参数
+explore(.(.("CHM文件路径","HTML文件路径") = 显示CHM文件指定页面
+end intellisense**/
+
+ 

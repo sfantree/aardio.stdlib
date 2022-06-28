@@ -1,0 +1,30 @@
+// 哈希表 和 数据 混合 
+
+import console; 
+io.open()
+tab = {1;2;3;4;x=1;y=2}//是哈希表还是数组呢？
+
+io.print(#tab)//显示 4
+
+io.print(table.range(tab))//显示1  4
+
+io.print(table.count(tab) );// 显示6
+
+表 = {
+  名字 = "值";
+  1;2;3; //顺序数组的长度为3
+}
+
+//
+io.print( table.count(表) ) //->显示4
+io.print( #表  ) //->显示3
+
+for(i=1;#表;1){
+    io.print("数组成员",表[ i ]); //循环输出1,2,3
+}
+
+for(k,v in 表){
+    io.print("表成员",k,v); //循环输出表的所有成员
+}
+
+console.pause(true);

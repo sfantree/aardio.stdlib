@@ -1,0 +1,63 @@
+import xcgui;
+/*
+在下面创建窗口参数中手动加入 xcframe=true 创建框架窗口
+*/
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469;bgcolor=15245824;xcframe=true)
+winform.add(
+closebutton={cls="xcclosebutton";text="r";left=725;top=2;right=749;bottom=28;dr=1;dt=1;font=LOGFONT(name='Marlett');transparent=1;z=1};
+static={cls="xctext";text="   ";left=27;top=12;right=693;bottom=31;dl=1;dr=1;dt=1;z=3};
+xcpane={cls="xcpane";text="xcpane";left=5;top=50;right=184;bottom=418;edge=1;z=2};
+xcpane2={cls="xcpane";text="xcpane2";left=46;top=63;right=225;bottom=431;edge=1;z=4};
+xcpane3={cls="xcpane";text="xcpane3";left=571;top=45;right=750;bottom=413;edge=1;z=5}
+)
+/*}}*/
+
+//获取炫彩框架窗口对象
+var xcFrameWnd = xcgui.window(winform)
+
+//添加窗格
+xcFrameWnd.addPane( null,winform.xcpane,0/*align_left*/)
+xcFrameWnd.addPane( null,winform.xcpane3,2/*align_right*/)
+xcFrameWnd.mergePane(winform.xcpane,winform.xcpane2);
+
+//响应窗口右键菜单：显示或隐藏窗格
+xcFrameWnd.on("menuSelect",function(id){
+	select(id) {
+		case 1 {
+			winform.xcpane.hide = !winform.xcpane.hide
+		}
+		case 2 {
+			winform.xcpane2.hide = !winform.xcpane2.hide
+		}
+		case 3 {
+			winform.xcpane3.hide = !winform.xcpane3.hide
+		}
+	}
+})
+
+//右键菜单中自动勾选窗格是否显示
+xcFrameWnd.on("menuPopup",function(hMenu){
+	var menu = xcgui.menu(hMenu);
+	menu.setItemCheck(1,!winform.xcpane.hide);
+	menu.setItemCheck(2,!winform.xcpane2.hide);
+	menu.setItemCheck(3,!winform.xcpane3.hide);
+})
+
+/*
+炫彩窗口还是传统窗口，支持 winform.wndproc里处理所有窗口消息，
+也可以使用炫彩窗口对象注册事件，如下：
+*/
+xcFrameWnd.on("rbuttonDown",function(flags, pt){
+	var menu = xcgui.menu();
+	menu.add(1,"窗格1")
+	menu.add(2,"窗格2")
+	menu.add(3,"窗格3")
+	menu.popup(xcFrameWnd,pt.x,pt.y)
+})
+
+xcFrameWnd.adjustLayout();
+winform.show();
+win.loopMessage();
+
+return winform;

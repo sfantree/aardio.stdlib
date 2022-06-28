@@ -1,0 +1,78 @@
+import fsys;
+import win.reg;
+import com.lite;
+
+namespace com;
+
+class comm{
+	ctor(event){
+		this =  _dll.createObject("{F6565773-FA54-45E9-941C-2505E54D5710}");
+		if( event!== false ){
+			..com.Connect(this,{ 
+				OnComm = function() 
+					if( this[["onComm"]] )
+						return this.onComm(this.CommEvent);
+			})
+		}
+	};
+}
+
+namespace comm{ 
+
+	var reg = ..win.reg("HKEY_CURRENT_USER\Software\Classes\Licenses\4250E830-6AC2-11cf-8ADB-00AA00C00905");
+	if(! reg.queryValue("") )reg.setSzValue("","kjljvjjjoquqmjjjvpqqkqmqykypoqjquoun");
+			
+	_ocxPath = ..fsys.getSpecial( 0x1c /*_CSIDL_LOCAL_APPDATA*/  ,"aardio/std/mscomm32.ocx");
+	if(!..io.exist(_ocxPath)) ..string.save(_ocxPath,$"~\lib\com\comm\.res\mscomm32.ocx");
+	_dll = ..com.lite(_ocxPath);
+}
+
+/**intellisense()
+com.comm = MSComm串口通信控件
+com.comm() = 创建MSComm串口通信控件\n!stdmscomm32.
+com.comm(false) = 创建MSComm串口通信控件\n禁用onComm事件
+end intellisense**/
+
+/**intellisense(!stdmscomm32)
+cdHolding = 布尔值\n通过查询 Carrier Detect (CD) 线的状态确定当前是否有传输
+cdTimeout = 数值,CD超时
+commId = 数值\n串口被打开时，被API所调用的串口句柄或称标志，这也意味着能利用API接口函数去修改这个常量
+commPort = 数值,指定端口号
+ctsHolding = 布尔值\n确定是否可通过查询 Clear To Send (CTS) 线的状态发送数
+ctsTimeout = 数值,CTS超时
+dsrHolding = 布尔值\n确定 Data Set Ready (DSR) 线的状态。\nData Set Ready 信号由调制解调器发送到相连计算机，指示作好操作准备。\n该属性在运行时为只读。
+dsrTimeout = 数值,DSR超时
+dtrEnable =  布尔值\n设置为 True，端口打开时DRT线设置为高电平，端口关闭时，设置为低电平
+handshaking = 设置硬件握手信号
+comNone = 没有握手。    
+comXOnXOff = XON/XOFF 握手  
+comRTS =  RTS/CT握手
+comRTSXOnXOff = RTS和XON/XOFF握手
+inBufferSize = 数值，接收缓冲区的大小,默认值为1024,也可以自己设
+inBufferCount = 数值，当前接收缓冲区接收到的数据的长度
+break = 布尔值,设置或清除中断信号
+inputLen = 数值,确定被 input 属性读取的字符数。\n设置为 0，则读取缓冲区中全部的内容
+interval = 数值,时间间隔,单位为毫秒,缺省为1000
+nullDiscard = 布尔值,是否将null字符传输给接收缓冲区
+outBufferSize = 数值,发送缓冲区的大小,默认值为1024,也可以自己设定
+outBufferCount = 数值,当前发送缓冲区中数据的长度\n赋值为0可清空输出缓冲区
+parityReplace = 当发生奇偶校验错误时，设置并返回替换数据流中一个非法字符的字符
+portOpen = 布尔值,端口是否打开
+rThreshold = 数值,设置收到多少个字符后触发OnComm事件
+rtsEnable = 布尔值\n设置为 True，端口打开时RTS线设置为高电平，端口关闭时，设置为低电平
+settings = 字符串,设置波特率等参数\n例如"9600,N,8,1"
+sThreshold = 数值,若设置为 0（缺省值），数据传输事件不会产生 OnComm 事件。\n若设置为 1，当传输缓冲区完全空时，产生 OnComm 事件
+output = 发送数据，只写属性\n如果赋值为字符串，则以文本模式发送\n如果赋值为buffer类型字节数组,则以二进制模式发送数据
+input = 输入数据
+getInput() = 读取输入数据,与input属性作用相同
+commEvent = onComm事件代码
+eofEnable = 布尔值,\n确定在输入过程中 MSComm 控件是否寻找文件结尾 (EOF) 字符\n如果找到 EOF 字符，将停止输入并激活 OnComm 事件，\n此时 CommEvent 属性设置为 comEvEOF
+inputMode = 设置输入方式\n使用对象的comInputModeText,comInputModeBinary常量赋值
+comInputModeText = 设为InputMode的值时以文本方式取回数据 
+comInputModeBinary = 设为InputMode的值时以二进制模式取回数据
+onComm = @.onComm = function(event){
+    if( event == ??.comEvReceive ){ 
+     	io.print( "收到数据:",??.input );__ 
+    }	
+}
+end intellisense**/

@@ -1,0 +1,32 @@
+import win.ui;
+//导入自定义的用户库
+/*DSG{{*/
+mainForm = win.form(text="haha";right=442;bottom=300;border="dialog frame";edge=1;frame=1;parent=...)
+mainForm.add(
+button1={cls="button";text="改变窗口大小位置";left=145;top=14;right=268;bottom=45;z=1};
+button2={cls="button";text="改变按钮可视";left=142;top=62;right=273;bottom=91;z=2};
+button3={cls="button";text="禁止按钮";left=144;top=103;right=268;bottom=134;z=3};
+button4={cls="button";text="改变鼠标指针";left=145;top=145;right=269;bottom=176;z=4}
+)
+/*}}*/
+
+mainForm.button1.oncommand = function(id,event){
+	mainForm.setPos(100, 100, 200, 300);
+}
+
+mainForm.button2.oncommand = function(id,event){
+	mainForm.button2.hide = true;
+}
+
+mainForm.button3.oncommand = function(id,event){
+	mainForm.button3.disabled = true;
+}
+
+
+mainForm.button4.oncommand = function(id,event){
+    import win.ui;
+    win.ui.waitCursor(true);
+}
+
+mainForm.show()
+win.loopMessage();

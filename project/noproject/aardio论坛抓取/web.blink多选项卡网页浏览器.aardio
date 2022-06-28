@@ -1,0 +1,46 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=791;bottom=617)
+winform.add(
+tab={cls="tab";left=9;top=9;right=785;bottom=607;db=1;dl=1;dr=1;dt=1;edge=1;z=1}
+)
+/*}}*/
+
+var code = /***
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add()
+/*}}*/
+
+import web.blink.form;
+var mb = web.blink.form(winform);
+mb.go(rget(2,...))
+winform.show()
+win.loopMessage();
+return winform;
+***/
+var urls = {
+        "aardio.com";
+        "baidu.com";
+        "bbs.aardio.org"
+}
+for(i=1;#urls;1){
+        winform.tab.loadForm(code, urls[ i ])
+}
+
+winform.wndproc = function(hwnd,message,wParam,lParam){
+    if( message == 0x18/*_WM_SHOWWINDOW*/){
+        if(wParam){
+            winform.setTimeout(
+                function(){
+                    //gdiRender.draw(winform.hwnd);
+                    winform.redraw();
+                }
+            );
+        }
+    }
+}
+
+winform.show()
+win.loopMessage();

@@ -1,0 +1,11 @@
+import console; 
+
+var s = "";
+console.log(s == null);
+console.log((type(s) == type.string) and #s == 0);
+
+var t = {};
+console.log(t == null);
+console.log((type(t) == type.table) and #t == 0);
+
+console.pause(true);

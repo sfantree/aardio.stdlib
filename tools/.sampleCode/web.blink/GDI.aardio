@@ -1,0 +1,70 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="miniblink - 网页GDI+自绘动画优化版本";right=848;bottom=585)
+winform.add()
+/*}}*/
+
+import web.blink.form;
+var mb = web.blink.form(winform)
+
+import gdip;
+var rotationAngle = 0;
+mb.external = {
+    drawImage = function(){
+        var w,h = 200,200;
+        var bmp = gdip.bitmap(w,h);
+        var graphics = bmp.getGraphics();
+        graphics.smoothingMode = 4/*_GdipSmoothingModeAntiAlias*/
+         
+        rotationAngle+=5;
+        graphics.rotateRect(::RECT(0,0,w,h),rotationAngle);
+        var brush = gdip.solidBrush(0xFF84FF26);
+        var brush2 = gdip.solidBrush(0xFF0080FF);
+        graphics.fillPie(brush, 0, 0, w, h, 90, 180);
+        graphics.fillPie(brush2, 0, 0, w, h, 90, -180);
+        graphics.fillPie(brush, w/4-1, h/2, w/2, h/2, 90, -180);
+        graphics.fillPie(brush2, w/4+1, 0, w/2, h/2, 90, 180);
+        graphics.fillEllipse(brush, w/2-10, h/4-10, 20, 20);
+        graphics.fillEllipse(brush2, w/2-10, h/4*3-10, 20, 20);
+        graphics.delete();
+        brush.delete();
+        brush2.delete();
+        
+        //获取GDI+位图
+        var data = bmp.lockMemory(,0x26200A/*_PixelFormat32bppARGB*/)
+
+        /*
+        GDI+获取的缓冲区与网页图像缓冲区R,B字节是反过来的,
+        可以用下面的函数反转该字节(也可以在前面反过来写颜色值,外部图像文件事先处理,这里就不用做运行时转换)
+        */
+        mb.jsSwapImageBuffer(data)
+         
+        //转换为JS图像数据,使用JS中的ArrayBuffer与aardio 的的 buffer 类型快速传输数据,可以查看此函数源代码了解具体实现
+        var jsImgData = mb.jsImageData( data )
+        
+        mb.getEle("myCanvas").getContext("2d").putImageData( jsImgData ,0,0);
+        bmp.dispose();
+    }
+};
+
+mb.html = /**
+<!doctype html>
+<html><head></head>
+<script>
+    function callback(timeStamp) {
+        external.drawImage();
+        requestAnimationFrame(callback)
+    }
+   
+    // 在下次重绘之前调用回调
+    frame = requestAnimationFrame(callback)
+</script>
+<body style="margin:50px;overflow:hidden;">
+    <canvas id="myCanvas" width="501" height="500">canvas</canvas>
+    <br><a href="#">其实人家真的是一个网页</a>
+</body>
+</html>
+**/
+
+winform.show();
+win.loopMessage();

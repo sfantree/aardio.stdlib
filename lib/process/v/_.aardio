@@ -1,0 +1,43 @@
+﻿import sys.vc14;
+import string.cmdline;
+import process;
+
+class process.v{
+	ctor(...){
+		this = ..process("~\lib\process\v\.vlang\v.exe",..string.cmdline.arguments(...),{
+			workDir = workDir
+		})	
+	}
+}
+
+namespace process.v { 
+	
+	workDir = ..io.fullpath("/"); 
+	
+	run = function(...){
+		return ..process("~\lib\process\v\.vlang\v.exe"
+			, ..table.append({"run"},..string.cmdline.arguments(...)),{
+			workDir = workDir
+		})		
+	}
+
+	shared = function(...){
+		return ..process("~\lib\process\v\.vlang\v.exe"
+			, ..table.append({"-shared";"-prod";"-m32";"-cc";"vc"},..string.cmdline.arguments(...)),{
+			workDir = workDir
+		})		
+	} 
+}
+
+sys.vc14.require();
+
+/**intellisense(process)
+v = V 语言扩展库\nV 语言操作系统建议至少 WIN 10 以上
+v(.(->->->) = 执行 V语言命令,返回 process 对象,\n只有一个参数时直接作为命令行参数,\n多个参数则包含空格的且首尾无双引号的参数置入双引号内并作必要的转义处理
+v.run(.(->->->) = 执行 V语言命令 run,返回 process 对象,\n只有一个参数时直接作为命令行参数,\n多个参数则包含空格的且首尾无双引号的参数置入双引号内并作必要的转义处理
+v.shared(.(->->->) = 执行 V语言命令编译 DLL,返回 process 对象,\n只有一个参数时直接作为命令行参数,\n多个参数则包含空格的且首尾无双引号的参数置入双引号内并作必要的转义处理\n\n注意V语言是翻译成C语言然后生成DLL，生成的DLL依赖 VC 运行库
+v.workDir =  工作目录，默认值为..io.fullpath("/"); 
+v() = !process.
+v.run() = !process.
+v.shared() = !process.
+end intellisense**/

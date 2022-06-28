@@ -1,0 +1,621 @@
+//object 对象
+import web.json;
+import util.metaProperty;
+namespace py2;
+ 
+class object {
+
+	ctor( object,isPyObjectPtr ){
+
+		var tt = type(object)
+		select(tt) {
+			case type.string{
+				if(..string.isUnicode(object)) this.pyObject = Py_BuildValueByString("u#",object,#object/2);
+				else this.pyObject = Py_BuildValueByString("s#",object,#object);
+			}
+			case type.buffer{
+				this.pyObject = Py_BuildValueByString("s#",object,#object);
+			}
+			case type.number{
+				this.pyObject = Py_BuildValueByNumber("d",object);
+			} 
+			case type.boolean{
+				this.pyObject = ::Python2.PyBool_FromLongP(!!object);
+			}
+			case type.pointer{
+				if( isPyObjectPtr ){
+					this.pyObject = object;
+				}
+				else {
+					//而且 pyTuple_SetItem 这些都是将指针作为 pyObject 指针使用
+					error("参数请不要指定原生指针,可先用 tonumber 函数转换为数值",2);
+				}
+			}
+			case type.table{
+				if(object[["pyObject"]] ) {
+					this.pyObject = object[["pyObject"]];
+					..py2.IncRef(this.pyObject);
+				}
+				else{
+					var s = ..web.json.stringify(object);
+					var obj = ..py2.json.loads(s);
+					if(!obj) return;
+				
+					if( obj.checkDict()  ) return ..py2.dict(obj.stealPtr());
+					elseif( obj.checkList() ) return ..py2.list(obj.stealPtr());
+					else{
+						this.pyObject = obj.stealPtr();
+					}
+				}
+			
+			}
+			case type.null{
+				if(isPyObjectPtr){
+					var e = ..py2.lasterr();
+					if(e) error(e,3)
+				}
+					
+				this.pyObject = ::Python2.Py_BuildValueP("");
+			}
+			else {  
+				if(..math.isSize64(object)){
+					this.pyObject = ::Python2.Py_BuildValueP("K",object);
+				}
+				else {
+					error("pyObject构造参数不支持此数据类型:" + tt ,2)
+				}
+			}
+			
+		}  
+		
+		..table.add_gc(this,"release");
+	}
+	
+	@_metaProperty;
+}
+
+namespace object {
+	
+	_metaProperty = ..util.metaProperty( 
+	
+		release = function(){
+			if( owner[["pyObject"]] ){
+				..py2.DecRef(owner.pyObject); 
+				owner[["pyObject"]] = null;
+			}
+		}; 
+		stealPtr = function(){
+			var pyObject = owner.pyObject;
+			owner[["pyObject"]] = null;
+			return pyObject;
+		};
+		toBool = function(){
+			return !!::Python2.PyObject_IsTrue(owner); 
+		};
+		toNumber = function(){
+			var ret,n = PyArg_ParseByNumber(owner.pyObject,"d",0);
+			if(ret)return n;
+		};
+		toTuple = function(){
+			return ..py2.tuple(owner);
+		};
+		toList = function(){
+			return ..py2.list(owner);
+		};
+		toDict = function(){
+			return ..py2.dict(owner);
+		};
+		toUnicode = function(){
+			var ret,s = PyArg_ParseByString(owner.pyObject,"u");
+			if( s ) return ..raw.str(s,true);
+			return ""
+		};
+		toStr = function(){
+			var p = ::Python2.PyObject_StrP(owner);
+			if(p) return  ..py2.object(p,true); 
+		};
+		toString = function(){ 
+			var t = ::Python2.PyObject_TypeP(owner);
+			if( t ){ 
+				var flags = PyType_GetFlags(t);
+				..py2.DecRef(t);
+				
+				if ( flags &(1<< 28)){
+					var r,s = PyArg_ParseByString(owner.pyObject,"u");
+					if( r && s ) { return ..raw.str(s,true); }
+					return;
+				}
+					
+				if(( flags & (1<< 23) ) || (t == PyFloat_Type) )
+					return tostring(owner.toNumber());
+					
+				if(flags & (1<< 24))
+					return owner.toStr().toString();	
+					
+				if ( flags &(1<< 27)){
+					var ok,s,len = PyArg_ParseByBuffer(owner.pyObject,"s#",,0);
+					if( ok && s ) return ..raw.tostring(s,1,len); 
+					return ""
+				}
+					
+				if ( t == PyBool_Type)
+					return tostring( owner.toBool() );
+					
+				if(  ( flags &(1<< 29)) ||  ( flags &(1<< 25))  ||  ( flags &(1<< 26)) ){  
+					var v = ..py2.json.dumps.invoke({ensure_ascii=false,owner}); 
+					if(v){ 
+						var result;
+						var ok,s = PyArg_ParseByString(v.pyObject,"s");
+						if( ok && s ) result = ..raw.str(s);   
+						v.release();
+						
+						return result;
+					}
+				}
+				
+				if( owner.pyObject == None )
+					return "null";
+					
+				var str = ::Python2.PyObject_StrP(owner);
+				if(str) {
+					var result;
+					
+					var ok,s,len = PyArg_ParseByBuffer(str,"s#",,0);
+					if( ok && s ) result  =  ..raw.tostring(s,1,len);
+					..py2.DecRef(str);
+					return result;
+				}
+				
+			}
+		};
+		size64 = function(){
+			var v = ..math.size64()
+			var r = PyArg_ParseBySize64(owner.pyObject,"K",v);
+			if( r ) { return v }  
+		};
+		parseValue = function(){ 
+			var t = ::Python2.PyObject_TypeP(owner);
+			if( t ){ 
+				var flags = PyType_GetFlags(t);
+				..py2.DecRef(t);
+				
+				if(( flags & (1<< 23) ) || (t == PyFloat_Type) || ( flags & (1<< 24) ))
+					return owner.toNumber();
+					
+				if ( flags &(1<< 28)){
+					var ok,s = PyArg_ParseByString(owner.pyObject,"u");
+					if( ok && s ) return ..raw.str(s,true);
+					return ""
+				}
+				
+				if ( flags &(1<< 27)){
+					var ok,s,len = PyArg_ParseByBuffer(owner.pyObject,"s#",,0);
+					if( ok && s ) return ..raw.tostring(s,1,len); 
+					return ""
+				}
+					
+				if ( t == PyBool_Type)
+					return owner.toBool();
+					
+				if(  ( flags &(1<< 29)) ||  ( flags &(1<< 25))  ||  ( flags &(1<< 26)) ){
+					var result; 
+					var v = ..py2.json.dumps.invoke({ensure_ascii=false,owner}) 
+					if(v){
+						var t = ::Python2.PyObject_TypeP(v);
+						if( t ){  
+							var flags = PyType_GetFlags(t); 
+							..py2.DecRef(t) 
+								
+							if ( flags &(1<< 28)){ 
+								var ok,s = PyArg_ParseByString(v,"u");
+								if( ok && s ) {
+									var wstr =  ..raw.str(s,true);
+									result = ..web.json.tryParse(wstr,true,1200);
+									if(result){
+										v.release();
+										return result;
+									}
+								}
+								return ""
+							}
+						}
+				
+						var ok,s = PyArg_ParseByString(v.pyObject,"s");
+						if( ok && s ){
+							s = ..raw.str(s);
+							if(!..string.len(s)) s = ..string.fromto(s,0,65001)
+							result = ..web.json.parse(s); 
+						}
+						
+						v.release();
+					}
+					return result;
+				}
+				
+				if( owner.pyObject != None )
+					return owner;
+			}
+		};	
+		_topointer = function(){
+			if(!owner.pyObject) error("Python对象已经已经被销毁",2);
+			
+			return owner.pyObject;
+		};   
+		_tonumber = function(){
+			var t = ::Python2.PyObject_TypeP(owner);
+			if( t ){ 
+				var flags = PyType_GetFlags(t);
+				..py2.DecRef(t);
+				
+				if((t == PyFloat_Type) || ( flags & (1<< 23) ) || ( flags & (1<< 24) ))
+					return owner.toNumber();
+					
+				if ( flags &(1<< 27))
+					return tonumber( owner.toString() );
+				 
+				if ( t == PyBool_Type)
+					return tonumber( owner.toBool() ); 
+			}
+		};
+		type = function(){
+			var t = ::Python2.PyObject_TypeP(owner);
+			if( t ){
+				var tname =  ..raw.convert(t,pyTypeObject()).tp_name;
+				..py2.DecRef(t);
+				return tname;
+			}
+		};
+		getTypeFlags = function(){
+			var t = ::Python2.PyObject_TypeP(owner);
+			if( t ){ 
+				var flags = PyType_GetFlags(t);
+				..py2.DecRef(t);
+				return flags;
+			}
+			
+			return 0;	
+		};
+		hasFeature = function(feature){
+			return !!(owner.getTypeFlags()&feature);
+		};
+		checkDict = function(){
+			return owner.hasFeature(1<< 29);
+		};
+		checkList = function(){
+			return owner.hasFeature(1<< 25);
+		};
+		checkTuple = function(){
+			return owner.hasFeature(1<< 26);
+		};
+		checkLong = function(){
+			return owner.hasFeature(1<< 24);
+		};
+		checkInt = function(){
+			return owner.hasFeature(1<< 23);
+		};
+		checkUnicode = function(){
+			return owner.hasFeature(1<< 28);
+		};
+		checkString = function(){
+			return owner.hasFeature(1<< 27);
+		};
+		checkBool = function(){ 
+			var t = ::Python2.PyObject_TypeP(owner);
+			if( t ){ 
+				..py2.DecRef(t);
+				return t == PyBool_Type
+			}	
+		};
+		checkFloat = function(){
+			var t = ::Python2.PyObject_TypeP(owner);
+			if( t ){ 
+				..py2.DecRef(t);
+				return t == PyFloat_Type
+			}	
+		};
+		checkNumber = function(){
+			var t = ::Python2.PyObject_TypeP(owner);
+			if( t ){ 
+				var flags = PyType_GetFlags(t);
+				..py2.DecRef(t);
+				return (t == PyFloat_Type) || ( flags & (1<< 24) )  || ( flags & (1<< 23) )
+			}	
+		};
+		_startIndex = 0;
+		len = function(){
+			return ::Python2.PyObject_Length(owner);	
+		};  
+		has = function(k){
+			return PyObject_HasAttrString( owner.pyObject,k);
+		}; 
+		getAttr = function(k){
+			if( owner.has(k) ){
+				return ..py2.object( PyObject_GetAttrString(owner.pyObject,k),true )
+			}
+		};
+		setAttr = function(k,v){
+			PyObject_SetAttrString(owner.pyObject,k,..py2.object(v) ); 
+		}; 
+		getItem = function(k){ 
+			var item = ::Python2.PyObject_GetItemP(owner.pyObject,..py2.object(k)) ;
+			if(item){
+				return ..py2.object(  item,true ) ;
+			} 
+		};
+		setItem = function(k,v){
+			if(v===null)
+				::Python2.PyObject_DelItem(owner.pyObject,..py2.object(k));
+			else {
+			 	::Python2.PyObject_SetItem(owner.pyObject,..py2.object(k),..py2.object(v) ); 
+			} 
+		};
+		__get = function(k,ownerCall){
+			var t = type(k);
+			if(t==="string" && k!=="_struct"){ 
+				if( owner.has(k) ) return ..py2.object( PyObject_GetAttrString(owner.pyObject,k),true )
+			}
+			elseif(t==="number") {
+				if(owner[["$____pyItems____"]]) return owner[["$____pyItems____"]][k]; 
+ 
+				var flags = owner.getTypeFlags();
+				if( flags & (1<< 25) ){
+					owner[["$____pyItems____"]] = ..py2.list(owner)
+					return owner[["$____pyItems____"]][k];   
+				}
+				elseif( flags & (1<< 26) ){
+					owner[["$____pyItems____"]] = ..py2.tuple(owner)	 
+					return owner[["$____pyItems____"]][k]; 
+				}
+			}
+		};
+		__set = function(k,v){
+			var t = type(k);
+			if(t==="string"){
+				PyObject_SetAttrString(owner.pyObject,k,..py2.object(v) ); 
+			}
+			elseif(t==="number") {
+				if(owner[["$____pyItems____"]]) {
+					owner[["$____pyItems____"]][k] = v; 
+					return;
+				}
+				
+				var flags = owner.getTypeFlags();
+				if( flags & (1<< 25) ){
+					owner[["$____pyItems____"]] = ..py2.list(owner)
+					owner[["$____pyItems____"]][k] = v; 
+				}
+				elseif( flags & (1<< 26) ){
+					owner[["$____pyItems____"]] = ..py2.tuple(owner)
+					owner[["$____pyItems____"]][k] = v;
+				}
+			}
+		};
+		each = function(){
+			var it = ::Python2.PyObject_GetIter(owner);
+			if(!it) return function(){};
+			
+			var item;
+			return function(){
+				item = ::Python2.PyIter_NextP(it);
+				if( item !== null){
+					return ..py2.object(item,true)
+				}
+			} 
+		};
+		getFuncName = function(){
+			return PyEval_GetFuncName(owner.pyObject );	
+		};
+		getFuncDesc = function(){
+			return PyEval_GetFuncDesc(owner.pyObject );	
+		};
+		invoke = function(kwargs,...){
+			var args;
+			if(type(kwargs)==="table" && !kwargs@ && !kwargs.pyObject) {
+				args = ..py2.tuple(kwargs);
+				kwargs = ..py2.dict(kwargs); 
+			}
+			else {
+				args = ..py2.tuple( {kwargs,...} );	
+				kwargs = null;
+			}
+			
+			return ..py2.object(  ::Python2.PyObject_CallP( owner.pyObject,args,kwargs),true );
+		};
+		callObject = function( args ){ 
+			return ..py2.object(  PyObject_CallObject( owner.pyObject,args),true );
+		};
+		call = function( ... ){
+			var args = ... ? {...};
+			if( #args ) args = ..py2.tuple( args );
+			return ..py2.object(  PyObject_CallObject( owner.pyObject,args),true );
+		};
+		_call = function(...){
+		 	var args = ... ? {...};
+			if( #args ) args = ..py2.tuple( args );
+			return ..py2.object(  PyObject_CallObject( owner.pyObject,args),true );
+		};	
+		_eq = function(b) {
+			if(owner.checkNumber()) return tonumber(owner) == tonumber(b);
+			return owner.pyObject == b.pyObject;
+		};
+		_le = function(b) {
+			if(owner.checkNumber()) return tonumber(owner) <= tonumber(b);
+		};
+		_lt = function(b) {
+			if(owner.checkNumber()) return tonumber(owner) < tonumber(b);
+		};
+		_add = function(b){
+			if(owner.checkNumber()){
+				if(!b[["pyObject"]]) b = ..py2.object(b);
+				if(b[["pyObject"]]){
+					var c = ::Python2.PyNumber_AddP(owner,b)
+					if(c) return ..py2.object(c,true);	
+				}
+			}
+		};
+		_sub = function(b){
+			if(owner.checkNumber()){
+				if(!b[["pyObject"]]) b = ..py2.object(b);
+				if(b[["pyObject"]]){
+					var c = ::Python2.PyNumber_SubtractP(owner,b)
+					if(c) return ..py2.object(c,true);	
+				}
+			}
+		};
+		_mul = function(b){
+			if(owner.checkNumber()){
+				if(!b[["pyObject"]]) b = ..py2.object(b);
+				if(b[["pyObject"]]){
+					var c = ::Python2.PyNumber_MultiplyP(owner,b)
+					if(c) return ..py2.object(c,true);	
+				}
+			}
+		};
+		_div = function(b){
+			if(owner.checkNumber()){
+				if(!b[["pyObject"]]) b = ..py2.object(b);
+				if(b[["pyObject"]]){
+					var c = ::Python2.PyNumber_TrueDivideP(owner,b)
+					if(c) return ..py2.object(c,true);	
+				}
+			}
+		};
+		_mod = function(b) {
+			if(owner.checkNumber()){
+				if(!b[["pyObject"]]) b = ..py2.object(b);
+				if(b[["pyObject"]]){
+					var c = ::Python2.PyNumber_RemainderP(owner,b)
+					if(c) return ..py2.object(c,true);	
+				}
+			}
+		};
+		_pow = function(b) {
+			if(owner.checkNumber()){
+				if(!b[["pyObject"]]) b = ..py2.object(b);
+				if(b[["pyObject"]]){
+					var c = ::Python2.PyNumber_PowerP(owner,b,None)
+					if(c) return ..py2.object(c,true);	
+				}
+			}
+		};
+		_unm = function(b) {
+			if(owner.checkNumber()){
+				if(!b[["pyObject"]]) b = ..py2.object(b);
+				if(b[["pyObject"]]){
+					var c = ::Python2.PyNumber_NegativeP(owner,b)
+					if(c) return ..py2.object(c,true);	
+				}
+			}
+		};
+		_type = "py2.object";
+	) ;
+	
+	with _metaProperty{
+		_tostring = toString;
+		_json = parseValue;
+	}
+	
+	PyObject_HasAttrString = ::Python2.api("PyObject_HasAttrString","bool(PyObject o,str attr_name)")
+	PyObject_GetAttrString = ::Python2.api("PyObject_GetAttrString","pyObject(PyObject o,str attr_name)")   
+	PyObject_SetAttrString = ::Python2.api("PyObject_SetAttrString","int(PyObject o,str attr_name,pyObject v)")
+	PyObject_CallObject = ::Python2.api("PyObject_CallObject","pyObject(PyObject pfunc,pyObject pargs)") 
+	Py_BuildValueByNumber = ::Python2.api("Py_BuildValue","pyObject(str format,double)")
+	PyArg_ParseBySize64 = ::Python2.api("PyArg_Parse","int(PyObject args,str format,LONG &)") 
+	Py_BuildValueByString = ::Python2.api("Py_BuildValue","pyObject(str format,string,int)")
+	PyArg_ParseByNumber = ::Python2.api("PyArg_Parse","int(PyObject args,str format,double &)")  
+	PyArg_ParseByString = ::Python2.api("PyArg_Parse","int(PyObject args,str format,ptr &)")  
+	PyArg_ParseByBuffer = ::Python2.api("PyArg_Parse","int(PyObject args,str format,ptr &,int &)")  
+	PyEval_GetFuncName = ::Python2.api("PyEval_GetFuncName","string(PyObject *)") ;
+	PyEval_GetFuncDesc = ::Python2.api("PyEval_GetFuncDesc","string(PyObject *)");
+	PyBool_Type =  ::Python2.api("PyBool_Type");
+	PyFloat_Type = ::Python2.api("PyFloat_Type");
+	None = ::Python2.api("_Py_NoneStruct");
+	
+	class pyTypeObject {
+		addr ob_refcnt;
+		ptr ob_type;
+    	INT ob_size;
+    	string tp_name;
+    	INT tp_basicsize;
+    	INT tp_itemsize;
+    	ptr tp_dealloc;
+    	ptr tp_print;
+    	ptr tp_getattr;
+    	ptr tp_setattr;
+    	ptr tp_compare;
+    	ptr tp_repr;
+    	ptr tp_as_number;
+    	ptr tp_as_sequence;
+    	ptr tp_as_mapping;
+    	ptr tp_hash;
+    	ptr tp_call;
+    	ptr tp_str;
+    	ptr tp_getattro;
+    	ptr tp_setattro;
+    	ptr tp_as_buffer;
+    	int tp_flags;
+ 	} 
+ 	
+ 	PyType_GetFlags = function(t){ 
+		if( t ){
+			var t = ..raw.convert(t,pyTypeObject());
+			return t.tp_flags;
+		}
+	};	
+}
+
+/**intellisense() 
+py2.object( = 所有Python对象都是一个pyObject\n在aardio中使用py2.object封装该指针为对象,\n并自动管理引用计数
+py2.object(.(aardio值) = 将aardio值转换为pyObject\npy2扩展库负责在与python交互时自动转换能转换的基础数据类型\n其他对象aardio代码接触到的都会是py2.object\n原始pyObject指针原则上保证不会返回给aardio调用代码
+py2.object(.(pyObject指针,true) = 参数@2为true,参数@1就必须是pyObject对象指针\n返回pyObject封装对象,并负责在封装对象销毁时释放一次pyObject引用计数,\n原始pyObject指针原则上保证不会返回给aardio调用代码\n这种用法仅用于py扩展库内部使用
+py2.object(.(pyObject封装对象) = 参数是py2.object封装对象\n复制一个对象，并增加引用计数\n并负责在封装对象销毁时释放一次pyObject引用计数\n\n这里传入的参数是aardio值，或者是py2.object统一都会返回py2.object\npy2扩展库基于这种兼容性自动转换所有aardio,python对象
+py2.object() = !py2Object.
+end intellisense**/
+
+/**intellisense(!py2Object) 
+? = !py2Object.
+stealPtr() =  接管此对象的指针并盗用一次引用计数\n原对象的内部指针被清空,并不再负责释放引用计数\n steal references
+toUnicode() = 解析为 Unicode 字符串
+toBool() = 解析为 aardio 布尔值
+toNumber() = 解析为 aardio 数值\n也可以直接将对象传入 tonumber 函数并转换为数值
+toString() = Python 对象转换为 aardio 字符串\nPython 字节数组（bytes）解析为aardio中的字节数组（buffer）\n其他类型尝试调用 Python 中的 str 函数转换为 aardio 字符串,\n也可以直接将对象作为参数传入 tostring 函数转换为字符串
+toStr() = Python 对象转换为 Python 字符串对象,\n相当于调用 Python 中的 str 函数,\n如果要返回 aardio 字符串可使用 toString 函数,\n也可以调用 py2.str 函数创建 Python 字符串对象
+toTuple() = 如果 Python 对象是一个 tuple,\n返回绑定相同 Python 对象的 py2.tuple 对象,\n添加引用计数,对象销毁时负责释放引用计数,\n否则将传入对象作为 Python 内置函数 tuple 的参数并返回 py2.tuple 对象,\n失败返回null\n!py2Tuple.
+toList() = 如果 Python 对象是一个 list,\n返回绑定相同 Python 对象的 py2.list 对象,\n添加引用计数,对象销毁时负责释放引用计数,\n否则将传入对象作为 Python 内置函数 list 的参数并返回 py2.list 对象,\n失败返回null\n!py2List.
+toDict() = 如果 Python 对象是一个 dict,\n返回绑定相同 Python 对象的 py2.dict 对象,\n添加引用计数,对象销毁时负责释放引用计数,\n否则将传入对象作为 Python 内置函数 dict 的参数并返回 py2.dict 对象,\n失败返回null\n!py2Dict.
+parseValue() = 检测Python对象的类型，并自动返回对应的aardio类型对象\n基础的数值字符串布尔值转换为同类型,\ndict,list,tuple等等使用json格式转换为aardio类型的表
+size64() = 获取64位无符号长整数\n返回 math.size64 对象
+has("__/*属性名*/") = 是否存在指定的属性
+getAttr("__/*属性名*/") = 读属性成员,也可以用成员操作符获取\n属性值为py2.object对象
+setAttr("__/*属性名*/",) = 写属性成员的值,也可以用成员操作符赋值
+getAttr() = !py2Object.
+getItem(__/*索引*/) = 返回指定项,类似在python中使用下标操作符取值
+setItem(__/*索引*/，) = 修改指定项,类似在python中使用下标操作符赋值
+each() = @for( pyItem in ??.each() ){\n	__/*创建迭代器用于遍历所有的项,返回一个值*/\n}\n!py2Object.
+callObject(.( py2->tuple对象 ) = 该对象为函数对象时支持此方法\n参数为tuple元数组对象\n返回值为 py2.object对象,可使用 tostring 或 tonumber 等函数转换为aardio类型
+call(__/*不定个数参数*/) = 该对象为函数对象时支持此方法，\n也可以不写call直接像普通函数那样用 ( )操作 符来调用\n参数为不定个数的字符串或数值\n返回值为 py2.object对象,可使用 tostring 或 tonumber 等函数转换为aardio类型
+callObject() = !py2Object.
+call() = !py2Object.
+invoke( =  该对象为 Python 函数对象时支持使用此方法调用 Python 函数,\n与通过 call 方法调用不同的是 invoke 支持传递命名参数,\n调用成功返回值为 py2.object对象
+invoke(.(kwarg=value,arg1->->->) = 如果参数@1是未指定元表的纯表对象,且没有 pyObject 成员,\n则将该表中的名值对作为调用时的命名参数,\n该表中的数组成员作为调用时的匿名参数,\n注意名值对参数应当且只能写在最前面,所有参数请用逗号分隔,\n\n如果参数@1不符合前述规则,\n则与 call 调用相同的方式将所有参数作为调用时的匿名参数
+invoke() = !py2Object.
+getFuncDesc() = 获取函数原型
+getFuncName() = 获取函数名
+type() = 返回类型名字
+getTypeFlags() = 返回类型特性,用法请参考此函数源码以及 Python 文档
+hasFeature(__) = 检测类型特性,这个函数实现了C++中的PyType_HasFeature宏相同的功能 
+checkDict() = 检测是否字典
+checkList() = 检测是否列表
+checkTuple() = 检测是否字典
+checkLong() = 检测是否整数,Python2里整数还可能是int
+checkInt() = 检测是否整数
+checkUnicode() = 检测是否Unicode字符串
+checkString() = 检测是否字节串\nPython2中bytes与str都是相同的
+checkBool() = 检测是否布尔值
+checkFloat() = 检测是否浮点数
+checkNumber() = 检测是否数值（float,doble,long,int)
+getFuncName() = 获取函数名
+getFuncDesc = function(){
+	return PyEval_GetFuncDesc(owner.pyObject );	
+}
+end intellisense**/

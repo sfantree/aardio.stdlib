@@ -1,0 +1,20 @@
+﻿import win.ui;
+/*DSG{{*/
+var winform = win.form(text="范例工程";right=703;bottom=511;bgcolor=16777215;border="dialog frame")
+winform.add(
+lbDescription={cls="static";left=24;top=456;right=680;bottom=497;db=1;dl=1;dr=1;notify=1;transparent=1;z=2};
+plus={cls="plus";left=24;top=24;right=680;bottom=440;background="~\forms\images\winform.jpg";db=1;dl=1;dr=1;dt=1;repeat="scale";z=1}
+)
+/*}}*/
+
+winform.getTemplatePath = function(){
+	return io.fullpath("/template/winform/") 
+}
+
+winform.lbDescription.text = /*
+创建主窗口，并添加登录窗口、选项卡窗口、嵌入子窗口、模态窗口等演示代码，范例中包含《窗口程序基础知识》、《理解窗口间的关系》、《如何加载子窗口》等入门要点说明。
+*/
+
+winform.show() 
+win.loopMessage();
+return winform;

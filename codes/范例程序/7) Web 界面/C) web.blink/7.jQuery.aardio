@@ -1,0 +1,37 @@
+//jQuery
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="miniblink - 调用jQuery";right=759;bottom=469)
+winform.add()
+/*}}*/
+
+import web.blink.form;
+var mb = web.blink.form( winform );
+winform.show();
+
+mb.html = /**
+<html>
+<head>
+    <meta charset="utf-8">
+</head>
+<body>
+    <textarea id="textarea-id" rows="10" cols="60">请稍候正在下载jQuery</textarea>
+    
+    <br>修改会同步反馈到下面:<br>
+    <textarea id="textarea-id2" rows="10" cols="60"></textarea>
+</body>
+</html>
+**/
+ 
+mb.wait();
+
+mb.jQuery("#textarea-id").val( "请在这里输入文本" );
+
+mb.doScript(`
+$("#textarea-id").keyup(
+    function(){ 
+        $("#textarea-id2").val( $("#textarea-id").val() ) 
+    }
+)`) 
+
+win.loopMessage(); 

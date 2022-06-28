@@ -1,0 +1,33 @@
+//调用 JS 函数
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="xterm";right=759;bottom=469)
+winform.add()
+/*}}*/
+
+import web.view;
+var wb = web.view(winform);
+
+wb.html = /**
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title></title>
+  <link rel="stylesheet" href="https://unpkg.com/xterm@4.13.0/css/xterm.css">
+  <script src="https://unpkg.com/xterm@4.13.0/lib/xterm.js"></script>
+</head>
+<body style="height:100vh;"> 
+  <script>
+    let term  = new Terminal();
+    term.open(document.body);
+    term.write('\x1b[31m红色字体\x1b[37m测试')
+  </script>
+</body>
+</html>
+**/
+
+wb.xcall("term.write",'\e[32m绿色字体');
+
+winform.show();
+win.loopMessage();

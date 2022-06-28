@@ -1,0 +1,20 @@
+import console; 
+
+import fsys;
+
+
+
+MakeAutoName = function(name, extension, value){
+	var path = name;
+	path = path ++ tostring(value);
+	path = path ++ extension;
+	return io.exist(path);
+}
+
+AutoRenamePath = function(path){
+	var dotPos = string.find(
+}
+
+
+
+console.pause(true);

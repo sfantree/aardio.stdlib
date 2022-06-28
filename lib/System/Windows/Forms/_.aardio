@@ -1,0 +1,26 @@
+﻿import dotNet;
+dotNet.import("System.Windows.Forms"); 
+
+System.Windows.Forms[["CreateEmbed"]] = function(ctrl,parent){
+	var form = System.Windows.Forms.Form();  
+	form.FormBorderStyle = boderStyle : 0 /*System.Windows.Forms.FormBorderStyle.None*/;
+	if(type.isString(ctrl)){
+		ctrl = System.Windows.Forms[ctrl]();
+	}
+	
+	ctrl.Dock = 5/*System.Windows.Forms.DockStyle.Fill*/;
+	dotNet.setParent(form,parent); 
+	
+	form.Controls.Add(ctrl); 
+	return ctrl;
+}
+
+/**intellisense()
+System.Windows.Forms = .Net System.Windows.Forms 名字空间\n!dotNetNameSpace.
+end intellisense**/
+
+/**intellisense(System.Windows.Forms)
+CreateEmbed( = 嵌入 .Net 控件到 aardio 窗口，\n此函数会为 .Net 控件创建无边框的 .Net 容器窗口，\n再嵌入到 aardio 窗口内 
+CreateEmbed(.(netCtrl,aarForm) = 嵌入 .Net 控件到 aardio 窗口,\n@netCtrl 参数可指定 .Net 控件,\n也可以指定 System.Windows.Forms 名空空间下的控件类名,\n@aarForm 参数指定 aardio 中的 win.form 对象或 custom 控件\n\n如果 @netCtrl 是窗口对象，应当改用 dotNet.setParent 函数嵌入
+? = .Net 名字空间、类、结构体的成员，\n可访问成员名字空间、类、枚举、静态属性或字段，\n导入的类可用于构造 .Net 对象，传回 .Net 则自动转为该类的 Type 对象\n!dotNetNameSpace.
+end intellisense**/

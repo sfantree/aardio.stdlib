@@ -1,0 +1,46 @@
+//registry 引用注册表
+namespace util; 
+
+class registry{
+	ctor(){
+		var free;
+		
+		this.reg = function(v){
+			var id;
+			if( free ){
+				id = free;
+				free = this[free]; 
+			}
+			else {
+				id = #this+1;
+			}
+			this[id] = v; 
+			return id; 
+		};
+		
+		this.unReg = function(id){ 
+			var r = this[id] 
+			this[id] = free;
+			free = id; 
+			return r;  
+		}; 
+		
+		this.clear = function(){
+			if(#this) ..table.splice(this,1,#this);
+			
+			for(k,v in this){
+				if(type(k)=="number") this[k] = null;
+			} 
+			
+			free = null;
+		} 
+	}
+}
+
+/**intellisense()
+util.registry = 引用注册表,用于注册对象唯一标识
+util.registry() = 创建引用注册表,用于注册对象UID\n!util_registry.
+!util_registry.reg(.(对象) = 添加到注册表,返回唯一ID,\n该ID可作为索引取回对象
+!util_registry.unReg(.(注册ID) = 注销ID,并删除引用,\n返回该ID之前引用的对象
+!util_registry.clear() = 清空所有注册对象\n调用些函数时应确认 reg 函数之前注册的所有 id 已不再使用,\n谨慎使用此函数
+end intellisense**/

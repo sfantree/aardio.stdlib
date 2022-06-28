@@ -1,0 +1,10 @@
+import ide;
+import fsys;
+
+var publisDir = ide.getPublisDir();
+if(!#publisDir)return; 
+
+var pubDir =  fsys.joinpath(publisDir,"/lib/mmseg/.res/data" ); 
+if( ! io.exist(pubDir) ){
+	..fsys.copy( "~/lib/mmseg/.res/data/*" ,pubDir,0x10/*_FOF_NOCONFIRMATION*/  | 0x200/*_FOF_NOCONFIRMMKDIR*/); 
+}

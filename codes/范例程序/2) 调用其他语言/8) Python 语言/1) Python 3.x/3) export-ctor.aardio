@@ -1,0 +1,102 @@
+//调用 aardio 对象
+import com;  
+import winex; 
+import py3;
+
+//可以这样预先指定 Python 全局变量
+py3.main.com = py3.export(com);////用 py3.export(com) 直接将 aardio 对象完整导入 Python
+ 
+var pyCode = /** 
+def testPy(winex):
+	# 在 Python 里直接使用 aardio 对象，简单得就像在 aardio 里调用 aardio 对象
+    wsh = com.CreateObject("wscript.shell")
+    wsh.exec("notepad") 
+    
+    # 直接调用 aardio 标准库函数
+    winex.wait(None,None,"Notepad","Edit");
+    
+    # 直接使用 aardio 创建的迭代器
+    for(hwnd,title,threadId,processId) in winex.each("Notepad"):
+    	hCtrl = winex.findEx(hwnd,None,"Edit")
+    	winex.sendString("测试一下",hCtrl)
+**/
+
+//执行Python代码
+py3.exec( pyCode ); 
+
+/*
+虽然 aardio 到 Python 传值，Python 到 aardio 传址
+但 Python 回调 aardio 函数的回调参数会自动调用 parseValue() 解析为 aardio 值。
+*/
+ 
+//调用 Python 函数
+py3.main.testPy(  
+	py3.export(winex) //也可以通过参数将 aardio 对象导出给 Python
+);   
+
+/**details(重要说明) 
+
+一、简介
+-----------------------------------------------------------
+当 py3.export() 作为对象构造函数使用时，
+可用于导入参数指定的 aardio 对象为 Python 对象。
+这种「代理对象」在 Python 中将保持对原始 aardio 对象的引用，
+也就是传址而非传值，可以在 Python 中更直接地使用此 aardio 对象。
+
+二、解决了什么问题
+-----------------------------------------------------------
+首先请了解 aardio 在与 Python 交互时，
+所有 Python 对象转换为 aardio 对象都是传址而非传值，
+即在 aardio 中始终保留对原始 Python 对象的引用。
+所以我们要把这些 Python 对象( pyObject ) 转换为纯 aardio 值，
+就需要调用 pyObject.parseValue(), 当然 pyObject 也像普通 aardio 对象
+一样可以支持许多 aardio 操作符以及 _tostring,_tonumber 等元方法。
+
+但是默认的在交互过程中 - aardio 对象在自动转换为 Python 对象时，
+aardio 则只转换数据，即传值而非传址，Python 中不保留对 aardio  对象的引用。
+例如 aardio 表对象，经过 JSON 作为中间协议转换为纯 Python 对象，
+这样带来的好处是在 Python 中可以获得纯 Python 对象，用起来非常简洁。
+但缺点是这种转换后的对象不再引用原始的 aardio 对象，
+也就因此失去了在 Python 中全面操控和利用 aardio 对象的能力。
+
+我们可以利用 py3.export 导出 aardio 模块，例如：
+
+	py3.export.aardio = {
+		exportFunction = function(){
+			
+		} 
+	}
+
+然后可以在 Python 中 import aardio，然后调用这个模块的所有成员函数。
+你可以使用不同的模块名称，不一定要是 aardio。
+
+但这种导出的模块，仍然遵守前述的规则，
+aardio 对象传入 Python 仍是传值而不是传址。
+
+三、py3.export( aardioObject ) 使用要点
+-----------------------------------------------------------
+但我们用 py3.export( aardioObject ) 就可以用传址的方式导出 aardio 代理对象给 Python,
+这种方式支持传址转换 table,cdata,class,function 等 aardio 对象，也可以支持导出 aardio 迭代器
+并且于 Python 的 for 语句（注意 aardio 迭代器在 Python 中返回 tuple 而非单个值)
+
+对于整型数值 py3.export( number ) 默认转换为 Python 中的整型，而非浮点数。
+对于其他类型，例如字符串等则不作转换直接返回（当作为 Python 函数的参数时，按传值规则做默认转换）
+
+并且在 Python 中调用这种 aardio 对象再次返回到 Python 中的 aardio 对象
+也会自动调用 py3.export() 转换为代理对象。
+
+但 Python 回调 aardio 函数的回调参数会自动调用 parseValue() 解析为 aardio 值。
+
+更多关于 py3.export 建议大家查看这个库的源代码。
+
+四、使用限制
+-----------------------------------------------------------
+注意 py3.export 只能在 Python 启动线程中使用,
+aardio 可以支持真多线程，也提供了 py3.lock 简化了 Python 全局锁操作，支持除 py3.export 以外的接口。
+但要注意：py3.export 与 Python 多线程模式不兼容。
+
+在非 Python 主线程下，py3.export 为 null 值,
+使用 py3.mainThread 也可以检测是否  Python 主线程， 
+其实 Python 的多线程有全局锁 —— 无法实现真正的多线程， 
+所以如果没有特别的原因 Python 就不要搞多线程了，可以省很多事。
+end details**/

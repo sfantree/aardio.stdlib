@@ -1,0 +1,536 @@
+import com.lite;
+namespace com;
+
+class dsoFramer{
+	ctor( winform ){
+		winform.modifyStyle(,0x2000000/*_WS_CLIPCHILDREN*/);
+		_dll.createEmbed(winform,"{00460182-9E5E-11d5-B7C8-B8269041DD57}",,this)
+		
+		this._object.caption = "DsoFramer";
+		this._object.BorderStyle = 0;
+		this._hwndControl = ..win.findEx(this._form.hwnd,0,"DSOFramerOCXWnd");
+	};
+	@_metaProperty;
+}
+
+namespace dsoFramer{ 
+
+	_dll = ..com.lite.appData("aardio/std/dsoframer2.3.0.1.ocx",$"~\lib\com\dsoFramer\.res\dsoframer.ocx");
+
+	_metaProperty = ..util.metaProperty(
+
+		hwndControl = {
+			_get = function(){  
+				return owner._hwndControl;
+			} 
+		};
+		hwndDoc = {
+			_get = function(){  
+				return ..win.findEx(owner._hwndControl,0,"DSOFramerDocWnd");
+			} 
+		};
+	 	menubar = {
+			_get = function(){  
+				return owner._object.Menubar;
+			}
+			_set = function( value ){
+				owner._object.Menubar = value
+			} 	
+		}; 
+		toolbars = {
+			_get = function(){  
+				return owner._object.Toolbars;
+			}
+			_set = function( value ){
+				owner._object.Toolbars = value
+			} 	
+		};
+		titlebar = {
+			_get = function(){  
+				return owner._object.Titlebar;
+			}
+			_set = function( value ){
+				owner._object.Titlebar = value
+			} 	
+		};
+		caption = {
+			_get = function(){  
+				return owner._object.Caption;
+			}
+			_set = function( value ){
+				owner._object.Caption = value
+			} 	
+		};
+		modalState = {
+			_get = function(){  
+				return owner._object.ModalState;
+			}
+			_set = function( value ){
+				owner._object.ModalState = value
+			} 	
+		};
+		borderStyle = {
+			_get = function(){  
+				return owner._object.BorderStyle;
+			}
+			_set = function( value ){
+				owner._object.BorderStyle = value
+			} 	
+		};
+		borderColor = {
+			_get = function(){  
+				return owner._object.BorderColor;
+			}
+			_set = function( value ){
+				owner._object.BorderColor = value
+			} 	
+		};
+		backColor = {
+			_get = function(){  
+				return owner._object.BackColor;
+			}
+			_set = function( value ){
+				owner._object.BackColor = value
+			} 	
+		};
+		foreColor = {
+			_get = function(){  
+				return owner._object.ForeColor;
+			}
+			_set = function( value ){
+				owner._object.ForeColor = value
+			} 	
+		};
+		titlebarColor = {
+			_get = function(){  
+				return owner._object.TitlebarColor;
+			}
+			_set = function( value ){
+				owner._object.TitlebarColor = value
+			} 	
+		};
+		titlebarTextColor = {
+			_get = function(){  
+				return owner._object.TitlebarTextColor;
+			}
+			_set = function( value ){
+				owner._object.TitlebarTextColor = value
+			} 	
+		};
+		documentFullName = {
+			_get = function(){  
+				return owner._object.DocumentFullName;
+			} 	
+		};
+		isReadOnly = {
+			_get = function(){  
+				return owner._object.IsReadOnly;
+			} 	
+		};
+		isDirty = {
+			_get = function(){  
+				return owner._object.IsDirty;
+			} 	
+		};
+		activeDocument = {
+			_get = function(){  
+				return owner._object.ActiveDocument;
+			} 	
+		};
+		officeVersion = {
+			_get = function(){  
+				return owner._object.GetOfficeVersion();
+			} 	
+		};
+		createNew  = function(progId){  
+			return owner._object.CreateNew(progId);
+		}
+		createNewWord  = function(progId){  
+			return owner._object.CreateNew("Word.Document");
+		}
+		createNewExcel  = function(progId){  
+			return owner._object.CreateNew("Excel.Sheet");
+		} 
+		createNewPowerPoint  = function(progId){  
+			return owner._object.CreateNew("PowerPoint.Show");
+		} 
+		createNewVisio  = function(progId){  
+			return owner._object.CreateNew("Visio.Drawing");
+		}
+		openFile = function(filepath,progId,...){
+			if(!progId){
+				progId = ({
+					".xls":"Excel.Sheet",
+					".xlsx":"Excel.Sheet",
+					".doc":"Word.Document",
+					".docx":"Word.Document",
+					".ppt":"PowerPoint.Show",
+					".pptx":"PowerPoint.Show",
+					".vsd":"PowerPoint.Showt"
+				})[..io.splitpath(filepath).ext] : "Word.Document"
+			} 
+
+			return owner._object.Open( ..io.fullpath(filepath),false,progId,...);
+		}
+		openUrl = function(url,progId,...){
+			return owner._object.Open( url,true,progId,...);
+		}
+		save = function(file,...){
+			return owner._object.Save(file,...);
+		}
+		saveAs = function(file,format){
+			return owner._object.SaveAs(file,format);
+		} 
+		SaveAsTypes = function(){
+			var types;
+			try{
+				var typeinfo = ..com.GetTypeInfo(owner.activeDocument)
+				var typelib = typeinfo.GetTypeLib()
+				var enums = typelib.ExportEnumerations() 
+				
+				types = enums.XlFileFormat || enums.WdSaveFormat || enums.PpSaveAsFileType	
+			}
+			return types;
+		}
+		activeDocumentTypeName = function(){
+			var name;
+			try{
+				var typeinfo = ..com.GetTypeInfo(owner.activeDocument)
+				var typelib = typeinfo.GetTypeLib()
+				name = typelib.GetDocumentation().name 	
+			}
+			return name;
+		}
+		insert = function(filepath,img){ 
+			var lPos = img ? 2#1000 : 0;
+			return owner._object.InSertFile( ..io.fullpath(filepath),lPos : 0);
+		}  
+		insertFront = function(filepath,img){ 
+			var lPos = img ? 2#1000 : 0;
+			return owner._object.InSertFile( ..io.fullpath(filepath),( lPos : 0) | 1 );
+		}
+		insertRear = function(filepath,img){ 
+			var lPos = img ? 2#1000 : 0;
+			return owner._object.InSertFile( ..io.fullpath(filepath),( lPos : 0) | 2);
+		}
+		showRevisions = function(show){  
+			return owner._object.ShowRevisions( show ? 1 : 0 );
+		}
+		getRevCount = function(){  
+			return owner._object.GetRevCount();
+		}
+		getRevInfo = function(index,lType){  
+			return owner._object.GetRevInfo(index,lType );
+		}
+		setCurrTime = function(tm){  
+			return owner._object.SetCurrTime( tostring( tm :  ..time() ) );
+		}
+		setFieldValue = function(fieldName,value,cmdOrSheetName){  
+			return owner._object.SetFieldValue( fieldName,tostring(value),cmdOrSheetName : "" );
+		}
+		setFieldFile = function(fieldName,value,cmdOrSheetName){  
+			return owner._object.SetFieldValue( fieldName,tostring(value), "::FILE::" );
+		}
+		setFieldJpg = function(fieldName,value){  
+			return owner._object.SetFieldValue( fieldName,tostring(value), "::JPG::" );
+		}
+		addMark = function(fieldName,value){  
+			return owner._object.SetFieldValue( fieldName,tostring(value),  "::ADDMARK::" );
+		}
+		delMark = function(fieldName,value){  
+			return owner._object.SetFieldValue( fieldName,value:"",  "::DELMARK::" );
+		}
+		getMark = function(fieldName,value){  
+			return owner._object.SetFieldValue( fieldName,value:"",  "::GETMARK::" );
+		}
+		setMenuDisplay = function(lMenuFlag){  
+			return owner._object.setMenuDisplay( lMenuFlag );
+		} 
+		protectDoc = function(proType,pwd){  
+			return owner._object.ProtectDoc( 1,proType,pwd );
+		} 
+		unProtectDoc = function(lMenuFlag){  
+			return owner._object.ProtectDoc( 0,proType,pwd );
+		} 
+		setPageAs = function(strLocalFile,lPageNum,lType){  
+			return owner._object.SetPageAs( ..io.fullpath(strLocalFile),lPageNum,lType);
+		} 
+		setDocVariable = function(name,value,opt){  
+			return owner._object.SetDocVariable(name,value,opt );
+		}  
+		setValue = function(value,name){  
+			return owner._object.SetValue(value,name);
+		} 
+		showView = function(viewType){  
+			return owner._object.ShowView(viewType);
+		}  
+		showNormalView = function(){  
+			return owner._object.ShowView(1/*_wdNormalView*/);
+		}
+		showOutlineView = function(){  
+			return owner._object.ShowView(2/*_wdOutlineView*/);
+		} 
+		showPrintView = function(){  
+			return owner._object.ShowView(3/*_wdPrintView*/);
+		} 
+		showPrintPreview = function(){  
+			return owner._object.ShowView(4/*_wdPrintPreview*/);
+		} 
+		showMasterView = function(){  
+			return owner._object.ShowView(5/*_wdMasterView*/);
+		}
+		showWebView = function(){  
+			return owner._object.ShowView(6/*_wdWebView*/);
+		}  
+		deleteLocalFile = function(strFilePath){  
+			return owner._object.DeleteLocalFile( ..io.fullpath(strFilePath) );
+		}   
+		getTempFilePath = function(){  
+			return owner._object.GetTempFilePath();
+		}  
+		showDialog = function(dlgType){  
+			return owner._object.ShowDialog(dlgType);
+		}  
+	)
+}
+
+/**details(说明)
+
+DsoFramer 主要是通过 activeDocument 获取活动文档并操作文档对象。
+
+Word 文档对象请参考：
+https://docs.microsoft.com/en-us/office/vba/api/word.document
+
+Excel 文档对象请参考： 
+https://docs.microsoft.com/en-us/office/vba/api/excel.workbook
+
+PowerPoint 文档对象请参考： 
+https://docs.microsoft.com/en-us/office/vba/api/powerpoint.presentation
+
+end details**/
+
+/**intellisense()
+com.dsoFramer = DsoFramer 是微软免费开源的控件,\n用于嵌入 Word、 Excel、 PPT 等 Office 文档，兼容 WPS。\n要求不高还是挺不错的,而且此扩展库已实现免注册调用,\n不需要注册控件,而且可以生成独立EXE文件,\n当然 DsoFramer 本身并不完美，\n如果有更高的要求，这是开源控件请自行改进,\n本人不对此控件提供技术支持
+com.dsoFramer(.(winform) = 参数是窗体或控件对象
+com.dsoFramer() = !comDsoFramer.
+end intellisense**/
+
+/**intellisense(!comDsoFramer)
+hwndControl = 控件窗口
+hwndDoc = 文档窗口
+_host._adjust() = 自动调整控件窗口大小
+_host.tranacc(.(MSG消息对象) = 解析快捷键,\n如果是快捷键返回真值
+_host.doObjectVerb( _OLEIVERB__ ) = 执行指定的动词命令
+_form = !winform.
+_object = DsoFramer控件
+toolbars = 是否显示工具栏
+titlebar = 是否显示标题栏
+caption = 标题
+modalState = 模态状态
+borderStyle = 边框样式,数值:\ndsoBorderNone = 0\ndsoBorderFlat = 1\ndsoBorder3D = 2\ndsoBorder3DThin = 3
+borderColor = 边框颜色
+backColor = 背景颜色
+foreColor = 前景颜色背景颜色
+titlebarColor = 标题栏
+titlebarTextColor = 标题栏文本颜色
+documentFullName = 文档名
+isReadOnly = 是否只读
+isDirty = 是否修改
+activeDocumentTypeName() = 当前活动文档类型名称,\n可能的返回值: "PowerPoint","Excel","Word"\n如果当前是无效的文档，返回 null
+activeDocument = 活动文档\nWord 文档对象 https://docs.microsoft.com/en-us/office/vba/api/word.document \nExcel 文档对象 https://docs.microsoft.com/en-us/office/vba/api/excel.workbook \nPowerPoint 文档对象 https://docs.microsoft.com/en-us/office/vba/api/powerpoint.presentation
+activeDocument.SlideShowSettings.Run() = 全屏播放 PPT
+activeDocument.Sheets() = !excel_sheet.
+activeDocument.Sheets = !excel_sheet.
+activeDocument.ActiveSheet = 活动 Excel 表格\n!excel_sheet.
+activeDocument.Names.count = Excel 表格名称计数
+activeDocument.Names(1__) = !excel_book_name.
+activeDocument.Sheets(1__) = 返回 Excel 工作簿上的指定工作表
+activeDocument.Charts("__") = 返回 Excel  指定名称的图表
+activeDocument.Worksheets("__")  = 返回 Excel  指定名称的工作表
+activeDocument.DialogSheets("__")  = 返回 Excel  指定名称的对话框工作表
+activeDocument.Sheets.Count = Excel 工作表总数
+activeDocument.Sheets.Item(__) = 返回指定的 Excel  工作表
+activeDocument.Title = 设置 Excel  标题
+activeDocument.Subject = 设置 Excel  主题
+activeDocument.close() = 关闭 Excel  工作簿
+officeVersion = office版本
+menubar = 是否显示菜单栏
+activeDocument = 当前文档对象
+showRevisions(.(true) = 是否显示修订留痕
+getRevCount() = 返回修证次数
+getRevInfo(.(index,lType) = 返回修订详情
+openFile(.("文件","Word->Document") = 打开各种 office 文件,参数2为可选参数,\n如果不指定参数@2,则根据后缀名自动设置,\n打开文件后使用 activeDocument 属性操作文档对象
+openUrl(.("网址","Word->Document",用户名,密码) = 参数2为可选参数,\n如果不指定参数@2,则根据后缀名自动设置,\n打开文件后使用 activeDocument 属性操作文档对象
+createNewWord() = 创建新WORD文档
+createNewExcel() = 创建新EXCEL文档
+save(.("文件",true) = 保存文档
+Insert(.("文件") = 插入文件到当前位置,\n如果文件是图像,请将参数@2指定为true
+InsertFront(.("文件") = 插入文件到头部,\n如果文件是图像,请将参数@2指定为true
+InsertRear(.("文件") = 插入文件到尾部,\n如果文件是图像,请将参数@2指定为true
+setCurrTime(.("时间") = 设置当前时间
+saveAs(.("文件",格式选项) = 保存文档，\n可用的格式选项使用 SaveAsTypes 函数查看,\n可以通过activeDocument 获取格式选项,例如 activeDocument.ppSaveAsRTF
+SaveAsTypes() = 获取发前活动文档可用的所有保存格式选项,\n可用于 saveAs 函数的每 2 个参数,\n可以通过activeDocument 获取格式选项,例如 activeDocument.ppSaveAsRTF
+setFieldFile(.(书签名,值,命令) = 设置和创建书签\n此函数用法建议查看一下源码,\n参考其他几个调用这个函数的函数
+setFieldJpg(.(书签名,值) = 插入图像
+setFieldFile(.(书签名,值) = 插入文件
+addMark(.(书签名,值) = = 添加书签
+delMark(.(书签名,值) = 删除书签
+getMark(.(书签名,值) = 定位书签
+setMenuDisplay(_MNU__) = 设置菜单\n可以使用按位或的多个选项
+protectDoc(_wdAllow__,"PWD") = 保护文档
+unProtectDoc(_wdAllow__,"PWD") = 解保护文档
+setValue(.(value,name) = 设置基本信息,\n例如设置只读密码  setValue("password","::DOCPROP:PassWord")\n设置修改密码 setValue("password","::DOCPROP:WritePW")
+setDocVariable(.(name,value,opt) = 设置文档变量,opt可使用二进制数值:\n第一位为1:  表示update域关联的,\n第二位为1:  表示如果没有这个变量则添加 
+showView(.(viewType) =  设置文档显示模式,\n建议改用 showNormalView,showOutlineView 等函数
+showNormalView() =  标准视图
+showOutlineView() =  大纲视图
+showPrintView() = 打印视图
+showPrintPreview() =  打印预览视图
+showMasterView() = 大纲视图 
+showWebView() = 显示web视图
+deleteLocalFile(.(文件路径) = 删除本地文件
+getTempFilePath() = 返回临时文件路径
+setPageAs(.(strLocalFile,lPageNum,lType) = 分页保存
+saveAs(.("文件",格式选项) = 保存文档，见下面的常量列表
+showDialog(.(dlgType) = 显示对话框,\n@dlgType 指定对话框类型,数值：\ndsoDialogNew = 0\ndsoDialogOpen = 1\ndsoDialogSave = 2\ndsoDialogSaveCopy = 3\ndsoDialogPrint = 4\ndsoDialogPageSetup = 5\ndsoDialogProperties = 6
+
+OnDocumentOpened = @.OnDocumentOpened = function( path, document){
+	__/*新建或打开文档触发此事件*/
+}
+OnDocumentClosed = @.OnDocumentClosed = function(){
+	__/*当文档关闭时调用*/	
+}
+BeforeDocumentClosed = @.BeforeDocumentClosed = function(){
+	__/*当文档关闭前触发*/	
+}
+OnPrintPreviewExit = @.OnPrintPreviewExit = function(){
+	__/*打印预览关闭时触发*/	
+}
+OnDocActivated = @.OnDocActivated = function(isActivated){
+	__/*当组件激活或取消激活时触发*/	
+}
+OnScreenModeChanged = @.OnScreenModeChanged = function(isFullScreenMode){
+	__/*用户选择菜单命令触发,\n可通过返回 cancel 值为 true 取消命令*/	
+} 
+OnFileCommand = @.OnFileCommand = function(item,cancel){
+	__/*用户选择菜单命令触发,\n可通过返回 cancel 值为 true 取消命令*/	
+}
+OnWordWPSSelChange = @.OnWordWPSSelChange = function(selection){
+	__/* */		
+} 
+OnWordBeforeRightClick = @.OnWordBeforeRightClick = function(selection,isCancel){
+	__/* */		
+}
+OnWordBeforeDoubleClick = @.OnWordBeforeDoubleClick = function(selection,isCancel){
+	__/* */		
+}
+OnSheetselectionChange = @.OnSheetselectionChange = function(sheetName,row, col){
+	__/* */		
+} 
+OnSheetBeforeDoubleClick = @.OnSheetBeforeDoubleClick = function(sheetName, row, col, cancel){
+	__/* */		
+} 
+OnSheetBeforeRightClick = @.OnSheetBeforeRightClick = function(sheetName, row, col, cancel){
+	__/* */		
+}
+OnSheetChange = @.OnSheetChange = function(sheetName, row, col){
+	__/* */		
+}
+OnPPTBeforeRightClick = @.OnPPTBeforeRightClick = function(selection,isCancel){
+	__/* */		
+}
+end intellisense**/
+
+/**intellisense()
+_xlAddIn=@0x12/*_xlAddIn*/
+_xlCSV=@6/*_xlCSV*/
+_xlCSVMac=@0x16/*_xlCSVMac*/
+_xlCSVMSDOS=@0x18/*_xlCSVMSDOS*/
+_xlCSVWindows=@0x17/*_xlCSVWindows*/
+_xlDBF2=@7/*_xlDBF2*/
+_xlDBF3=@8/*_xlDBF3*/
+_xlDBF4=@0xB/*_xlDBF4*/
+_xlDIF=@9/*_xlDIF*/
+_xlExcel2=@0x10/*_xlExcel2*/
+_xlExcel2FarEast=@0x1B/*_xlExcel2FarEast*/
+_xlExcel3=@0x1D/*_xlExcel3*/
+_xlExcel4=@0x21/*_xlExcel4*/
+_xlExcel5=@0x27/*_xlExcel5*/
+_xlExcel7=@0x27/*_xlExcel7*/
+_xlExcel9795=@0x2B/*_xlExcel9795*/
+_xlExcel4Workbook=@0x23/*_xlExcel4Workbook*/
+_xlIntlAddIn=@0x1A/*_xlIntlAddIn*/
+_xlIntlMacro=@0x19/*_xlIntlMacro*/
+_xlWorkbookNormal=@-4143/*_xlWorkbookNormal*/
+_xlSYLK=@2/*_xlSYLK*/
+_xlTemplate=@0x11/*_xlTemplate*/
+_xlCurrentPlatformText=@-4158/*_xlCurrentPlatformText*/
+_xlTextMac=@0x13/*_xlTextMac*/
+_xlTextMSDOS=@0x15/*_xlTextMSDOS*/
+_xlTextPrinter=@0x24/*_xlTextPrinter*/
+_xlTextWindows=@0x14/*_xlTextWindows*/
+_xlWJ2WD1=@0xE/*_xlWJ2WD1*/
+_xlWK1=@5/*_xlWK1*/
+_xlWK1ALL=@0x1F/*_xlWK1ALL*/
+_xlWK1FMT=@0x1E/*_xlWK1FMT*/
+_xlWK3=@0xF/*_xlWK3*/
+_xlWK4=@0x26/*_xlWK4*/
+_xlWK3FM3=@0x20/*_xlWK3FM3*/
+_xlWKS=@4/*_xlWKS*/
+_xlWorks2FarEast=@0x1C/*_xlWorks2FarEast*/
+_xlWQ1=@0x22/*_xlWQ1*/
+_xlWJ3=@0x28/*_xlWJ3*/
+_xlWJ3FJ3=@0x29/*_xlWJ3FJ3*/
+_xlUnicodeText=@0x2A/*_xlUnicodeText*/
+_xlHtml=@0x2C/*_xlHtml*/
+_wdFormatDocument=@0/*_wdFormatDocument*/
+_wdFormatTemplate=@1/*_wdFormatTemplate*/
+_wdFormatText=@2/*_wdFormatText*/
+_wdFormatTextLineBreaks=@3/*_wdFormatTextLineBreaks*/
+_wdFormatDOSText=@4/*_wdFormatDOSText*/
+_wdFormatDOSTextLineBreaks=@5/*_wdFormatDOSTextLineBreaks*/
+_wdFormatRTF=@6/*_wdFormatRTF*/
+_wdFormatUnicodeText=@7/*_wdFormatUnicodeText*/
+_wdFormatEncodedText=@7/*_wdFormatEncodedText*/
+_wdFormatHTML=@8/*_wdFormatHTML*/
+_wdNormalView=@1/*_wdNormalView*/
+_wdOutlineView=@2/*_wdOutlineView*/
+_wdPrintView=@3/*_wdPrintView*/
+_wdPrintPreview=@4/*_wdPrintPreview*/
+_wdMasterView=@5/*_wdMasterView*/
+_wdWebView=@6/*_wdWebView*/
+_ppSaveAsPresentation=@1/*_ppSaveAsPresentation*/
+_ppSaveAsPowerPoint7=@2/*_ppSaveAsPowerPoint7*/
+_ppSaveAsPowerPoint4=@3/*_ppSaveAsPowerPoint4*/
+_ppSaveAsPowerPoint3=@4/*_ppSaveAsPowerPoint3*/
+_ppSaveAsTemplate=@5/*_ppSaveAsTemplate*/
+_ppSaveAsRTF=@6/*_ppSaveAsRTF*/
+_ppSaveAsShow=@7/*_ppSaveAsShow*/
+_ppSaveAsAddIn=@8/*_ppSaveAsAddIn*/
+_ppSaveAsPowerPoint4FarEast=@0xA/*_ppSaveAsPowerPoint4FarEast*/
+_ppSaveAsDefault=@0xB/*_ppSaveAsDefault*/
+_ppSaveAsHTML=@0xC/*_ppSaveAsHTML*/
+_ppSaveAsHTMLv3=@0xD/*_ppSaveAsHTMLv3*/
+_ppSaveAsHTMLDual=@0xE/*_ppSaveAsHTMLDual*/
+_ppSaveAsMetaFile=@0xF/*_ppSaveAsMetaFile*/
+_ppSaveAsGIF=@0x10/*_ppSaveAsGIF*/
+_ppSaveAsJPG=@0x11/*_ppSaveAsJPG*/
+_ppSaveAsPNG=@0x12/*_ppSaveAsPNG*/
+_ppSaveAsBMP=@0x13/*_ppSaveAsBMP*/
+_dsoBorderFlat=@1/*_dsoBorderFlat*/
+_dsoBorder3D=@2/*_dsoBorder3D*/
+_dsoBorder3DThin=@3/*_dsoBorder3DThin*/
+_MNU_NEW=@1/*_MNU_NEW*/
+_MNU_OPEN=@2/*_MNU_OPEN*/
+_MNU_CLOSE=@4/*_MNU_CLOSE*/
+_MNU_SAVE=@8/*_MNU_SAVE*/
+_MNU_SAVEAS=@0x16/*_MNU_SAVEAS*/
+_MNU_PGSETUP=@0x64/*_MNU_PGSETUP*/
+_MNU_PRINT=@0x256/*_MNU_PRINT*/
+_MNU_PROPS=@0x32/*_MNU_PROPS*/
+_MNU_PRINTPV=@0x126/*_MNU_PRINTPV*/
+_wdNoProtection=@-1/*_wdNoProtection*/
+_wdAllowOnlyRevisions=@0/*_wdAllowOnlyRevisions*/
+_wdAllowOnlyComments=@1/*_wdAllowOnlyComments*/
+_wdAllowOnlyFormFields=@2/*_wdAllowOnlyFormFields*/
+end intellisense**/

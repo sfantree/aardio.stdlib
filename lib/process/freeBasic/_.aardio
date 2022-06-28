@@ -1,0 +1,41 @@
+﻿import sevenZip.lzma.httpFile;
+import process;
+
+namespace process.freeBasic;
+
+var fbcPath = function(){
+
+	var path = ..io.appData("aardio\std\FreeBASIC\fbc.exe")
+	if(!..io.exist(path)){ 
+		..sevenZip.lzma.httpFile.download(
+			"http://download.aardio.com/v10.files/tool/FreeBASIC.tar.lzma"
+			,"正在下载 FreeBASIC 编译器..."
+			,..io.appData("aardio/std/")
+			,..io.appData("aardio/std/") 
+		)
+	}
+	
+	return ..io.exist(path);
+}
+
+dll = function(path){
+	var fbc = fbcPath();
+	if(fbc){
+		var prcs = ..process(fbc,"-dll",..io.fullpath(path));
+		return prcs;
+	}
+}
+
+/**intellisense(process)
+freeBasic = FreeBASIC 编译器\n可生成体积小、无依赖、可内存加载的DLL文件
+freeBasic.dll(.(bas代码文件) =  创建编译DLL的编译器进程,返回 process 对象
+freeBasic.dll() = !process.
+end intellisense**/
+
+/*
+FreeBASIC 编译器基于 GPLv2 开源许可证，GPL有强传染性，
+也就是说直接包含 FreeBASIC 编译器的开发工具也必须以 GPL 开源。
+
+FreeBASIC 的运行库则是基于 LGPLv2 开源许可证 - 并且额外允许静态链接，
+所以使用FreeBASIC生成独立的执行文件，无须再以GPL开源，可以自由使用。
+*/

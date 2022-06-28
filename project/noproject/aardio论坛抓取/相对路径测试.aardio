@@ -1,0 +1,45 @@
+import console;
+import fsys.path;
+import fsys;
+
+// gitclone\snipOCR\dist
+//var res = fsys.path.relative("E:\gitclone\snipOCR\dist", "E:\", false)
+//console.log(res);
+
+// 保留目录结构
+var srcPath = "E:\gitclone\ahtml";
+var dstPath = "H:\aria2\download\project\github\ahtml"
+
+var keepDirStruct = function(srcPath, dstPath){
+	fsys.enum( srcPath, "*.*",
+		function(dir, filename, fullpath, findData){ 
+			if(filename){
+				 var relatePath = fsys.path.relative(fullpath, srcPath, false);
+				 var targetPath = fsys.joinpath(dstPath, relatePath);
+				 var targetPathParent = fsys.getParentDir(targetPath)
+				 //console.log(targetPathParent);
+				 // 不存在则创建父目录
+				 if(!io.exist(targetPathParent)) {
+				     fsys.createDir(targetPathParent);
+				 }
+				 //
+				 var extName = fsys.getExtensionName(filename);
+				 if(extName == "aardio" or extName == "aau" or extName == "txt" or extName == "md" or extName == "js") {
+				     fsys.copy(fullpath, targetPath);
+				 }
+				 
+				 if(extName == "bin" or extName == "exe" or extName == "dll") {
+				     string.save(targetPath, "");
+				 }
+	        }
+		},
+		true
+	);
+}
+
+keepDirStruct(srcPath, dstPath);
+console.log("copy job finish!");
+
+
+
+console.pause();

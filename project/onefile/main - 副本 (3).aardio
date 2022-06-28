@@ -1,0 +1,92 @@
+import win.ui;
+import carl.ctrl.listviewex
+/*DSG{{*/
+var winform = win.form(text="listview扩展控件演示";right=599;bottom=399)
+winform.add(
+lvEx={cls="listviewex";text="listview扩展控件";left=18;top=25;right=585;bottom=385;edge=1;transparent=1;z=1}
+)
+/*}}*/
+
+//listview扩展控件是根据数据库返回的数据集结构设计的
+  
+winform.listview = winform.lvEx.listview;//listview原始控件
+
+
+winform.listview.onnotify = function(id,code,ptr){
+    select(code) {
+        case 0xFFFFFFFD/*_NM_DBLCLK*/ {//双击
+            var nm = winform.listview.getNotifyMessage(code,ptr);
+            var row, col = nm.iItem, nm.iSubItem;
+            if( !row && col ) return ;
+             
+            if( !winform.lvEx.isCellEdit(col) ){//没有双击原地编辑
+                //winform.mouseDoubleClick(row, col);//双击
+                //winform.msgbox("mouseDoubleClick");
+            }
+        }
+        case 0xFFFFFFFE/*_NM_CLICK*/{//单击
+            //winform.mouseClick();//单击
+            //winform.msgbox("mouseClick");
+        }
+    }
+    return winform.lvEx.openonnotify(id,code,ptr);//开启消息回调,默认启用排序,右键菜单等功能
+}
+  
+//添加表头,key键值,name列名显示名称,len宽度 为0,表示隐藏
+winform.lvEx.addHead(
+{
+    {key="rowId"; name="序号"; len=50};
+    {key="key1"; name="列名1"; len=80};
+    {key="key2"; name="列名2"; len=80};
+    {key="key3"; name="列名3"; len=100};
+    {key="key4"; name="列名4"; len=0};
+    {key="state"; name="状态"; len=80};
+}
+)
+  
+tab={}
+for(i=1;10;1){//生成数据源,数据结构是SQL查询返回的一样
+    table.push(tab,
+    {
+        rowId = i;
+        key1 = string.random(3);
+        key2 = string.random(3);
+        key3 = string.random(3);
+        key4 = string.random(3);
+        state = i%2 ? 1 : 0;
+    }
+    )
+}
+  
+winform.lvEx.setCellBefore = function(value, key, row, col){//附值单元格值之前加载的回调函数
+    if(key == "state"){
+        if( value == 1 ){
+            value = "启用"
+            winform.lvEx.setTextColor(row,col,gdi.RGB(0,80,0));//字体绿色
+            winform.lvEx.setTextBkColor(row,col-1,gdi.RGB(0xFF,0xFB,0x00));//背景色
+        }else {
+            value = "禁用"
+            winform.lvEx.setTextColor(row,col,gdi.RGB(255,0,0))//字体红色
+        }
+    }
+    return value; 
+}
+  
+winform.lvEx.addEdit = {"key1";"key3"};//双击原地编辑的列
+winform.lvEx.addEditAfter = function(key, text, row){//原地编辑后,内容有变化才回调函数
+    io.print(key,text,row)
+}
+  
+winform.lvEx.rbMenu = function(){//添加右键菜单
+    winform.lvEx.popmenu.add("读取 列名3 内容",function(){
+        var txt = winform.lvEx.get(winform.listview.selIndex,"key3")
+        io.print("列名3",txt)
+    })
+    winform.lvEx.popmenu.add();
+}        
+  
+winform.lvEx.showData( tab );//显示数据源
+  
+//io.open();
+winform.show()
+win.loopMessage()

@@ -1,0 +1,53 @@
+﻿//JSON 扩展
+import console;
+import web.script.json;
+
+//创建 JScript 解释器
+var vm = web.script(); 
+
+//添加脚本，多次写入此属性是添加脚本不是覆盖替换脚本
+vm.script = /*
+function test(data) { 
+	//return JSON.stringify(data); // 已自动引入 JSON2
+	return [data[1],data[2]]; 
+}
+
+var obj = {test:test}
+*/
+
+var aardioArray = {
+	{50,80};
+	{20,24}; 
+	{100,103};
+	{4,8};
+}
+
+/*
+通过 vm.json.test 调用 JS 函数，作用与调用 vm.script.test 类似，
+但 vm.json.test 会自动使用 JSON 转换参数与返回值，因此可以传输 JSON 支持的所有对象。
+*/
+var ret = vm.json.test( aardioArray );
+
+//如果JS 函数名包含 . 号这样写：
+var ret = vm.json["obj.test"]( aardioArray );
+
+/*
+之所以不允许 vm.json.obj.test() 这种在 JS 函数名中直接包含点号的写法，
+是为了避免不必要的混淆，不能把 vm.json.obj 理解为 vm.script.obj 这样的 JS 对象。
+
+vm.json 本质是 vm.eval + JSON  的语法糖，调用、传参、取返回值都要随时明确这一点。
+例如你不能将 vm.json.xxx 作为 JS 对象传入 JS 函数。
+更不能在 vm.json.xxx() 参数中传入一个 JS 对象。
+*/
+
+//这个下标里可以写返回 JS 函数的 JS 表达式，这样就很灵活了，例如：
+var ret = vm.json["(function() { return obj.test; })()"]( {50,80} );
+
+//使用 vm.json() 将 aardio 对象转换为 JS 对象。
+var jsArray = vm.script.obj.test( vm.json(aardioArray) )
+//上面的 vm.script.obj 是真正的 JS 对象，参数可以使用 JS 对象。
+
+//使用 vm.json() 将 JS 对象转换为 aardio 对象
+console.dump( vm.json(jsArray) );
+
+console.pause();

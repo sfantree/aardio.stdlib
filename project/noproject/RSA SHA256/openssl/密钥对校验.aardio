@@ -1,0 +1,27 @@
+import console; 
+import crypt.rsa;
+import crypt;
+var RsaObject = crypt.rsa();
+
+import crypt;
+var ret,hCryptProv = crypt.AcquireContext( , , ,0x18/*_PROV_RSA_AES*/, 0);
+RsaObject.hCryptProv = hCryptProv;
+
+
+var PrivateKeyPem = string.load("G:\Program Files (x86)\aardio\project\noproject\RSA SHA256\openssl\rsa_private_key.pem");
+var h = RsaObject.importPemKey(PrivateKeyPem);
+//console.log(h)
+
+var PublicKeyPem = RsaObject.exportPublicKeyX509ToPem();
+console.log(PublicKeyPem)
+
+var plaintext = string.load("‪G:\Program Files (x86)\aardio\project\noproject\RSA SHA256\openssl\data.txt");
+
+// RSA SHA256
+var hash = RsaObject.createHash( 0x800C/*_CALG_SHA_256*/ )
+hash.hashData(plaintext)
+var sign =  hash.sign(2); //获取签名 
+var signBase64= crypt.encodeBin(sign);
+console.log(signBase64)
+
+console.pause(true);

@@ -1,0 +1,42 @@
+import console;
+import fsys;
+import fsys.file;
+import process.popen;
+console.setTitle("删除过期文件夹");
+
+fsys.delete("C:\Test\444444 - 副本 (5)");                        //这里可以删除
+var fileTable={ };
+var tt = time().addday(-15);        //15天前
+io.print( tt );
+io.print("----------------------");
+       
+fsys.enum( "C:/Test", "*.*",
+        function(dir,filename,fullpath,findData){
+                if(filename){
+                               //io.print("发现文件："+filename,"完整路径："+fullpath )
+                }
+                else{
+                        var file = fsys.file(fullpath+"/");
+                        
+                        var times=time(file.getTime().creation).addhour(8);
+                        
+                        // fsys.file对象打开后没有关闭 坑
+                        
+                        file.close();
+                        //true 删除，false保存
+                        if(tt>times){
+                                io.print("路径："+fullpath);
+                                table.push(fileTable,fullpath);
+                                fsys.delete(fullpath);                                //这里删除不了
+                        }
+                }
+        }
+        ,false /*如果此参数为false则忽略子目录*/
+);
+
+for(i=1;table.count(fileTable);1){
+    io.print("2222路径："+fileTable[i]);
+        fsys.delete( fileTable[i]);                                                //把文件夹路径放到数组里，然后遍历数组也删除不了
+}
+
+console.pause();

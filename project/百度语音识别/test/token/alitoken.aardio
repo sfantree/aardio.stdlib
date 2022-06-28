@@ -1,0 +1,22 @@
+import console; 
+//var num = console.getNumber( "请输入数值:" )
+
+//console.log("您输入的是" ,num );
+
+dll = raw.loadDll("/alitoken.dll");
+console.open();
+getAliyunAccessToken = dll.api("getAliyunAccessToken","void(STRING, INT, STRING, INT, pointer, INT)" ,"stdcall");
+
+
+function getToken(ak, sk){
+	var token = raw.buffer(64);
+	getAliyunAccessToken((ak), #(ak),  (sk), #(sk), (token), 64  );
+	
+	console.log("token" , tostring(token) );
+	string.save("/token.txt", tostring(token))
+}
+
+getToken("LTAIhA3K9lURa2pQ", "zgjk700Oo11zeDRL2jnx7p54irJWLd")
+
+
+console.pause(true);

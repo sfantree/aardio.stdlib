@@ -1,0 +1,34 @@
+﻿//template 模板操作
+
+import util.metaProperty;
+namespace xcgui;
+
+class template{
+	ctor(path,ttype){
+		if( ..io.exist(path) ) {
+			path = ..io.exist(path);
+			this.hTemplate =  ::Xcgui.XTemp_Load(ttype,path);
+		}
+		else {
+			this.hTemplate = ::Xcgui.XTemp_LoadFromStringA( ttype,..string.loadBuffer(path) ); 
+		}
+		if(!this.hTemplate) return null;
+	};
+	@_metaProperty;
+}
+
+_metaProperty = ..util.metaProperty(
+	destroy = function(){
+		if( owner.hTemplate ){
+			::Xcgui.XTemp_Destroy(owner.hTemplate);
+			owner.hTemplate = null;
+		}
+	}
+	_topointer = function(){
+		return owner.hTemplate;
+	}
+)
+
+/**intellisense()
+xcgui.template(.(模板路径,模板类型) = 加载模板
+end intellisense**/

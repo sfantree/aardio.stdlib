@@ -1,0 +1,15 @@
+import winex.desktop;
+import console;
+
+var count = winex.desktop.listview.count;
+var rcItem = ::RECT();
+
+for(i=1;count ) {  
+
+    var itemText = winex.desktop.listview.getItemText(i);
+    console.log( itemText )
+   
+    winex.desktop.listview.getItemRect(i,,rcItem);
+    console.log( "位置：", rcItem.left,rcItem.top,rcItem.right,rcItem.bottom )
+}
+console.pause();

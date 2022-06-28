@@ -1,0 +1,48 @@
+import console;
+
+var htmlString = /**
+<html><head><title>The Dormouse's story</title></head>
+<body>
+<p class="title"><b>The Dormouse's story</b></p>
+
+<p class="story">Once upon a time there were three little sisters; and their names were
+<a href="http://example.com/elsie" class="sister" id="link1">Elsie</a>,
+<a href="http://example.com/lacie" class="sister" id="link2">Lacie</a> and
+<a href="http://example.com/tillie" class="sister" id="link3">Tillie</a>;
+and they lived at the bottom of a well.</p>
+
+<p class="story">...</p>
+**/
+
+
+/*
+参考 BeautifulSoup4 文档
+https://www.crummy.com/software/BeautifulSoup/bs4/doc/
+*/
+
+import string.html;
+// html文本生成DOM
+var htmlDoc = string.html(htmlString);
+
+var htmlDoc_Title = htmlDoc.queryEles( tagName = "title"  );
+var titleNode = htmlDoc_Title[1];
+var title = titleNode.innerText();
+
+var titleParentNode = titleNode.getParent();
+var titleParentNodeText = titleParentNode.tagName;
+
+
+
+//console.log(titleParentNodeText);
+
+// 指定class
+
+// class 不可以用 className = "story"
+//var pNode = htmlDoc.queryEles( className = "story"  );
+//console.dump(pNode[1]);
+//console.dump(pNode[1].outerXml());
+
+//var pNodeWithClass = htmlDoc.queryEles(["class"]="story");
+//console.dump(pNodeWithClass[1].innerText());
+
+console.pause(true);

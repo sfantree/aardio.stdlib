@@ -1,0 +1,15 @@
+
+var codeUtf8 = /** 
+	#include <stdlib.h>  
+	__declspec(dllexport) void getArgsPointer(void *(__cdecl *callback) (int id,void ** ppStruct),int id,void * pStruct)
+    {
+    	void ** pp = (void **)&pStruct; 
+    	callback(id,pp); 
+    }
+**/
+ 
+import tcc; 
+vm = tcc();//创建TCC编译器 
+
+vm.output( "/argsPointer.dll", codeUtf8 ) //编译C源码,生成DLL
+vm.close(); //收工

@@ -1,0 +1,17 @@
+﻿//dxWeb 运行时
+import sys.vc14;
+import inet.installer
+namespace sys.dxWeb;
+
+setup = function(){
+    ..sys.vc14.require64("2019");
+    
+	..inet.installer("DirectX 最终用户运行时"
+		,"https://download.microsoft.com/download/1/7/1/1718CCC4-6315-4D8E-9543-8E28A4E18C4C/dxwebsetup.exe"
+		,"/Q")
+}
+
+/**intellisense(sys.dxWeb)
+setup() = 安装DirectX 最终用户运行时\n可用于解决一些游戏无法运行的问题
+end intellisense**/
+

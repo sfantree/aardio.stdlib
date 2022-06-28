@@ -1,0 +1,18 @@
+﻿//installedFontCollection 安装字体
+import gdip.privateFontCollection;
+namespace gdip;
+
+class installedFontCollection{
+	ctor(){
+		var collect = {ptr p}
+		..gdip.assert2(::Gdiplus.GdipNewInstalledFontCollection(collect));
+		if(collect.p){
+			return ..gdip.privateFontCollection(collect.p);
+		}
+		return null;
+	};
+}
+
+/**intellisense()
+gdip.installedFontCollection() = 创建已安装的字体容器\n!gdipprvfontcoll.
+end intellisense**/

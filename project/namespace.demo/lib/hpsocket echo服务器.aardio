@@ -1,0 +1,52 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add()
+/*}}*/
+
+import console;
+import debug;
+
+import hpsocket.tcpServer;
+
+hpServer = hpsocket.tcpServer();
+
+hpServer.onThreadCreated = function(){
+    import console;
+    import thread.event;
+    import hpsocket.tcpServer;
+    import thread.command;
+    import wsock;
+    import time.performance
+    import string;
+    import crypt;
+    
+    log = function(...){
+        thread.lock("proxy_log")
+        ..console.dump(...)
+        thread.unlock("proxy_log")
+    }
+}
+
+hpServer.threadGlobal = {
+     
+}
+
+hpServer.onAccept = function(hpTcpServer,connId,pClient){
+	//__/*建立连接后触发*/
+	log("> hpServer.onConnect", connId);
+}
+
+hpServer.onReceive = function(hpTcpServer,connId,pData,length){
+	var data = ..raw.tostring(pData,1,length)
+	var b64 = crypt.encodeBin(data, #data);
+	hpTcpServer.send(connId,b64, #b64);
+	//log("hpServer.onReceive");
+	log("> hpServer.onReceive");
+	log("  ", connId, string.hex(data));
+}
+
+hpServer.start("127.0.0.1", 8999);
+
+winform.show();
+win.loopMessage();

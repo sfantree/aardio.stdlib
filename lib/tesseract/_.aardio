@@ -1,0 +1,319 @@
+namespace tesseract;
+
+..liblept = ..raw.loadDll("~\lib\tesseract\.res\liblept168.dll",,"cdecl");
+..libtesseract = ..raw.loadDll("~\lib\tesseract\.res\libtesseract302.dll",,"cdecl");
+var dll = ..libtesseract;
+
+class ocr{
+	ctor(){
+		this.handle = dll.TessBaseAPICreate();
+		..table.gc(this,"delete");
+ 	}; 
+	init = function( lang,datapath,oem,configs){
+		if( type(lang) != type.string ) error("参数@1必须是字符串",2);
+ 		if(!this.handle) error("对象已关闭",2);
+
+ 		datapath = ..io.exist(datapath);
+ 		if(!datapath) datapath = ..io.fullpath("~\lib\tesseract\.res\");
+ 		
+		datapath = ..string.fromto(datapath,65001,0);
+		
+		if( configs ){ 
+			if( type(configs) != type.table ) error("参数@4必须是配置文件路径数组",2);
+			return dll.TessBaseAPIInit1(this.handle,datapath,lang,oem :  3/*_TESS_OEM_DEFAULT*/,{string files[] = configs },#configs);	
+		}
+		if( oem ){	
+			return dll.TessBaseAPIInit2(this.handle,datapath,lang,oem);	
+		}
+		else {
+			return dll.TessBaseAPIInit3(this.handle,datapath,lang);
+		} 
+	};
+	initLangMod = function( lang,datapath){
+		datapath = ..io.exist(datapath);
+ 		if(!datapath) datapath = ..io.fullpath("~\lib\tesseract\.res\");
+ 		
+ 		datapath = ..string.fromto(datapath,65001,0);
+ 		
+		if(!this.handle) error("对象已关闭",2);
+		if( type(lang) != type.string ) error("参数@1必须是字符串",2);
+		return dll.TessBaseAPIInitLangMod(this.handle,datapath,lang); 
+	};
+	processPages = function(filename,retryConfig,timeoutMillisec){
+		filename = ..io.exist(filename);
+		if(!filename) error("参数@1必须指定有效的图像文件路径",2);
+		filename = ..io.fullpath(filename);
+		filename = ..string.fromto(filename,65001,0);
+		var text = dll.TessBaseAPIProcessPages(this.handle,filename, retryConfig, timeoutMillisec : 0)
+		if(text){
+			var str = ..raw.str(topointer(text));
+			dll.TessDeleteText(text);
+			return str; 
+		}
+	}; 
+	processPagesUnicode = function(filename,retryConfig,timeoutMillisec){
+		filename = ..io.exist(filename);
+		if(!filename) error("参数@1必须指定有效的图像文件路径",2);
+		filename = ..io.fullpath(filename);
+		filename = ..string.fromto(filename,65001,0)
+		var text = dll.TessBaseAPIProcessPages(this.handle,filename, retryConfig, timeoutMillisec : 0)
+		if(text){
+			var str = ..string.toUnicode(topointer(text),65001,true);
+			dll.TessDeleteText(text);
+			return str; 
+		}
+	};
+	setInputName = function(name){
+		if( this.handle ){ 
+			return dll.TessBaseAPISetInputName(this.handle,..string.fromto(name,65001,0));
+		}
+	};
+	setOutputName = function(name){
+		if( this.handle ){ 
+			return dll.TessBaseAPISetOutputName(this.handle,..string.fromto(name,65001,0));
+		}
+	};
+	readConfigFile = function(filename){
+		if( this.handle ){
+			filename = ..io.exist(filename)
+			return dll.TessBaseAPIReadConfigFile(this.handle,..string.fromto(filename,65001,0));
+		}
+	};
+	readDebugConfigFile = function(filename){
+		if( this.handle ){
+			filename = ..io.exist(filename)
+			return dll.TessBaseAPIReadDebugConfigFile(this.handle,..string.fromto(filename,65001,0));
+		}
+	};
+	setVariable = function(name,value){
+		if( this.handle ){
+			return dll.TessBaseAPISetVariable(this.handle,name,value);
+		}
+	}; 
+	setDebugVariable = function(name,value){
+		if( this.handle ){
+			return dll.TessBaseAPISetDebugVariable(this.handle,name,value);
+		}
+	};
+	getIntVariable = function(name){
+		if( this.handle ){
+			var value = {int v;}
+			if( dll.TessBaseAPIGetIntVariable(this.handle,name,value) ) return value.v;
+		}
+	}; 
+	getBoolVariable = function(name){
+		if( this.handle ){
+			var value = {bool v;}
+			if( dll.TessBaseAPIGetBoolVariable(this.handle,name,value) ) return value.v;
+		}
+	}; 
+	getDoubleVariable = function(name){
+		if( this.handle ){
+			var value = {double v;}
+			if( dll.TessBaseAPIGetDoubleVariable(this.handle,name,value) ) return value.v;
+		}
+	}; 
+	getStringVariable = function(name){
+		if( this.handle ){
+			var value =  dll.TessBaseAPIGetStringVariable(this.handle,name,value)
+			if(value) return ..raw.tostring(value);
+		}
+	};  
+	printVariablesToFile = function(filename){
+		if( this.handle ){
+			filename = ..io.exist(filename);
+			return dll.TessBaseAPIPrintVariablesToFile(this.handle,filename) 
+		}
+	};  
+	setRectangle = function(left,top,width,height){
+		if( this.handle ){
+			return dll.TessBaseAPISetRectangle(this.handle,left,top,width,height);
+		}
+	}; 
+	setSourceResolution = function(ppi){
+		if( this.handle ){ 
+			return dll.TessBaseAPISetSourceResolution(this.handle,ppi);
+		}
+	};
+	setImage = function(imagedata,width,height,bytesPerPixel,bytesPerLine){
+		if( this.handle ){
+			return dll.TessBaseAPISetImage(this.handle,imagedata,width,height,bytesPerPixel,bytesPerLine);
+		}
+	};
+	setImage2 = function(pix){
+		if( this.handle ){
+			return dll.TessBaseAPISetImage2(this.handle,pix);
+		}
+	};
+	recognize = function(etextMonitor){
+		if( this.handle ){
+			return dll.TessBaseAPIRecognize(this.handle,etextMonitor);
+		}
+	};
+	recognizeForChopTest = function(etextMonitor){
+		if( this.handle ){
+			return dll.TessBaseAPIRecognizeForChopTest(this.handle,etextMonitor);
+		}
+	};
+	getUnicodeText = function(){ 
+		var text = dll.TessBaseAPIGetUTF8Text(this.handle)
+		if(text){
+			var str = ..string.toUnicode(topointer(text),65001,true);
+			dll.TessDeleteText(text);
+			return str; 
+		}
+	}; 
+	getText = function(){ 
+		var text = dll.TessBaseAPIGetUTF8Text(this.handle)
+		if(text){
+			var str = ..raw.str(topointer(text));
+			dll.TessDeleteText(text);
+			return str; 
+		}
+	}; 
+	delete = function(){
+		if( this.handle ){
+			dll.TessBaseAPIClear(this.handle)
+			dll.TessBaseAPIEnd(this.handle);
+			dll.TessBaseAPIDelete(this.handle); 
+			this.handle = null;
+		}
+	}; 
+	clear = function(){
+		if( this.handle ){
+			dll.TessBaseAPIClear(this.handle)  
+		}
+	};
+	["end"] = function(){
+		if( this.handle ){
+			dll.TessBaseAPIEnd(this.handle)  
+		}
+	};
+	@{ _topointer = function(){
+		return this.handle;
+	} }
+} 
+
+namespace ocr{
+	lang = {
+		eng = "English";  
+		chi_sim = "Chinese - Simplified";  
+		chi_tra = "Chinese - Traditional";  
+		afr = "Afrikaans";  
+		ara = "Arabic";  
+		aze = "Azerbaijani";  
+		bel = "Belarusian";  
+		ben = "Bengali";  
+		bul = "Bulgarian";  
+		cat = "Catalan; Valencian";  
+		ces = "Czech";  
+		chr = "Cherokee";  
+		dan = "Danish";  
+		deu = "German";  
+		ell = "Greek, Modern (1453-)";  
+		enm = "English, Middle (1100-1500)";  
+		epo = "Esperanto";  
+		est = "Estonian";  
+		eus = "Basque";  
+		fin = "Finnish";  
+		fra = "French";  
+		frk = "Frankish";  
+		frm = "French, Middle (ca. 1400-1600)";  
+		glg = "Galician";  
+		grc = "Greek, Ancient (-1453)";  
+		heb = "Hebrew";  
+		hin = "Hindi";  
+		hrv = "Croatian";  
+		hun = "Hungarian";  
+		ind = "Indonesian";  
+		isl = "Icelandic";  
+		ita = "Italian";  
+		ita_old = "Italian - Old";  
+		jpn = "Japanese";  
+		kan = "Kannada";  
+		kor = "Korean";  
+		lav = "Latvian";  
+		lit = "Lithuanian";  
+		mal = "Malayalam";  
+		mkd = "Macedonian";  
+		mlt = "Maltese";  
+		msa = "Malay";  
+		nld = "Dutch; Flemish";  
+		nor = "Norwegian";  
+		pol = "Polish";  
+		por = "Portuguese";  
+		ron = "Romanian; Moldavian; Moldovan";  
+		rus = "Russian";  
+		slk = "Slovak";  
+		slv = "Slovenian";  
+		spa = "Spanish; Castilian";  
+		spa_old = "Spanish; Castilian - Old";  
+		sqi = "Albanian";  
+		srp = "Serbian";  
+		swa = "Swahili";  
+		swe = "Swedish";  
+		tam = "Tamil";  
+		tel = "Telugu";  
+		tgl = "Tagalog";  
+		tha = "Thai";  
+		tur = "Turkish";  
+		ukr = "Ukrainian";  
+		vie = "Vietnamese";  
+	}
+}
+
+
+//同版本样本语言包下载地址：https://github.com/tesseract-ocr/tesseract/wiki/Data-Files#data-files-for-version-302
+
+/**intellisense(liblept)
+pixRead(.(图像文件路径) = 参数应使用完整路径,返回像素首地址
+pixDestroy({addr pix=__}) = 释放像素数据占用的内存
+end intellisense**/
+
+/**intellisense(libtesseract)
+TessVersion() = 组件版本
+TessDeleteText(.(文本指针地址) = 释放tesseract分配的内存
+TessDeleteTextArray(.(文本数组指针地址) = 释放tesseract分配的内存
+TessDeleteIntArray(.(整数数组指针地址) = 释放tesseract分配的内存
+end intellisense**/
+
+/**intellisense()
+tesseract = 开源OCR引擎Tesseract
+tesseract.ocr() = 创建Tesseract OCR组件的BaseAPI对象\n!tesseract_ocr.
+end intellisense**/
+
+/**intellisense(!tesseract_ocr)
+init(.(lang,datapath,oem,configs) = 初始化样本语言包,成功返回0,\n如果样本语言包不存在，aardio将会自动下载,注意语言包与引擎的版本必须一致(3.02)不然会报错,\n除参数@1以外,其他参数都可以省略\n可选使用datapath指定tessdata所在目录,默认为~\lib\tesseract\.res\
+initLangMod(.(lang,datapath) = 初始化样本语言包\n可选使用datapath指定tessdata所在目录,默认为~\lib\tesseract\.res\
+processPages(.(filename,retryConfig,timeoutMillisec) = 识别图像,返回文本,\n除参数@1指定图像路径以外,其他参数可省略
+processPagesUnicode(.(filename,retryConfig,timeoutMillisec) = 识别图像,返回Unicode文本,\n除参数@1指定图像路径以外,其他参数可省略
+setInputName(.(name) = 设置输入名 
+setOutputName(.(filename) = 设置输出名
+readConfigFile(.(filename) = 读取配置文件
+readDebugConfigFile(.(filename) = 读取调试配置文件
+setVariable(.(name,value) = 设置变量 
+setDebugVariable(.(name,value) = 设置调试变量 
+getIntVariable(.(name) = 获取变量整数值 
+getBoolVariable(.(name) = 获取变量布尔值 
+getDoubleVariable(.(name) = 获取变量浮点值 
+getStringVariable(.(name) = 获取变量文本值 
+printVariablesToFile(.(filename) = 输出变量到文件 
+setRectangle(.(left,top,width,height) = 设置区块 
+setSourceResolution(.(ppi) = 设置分辨率 
+setImage(.(imagedata,width,height,bytesPerPixel,bytesPerLine) = 设置图像 
+setImage2(.(pix) = 设置像素数据,参数为内存地址  
+recognize(.() = 识别图像,成功返回0
+recognizeForChopTest(.(etextMonitor) = 识别图像,成功返回0 
+getUnicodeText(.() =  返回Unicode文本 
+getText(.() =  返回文本 
+delete(.() = 删除对象 
+clear(.() = 清除图像数据
+end(.() = 重置对象
+end intellisense**/
+
+ /**intellisense()
+_TESS_OEM_TESSERACT_ONLY=@0/*_TESS_OEM_TESSERACT_ONLY*/
+_TESS_OEM_CUBE_ONLY=@1/*_TESS_OEM_CUBE_ONLY*/
+_TESS_OEM_TESSERACT_CUBE_COMBINED=@2/*_TESS_OEM_TESSERACT_CUBE_COMBINED*/
+_TESS_OEM_DEFAULT=@3/*_TESS_OEM_DEFAULT*/
+end intellisense**/

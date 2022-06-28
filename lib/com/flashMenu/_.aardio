@@ -1,0 +1,16 @@
+﻿import win.flashBox;
+namespace com;
+
+class flashMenu{
+	ctor( tParam ){
+		this = ..win.flashBox(tParam);
+		this.movie = $"~\lib\com\flashMenu\.res\menu.swf";
+	};
+}
+
+/**intellisense()
+com.flashMenu = 透明3D菜单\nswf源码位置："~\lib\com\flashMenu\.res\menu.fla"
+com.flashMenu._flashDll = !dllModule.
+com.flashMenu(.(窗体构造参数) = 参数可以是一个winform窗体对象,\n也可以是兼容win.form的构造参数
+com.flashMenu() = !com_flash.
+end intellisense**/

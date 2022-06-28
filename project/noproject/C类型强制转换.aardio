@@ -1,0 +1,4 @@
+
+import console; 
+console.log(raw.convert({byte b[4] = {0x06;0x01;0xFE;0x43}},{folat f}).f)
+console.pause(true);

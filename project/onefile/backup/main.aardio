@@ -1,0 +1,118 @@
+// @Author  : popy32
+// @Contact : 74o5o27o8#qq.com
+// @File    : ffmpegrecord.aardio
+// @Comment : ffmpeg录像
+
+import process.ffmpeg;
+import win.ui.tooltip; 
+import time;
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="摄像头录像";right=511;bottom=287;border="thin")
+winform.add(
+button={cls="button";text="开始录像";left=8;top=56;right=120;bottom=88;z=2};
+button2={cls="button";text="结束录像";left=184;top=56;right=320;bottom=88;z=3};
+button3={cls="button";text="打开视频目录";left=392;top=56;right=504;bottom=88;z=4};
+button4={cls="button";text="获取DirectShow设备";left=184;top=16;right=320;bottom=48;z=7};
+button5={cls="button";text="打开ffmpeg目录";left=392;top=16;right=504;bottom=48;z=8};
+edit={cls="edit";left=8;top=120;right=504;bottom=280;edge=1;multiline=1;vscroll=1;z=1};
+edit2={cls="edit";left=8;top=16;right=120;bottom=48;edge=1;z=6};
+static={cls="static";text="日志输出：";left=8;top=96;right=104;bottom=112;transparent=1;z=5}
+)
+/*}}*/
+
+// //this = ..process.popen(path,{"-authtoken="+(authtoken:""),"-log=stdout","-loglevel="+(logLevel:"INFO")});
+//f  = process.ffmpeg({"-f", "dshow" , "-c:v" , "vp8", "-i",  'video="Integrated Camera"',  io.fullpath("/out.mp4")  });
+
+//f  = process.ffmpeg({"-f", "dshow" , "-c:v" , "vp8", "-i",  'video="Integrated Camera"',  io.fullpath("/out.mp4")  });
+//f  = process.ffmpeg({"-y", "-f", "vfwcap", "-i", "list" });
+
+// -list_devices true -f dshow -i dummy
+//f  = process.ffmpeg({"-list_devices", "true", "-f", "dshow", "-i" , "dummy"});
+
+// ffmpeg -f dshow -list_options true -i video="HP Truevision HD"
+// "Integrated Camera"
+//f  = process.ffmpeg({"-f", "dshow", "-list_options", "true" , "-i", 'video="Integrated Camera"'});
+
+// ffmpeg -f dshow -s 320x240 -r 30 -vcodec mjpeg -i video="HP Truevision HD" output.mp4
+//f  = process.ffmpeg({"-f", "dshow", "-list_options", "true" , "-i", 'video="Integrated Camera"'});
+
+//ffmpeg -codecs
+//f  = process.ffmpeg({"-codecs"});
+
+// ffmpeg -f dshow -s 320x240 -r 30 -vcodec mjpeg -i video="HP Truevision HD" output.mp4
+
+import fsys;
+fsys.createDir( ..io.appData( "aardio/ffmpeg/package" ));
+
+var tooltipCtrl = win.ui.tooltip( winform );
+tooltipCtrl.addTool(winform.edit2, "需输入正确的DirectShow设备名称" );
+
+winform.edit2.text = "N/A"
+
+winform.button.oncommand = function(id,event){
+	
+	var deviceName = string.trim(winform.edit2.text);
+	//Integrated Webcam
+	
+	//winform.button.disabled = true;
+	var tm = time.now();
+    tm.format = "%H%M%S";
+	var outputname = ..io.fullpath( ..string.format("/%s.mkv", tostring(tm)) );
+	f  = process.ffmpeg({"-f", "dshow", "-vcodec", "mjpeg", "-i", ..string.format('video="%s"', deviceName), outputname});
+    //f  = process.ffmpeg({"-codecs"});
+    //f  = process.ffmpeg({"-list_devices", "true", "-f", "dshow", "-i" , "dummy"});
+
+    if(f) {
+    	f.logResponse(winform.edit);
+    	//winform.button2.disabled = false;
+    	//f.waitOne();
+    	//f.close();
+    	//f = null;
+	} else {
+	    win.msgbox("下载失败，请手动下载exe文件并放置在ffmpeg目录");
+	}
+	
+	//winform.button.disabled = false;
+}
+
+winform.button2.oncommand = function(id,event){
+	if(not f) {
+	    return;
+	}
+	
+	if(f){
+		var code, isRun = f.getExitCode();
+		if( isRun ) {
+		    return;
+		}
+		f.ctrlEvent(0);
+		f.close();
+		f = null;
+		//winform.button2.disabled = true;
+	}
+}
+
+winform.button3.oncommand = function(id,event){
+	import process;
+	process.explore(..io.fullpath("/"));
+}
+
+//winform.button2.disabled = true;
+
+winform.button4.oncommand = function(id,event){
+	f  = process.ffmpeg({"-list_devices", "true", "-f", "dshow", "-i" , "dummy"});
+	if(f) {
+    	f.logResponse(winform.edit);
+    }else {
+	    win.msgbox("下载失败，请手动下载exe文件并放置在ffmpeg目录");
+	}
+}
+
+winform.button5.oncommand = function(id,event){
+	import process;
+	process.explore(  ..io.appData( "aardio/ffmpeg/package" )  );
+}
+
+winform.show();
+win.loopMessage();

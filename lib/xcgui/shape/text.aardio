@@ -1,0 +1,152 @@
+﻿//text 形状文本
+import xcgui.shape.metaProperty;
+namespace xcgui.shape;
+
+
+class text{
+
+	ctor(hParentPointer,tParam){ 
+		if(! (hParentPointer || tParam) ) return null;
+		if(type(tParam)!=type.table){
+			this.hPointer = topointer( hParentPointer);
+		}
+		else {
+			if( tParam.resource ) ..xcgui.res.load(tParam.resource);
+			if(tParam.layout){
+				var hEle = ..xcgui.loadLayout(tParam.layout,hParentPointer);
+				if( ::Xcgui.XC_IsHELE (hEle) ){ 
+					if( ::Xcgui.XEle_GetType(hEle) != 0x3E/*_XC_SHAPE_TEXT*/ ) return null; 
+					::Xcgui.XShape_AdjustLayout(hEle);
+					this.hPointer = topointer(hEle);
+				}
+				else {
+					return null;
+				}
+			}
+			else {
+				this.hPointer = topointer( ::Xcgui.XShapeText_Create(tParam.left,tParam.top,tParam.right-tParam.left,tParam.bottom-tParam.top,tParam.text,hParentPointer) ); 	
+			}
+			
+			
+		}
+	};
+	
+	@_metaProperty;
+	
+}
+
+text._metaProperty = metaProperty(
+	text = {
+		_get = function(){ 
+			var len = ::Xcgui.XShapeText_GetTextLength(owner.hPointer);
+			if(!len) return;
+
+			var sb = ..string.builder(len*2)  
+			return  sb.fromUnicode( ::Xcgui.XShapeText_GetText(owner.hPointer,sb,len+1)  ) ;
+		}
+		_set = function( v ){ 
+			::Xcgui.XShapeText_SetText(owner.hPointer,v);
+		}		
+	}
+	getLength = function(){
+		return ::Xcgui.XShapeText_GetTextLength(owner.hPointer);
+	}
+	color = {
+		_get=function(){
+			return ::Xcgui.XShapeText_GetTextColor(owner)
+		}
+		_set=function(v){
+			::Xcgui.XShapeText_SetTextColor(owner,v & 0xFFFFFF,v>> 24 & 0xFF);
+		}
+	};
+	align = {
+		_set = function( v ){
+			return ::Xcgui.XShapeText_SetTextAlign(owner.hPointer,v);
+		} 	
+	};
+	getFont = function(){
+		return ..xcgui.font( topointer( ::Xcgui.XShapeText_GetFont(owner) ) ); 
+	};
+	setFont = function(font,size,style){ 
+		font = ..xcgui.font(font,size,style);
+		if(font) ::Xcgui.XShapeText_SetFont(owner,font)
+	};
+	setOffset = function(x,y){
+		return ::Xcgui.XShapeText_SetOffset(owner.hPointer,x,y);
+	}
+	setLayoutHeight = function(v,t){
+		::Xcgui.XShapeText_SetLayoutHeight(owner,t,v);
+	};
+	setLayoutWidth = function(v,t){
+		::Xcgui.XShapeText_SetLayoutWidth(owner,t,v);	
+	};
+	getLayoutHeight = function(){
+		var v,t = {int value},{int value}
+		::Xcgui.XShapeText_GetLayoutHeight(owner,t,v);
+		return v.value,t.value;
+	};
+	getLayoutWidth = function(){
+		var v,t = {int value},{int value}
+		::Xcgui.XShapeText_GetLayoutWidth(owner,t,v);
+		return v.value,t.value;
+	};
+	enableCss = function(bEnable){
+		return ::Xcgui.XShapeText_EnableCSS(owner.hPointer,bEnable);
+	}
+	css = function(name){
+		if( name === null ) {
+			var p = topointer(::Xcgui.XShapeText_GetCssName(owner));
+			return p ? ..string.str(p,true);
+		}
+		::Xcgui.XShapeText_SetCssName(owner,name)
+	};
+)
+
+..xcgui.ctrl.text = ..xcgui.shape.text
+
+/**intellisense()
+xcgui.shape.text(.(父窗口,参数表) = 创建一个基础元素
+xcgui.shape.text() = !stdxcele.
+win.ui.ctrl.xctext() = !stdxcshapetext.
+end intellisense**/
+
+/**intellisense(!stdxcshapetext)
+text = 文本
+getLength() = 文本长度
+color = 文本颜色
+align = 文本对齐选项
+enableCss(true) = 启用CSS
+css("__") = 修改CSS样式名\n无参数时返回CSS样式名
+getFont() = 获取字体\n!stdxcfont.
+setFont(.(字体名,字体大小,样式) = 创建字体
+setFont(.(字体名） = 设置字体
+setFont(.(name="字体"） = 设置字体\n参数为LOGFONT对象，或指定部分LOGFONT属性的表
+setFont(.(句柄） = 设置字体\n参数为字体句柄
+setLayoutHeight(.(宽度,选项) = 设置布局宽度
+setLayoutWidth(.(高度,选项) = 设置布局高度 
+getLayoutWidth() = 获取布局宽度,选项
+getLayoutHeight() = 获取布局高度,选项
+setOffset(.(x,y) = 设置内容偏移
+
+id = ID值
+uid = UID值
+topmost(true) = Z序置顶
+getWindow() = 返回父窗体\n!stdxcwnd
+getParent() = 获取父节点\n!stdxcele
+getParentHandle() = 获取父节点句柄
+getParentType() = 获取父节点类型
+getObjectType() = 获取节点类型
+remove() = 移除元素,但不销毁.
+getContentSize() = 返回客户区区块,::SIZE对象\n!size. 
+getRect = 返回控件区块,::RECT对象\n!rect. 
+setRect(.(rect,是否重绘) = 设置区块,参数@1为::RECT对象
+setPos(.(x坐标,y坐标,宽,高) = 调整控件位置或排序,所有参数可选\n同时指定x,y坐标则移动位置\n同时指定宽高则改变大小
+getPos() = 返回相对坐标,宽,高,返回4个值：x,y,cx,cy
+autoResize = 是否允许aardio窗口自动调整控件位置\n只有在窗口设计器中添加的控件,并是aardio窗口对象的成员时此属性才有效
+getWidth() = 获取宽度
+getHeight() = 获取高度
+getParentLayout() = 获取所在布局对象
+adjustLayout() = 调整布局
+redraw() = 重绘
+close() = 销毁控件
+end intellisense**/

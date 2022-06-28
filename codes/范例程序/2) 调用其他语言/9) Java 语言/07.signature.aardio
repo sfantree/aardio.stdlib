@@ -1,0 +1,30 @@
+//函数签名
+import console; 
+import java; 
+
+//创建 Java 虚拟机
+var jvm = java();
+
+//导入 Java 类
+HelloworldApp = jvm.import( "aardio.sample.HelloworldApp");
+ 
+/*
+调用每个 Java 函数其实都要写签名，Java 的签名语法比较复杂也不好理解，
+不过 aardio 已经把这个事情完全给优化掉了，aardio 调用 Java 一般不用再去写签名，
+
+Java 函数签名的语法在 aardio 里也被简化了，
+写的时候只要用类似 aardio 的 API 函数声明语法写就行了，
+aardio 会自动翻译为 Java 函数签名。下面看一个例子：
+*/ 
+ 
+//getMethod用于获取一个函数，参数@2指定函数签名
+var main = HelloworldApp.getMethod("main","string(string[])");
+
+//通过声明导入的函数，如果参数是字符串，可以把参数展开写
+var result = main("test1","test2")
+
+//在 aardio 里不写签名也可以调用 Java 函数，而且传参也更灵活一些
+var result = HelloworldApp.main( {"aaa字符串数组1","bbb字符串数组2"} )
+console.log(result);
+
+console.pause(); 

@@ -1,0 +1,44 @@
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form( bottom=399;scroll=1;right=599;text="Web Form" )
+winform.add(  )
+/*}}*/
+
+import web.form;
+
+//创建web窗体
+var wb = web.form( winform  );
+
+wb.html = /**
+<!DOCTYPE html >
+<head>
+        <meta http-equiv="Content-Type" content="text/html;charset=UTF-8" />
+        <title></title>
+</head>
+<body>
+<ul class="test">
+    <li><a  data-groupid="123456" >测试1</a></li>
+    <li><a data-groupid="223456">测试1</a></li>
+    <li><a data-groupid="323456">测试1</a></li>
+    <li><a data-groupid="423456">测试1</a></li>
+    <li><a data-groupid="523456">测试1</a></li>
+    <li><a data-groupid="623456">测试1</a></li>
+    <li><a data-groupid="723456">测试1</a></li>
+   <li><a data-groupid="823456">测试1</a></li>
+</ul>       
+</body>
+</html>
+**/
+
+winform.show(); //显示窗体
+wb.wait("");
+
+var elTest = wb.queryEles( className = "test" )
+var elTestGroupId = wb.queryEles( parent = elTest[1]; tagName = "a");
+io.open()
+for(i=1;#elTestGroupId)  {
+     io.print( elTestGroupId[i].innerText )
+}
+
+//启动消息循环
+win.loopMessage();

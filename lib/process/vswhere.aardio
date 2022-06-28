@@ -1,0 +1,63 @@
+﻿//vswhere 工具
+import process.popen;
+import web.json;
+
+namespace process;
+
+class vswhere{
+	ctor( cmdline,... ){{
+		var vswhere = ..io.getSpecial(0x26/*_CSIDL_PROGRAM_FILES*/,"\Microsoft Visual Studio\Installer\vswhere.exe");
+		if(!..io.exist(vswhere)){
+			return null,`Could not find "vswhere.exe"`;
+		}
+		
+		if(!cmdline) cmdline = "-latest"
+		var prcs,err = type(...)==type.string ? ..process.popen( vswhere,'-format', 'json', '-utf8',cmdline,...) 
+				: ..process.popen( vswhere," -format json -utf8 " + cmdline );
+				
+		if(!prcs) return null,err;
+		
+		prcs.codepage = 65001;
+		var str = prcs.read(-1);
+		prcs.close();
+		
+		if(str){
+			return ..web.json.tryParse(str);
+		} 
+	}}; 
+}
+
+namespace vswhere{
+	
+	dev = function(workDir){
+		var vswhere,err  = ..process.vswhere("-prerelease -latest -property installationPath")
+		var path = vswhere[[1]][["installationPath"]]
+		if(path){
+			path = ..io.joinpath(path,"Common7\Tools\vsdevcmd.bat")
+			if(..io.exist(path)){
+				return ..process.execute("cmd.exe",{"/k",path},,,workDir);
+			}
+		} 
+	}
+	
+	
+	pdev = function(workDir){
+		var vswhere,err  = ..process.vswhere("-prerelease -latest -property installationPath")
+		var path = vswhere[[1]][["installationPath"]]
+		if(path){
+			path = ..io.joinpath(path,"Common7\Tools\vsdevcmd.bat")
+			if(..io.exist(path)){
+				return ..process.popen("cmd.exe",{"/k",path},{
+					workDir = workDir;
+				});
+			}
+		} 
+	}
+}
+
+/**intellisense()
+process.vswhere = 用于获取 VS2017 以及之后版本的安装信息\n[官网示例]( https://github.com/microsoft/vswhere/wiki/Examples ) \n检测 VC++ 运行时请使用库 sys.vc14
+process.vswhere(__) = 获取 VS2017 以及之后版本的安装信息,返回表对象,\n参数可以是一个名多个字符串类型的命令行参数,\n只有一个参数时可以包含空格,不会添加双引号或转义符,\n如果有多个参数,则包含空格的参数按命令行参数规则添加双引号,\n不指定参数时默认为"-latest"
+process.vswhere.dev() = 打开 VS 开发人员命令行窗口进程,\n可选在参数中指定工作目录\n!process.
+process.vswhere.pdev() = 打开 VS 开发人员命令行管道进程,\n可选在参数中指定工作目录\n!process_popen.
+end intellisense**/

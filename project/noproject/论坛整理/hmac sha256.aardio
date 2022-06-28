@@ -1,0 +1,21 @@
+import console;
+import crypt.bin;
+import crypt.hmac;
+ 
+sha256 = function(key,data){
+return ..crypt.hmac(key,data,0x800C/*_CALG_SHA_256*/);
+}
+ 
+key = '\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b';
+data =  "Hi There"; 
+ 
+var hmacData = sha256(key,data).getValue();
+hmacData = crypt.bin.encodeBase64( hmacData );
+
+console.log( hmacData,#hmacData ) 
+//console.pause();
+
+var hmacData2 = crypt.hmac.sha256(key, data).getValue();
+hmacData2 = crypt.bin.encodeBase64( hmacData2 );
+console.log( hmacData2, #hmacData2 ) 
+console.pause();

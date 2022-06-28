@@ -1,0 +1,110 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="全屏透明纯色闪烁";right=199;bottom=199)
+winform.add(
+button={cls="button";text="启动闪烁";left=40;top=40;right=160;bottom=72;z=1};
+button2={cls="button";text="关闭闪烁";left=40;top=136;right=160;bottom=168;z=2};
+button3={cls="button";text="1min后";left=40;top=88;right=160;bottom=120;z=3}
+)
+/*}}*/
+
+// 2022年5月7日06:59:21 添加1分钟定时
+
+import console;
+import win;
+import win.ui.mask;
+winform.tid = null
+// 套上一层透明窗口
+winform.frmMask = win.ui.mask(winform);
+// 调整背景颜色
+winform.frmMask.bgcolor = 0xd5f5e3; 
+//console.log(winform.frmMask.bgcolor)
+// 窗口置顶
+winform.frmMask.moveToWindow(win.getDesktop());
+winform.frmMask.show(false);
+winform.button2.disabled = true;
+winform.status = true;
+
+win.setTopmost(winform.hwnd,true);
+
+/**
+function(){
+    if( frmMask.moveToWindow(data[["hwnd"]]) ){
+		showWindowInfo(data[["hwnd"]]);
+		win.delay(600);
+        frmMask.show(false);	
+	}
+}
+**/
+winform.button.oncommand = function(id,event){
+    if( winform.tid) {
+        return;
+    }
+    winform.tid = winform.setInterval( 600,
+        function(){
+            if(winform.status) {
+                winform.frmMask.show(true);
+                winform.status = false;
+            } else {
+                winform.frmMask.show(false);
+                winform.status = true;
+            }
+        }
+    );
+    winform.button.disabled = true;
+    winform.button2.disabled = false;
+}
+
+winform.button2.oncommand = function(id,event){
+	if(winform.tid) {
+	    winform.clearInterval(winform.tid);
+	    winform.tid = null;
+	    
+	}
+	winform.frmMask.show(false);
+	winform.status = true;
+	winform.button2.disabled = true;
+    winform.button.disabled = false;
+}
+
+winform.button3.oncommand = function(id,event){
+	if(winform.tid2) {
+		//winform.tid2;
+	    //winform.tid2 = null;
+	    winform.clearTimeout(winform.tid2);
+	    winform.tid2 = null;
+	    if(winform.tid3 != null) {
+	            winform.clearInterval(winform.tid3);
+	    		winform.tid3 = null;
+	    }
+	    winform.button3.text = "1min后";
+	    return;
+	    
+	}
+	winform.tid2 = winform.setTimeout( 
+		function(){
+			winform.button.oncommand();
+			winform.tid2 = null;
+		}, 60 * 1000 
+	)
+	winform.tid31 = 60;
+	winform.tid3 = winform.setInterval( 
+		function(){
+			if(winform.tid31 != null) {
+			    winform.button3.text = tostring(winform.tid31);
+			    if(winform.tid31 == 0) {
+	    			winform.clearInterval(winform.tid3);
+	    			winform.tid3 = null;
+				} else {
+				    winform.tid31 = winform.tid31 - 1;
+				}
+				
+			}
+			
+		}, 1000 
+	)
+	
+}
+
+winform.show();
+win.loopMessage();

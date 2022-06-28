@@ -1,0 +1,23 @@
+import console;
+console.setTitle("${PROJECTNAME}");
+
+/*
+启动参数键值对前导字符可以为 / 或 - ，前导字符可重复多次。
+键值对可以空格分开，也可用等号分开，例如： "/opt test" "-opt test" "--opt test" 或 "/opt=test"
+*/
+if(_ARGV.opt == "test"){
+	console.dump(_ARGV.opt,_ARGV[#_ARGV]) //_ARGV 既包含命名参数组成的键值对，也包含按参数顺序组成的数组
+	/*
+	生成 EXE 以后，按 Ctrl + L 切换到地址栏，输入 cmd 回车 —— 在发布目录打开 cmd.exe，
+	然后输入 exe 文件名（按 tab 键可自动完成文件名）+ 参数后回车执行，例如 "?.exe /opt test c:\xxx.text"。
+	
+	除了传参数，也可以用 string.getenv() 获取父进程设置的环境变量，
+	或者在父进程创建管道(参考标准库 process.popen )读写标准输入输出，子进程用 io.stdin.read() 读标准输入, io.stdout.write() 写标准输出。
+	如果父进程、子进程都是 aardio 编写的，也可以用 process.command 交互更方便。
+	*/
+}
+
+var str = console.getText("请输入一行文本,然后回车:");
+console.log("您输入的是" ,str );
+ 
+console.pause();

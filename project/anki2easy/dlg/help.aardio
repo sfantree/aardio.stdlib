@@ -1,0 +1,29 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="使用说明";right=409;bottom=268;border="thin")
+winform.add(
+richedit={cls="richedit";left=12;top=10;right=398;bottom=253;autohscroll=false;edge=1;multiline=1;z=1}
+)
+/*}}*/
+
+winform.richedit.text = `使用说明：
+1.安装好anki.exe和anki connect插件，设置语言为简体中文，确保含有“默认”卡组和“填空题”模板。
+2.将笔记制作为RTF格式文件，其中每个段落作为一张卡片的内容，使用下划线挖空，自动忽略空白段落。
+3.点击打开按钮选择待制卡的RTF文件，点击制卡按钮完成制卡。
+4.配合OCR，下划线热键等工具食用更加。
+
+更多内容请参考： https://zhuanlan.zhihu.com/p/360535620 。
+任何交流和想法欢迎知乎私信@popy32！
+`
+
+
+//winform.richedit.setsel(27, 30);
+
+//winform.richedit.setSelCharformat(
+//    textColor = 16711680;// 设置cf2 字体颜色
+//    yHeight = 200;//设置cf2 字体高度
+//)  
+
+winform.show();
+win.loopMessage();
+return winform;

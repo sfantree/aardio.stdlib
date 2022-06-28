@@ -1,0 +1,31 @@
+﻿namespace sys.locale;
+
+getName = function(lcid,c,low){
+	if(lcid===null) lcid = 0x800/*_LOCALE_SYSTEM_DEFAULT*/;
+	var buf = ..raw.buffer(19);
+	var ccBuf = ::Kernel32.GetLocaleInfoA( 0x800, 0x59/*_LOCALE_SISO639LANGNAME*/, buf, 9);
+	buf[ccBuf] = (c : '-')[1];
+	::Kernel32.GetLocaleInfoA(0x800, 0x5A/*_LOCALE_SISO3166CTRYNAME*/, ..raw.toPointer(buf,ccBuf), 9);
+	if(low) buf = ..string.lower(buf);
+	return ..string.str(buf);	
+}
+
+getAbbrevName = function(lcid,low){
+	if(lcid===null) lcid = 0x800/*_LOCALE_SYSTEM_DEFAULT*/;
+	var buf = ..raw.buffer(3);
+	if( ::Kernel32.GetLocaleInfoA( 0x800, 3/*_LOCALE_SABBREVLANGNAME*/, buf,3) ){
+		if(low) return ..string.lower(buf);
+		return ..string.str(buf);
+	}
+}
+ 
+defaultId = ::Kernel32.GetSystemDefaultLCID()
+
+/**intellisense()
+sys.locale = 系统区域与语言相关函数\n相关标准库: string.conv, string.lcid 
+sys.locale.getName( = 转换数值格式 LCID 为 ISO 639 格式字符串,例如 zh-CN
+sys.locale.getName(.(lcid,concatenation,lowerCase) = 转换数值格式 LCID 为 ISO 639 格式字符串,例如 zh-CN,\n参数@1指定LCID，省略则使用默认值 _LOCALE_SYSTEM_DEFAULT,\n@concatenation 参数指定分隔符,默认为 "-",\n@lowerCase 指定返回字符串是否小写
+sys.locale.getAbbrevName( = 转换数值格式 LCID 为3字母格式字符串,例如 chs,\n3字母转换为LCID 请使用 sys.locale.abbrevNames 表
+sys.locale.getAbbrevName(.(lcid,lowerCase) = 转换数值格式 LCID 为3字母格式字符串,例如 chs,\n参数@1指定LCID，省略则使用默认值 _LOCALE_SYSTEM_DEFAULT,\n@lowerCase 指定返回字符串是否小写
+sys.locale.defaultId = 返回系统默认区域ID,也就是 ::Kernel32.GetSystemDefaultLCID 函数的返回值
+end intellisense**/

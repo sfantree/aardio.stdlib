@@ -1,0 +1,67 @@
+import console;
+import inet.http;
+
+/***H{{***
+{
+  "args": {}, 
+  "data": "{\"source\": [\"Lingocloud is the best translation service.\", \"\\u5f69\\u4e91\\u5c0f\\u8bd1\\u306f\\u6700\\u9ad8\\u306e\\u7ffb\\u8a33\\u30b5\\u30fc\\u30d3\\u30b9\\u3067\\u3059\"], \"trans_type\": \"auto2zh\", \"request_id\": \"demo\", \"detect\": true}", 
+  "files": {}, 
+  "form": {}, 
+  "headers": {
+    "Accept": "*/*", 
+    "Accept-Encoding": "gzip, deflate", 
+    "Content-Length": "222", 
+    "Content-Type": "application/json", 
+    "Host": "www.httpbin.org", 
+    "User-Agent": "python-requests/2.22.0", 
+    "X-Amzn-Trace-Id": "Root=1-61060ac7-081dc5f73b5740556f0c76b2", 
+    "X-Authorization": "token 3975l6lr5pcbvidl6jl2"
+  }, 
+  "json": {
+    "detect": true, 
+    "request_id": "demo", 
+    "source": [
+      "Lingocloud is the best translation service.", 
+      "\u5f69\u4e91\u5c0f\u8bd1\u306f\u6700\u9ad8\u306e\u7ffb\u8a33\u30b5\u30fc\u30d3\u30b9\u3067\u3059"
+    ], 
+    "trans_type": "auto2zh"
+  }, 
+  "method": "POST", 
+  "origin": "117.151.232.70", 
+  "url": "http://www.httpbin.org/anything"
+}
+
+***DSG{{***/
+
+var inet_http = inet.http();
+//console.dump(inet_http.headers);
+inet_http.addHeaders = {
+    ["content-type"]= "application/json",
+    ["x-authorization"]= "token 3975l6lr5pcbvidl6jl2",
+}
+
+var source = "任期満了に伴い新代表を選出する２０１２民主党臨時党大会が２１日、東京都内で開かれ、野田佳彦、赤松広隆、原口一博、鹿野道彦の４候補がそれぞれ代表選最後の決意表明を行い支持を訴えた。";
+// zh2en zh2ja en2zh ja2zh
+var direction = "auto2zh";
+
+var payload = {
+    ["source"] = source, 
+    ["trans_type"] = direction,
+    ["request_id"] = "demo",
+    ["detect"] = true,
+}
+
+var postData = web.json.stringify(payload);
+//console.dump("postData", postData)
+
+//var r = inet_http.post("http://www.httpbin.org/anything", postData)
+var r = inet_http.post("http://api.interpreter.caiyunai.com/v1/translator", postData);
+
+if(r) {
+    console.dump(r);
+    var t = web.json.parse(r)
+    console.dump(t[["target"]]);
+}
+
+//console.log("您输入的是" ,num );
+console.pause(true);

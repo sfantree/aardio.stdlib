@@ -1,0 +1,229 @@
+﻿//ime.stateBar 输入状态栏
+import win.ui;
+import key.ime;
+import winex;
+import winex.accObject;
+import fonts.fontAwesome;
+
+namespace key.ime;
+class stateBar{
+	ctor(form,interval,offsetY,offsetX){
+ 
+		var ctrls = form.add(
+		{{cls="plus";text="En";left=51;top=31;hide=true;right=107;bottom=59;align="left";bgcolor=0xF0CAA6;border={radius=11};clipBk=false;db=1;disabled=1;dr=1;iconStyle={align="right";font=LOGFONT(name='FontAwesome');padding={right=11}};iconText='\uF186';textPadding={left=13};transparent=1;z=1}});
+		
+		this = ctrls[1];
+		this.background = 0xE5A6CAF0;
+		this.orphanWindow(true);
+		form.enableDpiScaling("init");
+		
+		this.offsetY = offsetY : 0;
+		this.offsetX = offsetX === null ?  30 : offsetX;
+		this.timeout = 2;
+		this.lineHeight = this.dpiScale(50);
+		
+		this.tipChars = {
+			halfShape = '\uF186';
+			fullShape = '\uF1DB';
+			capital = '\uF031';
+			symbol = '。';
+			close = '\uF05E';
+			lang = '中';
+			en = '英';
+		}
+		
+		this.disabledClasses = {
+			["Button"] = 1;["Radiobutton"] = 1;["Checkbox"] = 1;["SysListView32"] = 1;["SysTreeView32"] = 1;
+		}
+		this.editorClasses = {
+			["_WwG"]=1;["AVL_AVView"]=1;["OneNote::DocumentCanvas"]=1;["EXCEL6"]=1;["EXCEL7"]=1;
+		};
+		
+		this.checkImeState = function(){
+			var hForeground = ..win.getForeground();
+			if(!hForeground) return;
+			
+			var uiInfo = ..winex.getUiInfo(hForeground);
+			var hFocus = uiInfo ? (uiInfo.hwndFocus : uiInfo.hwndCaret) : hForeground;
+			var openState,mode = ..key.ime.state(hFocus);
+			var cap = ..key.ime.capital();
+			var topChanged = 0;
+			var prev = this.imePrevState;
+			
+			var hCaret = uiInfo ? (uiInfo.hwndCaret : uiInfo.hwndFocus) : hForeground;
+			var caret = ..winex.getCaret(hCaret) or ..winex.accObject.getCaret(hCaret);
+			if(!(caret && caret.hwnd && caret.bottom)) {
+				if(!prev) prev = {}; 
+				
+				caret = null;
+				hCaret = uiInfo ? (uiInfo.hwndCaret : uiInfo.hwndFocus);
+
+				if(hCaret){
+					var cls = ..win.getClass(hCaret);
+					if(!this.disabledClasses[cls]){
+						
+						if(this.editorClasses[cls]){
+							var x,y,cx,cy = ..win.getPos(hCaret,true); 
+							
+							if( (cy<100*(this.dpiScaleX:1)) && (cx<300*(this.dpiScaleY:1))){
+								caret = {hwnd = hCaret;left=x;top=y};
+							}
+							else{
+								caret = ::RECT();
+								::User32.GetCursorPos(caret);
+								if(caret.left>=x) && (caret.left<=x+cx) && (caret.top>=y) && (caret.top<=y+cy){
+									caret.hwnd = hCaret; 
+								}
+								else {
+									caret = null;
+								}
+							}
+						}
+					}
+				}
+					
+				if(!caret){
+					if(!this.hide) this.hide = true;
+					prev.hwndCaret = hForeground;
+					return;
+					
+					/*
+					var hidden = this.hide;			
+					if( prev.openState == openState
+						&& prev.mode ==  mode
+						&& prev.cap == cap 
+						){
+						if( ( prev.hwndCaret != hForeground ) || hidden
+							||( this.timeout && ((tonumber(..time()) - prev.updateTime ) > this.timeout) )
+							){ //提示在显示状态才计算 timeout
+							
+							if(!hidden) this.hide = true;
+							
+							prev.hwndCaret = hForeground;
+							prev.top = 0; 
+							return;
+						}	
+						else {
+							caret = ::RECT();
+							::User32.GetCursorPos(caret);
+							caret.hwnd = hForeground;
+						}
+					}
+					else {
+						caret = ::RECT();
+						::User32.GetCursorPos(caret);
+						caret.hwnd = hForeground;
+					}
+					*/
+				}
+			}
+			else{
+				if(!prev) prev = {}; 
+				else {
+					//遇到喜欢耍酷的光标了
+					if( prev.top 
+						&& (prev.top != caret.top)) { 
+						topChanged = ..math.abs(caret.top - prev.top)
+						if (topChanged < 3) caret.top = prev.top; //别跳了！
+					}
+				} 	
+			}
+			
+			var imeX,imeY = caret.left,caret.top - this.height;
+			if(this.offsetX){
+				imeX = imeX + this.offsetX * ( this.dpiScaleX : 1) 
+			}
+			
+			if(this.offsetY){
+				imeY = imeY + this.offsetY * ( this.dpiScaleY : 1) 
+			} 
+			
+			if( prev.openState == openState
+				&& prev.mode ==  mode
+				&& prev.cap == cap
+				&& prev.hwndCaret == caret.hwnd
+				){
+				prev.top = caret.top; 
+
+				if(this.hide)  {
+					if( topChanged < this.lineHeight ){
+						return;
+					}
+					
+					prev.updateTime  = tonumber(..time());
+					this.imePrevState = prev;
+					
+					this.show(4/*_SW_SHOWNOACTIVATE*/);
+					..win.setTopmost(this.hwnd,true);
+				}
+				else {
+					if( this.timeout  && ((tonumber(..time()) - prev.updateTime ) > this.timeout) ){
+						
+						if(!this.hide)  this.hide = true;
+						return;
+					}
+				}
+				
+				this.setPos(imeX,imeY,,,0/*_HWND_TOP*/,0x10/*_SWP_NOACTIVATE*/|8/*_SWP_NOREDRAW*/|0x200/*_SWP_NOREPOSITION*/|0x200/*_SWP_NOOWNERZORDER*/|1/*_SWP_NOSIZE*/|0x400/*_SWP_NOSENDCHANGING*/);
+				return;	
+			} 
+			
+			if(openState!==prev.openState && this.openStyle){ 
+				..table.assign(this,this.openStyle[openState]);
+			}
+			
+			prev.openState =  openState;
+			prev.mode =  mode;
+			prev.cap = cap;
+			prev.hwndCaret = caret.hwnd;
+			prev.top = caret.top; 
+			prev.updateTime  = tonumber(..time());
+			this.imePrevState = prev;
+			var text = openState ? this.tipChars.lang:this.tipChars.en;
+
+			var iconText;
+			if(cap) iconText = this.tipChars.capital;
+			elseif(!mode) iconText = this.tipChars.close;
+			elseif(mode == 1) iconText =  this.tipChars.halfShape;
+	 		elseif(mode == 2) iconText =  this.tipChars.fullShape;
+	 		elseif(mode == 3) iconText =  this.tipChars.symbol;
+	 		
+	 		if(this.iconText != iconText ) this.iconText = iconText; 
+	  		if(this.text != text) this.text = text;
+	  		
+			this.setPos(imeX,imeY,,,0/*_HWND_TOP*/,0x10/*_SWP_NOACTIVATE*/|8/*_SWP_NOREDRAW*/|0x200/*_SWP_NOREPOSITION*/|0x200/*_SWP_NOOWNERZORDER*/|1/*_SWP_NOSIZE*/|0x400/*_SWP_NOSENDCHANGING*/);
+			if(this.hide) {
+				this.show(4/*_SW_SHOWNOACTIVATE*/);
+				..win.setTopmost(this.hwnd,true);
+			}	
+		}
+		
+		this.imeWatch = function(enabled){
+			if(enabled===null){
+				if(!this.imeWatchingTimerId) return;
+				enabled = true;
+			}
+			
+			if(this.imeWatchingTimerId){
+				this.clearInterval(this.imeWatchingTimerId);
+				this.imePrevState = null;
+			}
+			
+			this.show(false);
+			this.predraw();
+			
+			if(enabled){
+				this.imeWatchingTimerId = this.setInterval( this.checkImeState,interval : 300 );
+			}
+		}
+		
+		this.imeWatch(true);
+	};
+}
+
+/**intellisense()
+key.ime.stateBar = 用于在输入光标处显示輸入法状态栏，\n有部分无法获取输入光标位置的窗口不支持此功能
+key.ime.stateBar( = 创建输入法状态栏，返回 plus 控件
+key.ime.stateBar(.(winform,interval,offsetY,offsetX) = 参数 @winform 指定所有者窗体，不可省略。\n可选用参数 @interval 指定检测输入法状态间隔，以毫秒为单位。\n可选用 @offsetY 指定水平偏移像素,\n可选用 @offsetX 指定垂直偏移像素
+key.ime.stateBar() = !ui_ctrl_plus.
+end intellisense**/

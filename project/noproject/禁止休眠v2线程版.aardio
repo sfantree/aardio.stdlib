@@ -1,0 +1,77 @@
+import win.ui;
+/*DSG{{*/
+mainForm = win.form(text="禁止休眠";right=279;bottom=167)
+mainForm.add(
+button={cls="button";text="激活";left=32;top=104;right=112;bottom=136;z=2};
+button4={cls="button";text="取消";left=160;top=104;right=240;bottom=136;z=3};
+static={cls="static";text='\uF023   禁止休眠';left=32;top=32;right=128;bottom=56;font=LOGFONT(h=-16;name='FontAwesome');notify=1;transparent=1;z=1}
+)
+/*}}*/
+
+import fonts.fontAwesome;
+import mouse;
+import console;
+ 
+mainForm.moveMouse = function(){
+    // 最小设为1px 
+    var stepPixel = 100;
+	mouse.move(stepPixel, 0);
+	mouse.move(0, stepPixel);
+	mouse.move(0 - stepPixel, 0);
+	mouse.move(0, 0 - stepPixel);
+}
+
+thread.set("moveMouseThreadId", -1);
+
+// 激活
+mainForm.button.oncommand = function(id,event){
+    import thread;
+    //console.log(1);
+	thread.invoke( 
+		function(mainForm){
+			//import console;
+			//mainForm.moveMouseThreadId = thread.getId();
+			//thread.lock("获取线程id",function(){
+				//console.log("线程在执行",thread.getId() )
+				//global.moveMouseThreadId = thread.getId();
+				thread.set("moveMouseThreadId", thread.getId());
+			//})
+			while(true) {
+			    mainForm.moveMouse();
+			    sleep(1 * 1000);
+			}
+		},
+		mainForm
+	)
+	//console.log(2);
+	//sleep(1 * 1000);
+	win.delay(200);
+	console.log(thread.get("moveMouseThreadId"));
+	if(thread.get("moveMouseThreadId") > 0) {
+	    mainForm.button.disabled = true;
+	    mainForm.button4.disabled = false;
+	}
+}
+
+// 取消
+mainForm.button4.oncommand = function(id,event){
+	if(thread.get("moveMouseThreadId") == -1) {
+	    return;
+	}
+	
+	::PostThreadMessage(thread.get("moveMouseThreadId"), 0x12/*_WM_QUIT*/, 0, 0);
+	
+	thread.set("moveMouseThreadId", -1);
+	mainForm.button4.disabled = true;
+	mainForm.button.disabled = false;
+}
+
+// 退出时关闭
+mainForm.onClose = function(hwnd,message,wParam,lParam){
+    mainForm.button4.oncommand();
+}
+
+mainForm.button4.disabled = true;
+
+mainForm.show();
+return win.loopMessage();

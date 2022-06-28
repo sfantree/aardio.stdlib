@@ -1,0 +1,30 @@
+//JSON 
+import console;
+import dotNet.ps;
+
+// ConvertTo-Json 自动兼容到 PowerShell 2.0 （Win7 自带）
+var psVersion =  dotNet.ps.json(`ConvertTo-Json $PSVersionTable.PSVersion`)
+console.dumpJson(psVersion);	
+console.log(err);
+
+//也可以用下面的方法
+/*
+dotNet.ps 在当前进程运行 PowerShell，
+PowerShell 共享 aardio 创建的 .Net 应用程序域。
+所以 aardio 加载的内存程序集 Newtonsoft.Json 在 PowerShell 里也可以使用。
+*/
+import dotNet.json;
+var json = dotNet.ps( `
+	$tab = @{ Name = "张三"; Age = "20"; Array = 1,2,3 } # 哈希表(数组元素要用逗号分开)
+	[Newtonsoft.Json.JsonConvert]::SerializeObject(  $tab  )` // PowerShell 类型放在 [] 里面，并用 :: 访问类的静态成员
+	);
+var psVersion = web.json.parse(json);//解析 JSON 
+console.dumpJson(psVersion);
+
+//获取 PowerShell 版本也可以这样写
+import win.reg;
+var psVersion = win.reg.query("HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\PowerShell\3\PowerShellEngine","PowerShellVersion")
+	|| win.reg.query("HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\PowerShell\1\PowerShellEngine","PowerShellVersion");
+
+console.log("PowerShell 版本:",psVersion);	
+console.pause(true);

@@ -1,0 +1,74 @@
+﻿import fsys;
+import process.popen;
+import dotNet.v4;
+dotNet.v4();
+
+namespace dotNet;
+
+class merge{
+	ctor( workDir ){ 
+		this.path = ..io.appData("aardio\std\dotNet\ILMerge.exe",$"~\lib\dotNet\merge\.res\ILMerge.exe");
+		this.workDir = workDir;
+	};
+	addArguments = function(...){
+		if( !this.$defaultArguments )this.$defaultArguments ={};
+		if( type(...) == type.table ) ..table.append(this.$defaultArguments,...)
+		else ..table.push( this.$defaultArguments,... );
+	};
+	popen = function(output,...){
+		var args = ..table.assign({},this.$defaultArguments);
+		if( !this.debug ) ..table.push(args,"/ndebug");
+		..table.push(args,"/target:" + (this.target : "dll"));
+		..table.push(args,"/out:" + (..io.localpath(output):output));
+		
+		if(this.log === true){
+			..table.push(args,"/log" );
+		}
+		elseif(this.log){
+			..table.push(args,"/log:" + (..io.localpath(this.log):this.log) );
+		}
+		
+		..table.push(args,"/targetplatform:" + (this.targetPlatform:"v4"));
+		
+		if( (!...) || (...==="*.dll") || ((...)[[1]]==="*.dll")) {
+			..fsys.enum( this.workDir, "*.dll", 
+				function(dir,filename,fullpath,findData){ 
+					if(args){ 
+			           	..table.push(args,fullpath);
+					} 
+				}  
+			);
+		}
+		elseif(type(...)===type.table){
+			..table.append(args,...);
+		} 
+		else{
+			..table.push(args,...);
+		}
+		
+		var prcs = ..process.popen(this.path,args,{workDir=this.workDir:"/"});
+		return prcs;
+	}
+}
+
+/**intellisense()
+dotNet.merge = 用于合并 .Net 程序集
+dotNet.merge( = 创建合并 .Net 程序集任务
+dotNet.merge(.(workDir) = 创建合并程序集任务,\n参数指定工作目录,默认为应用程序根目录"/"
+dotNet.merge() = !dotNetIlMerge.
+end intellisense**/
+
+/**intellisense(!dotNetIlMerge)
+popen( = 创建合并进程,返回 process.popen 对象
+popen(.(output,input->->->) = 创建合并进程,返回 process.popen 对象,\n参数@1指定输出文件,\n后面的参数指定一个或多个输入程序集,\也可以用一个数组指定多个输入程序集
+popen() = !process_popen.
+log = 设为 true 启用日志,\n指定文件路径则输出日志到指定的日志文件
+target = 目标 .Net 平台版本,默认为 v4
+debug = 是否生成调试版本,\n设为 true 则会生成 pdb 文件
+addArguments(__) = 添加一个或多个默认合并参数,\n参数也可以是一个包含多个启动参数的数组\n注意参数中不必要使用引号,多个参数应分开写不要拼接成一个参数\n每个启动参数都是使用斜杠开始的字符串\n所有可用参数 https://github.com/dotnet/ILMerge/blob/master/ilmerge-manual.md
+end intellisense**/
+
+/**details(实现原理)
+此扩展库基于 ILMerge 
+文档： https://github.com/dotnet/ILMerge/blob/master/ilmerge-manual.md
+end details**/

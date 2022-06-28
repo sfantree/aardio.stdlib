@@ -1,0 +1,150 @@
+//sha1 编码 
+ 
+namespace string;
+
+class sha1{
+    ctor(msg) {
+    if(!msg )return;
+    
+	function rotate_left(n,s) {
+		var t4 = ( n<<s ) | (n>>>(32-s));
+		return t4;
+	};
+ 
+	function lsb_hex(val) {
+		var str="";
+		var i;
+		var vh;
+		var vl;
+ 
+		for( i=0; 6; 2) {
+			vh = (val>>>(i*4+4))&0x0f;
+			vl = (val>>>(i*4))&0x0f; 
+			str ++= ..string.format("%x%x",vh,hl )
+		}
+		return str;
+	};
+ 
+	function cvt_hex(val) {
+		var str="";
+		var i;
+		var v;
+ 
+		for( i=7; 0; -1 ) {
+			v = (val>>>(i*4))&0x0f;
+			str ++= ..string.format("%x",v )
+		}
+		return str;
+	};
+ 
+ 
+	var blockstart;
+	var i2, j2;
+	var W = ..table.array(80);
+	var H0 = 0x67452301;
+	var H1 = 0xEFCDAB89;
+	var H2 = 0x98BADCFE;
+	var H3 = 0x10325476;
+	var H4 = 0xC3D2E1F0;
+	var A, B, C, D, E;
+	var temp;
+  
+   // msg = ..string.fromto(msg,0,65001);
+	var msg_len = #msg ;
+ 
+	var word_array = {} ;
+	for( k=1;  msg_len-3;  4 ) {
+		j = msg[k] <<24 | msg[k+1] <<16 |
+		msg[k+2] <<8 | msg[k+3] ;
+		..table.push( word_array,j );
+		i = k;;
+	}
+ 
+	select( msg_len % 4 ) {
+		case 0 
+			i = 0x080000000; 
+		case 1 
+			i = (msg[msg_len] <<24) | 0x0800000; 
+		case 2 
+			i = (msg[msg_len-1] <<24) | ( msg[msg_len]  <<16) | 0x08000; 
+		case 3 
+			i = (msg[msg_len-2]<<24) | ( msg[msg_len-1]  <<16) | ( msg[msg_len]<<8 )	| 0x80; 
+	}
+ 
+	..table.push( word_array,i);
+ 
+	while( ( #word_array % 16) != 14 ) ..table.push( word_array,0);
+ 
+	..table.push( word_array,msg_len>>>29 );
+	..table.push( word_array, (msg_len<<3)&0x0ffffffff );
+ 
+ 
+	for ( blockstart=1;#word_array;16 ) { 
+        
+		for( i=0; 15 ){ 
+			W[i+1] = word_array[blockstart+i];
+		}
+		for( i=17;80 ) W[i] = rotate_left(W[i-3] ^ W[i-8] ^ W[i-14] ^ W[i-16], 1);
+ 
+		A = H0;
+		B = H1;
+		C = H2;
+		D = H3;
+		E = H4;
+ 
+		for( i= 1; 20 ) {
+			temp = (rotate_left(A,5) + ((B&C) | (~B&D)) + E + W[i] + 0x5A827999) & 0x0ffffffff;
+			E = D;
+			D = C;
+			C = rotate_left(B,30);
+			B = A;
+			A = temp;
+		}
+ 
+		for( i=21;40  ) {
+			temp = (rotate_left(A,5) + (B ^ C ^ D) + E + W[i] + 0x6ED9EBA1) & 0x0ffffffff;
+			E = D;
+			D = C;
+			C = rotate_left(B,30);
+			B = A;
+			A = temp;
+		}
+ 
+		for( i=41; 60  ) {
+			temp = (rotate_left(A,5) + ((B&C) | (B&D) | (C&D)) + E + W[i] + 0x8F1BBCDC) & 0x0ffffffff;
+			E = D;
+			D = C;
+			C = rotate_left(B,30);
+			B = A;
+			A = temp;
+		}
+ 
+		for( i=61; 80 ) {
+			temp = (rotate_left(A,5) + (B ^ C ^ D) + E + W[i] + 0xCA62C1D6) & 0x0ffffffff;
+			E = D;
+			D = C;
+			C = rotate_left(B,30);
+			B = A;
+			A = temp;
+		}
+ 
+		H0 = (H0 + A) & 0x0ffffffff;
+		H1 = (H1 + B) & 0x0ffffffff;
+		H2 = (H2 + C) & 0x0ffffffff;
+		H3 = (H3 + D) & 0x0ffffffff;
+		H4 = (H4 + E) & 0x0ffffffff;
+ 
+	}
+ 
+	var temp = cvt_hex(H0) ++ cvt_hex(H1) ++ cvt_hex(H2) ++ cvt_hex(H3) ++ cvt_hex(H4);
+ 
+	return ..string.lower(temp) ;
+	
+	}
+ 
+}
+
+/**intellisense()
+string.sha1 = Secure Hash Algorithm, SHA-1
+string.sha1(__/*输入字符串*/) = Secure Hash Algorithm, SHA-1
+end intellisense**/

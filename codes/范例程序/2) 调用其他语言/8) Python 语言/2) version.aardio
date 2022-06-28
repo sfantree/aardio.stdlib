@@ -1,0 +1,20 @@
+//切换 Python 版本
+
+/*
+import py2; //导入 Python 2.7 扩展库，支持 XP 及 XP 以上系统
+import py3; //导入 Python 3.8 扩展库，支持 Win7 及 Win7 以上系统
+import py3.10; //导入 Python 3.10 扩展库，支持 Win10 及 Win10 以上系统
+import py3.6; //导入 Python 3.6 扩展库，支持 Win7 及 Win7 以上系统
+import py3.4; //导入 Python 3.4 扩展库，支持 XP 及 XP 以上系统
+
+在一个程序中，不应同时导入多个不同版本的 Python 扩展库，
+aardio 中所有 Python 扩展库都自带绿色 Python 运行时。
+*/
+
+//注意 py3 扩展库导入后使用时应去掉副版本号，例如：
+import py3.4;
+
+import console;
+console.log( py3.version );
+console.pause();
+

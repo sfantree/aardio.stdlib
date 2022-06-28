@@ -1,0 +1,62 @@
+//导入模块 
+import py2;
+import py2.lib.numpy;
+import console;
+console.open()
+
+//可以用扩展库自动安装、按需引用、按需发布 Python 模块，方法很简单 - 请查看 py2.lib.numpy 源代码
+console.log(py2.lib.numpy.__version__);
+
+//可以自己添加模块搜索路径，例如：
+//py2.appendPath("\py\site-packages\");
+
+var pyCode = /**
+import requests
+def getHtml(url): 
+    r = requests.get(url,verify=True)
+    r.encoding='utf-8'
+    return r.text 
+**/
+string.save("/myHttp.py",pyCode );//创建一个自定义模块文件
+
+/*
+aardio 内默认的 Python 搜索模块的路径为:
+"~\lib\py2\.res\Lib.zip" //为避免升级时被替换,不建议在这里添加模块，而且有些模块放到 zip 文件加载里会出错。
+"~\lib\py2\.res\DLLs" //在这个目录下添加的文件会在发布时复制到发布目录。
+"\"
+"\py"
+
+aardio 规定文件路径开始为波浪线表示 EXE 所在的目录（开发时为 aardio.exe 所在目录），
+文件路径开始为斜杠（或反斜杠）表示应用程序根目录，应用程序根目录在开发时指工程根目录（工程外单独启动代码则为文件所在目录），
+发布后应用程序根目录就是指 EXE 所在的目录。
+*/
+ 
+//试试在 Python 中 import 上面保存的测试模块（当然也可以在 Python 代码中 import）
+var myHttp = py2.import("myHttp");
+console.log(py2.lasterr())
+var str = myHttp.getHtml("http://www.aardio.com" );
+
+import console;
+console.log( str.toString() );
+console.pause()
+
+/*
+aardio 与 Python 的 import 语句基本用法类似，
+都是用来导入模块，都要求文件名与模块路径与文件路径保持一致。
+
+但 aardio 的 import 语句更简单，
+Python 的 import 语句则有很多复杂的功能，例如：
+
+	from 模块名 import 函数名 
+	from 模块名 import *
+	from hashlib import md5 as md5New
+	
+等等用法，并且可以任意添加修改搜索模块的路径。
+
+aardio 需要在 import 过来的库中用 namespace 定义名字空间，而 Python 并不需要这么做，
+Python 文件放到哪里模块名字就变成什么，所以经常会在 Python 代码中看到这句代码 if __name__ == "__main__":
+如果一个库被直接执行 __name__ 的值就是 "__main__",否则就是当前导入的模块名字或者当前类的名字。
+
+当然，复杂是有代价的，Python 的模块不但安装、部署比较麻烦，容易出现模块间的依赖与版本冲突，
+在生成软件时也不容易做到按需引用、按需发布，但在 aardio 中我们可以用类似 py2.lib.numpy 这样的扩展库解决这一麻烦。
+*/

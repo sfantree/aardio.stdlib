@@ -1,0 +1,22 @@
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form( bottom=396;parent=...;text="使用拆分控件";right=406 )
+winform.add(
+edit1={ dr=1;dl=1;text="edit1";bottom=65;right=382;left=23;multiline=1;top=12;z=1;edge=1;cls="edit" };
+splitter1={ dr=1;dl=1;bottom=71;right=382;left=23;top=66;z=4;horz=1;cls="splitter" };
+splitter2={ dr=1;dl=1;bottom=183;right=382;left=23;top=178;z=5;horz=1;cls="splitter" };
+edit3={ dr=1;dl=1;bottom=382;text="edit3";right=382;left=23;multiline=1;top=185;z=3;db=1;edge=1;cls="edit" };
+edit2={ dr=1;dl=1;bottom=176;text="edit2";right=382;left=23;multiline=1;top=72;z=2;ah=1;edge=1;cls="edit" }
+)
+/*}}*/
+
+winform.splitter1.split( winform.edit1,winform.edit2 )
+winform.splitter2.split( winform.edit2,winform.edit3 )
+
+winform.splitter1.ltMin = 20;
+winform.splitter1.rbMin = 30;
+winform.splitter2.ltMin = 40;
+winform.splitter2.rbMin = 50;
+
+winform.show()
+win.loopMessage();

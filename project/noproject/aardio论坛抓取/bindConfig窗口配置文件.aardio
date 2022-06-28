@@ -1,0 +1,21 @@
+import win.ui;
+/*DSG{{*/
+var mainForm = win.form(text="aardio form";right=759;bottom=469)
+mainForm.add(
+edit={cls="edit";text="edit";left=178;top=132;right=569;bottom=222;edge=1;multiline=1;z=1}
+)
+/*}}*/
+
+import config;
+mainForm.bindConfig( config.mainForm,{
+    edit = "text";
+    radiobutton = "checked";
+    checkbox = "checked";
+    combobox = "selIndex";
+} );
+
+//禁止配置文件修改窗口位置
+mainForm.setPos(178,132,760,470);
+
+mainForm.show();
+win.loopMessage();

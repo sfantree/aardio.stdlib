@@ -1,0 +1,17 @@
+//RUNAS//
+import console;
+import process.mpCmdRun;
+import win.clip.file;
+ 
+console.showLoading(" 正在更新 Windows Defender 病毒库")
+process.mpCmdRun.updateDefinitions();
+ 
+console.showLoading(" 正在获取 Windows Defender 日志")
+var logPath = process.mpCmdRun.getDiagnosticFile()
+if(logPath){
+	//为尽量仅收集与问题有关的数据，建议在干净的电脑或虚拟机上执行此操作。
+	win.clip.file.write(logPath)
+	console.log("已复制 Windows Defender 日志文件到剪贴板")
+}
+
+console.pause(true);

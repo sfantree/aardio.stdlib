@@ -1,0 +1,353 @@
+import win;
+import util;
+import win.imageList;
+
+namespace lvGrid {
+    
+	ctrl = (function () {
+    	var NMLVCUSTOMDRAW = class {
+        	struct nmcd = {
+            	struct hdr = ::NMHDR();
+            	INT dwDrawStage;
+            	pointer hdc;
+            	struct rc = ::RECT();
+            	int dwItemSpec;
+            	INT uItemState;
+            	int lItemlParam;
+        	};
+        	INT clrText;
+        	INT clrTextBk;
+        	INT font;
+        	int iSubItem;
+        	INT dwItemType;
+        	INT clrFace;
+        	int iIconEffect;
+        	int iIconPhase;
+        	int iPartId;
+        	int iStateId;
+        	struct rcText = ::RECT();
+        	INT uAlign;
+    	}
+        	var LVITEM = class { /* 项 */
+                	INT                mask;
+                	int                iItem;
+                	int                iSubItem;
+                	INT                state;
+                	INT                stateMask;
+                	string        text;
+                	int                cchTextMax;
+                	int                iImage;
+                	int                lParam;
+                	int                iIndent;
+                	int                iGroupId;
+                	INT                cColumns;
+                	struct        puColumns = ::POINT();
+        	}
+       	
+        	var LVCOLUMN = class { /* 列 */
+                	INT                mask;
+                	int                fmt;
+                	int                cx;
+                	string        text;
+                	int                cchTextMax;
+                	int                iSubItem;
+                	int                iImage;
+                	int                iOrder;
+        	}
+       	
+    	return function (listview) {
+            	listview.preventetidcols = {};
+            	listview.nthchilds = {};
+            	listview.setsorttab = {};
+        	listview._colors1 = ..table.array(listview.count, 0);
+        	listview._colors2 = ..table.array(listview.count, 0);
+                	// 初始化 imagelist
+                	var iml = ..win.imageList(16, 15);
+                	iml.add('GIF\56\57a \0\15\0\x80\0\0\x80\x80\x80\xff\0\xff\33\xf9\4\0\0\0\0\0\44\0\0\0\0 \0\15\0\0\2\31\x8c\x8f\xa9\xcb\xed\15\xa3\x9c\xb4N\xf0\x80\xde\56k\xbfA\\\xd7\x84 \x97Y\xea\xca\xb6\xee\11\xc7F\1\0;', 0xff00ff);
+                	// 取得 header
+                	var hc = ::SendMessage(listview.hwnd, 0x101F/*_LVM_GETHEADER*/);
+                	// 绑定 imageList
+                	::SendMessage(hc, 0x1200 + 8/*_HDM_SETIMAGELIST*/, ..topointer(0), iml.handle);
+                	listview.lastSortInd = 1
+                	var compareStr = function(lParam1, lParam2, SortType){
+                        	return ..string.cmp(listview.cache[lParam1] , listview.cache[lParam2]); //字母排序
+                	}
+                	var compareStrDesc = function(lParam1, lParam2, SortType){
+                        	return ..string.cmp(listview.cache[lParam2] , listview.cache[lParam1]); //字母排序
+                	}
+                	cmpStr = ..raw.tostdcall( compareStr,"int(int lParam1, int lParam2, int SortType)");
+                	cmpStrDesc = ..raw.tostdcall( compareStrDesc,"int(int lParam1, int lParam2, int SortType)");
+                	var compareNum = function(lParam1, lParam2, SortType){//正序
+                        	return listview.cache[lParam1] - listview.cache[lParam2]; //数字排序
+                	}
+                	var compareNumDesc = function(lParam1, lParam2, SortType){//反序
+                        	return listview.cache[lParam2] - listview.cache[lParam1]; //数字排序
+                	}
+                	cmpNum = ..raw.tostdcall( compareNum,"int(int lParam1, int lParam2, int SortType)");
+                	cmpNumDesc = ..raw.tostdcall( compareNumDesc,"int(int lParam1, int lParam2, int SortType)");
+               	
+        	listview._prenotify = function (id,code,ptr) {
+                	select(code) {
+                        	case 0xFFFFFFF4/*_NM_CUSTOMDRAW*/ {
+                        	var nmlvcd = NMLVCUSTOMDRAW();
+                        	..raw.convert(ptr, nmlvcd);
+                        	select (nmlvcd.nmcd.dwDrawStage) {
+                            	case 0x1/*_CDDS_PREPAINT*/ {
+                                	return 0x20/*_CDRF_NOTIFYITEMDRAW*/
+                            	}   
+                            	case 0x10001/*_CDDS_ITEMPREPAINT*/ {
+                                	..raw.mixin(ptr, nmlvcd, { clrText = owner._colors1[nmlvcd.nmcd.dwItemSpec +1 ] });
+                                	..raw.mixin(ptr, nmlvcd, { clrTextBk = owner._colors2[nmlvcd.nmcd.dwItemSpec +1 ] });
+                                	return 0/*_CDRF_DODEFAULT*/;
+                            	}
+                        	}
+                        	}
+                        	case 0xFFFFFF94/*_LVN_COLUMNCLICK*/ {
+                                	var nmlvw = ..win.ui.ctrl.listview.NMLISTVIEW();
+                                	..raw.convert(ptr, nmlvw);
+                                        	var ind = nmlvw.iSubItem + 1;
+                                        	if( owner.setsorttab[ind] )
+                                                	owner.sort(ind, owner.setsorttab[ind]);
+	
+                            	}
+                        	case 0xFFFFFFFE/*_NM_CLICK*/ {
+                                	var notifyMessage = owner.getNotifyMessage(code,ptr);
+                                	for(k,v in owner.preventetidcols)
+                                        	if( notifyMessage.iSubItem == v) return ;
+                                	if( ! notifyMessage.iItem && notifyMessage.iSubItem ) return ;
+                                	var edit = owner.editlable
+                                	if( ! edit ){
+                                    	owner.addCtrl(
+                                        	editlable = {
+                                            	cls="edit";font = LOGFONT( h = 11 );left = 0;top = 0;border=1;
+                                            	right = 50;bottom = 50;autoResize = false ;hide = 1;
+                                            	wndproc = function( hwnd, message, wParam, lParam ){
+                                                    	var update;
+                                                	if( ( message = 0x8/*_WM_KILLFOCUS*/)  || message == 0x101/*_WM_KEYUP*/ && wParam == 0xD/*_VK_RETURN*/  ) {
+                                                    	update = true;
+                                                	}
+                                                	elseif(message == 0x201/*_WM_LBUTTONDOWN*/ || message == 0x202/*_WM_LBUTTONUP*/ ){
+                                                        	var x,y = ..win.getMessagePos(lParam)
+                                                        	var rc = edit.clientRect;  
+                                                        	if( ! ::PtInRect(rc,x,y) ){
+                                                                	update = true;
+                                                                	edit.capture = false;
+                                                        	}
+                                                        	else{
+                                                                	edit.capture = true;
+                                                        	}
+                                                	}
+                                               	
+                                                	if( update ){
+                                                    	owner.parent.setItemText( owner.text, owner.listViewNotifyMessage.iItem
+                                                        	, owner.listViewNotifyMessage.iSubItem );
+                                                    	owner.show(false);
+                                                	}
+                                            	}  
+                                        	}
+                                    	)  
+                                    	edit = owner.editlable;
+                                	}
+                                	edit.listViewNotifyMessage = notifyMessage;
+                                	edit.text = owner.getItemText(notifyMessage.iItem,notifyMessage.iSubItem);
+                                	var rc = owner.getItemRect( notifyMessage.iItem,notifyMessage.iSubItem,,2/*_LVIR_LABEL*/ );
+                                	edit.setRect(rc);
+                                	edit.show();
+                                	edit.setFocus(0, -1); //例行
+                                	edit.capture = true;
+                        	}
+                	}
+        	}
+        	listview.preventEtidCol = function(...){ //阻止编辑例..让某例不能编辑
+                	owner.preventetidcols = {...};
+        	}
+        	
+        	listview.nthChild = function(...){ //隔行变色
+                	owner.nthchilds = {...};
+        	}
+        	
+        	listview.setItemColor = function (item, col) {
+            	owner._colors1[item] = col;
+        	}
+        	listview.setItemColorBk = function (item, col) {
+            	owner._colors2[item] = col;
+        	}
+        	listview.addItem = ..util.connect(listview, listview.addItem,
+            	function (text, ind, ...) {
+                	if (ind)
+                    	..table.insert(owner._colors1, 0, ind);
+                	else
+                    	..table.push(owner._colors1, 0);
+               	
+                	if( #owner.nthchilds > 1 ){
+                        	var index = owner.count+1;
+                        	if( index % owner.nthchilds[1] == 0)
+                                	owner._colors2[index] = owner.nthchilds[2];
+                        	else
+                                	owner._colors2[index] = owner.nthchilds[3];
+                	}
+            	}
+        	);
+        	
+        	listview.delItem = ..util.connect(listview, listview.delItem,
+            	function (item) {
+                	..table.remove(owner._colors1, item);
+            	}
+        	);
+        	
+        	
+            	getColumnCount = function(){
+                        	// 取得 header
+                        	var hc = ::SendMessage(listview.hwnd, 0x101F/*_LVM_GETHEADER*/);
+                        	return ::SendMessage(hc, 0x1200);
+                	}
+                	// 获取列图片
+                	getColImage = function (nCol) {
+                    	var col = LVCOLUMN();
+                    	col.mask = 0x1/*_LVCF_FMT*/ | 0x10/*_LVCF_IMAGE*/;
+                    	col = rget(2, ::SendMessageByStruct(listview.hwnd, 0x1019/*_LVM_GETCOLUMN*/, nCol - 1, col));
+                    	if (col.fmt & 0x800/*_LVCFMT_IMAGE*/){
+                        	return col.iImage;
+                    	}
+                    	else{
+                        	return -1;
+                	}
+                	}
+               	
+                	// 设置列图片
+                	setColImage = function (nCol, iImage = -1) {
+                    	var col = LVCOLUMN();
+                    	col.mask = 0x1/*_LVCF_FMT*/;
+                    	if (iImage == -1) {
+                        	col.fmt = 0x0/*_LVCFMT_LEFT*/;
+                    	}
+                    	else {
+                        	col.mask |= 0x10/*_LVCF_IMAGE*/;
+                        	col.fmt = 0x800/*_LVCFMT_IMAGE*/ | 0x1000/*_LVCFMT_BITMAP_ON_RIGHT*/;
+                        	col.iImage = iImage;
+                    	}
+                    	::SendMessageByStruct(listview.hwnd, 0x101A/*_LVM_SETCOLUMN*/, nCol - 1, col);
+                	}
+               	
+                	//设置排序
+                	listview.setSort = function(...){
+                        	for(k,v in {...}){
+                                	var val = ..string.split( v, ":");
+                                	owner.setsorttab[tonumber(val[1])] = val[2];
+                        	}
+                	}
+               	
+               	
+                	// 排序函数
+                	listview.sort = function (ind,dataType) {
+                    	var image = getColImage(ind);
+                    	// 已按照升序排序，则按照降序排序；其余情况按照升序排序
+                    	var desc = image == 0;
+                   	
+                    	listview.cache = {};
+                    	var item = LVITEM();
+                    	item.mask = 0x4/*_LVIF_PARAM*/;
+                    	for (i = 1; listview.count) {
+                            	item.iItem = i - 1;
+                            	item.lParam = ..table.push(listview.cache, listview.getItemText(i, ind));
+                            	::SendMessageByStruct(listview.hwnd, 0x1006/*_LVM_SETITEM*/, 0, item);
+                    	}
+                   	
+                    	if(dataType == "num"){
+                            	if(desc){
+                                    	::SendMessage(listview.hwnd, 0x1030/*_LVM_SORTITEMS*/, , cmpNumDesc)
+                            	}
+                            	else {
+                                    	::SendMessage(listview.hwnd, 0x1030/*_LVM_SORTITEMS*/, , cmpNum)
+                            	}
+                    	}
+                    	elseif(dataType == "str"){
+                            	if(desc){
+                                    	::SendMessage(listview.hwnd, 0x1030/*_LVM_SORTITEMS*/, , cmpStrDesc)
+                            	}
+                            	else {
+                                    	::SendMessage(listview.hwnd, 0x1030/*_LVM_SORTITEMS*/, , cmpStr)
+                            	}
+                    	}
+                       	
+                        	//        更新列图标
+                    	setColImage(ind, desc ? 1 : 0);
+                    	if(ind!=listview.lastSortInd){
+                            	setColImage(listview.lastSortInd, -1);
+                    	}
+                    	listview.lastSortInd = ind;
+                    	..collectgarbage("collect");
+            	}
+    	}
+	})();
+}
+
+/**intellisense(lvGrid)
+ctrl(__/*listview*/) = 使列表视图可编辑
+ctrl() = !listview.
+end intellisense**/
+
+
+import win.ui;
+import gdip.fontAwesome;
+//import lvGrid;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=479;bottom=219;parent=...)
+winform.add(
+button={cls="button";text='\uF055';left=439;top=4;right=469;bottom=34;dl=1;dt=1;font=LOGFONT(name='FontAwesome';h=-20);z=3};
+button2={cls="button";text='\uF056';left=439;top=36;right=469;bottom=66;dl=1;dt=1;font=LOGFONT(name='FontAwesome';h=-20);z=4};
+button3={cls="button";text='\uF057';left=440;top=68;right=470;bottom=98;dl=1;dt=1;font=LOGFONT(name='FontAwesome';h=-20);z=5};
+button4={cls="button";text='\uF055';left=439;top=111;right=469;bottom=141;dl=1;dt=1;font=LOGFONT(name='FontAwesome';h=-20);z=6};
+button5={cls="button";text='\uF056';left=439;top=142;right=469;bottom=172;dl=1;dt=1;font=LOGFONT(name='FontAwesome';h=-20);z=7};
+button6={cls="button";text='\uF057';left=440;top=173;right=470;bottom=203;dl=1;dt=1;font=LOGFONT(name='FontAwesome';h=-20);z=8};
+listview={cls="listview";left=10;top=5;right=434;bottom=103;dl=1;dt=1;edge=1;fullRow=1;gridLines=1;hscroll=1;vscroll=1;z=1};
+listview2={cls="listview";left=9;top=113;right=432;bottom=201;dl=1;dt=1;edge=1;gridLines=1;hscroll=1;vscroll=1;z=2}
+)
+/*}}*/
+
+lvGrid.ctrl(winform.listview);
+
+winform.listview.preventEtidCol(1);
+winform.listview.setSort("1:num");
+winform.listview.nthChild(2, 0xffff00, 0xccffff);
+winform.listview.insertColumn("ID不可编辑",100,0x0/*_LVCFMT_LEFT*/);
+winform.listview.insertColumn("车型",100,0x0/*_LVCFMT_LEFT*/);
+winform.listview.insertColumn("购入价值",60,0x0/*_LVCFMT_LEFT*/);
+winform.listview.insertColumn("购入时间",100,0x0/*_LVCFMT_LEFT*/);
+winform.listview.insertColumn("现价值(万元)",100,0x0/*_LVCFMT_LEFT*/);
+
+
+lvGrid.ctrl(winform.listview2);
+winform.listview2.setSort("1:num");
+winform.listview2.nthChild(2, 0xffff00, 0xccffff);
+winform.listview2.insertColumn("房产所在地",200,0x0/*_LVCFMT_LEFT*/);
+winform.listview2.insertColumn("面积(平米)",100,0x0/*_LVCFMT_LEFT*/);
+winform.listview2.insertColumn("现价值(万元)",100,0x0/*_LVCFMT_LEFT*/);
+
+
+
+winform.button.oncommand = function(id,event){
+        var index = tostring(winform.listview.count+1);
+        winform.listview.addItem({index;"点我编辑"+index;"点我编辑"+index;"点我编辑"+index;"点我编辑"+index});
+       
+}
+
+winform.button2.oncommand = function(id,event){
+        winform.listview.delItem(winform.listview.selIndex)
+}
+
+winform.button4.oncommand = function(id,event){
+        var index = tostring(winform.listview2.count+1);
+        winform.listview2.addItem({index;"点我编辑"+index;"点我编辑"+index;"点我编辑"+index;"点我编辑"+index});
+
+}
+
+winform.button5.oncommand = function(id,event){
+        winform.listview2.delItem(winform.listview.selIndex)
+}
+
+winform.enableDpiScaling();
+winform.show();
+
+win.loopMessage();
+return winform;

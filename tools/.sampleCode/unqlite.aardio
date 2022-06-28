@@ -1,0 +1,63 @@
+import unqlite;
+import console;
+
+// 打开数据库( 如果不存在就创建 )
+var udb = unqlite("/xxx.db");
+
+// 存储数据
+udb.store("名字","123");
+
+// 追加数据
+udb.append("名字","456");
+
+// 查询数据
+udb.fetch("名字",function( value ){
+	console.log( "查询返回", value )
+} )
+
+// 存储json对象
+udb.storeObject("jsonObject",{ name = "测试"} ) 
+
+// 查询json对象
+udb.fetch("jsonObject",function( value ){
+	console.log( "查询jsonObject返回", value )
+} )
+
+// 使用游标遍历所有数据
+var cursor = udb.cursor()
+for(k,v in cursor.each() ){ 
+	console.log("游标查询:", k,v );
+}
+
+// 编译Jx9脚本
+var jx9 = udb.compile(" 
+	//变量一定要用$美元符号开始( 类似PHP ) 
+	$zRec = { name : 'james'}; 
+	print myfunc('你好,我是Jx9')"
+)
+
+// 设置输出函数,脚本中 print 函数输出到这里
+jx9.configOutput( function( output ){
+	console.log( "脚本输出", output )
+} )
+
+// 自定义脚本函数 
+jx9.createFunction("myfunc",function(pCtx,...){
+	var ctx = jx9.context(pCtx);
+	console.log(ctx.functionName(),"收到参数",...)
+	return "aardio返回到jx9"
+} )
+  
+//执行脚本
+jx9.exec()
+
+//获取脚本中的变量值
+var zRec = jx9.extractVariable("zRec"); //类似PHP不要包含美元符号
+console.log( zRec.name ); //因为使用json,aardio与Jx9传递对象非常方便
+console.pause();
+/*
+关于Jx9脚本
+http://unqlite.org/jx9_lang.html
+http://unqlite.org/jx9_builtin.html
+*/
+ 

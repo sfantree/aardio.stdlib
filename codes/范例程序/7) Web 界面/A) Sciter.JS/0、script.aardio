@@ -1,0 +1,49 @@
+//script 接口
+//请务必更新 web.sciter 扩展库到最新版
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="script 接口";right=1014;bottom=523)
+winform.add()
+/*}}*/
+
+import web.sciter;
+web.sciter.script.gTest = "为所有网页自定义默认 JavaScript 全局变量";
+
+//为所有网页添加初始化脚本
+web.sciter.preloadScript(`globalThis.test=1;`)
+
+//创建 Sciter 控件
+var wbSciter = web.sciter( winform );
+
+//为当前窗口添加 JavaScript 全局变量
+wbSciter.script.aardio = {
+    func = function(str){ 
+         return "Hello, "+str+"!"; 
+    }
+}
+
+wbSciter.html = /**
+<body> 
+<button id="my-button">JavaSript 调用 aardio 函数 aardio.func("Sciter") </button> 
+<br> 请务必更新 web.sciter 扩展库到最新版本<br>
+<span id="info"></span>
+<script>
+
+var button = document.getElementById("my-button");
+button.addEventListener('click', () => { 
+    button.insertAdjacentHTML("afterEnd","<br>"+aardio.func("Sciter")) 
+})
+
+window.jsFunction = function(param) {  
+  document.getElementById("info").innerText = param;
+  return param;
+}
+</script>
+</body>
+**/
+
+//访问当前窗口 JavaScript 全局变量
+wbSciter.script.jsFunction("aardio 调用当前窗口 JavaScript 全局函数")
+
+winform.show();	
+win.loopMessage();

@@ -1,0 +1,19 @@
+import winex;
+import mouse;
+import key;
+
+io.open();//打开控制台
+io.print("按ESC退出")
+
+while(!key.getState("ESC")){
+    // winex.fromPointReal( mouse.getPos() ) : 
+        var hwndTarget = winex.fromPoint( mouse.getPos() );
+        if (hwndTarget){
+                io.print("句柄:", tostring(hwndTarget,16))
+                win.setTopmost(hwndTarget)
+                win.setFocus(hwndTarget)
+        }
+        sleep(200);
+}
+
+io.close();//关闭控制台

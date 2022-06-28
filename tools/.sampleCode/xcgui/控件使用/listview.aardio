@@ -1,0 +1,51 @@
+/*
+使用import xcgui; 替换原来的 import win.ui;
+修改标准库的 win.form 指向 xcgui.window, 并保留 win.form的所有功能。
+在窗体设计器上添加自定义控件，类名修改为 "xc" + "炫彩控件类名",
+例如 xcgui.ctrl.listview, 类名为 "xclistview"
+*/
+import xcgui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469;bgcolor=15245824)
+winform.add(
+closebutton={cls="xcclosebutton";text="r";left=725;top=2;right=749;bottom=28;dr=1;dt=1;font=LOGFONT(name='Marlett');transparent=1;z=1};
+listview={cls="xclistview";text=" ";left=16;top=42;right=743;bottom=454;db=1;dl=1;dr=1;dt=1;edge=1;z=2};
+static={cls="xctext";text="   ";left=27;top=12;right=693;bottom=31;dl=1;dr=1;dt=1;z=3}
+)
+/*}}*/
+
+winform.listview.groupAddField("name3")
+winform.listview.addField("name")
+winform.listview.addField("name2")
+
+var group1 = winform.listview.groupAddString("group1")
+var group2 = winform.listview.groupAddString("group2")
+
+var image = xcgui.image("\控件使用\image\111.jpg","scale");
+for(i=1;20;1){
+	var index = winform.listview.addImage(group1,image);
+	winform.listview.setString( group1, index, 1, string.format("group1-item-%d",i ) );
+	/*
+	注意炫彩里一律用0表示第一个索引，1表示第二个索引，上面的1对应第二个field（也就是"name2"）
+	*/
+}
+
+//输入winform.listview.onSelect 按回车就可以生成下面的代码
+winform.listview.on("listviewSelect",function(group,item){
+	winform.static.text = string.format("选了 group:%d item:%d  %s",group,item,winform.listview.getFieldString(group,item,"name2"))
+	winform.static.redraw(); //这个对象设置文本后必须要刷新一下
+	return 0;//返回任意值结束本次事件，返则继续回调其他注册了该事件的函数
+})
+
+
+winform.listview.on("listviewExpand",function(group,expanded){
+	
+})
+
+winform.listview.on("listviewTempCreate",function(pItem){
+	
+})
+
+winform.show();
+win.loopMessage();
+return winform;

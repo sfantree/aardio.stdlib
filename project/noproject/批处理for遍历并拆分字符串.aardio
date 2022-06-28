@@ -1,0 +1,11 @@
+import console
+import process.batch;
+
+//批处理 for 遍历并拆分字符串
+var bat = process.batch(`
+@echo off
+for %%i in (abc,def,xyz) do echo %%i
+`)
+console.log(bat.read(-1))
+
+console.pause()

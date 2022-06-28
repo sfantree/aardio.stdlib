@@ -1,0 +1,118 @@
+import win.reg;
+
+namespace environment; 
+
+class base {
+ 
+	ctor( path ){
+		this.reg = ..win.reg(path);
+		if(!this.reg) error("打开注册表失败",2);
+	}; 
+	delete = function(k){ 
+		if( this.reg.delValue(k) ) {
+			..string.setenv(k,null)
+			return self;
+		}
+	};
+	set = function(k,v){ 
+		if(!v) return this.delete(k);
+		var d,t = this.reg.queryValue(k);
+		if(d==v) return self;
+		
+		if(t==2/*_REG_EXPAND_SZ*/ || unexpanded[k]) this.reg.setExpandValue(k,v) 
+		else this.reg.setSzValue(k,v);
+		
+		..string.setenv(k,v)
+		return self;
+	};
+	get = function(k){
+		if( k ) return this.reg.queryValue(k); 
+		else return this.reg.queryValueTable();
+	};
+	each = function(){
+		return this.reg.eachValue();
+	};
+	update = function(env){
+		if( type(env) === "string"){
+			..string.setenv(env,this.reg.queryValue(env));
+		}
+		else{
+			if(!env) {
+				env = this.get(); 
+				for(k,v in env) ..string.setenv(k,v);  
+			}
+			else {
+				for(k,v in env) this.set(k,v);  
+				
+				::User32.SendMessageTimeoutW(0xFFFF/*_HWND_BROADCAST*/, 0x1A/*_WM_SETTINGCHANGE*/, null,"Environment",2/*_SMTO_ABORTIFHUNG*/,5000,null ); 
+			}
+		} 
+		
+		return this;
+	};
+	close = function(){
+		this.reg.close();
+		reg = null;	
+	};
+}
+
+base.unexpanded = {Path=1;ComSpec=1;TEMP=1;TMP=1;windir=1;}
+
+
+system = function(){
+	return base("HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment");
+}
+
+user = function(){
+	return base("HKCU\Environment");
+} 
+
+query = function(name,user){
+	var key = user ? "HKCU\Environment" : "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment"
+	return ..win.reg.query(key,name); 
+} 
+
+update = function(name,user){
+	var key = user ? "HKCU\Environment" : "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment"
+	var value = ..win.reg.query(key,name);
+	..string.setenv(name,value);
+} 
+
+each = function(){
+	var pEnv = topointer( ::Kernel32.GetEnvironmentStringsW() );
+	return function(){
+		if(!pEnv) return;
+		var s = ..raw.str(pEnv,true);
+		if(!#s) return;
+		pEnv = topointer(pEnv,#s+2); 
+		
+		s = ..string.fromUnicode(s);
+		if(s[1] == '='#) return s;
+		var t = ..string.split(s,"=",2);
+		return t[1],t[2];
+	} 
+}
+
+
+/**intellisense()
+environment.system() = 获取系统环境变量,\n修改变时值需要管理权限\n!environmentObject.
+environment.user() = 获取用户环境变量\n!environmentObject.
+environment.query("Path") = 自注册表读取参数@1指定环境变量的最新值,\n如果要自当前进程环境变量读取请改用 environment.get 函数
+environment.update("Path") = 自注册表读取参数@1指定环境变量的最新值,\n并更新当前进程指定名称的坏境变量\n默认读取系统环境变量,\n参数@2如果指定为 true 则读取用户环境变量\n\n如果一些安装程序修改了 Path 环境变量,\n可能当前进程仍然在使用旧的值或继承父进程的值,\n调用此函数可读取注册表中最新的值
+environment.each() = @for(name,value in ??.each() ){
+	if( value ) {
+		__/*遍历当前进程环境变量\nname 为变量名,value 为变量值*/
+	}
+}
+!environmentObject.get(.("键") = 读取指定的环境变量,\n省略参数读取所有环境变量返回表对象
+!environmentObject.set(.("键","值") = 修改当前进程环境变量,并修改注册表中指定的环境变量，\n不指定值或为 null 值则删除变量\n成功返回对象自身,失败返回 null
+!environmentObject.delete(.("键") = 删除环境变量\n成功返回对象自身,失败返回 null
+!environmentObject.update( = 更新环境变量
+!environmentObject.update(.() = 自注册表读取环境变量，并更新当前进程环境变量,\n此用法不修改注册表
+!environmentObject.update(.(env) = 修改并更新环境变量为参数指定的值,\n@env 参数指定包含需要更新的环境变量键值对的表参数,\n此用法会更新注册表
+!environmentObject.update(.(name) = 自注册表读取指定名称环境变量，并更新当前进程环境变量，\n@name 参数指定需要刷新的环境变量名,\n此用法不修改注册表
+!environmentObject.close() = 关闭
+!environmentObject.each() = 用于for语句中作为迭代器遍历所有环境变量
+!environmentObject.delete() = !environmentObject.
+!environmentObject.set() = !environmentObject.
+end intellisense**/

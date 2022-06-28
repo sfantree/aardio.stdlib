@@ -1,0 +1,17 @@
+
+import com.flashMenu;
+var flash = com.flashMenu(text="桌面透明3D动画菜单");
+
+//导出flash可以调用的aardio函数
+flash.external = {
+    onItemClick = function(str,idx){
+        if( str == "退出演示" ) flash._form.close();
+    }
+}
+
+//调用flash函数加载菜单（可重复调用）
+flash.loadMenu({"退出演示";"退出演示";"退出演示";"重新加载菜单1";"重新加载菜单2";"重新加载菜单3";"退出演示";"退出演示";"退出演示";
+"重新加载菜单1";"重新加载菜单2";"重新加载菜单3";"退出演示";"退出演示";"退出演示";"重新加载菜单1";});
+flash.show();
+
+win.loopMessage();

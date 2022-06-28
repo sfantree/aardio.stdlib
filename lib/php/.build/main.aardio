@@ -1,0 +1,12 @@
+import ide;
+import fsys;
+
+var publisDir = ide.getPublisDir();
+if(!#publisDir)return; 
+
+var phpPubDir =  fsys.joinpath(publisDir,"\lib\php\" ); 
+if( ! io.exist(phpPubDir) ){ 
+	var libPath,libDir = io.libpath("php")
+	..fsys.createDir(phpPubDir);
+	..fsys.copy( fsys.joinpath(libDir,"\.dll\") ,phpPubDir,0x10/*_FOF_NOCONFIRMATION*/  | 0x200/*_FOF_NOCONFIRMMKDIR*/);  
+}

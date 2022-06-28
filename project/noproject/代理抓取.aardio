@@ -1,0 +1,92 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(parent=...; right=515;text="代理aardio";bottom=526 )
+winform.add(
+spin={ text="<>";bottom=175;right=261;left=236;transparent=1;top=151;z=12;edge=1;cls="spin" };
+listview={ bgcolor=16777215;bottom=472;text="listview";left=20;top=189;z=1;right=500;edge=1;cls="listview" };
+editPorxyIpPattern={ bottom=73;text="!\d(\d+\.\d+\.\d+\.\d+)!\D\s*\:*(\d*)";left=131;multiline=1;top=44;z=3;right=496;edge=1;cls="edit" };
+static={ bottom=36;align="right";text="代理抓取页面";left=37;top=14;z=6;right=122;transparent=1;cls="static" };
+static2={ bottom=72;align="right";text="IP匹配模式";left=37;top=50;z=7;right=122;transparent=1;cls="static" };
+static4={ bottom=142;align="right";text="期望关键字";left=56;top=120;z=9;right=122;transparent=1;cls="static" };
+buttonRun={ bottom=183;right=482;left=324;top=146;z=10;text="检测有效代理地址";cls="button" };
+static3={ bottom=107;align="right";text="测试网址";left=37;top=85;z=8;right=122;transparent=1;cls="static" };
+buttonSetProxy={ bottom=515;right=495;left=333;top=477;z=13;text="设置为系统代理";cls="button" };
+editExpectKeyWord={ bottom=142;text="Google";left=131;multiline=1;top=113;z=5;right=496;edge=1;cls="edit" };
+editTestUrl={ bottom=107;text="http://www.google.com";left=131;multiline=1;top=78;z=4;right=496;edge=1;cls="edit" };
+editThreadsCount={ num=1;bottom=176;text="25";left=201;top=151;z=11;right=234;edge=1;cls="edit" };
+editProxyUrl={ bottom=38;text="http://www.sooip.cn/zuixindaili/2011-11-01/2610.html";left=131;multiline=1;top=9;z=2;right=496;edge=1;cls="edit" }
+)
+/*}}*/
+
+winform.spin.buddy = winform.editThreadsCount
+winform.listview.insertColumn("代理IP:端口",250)
+winform.listview.insertColumn("速度",200)
+
+import inet.whttp;
+
+getIpList  = function(url,pattern){
+    var http = inet.whttp()
+    var str = http.get(url);
+    if(str){
+        var tab = {}
+        for ip,port in string.gmatch( str,pattern) {  
+            ..table.push( tab,ip + ":" + (port : 80 ) )
+        }
+        return tab;
+    }
+    http.close();
+}
+
+import thread.works;  
+winform.show()  
+
+winform.buttonRun.oncommand = function(id,event){
+    winform.buttonRun.disabled = true;
+    winform.listview.clear()
+   
+    var works = thread.works( tonumber(winform.editThreadsCount.text),
+        function(...) {
+            import inet;
+            import inet.http;
+            import time.performance;
+            var http = inet.http()
+            http.flags = 0x80000000/*_INTERNET_FLAG_RELOAD*/ | 0x4000000/*_INTERNET_FLAG_DONT_CACHE*/  
+            inet.setProxy("HTTP://" + ..., ,http.session )
+            
+            var tick = time.performance.tick()
+            var str = http.get( thread.get("PROXY_TEST_URL") )
+            if( str ? string.find(str,thread.get("PROXY_TEST_KEYWORD") ) ){  
+                return {  ... ; ( time.performance.tick() - tick) }
+            }      
+        }
+    );
+
+    var tProxy = getIpList(winform.editProxyUrl.text,winform.editPorxyIpPattern.text);
+   
+    thread.set("PROXY_TEST_URL",winform.editTestUrl.text )
+    thread.set("PROXY_TEST_KEYWORD",winform.editExpectKeyWord.text)
+
+    for(k,proxyIp in tProxy){
+        works.push(proxyIp)
+    }
+   
+    while( works.busy() ) {
+        win.delay(10)
+        var ret =  works.pop(1) ;
+        if( #ret ){
+            var row = winform.listview.addItem(  ret[1] );
+            winform.listview.setItemText(tostring(ret[2]),row,2)
+        }
+    }
+    winform.buttonRun.disabled = false
+}
+
+import inet.conn
+winform.buttonSetProxy.oncommand = function(id,event){
+    var proxy =  winform.listview.getItemText( winform.listview.selIndex);
+    winform.msgbox( winform.listview.getItemText( winform.listview.selIndex) )
+    inet.conn.setProxy( ,"HTTP://" + proxy)
+}
+
+winform.show()
+win.loopMessage();

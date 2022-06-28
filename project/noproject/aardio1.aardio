@@ -1,0 +1,38 @@
+import console; 
+
+
+/*
+//转换为静态函数指针
+func_c = raw.tostdcall(func,"void(str)" )
+ 
+
+// 对内核对象使用topointer,tonumber等函数是无效的 
+funcAddr = raw.toPointer(func_c)  
+
+//声明一个特殊的API,调用内部函数指针
+func_api = raw.main.api( funcAddr ,"void(str)" )
+
+//看来是一件很无聊的事,转来转去,我们只是调用aardio函数而已.
+func_api("hello")
+*/
+
+/*
+var SquareSum_c2 = raw.tostdcall(function(a, b){
+		return a * a + b * b;
+	},"int(int a, int b)")
+
+var funcAddr = raw.toPointer(SquareSum_c2) 
+var func_api = raw.main.api( funcAddr ,"int(int a, int b)" )
+
+var r = func_api(2, 3)
+console.dump(r)
+*/
+
+var a = raw.buffer(32, 0);
+type(a)
+type(topointer(a))
+
+//raw.toarray( ,"struct","array" )
+
+
+console.pause(true);

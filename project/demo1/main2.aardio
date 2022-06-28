@@ -1,0 +1,211 @@
+//import console;
+
+// arrdio默认编码为utf-8
+// 字符长度 7 占用内存 15
+/*
+var str1 = "中国測試cjk"
+var len1 = string.len(str1)
+console.log("字符长度:", len1)
+var len2 = #str1
+console.log("占用内存:", len2)
+*/
+
+// 测试：遍历每字符
+/*
+var result1 = ""
+for(i = 1; string.len(str1); 1) {
+    result1 += ((string.slice(str1, i, i, true)) + " ")
+}
+console.log(result1)
+*/
+
+// 测试：遍历每字节
+// #str 取占用内存
+// str[i] 取第i字节的ascii码
+/*
+var result2 = ""
+for(i = 1; len2; 1) {
+    result2 += (string.format("\0x%02X", str1[i]))
+}
+console.log(result2)
+*/
+
+
+
+
+
+
+/*
+var output = ""
+for(i = 1; #str1; 1){
+        var charstr = (str1[i]);
+        //console.log(charstr);
+        output += ( string.format("\0x%02X",charstr))
+        //io.print(string.format("%s",charstr)); 这个也不能用
+}
+console.log(output)
+*/
+
+/*
+var len1 = string.len(str1)
+console.log(len1)
+
+var str3 = "\xe4\xb8\xad\xe5\x9b\xbd\xe6\xb8\xac\xe8\xa9\xa6\x63\x6a\x6b"
+console.log(str3)
+
+
+var chr = string.unpack(str1);
+console.print("chr", chr);
+
+
+var str2 = string.toUnicode(str1)
+*/
+
+/*
+for(i = 1; #str2; 1){
+        var charstr = (str2[i]);
+        //console.log(charstr);
+        output += ( string.format("\x%02x",charstr))
+        //io.print(string.format("%s",charstr)); 这个也不能用
+}
+console.log(output)
+*/
+
+
+
+/*
+console.log( string.len(str1) );
+
+var str = "中国"
+console.log( #string.toUnicode(str1) / 2  );
+*/
+
+
+
+
+
+/*
+var tm = time.now();
+tm.format = "arrdio_%Y%m%d_%H%M%S.log";
+console.log(tostring(tm));
+
+ 返回unix时间戳
+console.log(tonumber(tm));
+
+console.pause();
+*/
+
+/**
+import process.popen
+
+打开命令行,隐藏命令行窗口
+prcs = process.popen("cmd.exe")
+
+cmd = /*
+CD C:\
+C:
+dir
+mkdir test
+rmdir test
+*/
+
+prcs.write(cmd)
+result = prcs.peekTo(">");
+prcs.write('exit\n')
+显示结果
+console.log( result )
+**/
+//console.pause();
+/*
+console.log("等待记事本关闭.....")
+thread.wait( prcs.handle )
+console.log('\r记事本已关闭......')
+console.pause();
+*/
+/*
+import process
+var checkAnkiRun = function(){
+	var prcs = process.find("qbittorrent.exe")
+	console.log(type(prcs))
+}
+
+checkAnkiRun();
+console.pause();
+*/
+
+
+/*
+GetSystemDefaultLCID = ::Kernel32.api("GetSystemDefaultLCID","int()")
+LCIDChart = {
+[0x409] = "美国英语";
+[0x404] = "中国繁体";
+[0x804] = "中国简体";
+}
+
+var LCID = GetSystemDefaultLCID()
+io.open()
+io.print( LCIDChart[LCID] )
+
+
+import fsys;
+startup = fsys.getSpecial(0x0007)
+io.print( startup )
+
+import win
+io.print(win.getScreen())
+
+console.pause();
+*/
+
+/* 
+流程控制
+包含基本的分支判断和循环
+特殊语法有 for循环 :(起点, 终点, 步长)
+*/
+import console;
+// 参考leetcode two sum
+var twoSum = function(nums, target) {
+    // table起始索引为1
+    var l = 1;
+    var r = #nums;
+    while(l < r) {
+        if(nums[l] + nums[r] == target) {
+            return {l, r};
+        } else if (nums[l] + nums[r] < target) {
+            l++;
+        } else { // nums[l] + nums[r] > target
+            r--;
+        }
+    }
+    return {-1, -1};
+};
+
+var nums = {1, 3, 5, 7, 12, 16};
+var target = 10;
+var result = twoSum(nums, target);
+console.dump(result);
+
+
+
+var nums = {1, 3, 5, 7};
+..table.push(nums, 9);
+
+console.dump(nums); //{1, 3, 5, 7, 9} 
+console.log(..table.count(nums));
+console.log(#(nums));
+console.log(..math.random(3, 5));
+
+
+
+
+
+
+
+
+console.pause();
+
+
+
+
+
+

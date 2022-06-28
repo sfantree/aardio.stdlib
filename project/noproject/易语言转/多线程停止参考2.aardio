@@ -1,0 +1,129 @@
+import console;
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="多线程停止参考";right=415;bottom=255)
+winform.add(
+button={cls="button";text="启动线程";left=16;top=16;right=120;bottom=40;z=1};
+button2={cls="button";text="强行停止线程";left=16;top=104;right=120;bottom=128;z=7};
+button3={cls="button";text="停止线程";left=16;top=64;right=120;bottom=88;z=3};
+combobox={cls="combobox";left=280;top=64;right=360;bottom=88;edge=1;items={};mode="dropdown";z=6};
+edit={cls="edit";left=8;top=144;right=408;bottom=248;edge=1;multiline=1;z=2};
+edit2={cls="edit";left=192;top=64;right=264;bottom=88;edge=1;z=4};
+static={cls="static";text="线程ID：";left=136;top=64;right=184;bottom=88;center=1;transparent=1;z=5}
+)
+/*}}*/
+
+import time;
+import process;
+import thread.command;
+var listener = thread.command();
+
+listener.log = function( ... ){
+	var t = ..time();
+    t.format = "[%Y-%m-%d %H:%M:%S] ";
+    winform.edit.print( tostring(t), ... );
+}
+
+
+winform.button.oncommand = function(id,event){
+	thread.invoke( 
+		function(listener){
+			var thread_id = thread.getId();
+			listener.log("thread start...", thread_id);
+			
+			while(true){
+				
+				// 运行开关
+				if(thread.get("stop") == thread_id) {
+				    break;
+				}
+				
+				// 模拟不响应开关的操作
+				for(i=1;8;1){
+					listener.log("thread work...", i, thread_id);
+					//sleep(2000);
+					win.delay(1000);
+				}
+				
+				// 优先使用win.delay 相应线程消息
+				win.delay(500);
+			    //sleep(1000);
+			}
+			
+			listener.log("thread stop...", thread_id);
+		},listener
+	)
+	updateThreadList();
+}
+
+var thread_id = thread.getId();
+listener.log("main thread", thread_id);
+
+winform.button3.oncommand = function(id,event){
+	var t = winform.edit2.text;
+	if(not #t ) {
+	    win.msgbox("请指定线程ID");
+	}
+	t = tonumber(t);
+	thread.set("stop", t);
+	updateThreadList();
+}
+
+updateThreadList = function(){
+	winform.combobox.clear();
+	for threadEntry in process.eachThread(process.getId()) {  
+		winform.combobox.add(tostring(threadEntry.th32ThreadID));
+    }
+    if(winform.combobox.count > 0) {
+        winform.combobox.selIndex = 1;
+    }
+}
+
+
+winform.combobox.onListChange= function(){ 
+	winform.edit2.text = winform.combobox.selText;
+}
+
+winform.button2.oncommand = function(id,event){
+	var t = winform.edit2.text;
+	if(not #t ) {
+	    win.msgbox("请指定线程ID");
+	}
+	t = tonumber(t);
+	
+	::PostThreadMessage(t, 0x12/*_WM_QUIT*/ ,0,0);
+    //..raw.closehandle( thrd.handle );
+    thread.set("stop", t);
+     
+	updateThreadList();
+}
+	
+	//::PostThreadMessage(t, 0x12/*_WM_QUIT*/,0,0);
+	
+ 
+    /*
+    
+    
+    	BOOL TerminateThread(
+  	[in, out] HANDLE hThread,
+  	[in]      DWORD  dwExitCode
+	);
+    
+    */
+/*
+    TerminateThread = ::Kernel32.api("TerminateThread","int(INT hThread,INT dwExitCode)");
+    //TerminateThread((t), 0);
+    
+    GetExitCodeThread = ::Kernel32.api("GetExitCodeThread","bool(INT hThread,INT & lpExitCode)");
+    
+    var r1,r2 = GetExitCodeThread((t), 0);
+    TerminateThread((t), r2);
+    
+    
+*/
+    
+
+updateThreadList();
+
+winform.show();
+win.loopMessage();

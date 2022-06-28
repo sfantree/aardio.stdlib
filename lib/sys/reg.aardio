@@ -1,0 +1,40 @@
+﻿//reg 注册表
+namespace sys.reg;
+
+setValueEx = function(name,value,size,valueType,path,root){
+	var rkey = {ptr handle}
+	var err = ::Advapi32.RegCreateKeyExW(root: 0x80000001/*_HKEY_CURRENT_USER*/,path
+		,0,/*lpClass*/, 0/*_REG_OPTION_NON_VOLATILE*/,0xF003F/*_KEY_ALL_ACCESS*/,null,rkey,null);
+	
+	if(!err){
+		var res;
+		if( value===null ) res = ::Advapi32.RegDeleteValueW(rkey.handle,name);
+		else res = ::Advapi32.RegSetValueExW( rkey.handle,name,0,valueType,value,size);
+		
+		::Advapi32.RegCloseKey(rkey.handle); 
+		return res == 0;
+	} 
+}
+
+setValue = function(name,value,path,root) {
+	var t = type(value);
+	if( t==="number" ) return setValueEx(name,{INT dw = value },4,4/*_REG_DWORD*/,path,root); 
+	elseif( t==="string"  ) {
+		value = ..string.toUnicode(value);
+		return setValueEx(name,value,#value+2,1/*_REG_SZ*/,path,root); 
+	}
+	elseif( t==="buffer"  ) return setValueEx(name,value,#value,3/*_REG_BINARY*/,path,root); 
+	elseif( value===null ) return setValueEx(name,null,0,0,path,root); 
+	else error("@value 参数类型错误",2)
+};
+
+/**intellisense()
+sys.reg = 简单写注册表\n如果需要更多功能,请改用 win.reg
+sys.reg.setValue( = 写注册表
+sys.reg.setValue(.(name,value,path,root) = 写注册表,\n@name 使用字符串指定值名称,\n@value 可指定数值、字符串、buffer、null\n数值为存为 _REG_DWORD 类型,\n字符串值存为 _REG_SZ 类型,\nbuffer 值存为 _REG_BINARY 类型。,\nnull 值表示删除。\n\n参数 @path 使用字符串指定注册表路径,\n参数 @root 指定注册表根键,省略则默认为 _HKEY_CURRENT_USER
+end intellisense**/
+
+::Advapi32 := ..raw.loadDll("Advapi32.dll");
+/**intellisense(::)
+::Advapi32 = Advapi32.dll 模块\n以下标准库已加载该模块:\ncrypt,process,service,sys,sys.reg,win.reg\n!dllmodule.
+end intellisense**/

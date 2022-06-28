@@ -1,0 +1,129 @@
+import win.ui;
+import carl.ctrl.listviewex
+import carl.ctrl.pagectrl;
+import carl.sql;
+/*DSG{{*/
+var winform = win.form(text="listview扩展控件演示";right=599;bottom=452)
+winform.add(
+lvEx={cls="listviewex";text="listview扩展控件";left=8;top=8;right=592;bottom=368;edge=1;transparent=1;z=1};
+pagectrl={cls="pagectrl";text="分页控件";left=8;top=392;right=592;bottom=433;edge=1;transparent=1;z=2}
+)
+/*}}*/
+
+import console;
+ 
+//listview扩展控件是根据数据库返回的数据集结构设计的
+ 
+//io.open();
+    
+winform.listview = winform.lvEx.listview;//listview原始控件
+
+winform.listview.onnotify = function(id,code,ptr){
+   return winform.lvEx.openonnotify(id,code,ptr);//开启消息回调,默认启用排序,右键菜单等功能
+}
+  
+//添加表头,key键值,name列名显示名称,len宽度 为0,表示隐藏
+winform.lvEx.addHead(
+{   
+    {key="rowId"; name="序号"; len=50};
+    {key="title"; name="标题"; len=50};
+    {key="length"; name="长度"; len=80};
+    {key="year"; name="时间"; len=80};
+    {key="starring"; name="主演"; len=100};
+}
+)
+  
+import sqlite
+ 
+ 
+db = sqlite("/test-sqlite.db")
+ 
+//创建表 
+if( not db.existsTable("film") ){  
+    db.exec( "CREATE TABLE [film](title, length, year, starring);")  
+    db.beginTrans();
+    for(i=1;20;1){
+        var command = db.prepare("REPLACE INTO film VALUES (@title,@length,@year, 'Jodie Foster');" ) 
+        command.step(  
+            title = "标题";
+            length = i;
+            year = time.now();
+        )       
+     
+    }
+    db.commitTrans();
+     
+}  
+ 
+ 
+ 
+winform.basic_sql = "SELECT title, length, year, starring FROM film";
+winform.orderby = "length";
+winform.isPage = true;
+ 
+executeSql = function(currentPage, pageSize){
+    winform.lvEx.clearRow();
+ 
+    if( ! winform.basic_sql ){
+        winform.msgboxErr("请设置page控件SQL语句","提示")
+        return ; 
+    }
+    var where = "";
+    if( type(winform.where) == "function" ){//自定义查询语句
+        where = winform.where();
+    }
+    if(where === false) return false;
+    where = #where ? "where " + where : "";
+    var sql;
+    if(winform.isPage){
+        var drive = winform.drive : ..config[["__drive"]] : "mysql";
+        sql = (drive == "mysql") ?
+        ..carl.sql.my.getPageSql(winform.basic_sql + " " + where, currentPage, pageSize, winform.orderby) :
+        ..carl.sql.ms.getPageSql(winform.basic_sql + " " + where, currentPage, pageSize, winform.orderby);  
+    }else {
+        sql = winform.basic_sql ++ " " ++ where;
+        if(#winform.orderby) sql += " order by " ++ winform.orderby;
+    }
+    winform.lastSql = sql;
+    tab,err = db.getTable(sql);
+  
+    if( !tab ){
+        winform.msgbox(err,"提示")
+        return ;
+    }
+    if( #tab ){
+        if( winform.isPage ){
+            winform.pagectrl.totalCount = tab[1]["rowCount"];//总记录
+        }else {
+            winform.pagectrl.pageSize = #tab
+            winform.pagectrl.totalCount = #tab;
+        }
+        winform.lvEx.showData(tab, currentPage, pageSize)
+    }else {
+        winform.pagectrl.totalCount = "0";
+    }   
+}
+ 
+  
+  
+winform.pagectrl.listview(winform.lvEx.listview);
+ 
+winform.pagectrl.pageSize = 5;
+winform.pagectrl.showPage = function(){//分页绑定函数
+    if( ShowPageStatus ){return ; }
+    winform.ShowPageStatus = true;
+    try{
+        executeSql(winform.pagectrl.nowPage, winform.pagectrl.pageSize);
+    }
+    catch(e){
+        ..io.print(e)
+    }           
+    ShowPageStatus = null;  
+}
+
+
+
+winform.pagectrl.load();
+ 
+winform.show()
+win.loopMessage()

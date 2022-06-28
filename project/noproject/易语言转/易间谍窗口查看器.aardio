@@ -1,0 +1,134 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="窗口查看器";right=284;bottom=407;border="thin";composited=1)
+winform.add(
+button={cls="button";text="最小化到托盘";left=16;top=360;right=112;bottom=384;z=13};
+button2={cls="button";text="关于";left=128;top=360;right=192;bottom=384;z=14};
+button3={cls="button";text="退出";left=208;top=360;right=272;bottom=384;z=15};
+edit={cls="edit";left=104;top=40;right=267;bottom=64;edge=1;font=LOGFONT(h=-15);z=2};
+edit10={cls="edit";left=104;top=120;right=267;bottom=144;edge=1;font=LOGFONT(h=-15);z=6};
+edit11={cls="edit";left=104;top=160;right=267;bottom=184;edge=1;font=LOGFONT(h=-15);z=8};
+edit12={cls="edit";left=104;top=200;right=267;bottom=224;edge=1;font=LOGFONT(h=-15);z=10};
+edit13={cls="edit";left=104;top=240;right=267;bottom=264;edge=1;font=LOGFONT(h=-15);z=12};
+edit2={cls="edit";left=104;top=320;right=267;bottom=344;edge=1;font=LOGFONT(h=-15);z=19};
+edit3={cls="edit";left=128;top=280;right=267;bottom=304;edge=1;font=LOGFONT(h=-15);z=17};
+edit5={cls="edit";left=104;top=80;right=267;bottom=104;edge=1;font=LOGFONT(h=-15);z=4};
+static={cls="static";text="窗口标题：";left=16;top=40;right=96;bottom=64;center=1;font=LOGFONT(h=-15);transparent=1;z=1};
+static10={cls="static";text="窗口类名：";left=16;top=120;right=96;bottom=144;center=1;font=LOGFONT(h=-15);transparent=1;z=5};
+static11={cls="static";text="窗口类值：";left=16;top=160;right=96;bottom=184;center=1;font=LOGFONT(h=-15);transparent=1;z=7};
+static12={cls="static";text="窗口样式：";left=16;top=200;right=96;bottom=224;center=1;font=LOGFONT(h=-15);transparent=1;z=9};
+static13={cls="static";text="窗口ID：";left=16;top=240;right=96;bottom=264;center=1;font=LOGFONT(h=-15);transparent=1;z=11};
+static2={cls="static";text="窗口范围：";left=16;top=320;right=96;bottom=344;center=1;font=LOGFONT(h=-15);transparent=1;z=18};
+static3={cls="static";text="窗口扩展样式：";left=16;top=280;right=120;bottom=304;center=1;font=LOGFONT(h=-15);transparent=1;z=16};
+static5={cls="static";text="窗口句柄：";left=16;top=80;right=96;bottom=104;center=1;font=LOGFONT(h=-15);transparent=1;z=3}
+)
+/*}}*/
+
+import win.util.tray;
+
+winform.button.oncommand = function(id,event){
+	var tray = win.util.tray(winform,,"易间谍") //创建托盘图标 
+	//tray.pop("我最小化并跑到托盘来了" )
+	winform.show(false); //隐藏窗口
+	return true;//阻击默认消息传递,取消最小化过程
+}
+
+winform.wndproc = {
+	[0xACCF/*_WM_TRAYMESSAGE*/ ] = function(hwnd,message,wParam,lParam){
+		if( lParam = 0x205/*_WM_RBUTTONUP*/ ){ 
+	    	var pt = ::POINT();
+			::User32.GetCursorPos(pt);
+	    	
+	    	
+	    	//弹出托盘菜单以前,一定要前置主窗口中,不然不点击菜单不会消失
+	    	win.setForeground(winform.hwnd)
+	    	winform.popmenu.popup(pt.x,pt.y,true )
+	    }	
+	}
+}
+
+winform.popmenu = win.ui.popmenu(winform);//创建弹出菜单
+winform.popmenu.add('&open',
+    function(id){
+	//在下面输入菜单响应代码
+	    winform.show()
+	}
+);
+//winform.popmenu.add();//分隔线
+winform.popmenu.add('&exit',
+    function(id){ 
+        winform.close() 
+    }
+)
+
+//退出按钮
+winform.button3.oncommand = function(id,event){
+	win.quitMessage();
+}
+
+import winex;
+winform.setInterval( 
+	1000,function(){
+		var x, y = win.getCursorPos();
+		var hwnd = winex.fromPoint(x, y);
+		
+		// 窗口标题
+		var len = ::User32.SendMessageA(hwnd,0xE/*_WM_GETTEXTLENGTH*/,0,0) + 1;  
+		var buffer = raw.buffer(len);
+		::User32.GetWindowTextA(hwnd, buffer, len);    
+		var str = string.str(buffer);   
+		string.setUtf(str,1);
+		
+		//窗口句柄
+		winform.edit.text = str;
+		winform.edit5.text = tostring(hwnd);
+		
+		//窗口类名
+		var className = win.getClass(hwnd);
+		winform.edit10.text = tostring(className);
+		
+		//窗口类值
+		var classValue = win.getClassLong( hwnd, -32 )
+		winform.edit11.text = tostring(classValue);
+		
+		//窗口样式
+		var styleValue =  win.getStyle(hwnd);
+		winform.edit12.text = tostring(styleValue);
+		
+		//窗口扩展样式
+		var styleValueEx =  win.getStyleEx(hwnd);
+		winform.edit3.text = tostring(styleValueEx);
+		
+		// 窗口id
+		var winId =  win.getId(hwnd)
+		winform.edit13.text = tostring(winId);
+		
+		
+		var x,y,w,h =  win.getPos(hwnd,true)
+		winform.edit2.text = string.format("%d, %d, %d, %d", x,y,w,h);
+		
+	} 
+)
+
+winform.button2.oncommand = function(id,event){
+
+var aboutWinStr = /****
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="关于";right=379;bottom=279)
+winform.add(
+button={cls="button";text="确定";left=136;top=232;right=248;bottom=264;z=2};
+edit={cls="edit";left=16;top=16;right=360;bottom=224;edge=1;multiline=1;z=1}
+)
+/*}}*/
+
+winform.show();
+win.loopMessage();
+****/
+
+	var aboutWin = winform.loadForm(aboutWinStr);
+	aboutWin.doModal();
+}
+
+winform.show();
+win.loopMessage();

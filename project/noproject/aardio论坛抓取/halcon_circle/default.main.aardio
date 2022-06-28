@@ -1,0 +1,102 @@
+import win.ui;
+/*DSG{{*/
+mainForm = win.form(text="Halcon函数circle测试";right=833;bottom=525)
+mainForm.add(
+button={cls="button";text="button";left=9;top=9;right=170;bottom=59;z=2};
+picturebox={cls="picturebox";left=182;top=0;right=834;bottom=526;bgcolor=8421376;z=1};
+snumber={cls="static";text="0";left=18;top=397;right=150;bottom=433;font=LOGFONT(h=-21);transparent=1;z=3}
+)
+/*}}*/
+
+//import console;
+
+var dll = ..raw.loadDll("\res\halconc.dll","halconlib","cdecl");
+T_open_window= dll.api("T_open_window","int(struct Row, struct Column, struct Width, struct Height, struct FatherWindow, struct Mode, struct Machine, struct& WindowHandle)");
+open_window= dll.api("open_window","int(int Row, int Column, int Width, int Height, int FatherWindow, string Mode, string Machine, int& WindowHandle)");
+T_read_image= dll.api("T_read_image","int(ADDR& Image, struct FileName)");
+read_image= dll.api("read_image","int(ADDR& Image, string FileName)");
+T_get_image_size= dll.api("T_get_image_size","int(ADDR Image, struct& Width, struct& Height)");
+get_image_size= dll.api("get_image_size","int(ADDR Image, int& Width, int& Height)");
+T_disp_obj= dll.api("T_disp_obj","int(ADDR Object, struct WindowHandle)");
+disp_obj= dll.api("disp_obj","int(ADDR Object, int WindowHandle)");
+T_fast_threshold= dll.api("T_fast_threshold","int(ADDR Image, ADDR& Region, struct MinGray, struct MaxGray, struct MinSize)");
+fast_threshold= dll.api("fast_threshold","int(ADDR Image, ADDR& Region, double MinGray, double MaxGray, int MinSize)");
+T_disp_region= dll.api("T_disp_region","int(ADDR DispRegions, struct WindowHandle)");
+disp_region= dll.api("disp_region","int(ADDR DispRegions, int WindowHandle)");
+T_set_colored= dll.api("T_set_colored","int(struct WindowHandle, struct NumberOfColors)");
+set_colored= dll.api("set_colored","int(int WindowHandle, int NumberOfColors)");
+T_set_color= dll.api("T_set_color","int(struct WindowHandle, struct Color)");
+set_color= dll.api("set_color","int(int WindowHandle, string Color)");
+T_boundary= dll.api("T_boundary","int(ADDR Region, ADDR& RegionBorder, struct BoundaryType)");
+boundary= dll.api("boundary","int(ADDR Region, ADDR& RegionBorder, string BoundaryType)");
+T_clip_region_rel= dll.api("T_clip_region_rel","int(ADDR Region, ADDR& RegionClipped, struct Top, struct Bottom, struct Left, struct Right)");
+clip_region_rel= dll.api("clip_region_rel","int(ADDR Region, ADDR& RegionClipped, int Top, int Bottom, int Left, int Right)");
+T_dilation_circle= dll.api("T_dilation_circle","int(ADDR Region, ADDR& RegionDilation, struct Radius)");
+dilation_circle= dll.api("dilation_circle","int(ADDR Region, ADDR& RegionDilation, double Radius)");
+T_reduce_domain= dll.api("T_reduce_domain","int(ADDR Image, ADDR Region, ADDR& ImageReduced)");
+reduce_domain= dll.api("reduce_domain","int(ADDR Image, ADDR Region, ADDR& ImageReduced)");
+T_edges_sub_pix= dll.api("T_edges_sub_pix","int(ADDR Image, ADDR& Edges, struct Filter, struct Alpha, struct Low, struct High)");
+edges_sub_pix= dll.api("edges_sub_pix","int(ADDR Image, ADDR& Edges, string Filter, double Alpha, int Low, int High)");
+T_segment_contours_xld= dll.api("T_segment_contours_xld","int(ADDR Contours, ADDR& ContoursSplit, struct Mode, struct SmoothCont, struct MaxLineDist1, struct MaxLineDist2)");
+segment_contours_xld= dll.api("segment_contours_xld","int(ADDR Contours, ADDR& ContoursSplit, string Mode, int SmoothCont, double MaxLineDist1, double MaxLineDist2)");
+T_count_obj= dll.api("T_count_obj","int(ADDR Objects, struct& Number)");
+count_obj= dll.api("count_obj","int(ADDR Objects, int& Number)");
+T_set_draw= dll.api("T_set_draw","int(struct WindowHandle, struct Mode)");
+set_draw= dll.api("set_draw","int(int WindowHandle, string Mode)");
+T_select_obj= dll.api("T_select_obj","int(ADDR Objects, ADDR& ObjectSelected, struct Index)");
+select_obj= dll.api("select_obj","int(ADDR Objects, ADDR& ObjectSelected, int Index)");
+T_get_contour_global_attrib_xld= dll.api("T_get_contour_global_attrib_xld","int(ADDR Contour, string Name, struct& Attrib)");
+T_fit_circle_contour_xld= dll.api("T_fit_circle_contour_xld","int(ADDR Contours, struct Algorithm, struct MaxNumPoints, struct MaxClosureDist, struct ClippingEndPoints, struct Iterations, struct ClippingFactor, struct& Row, struct& Column, struct& Radius, struct& StartPhi, struct& EndPhi, struct& PointOrder)");
+fit_circle_contour_xld= dll.api("fit_circle_contour_xld","int(ADDR Contours, string Algorithm, int MaxNumPoints, double MaxClosureDist, int ClippingEndPoints, int Iterations, double ClippingFactor, double& Row, double& Column, double& Radius, double& StartPhi, double& EndPhi, string& PointOrder)");
+T_gen_circle_contour_xld= dll.api("T_gen_circle_contour_xld","int(ADDR& ContCircle, struct Row, struct Column, struct Radius, struct StartPhi, struct EndPhi, struct PointOrder, struct Resolution)");
+gen_circle_contour_xld= dll.api("gen_circle_contour_xld","int(ADDR& ContCircle, double Row, double Column, double Radius, double StartPhi, double EndPhi, string PointOrder, double Resolution)");
+T_get_contour_attrib_xld= dll.api("T_get_contour_attrib_xld","int(ADDR Contour, string Name, struct& Attrib)");
+T_set_line_width= dll.api("T_set_line_width","int(struct WindowHandle, struct Width)");
+set_line_width= dll.api("set_line_width","int(int WindowHandle, double Width)");
+
+ 
+//console.open();
+mainForm.button.oncommand = function(id,event){
+     
+    var ret,Image = read_image(0,"res/double_circle");
+    var ret,width,height = get_image_size(Image,0,0);
+    var ret,Hwindow = open_window(0,0,width,height,mainForm.picturebox.hwnd,"visible", "",0);
+    var ret = disp_obj(Image,Hwindow);
+    win.delay(1000)
+    var ret,Region = fast_threshold(Image,0,0,120,7);
+    set_colored(Hwindow,6);
+    disp_region(Region,Hwindow)
+    win.delay(1000)
+    var ret,RegionBorder = boundary(Region,0,"inner");
+    var ret,RegionClipped = clip_region_rel(RegionBorder,0,5,5,5,5);
+    var ret,RegionDilation = dilation_circle(RegionClipped,0,2.5);
+    var ret,ImageReduced = reduce_domain(Image,RegionDilation,0);
+    var ret = disp_obj(ImageReduced,Hwindow);
+    win.delay(1000)
+    var ret,Edges = edges_sub_pix(ImageReduced,0,"canny",2,20,60);
+    var ret = disp_obj(Edges,Hwindow);
+    win.delay(1000)
+    var ret,ContoursSplit = segment_contours_xld(Edges,0,"lines_circles",5,4,3);
+    //var ret = disp_obj(ContoursSplit,Hwindow);
+    var ret = disp_obj(Image,Hwindow);
+    var ret,Number = count_obj(ContoursSplit,0);
+    //mainForm.snumber.text = Number;
+    set_draw(Hwindow,"margin");
+    set_color(Hwindow,"orange red");
+    set_line_width(Hwindow,4.0);
+    for(i=1;Number;1){
+        var ret,ObjectSelected = select_obj(ContoursSplit,0,i);
+        //var ret,Attrib = T_get_contour_global_attrib_xld(ObjectSelected,"cont_approx",{});
+        //if(Attrib > 0){
+            var ret,Row, Column, Radius, StartPhi, EndPhi, PointOrder = fit_circle_contour_xld (ObjectSelected, 'ahuber', -1, 2, 0, 3, 2, 0, 0, 0, 0, 0, 0)
+            var ret,ContCircle = gen_circle_contour_xld (0, Row, Column, Radius, 0, math.rad(360), 'positive', 1.0)
+            var ret = disp_obj(ContCircle,Hwindow);
+            win.delay(1000)
+       // }
+    }
+}
+ 
+mainForm.enableDpiScaling();
+mainForm.show();
+ 
+return win.loopMessage();

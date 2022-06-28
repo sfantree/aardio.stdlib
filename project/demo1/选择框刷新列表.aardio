@@ -1,0 +1,57 @@
+import win.ui;
+/*DSG{{*/
+mainForm = win.form(text="update combobox list";right=299;bottom=77;border="thin")
+mainForm.add(
+button3={cls="button";text="Update";left=179;top=24;right=279;bottom=50;z=2};
+combobox={cls="combobox";left=18;top=24;right=161;bottom=50;edge=1;items={};mode="dropdown";z=1}
+)
+/*}}*/
+
+// 获取卡组列表并选择
+mainForm.combobox.oncommand = function(id,event){
+	
+}
+
+import thread;
+import console;
+mainForm.button3.oncommand = function(id,event){
+	thread.invoke( 
+	    
+		function(mainForm){
+			//import web.rest.jsonLiteClient;
+			//mainForm.button3.text = "haha";
+	//var deckNames = //win.invoke(
+		//function(){
+			mainForm.button3.disabled = true;
+			import web.rest.jsonLiteClient;
+			var restClient  = web.rest.jsonLiteClient();
+			var postData = /*
+			{
+    			"action": "deckNamesAndIds",
+    			"version": 6
+			}
+			*/
+			var jsonData = restClient.post("http://127.0.0.1:8765", postData) 
+			var deckNames = jsonData[["result"]]
+
+			var result = {};
+			for i,v in (deckNames){
+    			table.push(result, tostring(i));
+			}
+			//console.dump(result)
+			if(#result > 0) {
+			    mainForm.combobox.autoComplete(result, 1);
+			}
+			mainForm.button3.disabled = false;
+		//}
+		//deckNames()
+	//)	
+		
+		}, mainForm
+	)
+
+}
+
+
+mainForm.show();
+win.loopMessage();

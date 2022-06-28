@@ -1,0 +1,9 @@
+import console;
+
+var str = "如何按字符为单位拆分字节";
+var tstr = string.split(str);
+for(i=1;#tstr;1){
+    console.log( tstr[ i ] )
+}
+
+console.pause(true);

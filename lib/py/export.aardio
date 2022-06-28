@@ -1,0 +1,78 @@
+﻿//export 导出模块
+namespace py.export;
+
+__staticModuleDef__ = {};
+
+self@ = {
+
+	_set = function(k,v){
+		if( ( type(k)!= type.string ) || (type(v) != type.table) ){
+			self[[k]] = v;
+			return;
+		}
+		
+		var pyMethods = {}  
+		var callbacks ={}
+		var moduleTable = v;
+		var moduleName = k;
+		if( __staticModuleDef__[moduleName] ){
+			error("已经导出过该名称的aardio模块到python",2); 
+		}
+		
+		for(k,v in moduleTable){
+			if( type(v) != type.function ) continue ;
+			if( type(k) != type.string ) continue ;
+			
+			var callback = ..raw.tocdecl(
+				function(self_,args){
+					var tp = ..py.tuple(args);	
+					var args2 = tp.parseValue();
+					tp.stealPtr();
+					var ret = invoke(v,owner,..table.unpackArgs(args2) );
+					return ..py.object(ret).stealPtr();
+				},"pyObject(pyObject self,pyObject args)",moduleTable);
+				
+			..table.push(pyMethods,{string name=k;ptr method = callback;int flags = 1|2;string doc = moduleTable[k+"Doc"]: k});
+		}
+		..table.push(pyMethods,{string name;ptr method;int flags;string doc })
+		 
+		var pyModuleDef = {
+			//ptr _ob_next_debug; 
+			//ptr _ob_prev_debug; 
+			addr ob_refcnt = 1;
+			ptr ob_type;
+			ptr m_init;
+			addr m_index;
+			ptr m_copy; 
+			string m_name = moduleName;
+			string m_doc = moduleName;
+			addr m_size = -1;
+			ptr m_methods =  ..raw.buffer({struct defs[]=pyMethods });
+			ptr m_slots;
+			ptr m_traverse;
+			ptr m_clear;
+			ptr m_free;
+		} 
+		
+		//分配固定的内存地址
+		var pyModuleDefPtr = ..raw.buffer(pyModuleDef);
+		
+		var m =  ::Python.PyModule_Create2P(pyModuleDefPtr ,1013);
+		if(m){
+			var md = ..py.dict(::Python.PyImport_GetModuleDictP());
+			md.setItem(moduleName,..py.object(m,true) ) 
+			..py.DecRef(m);
+				
+			/*
+			因为Python会继续引用pyModuleDefPtr以及pyModuleDef的成员字段的内存地址，
+			所以在这里添加全局静态引用避免变量被aardio回收释放，
+			*/
+			__staticModuleDef__[moduleName] = {
+				pyModuleDefPtr = pyModuleDefPtr; 
+				pyModuleDef = pyModuleDef;
+				pyMethods = pyMethods;
+			};	
+				
+		}
+	} 
+}

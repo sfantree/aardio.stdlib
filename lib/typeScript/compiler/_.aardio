@@ -1,0 +1,108 @@
+import fsys; 
+import web.script;
+import sevenZip.lzma;
+namespace typeScript;
+
+uncompress = function(str){
+	var header = ..sevenZip.lzma.LZMA_HEADER()
+	var size = ..raw.sizeof(header)
+	..raw.convert(str,header); 
+	return ..sevenZip.lzma.unCompress(..string.right(str,-(size+1)),header); 
+}
+
+filesystem = { 
+	fileData = {
+		['~/lib/typeScript/compiler/lib.d.ts'] = uncompress( $'~/lib/typeScript/compiler/.res/lib.d.ts.lzma' );
+		['~/lib/typeScript/compiler/lib.es6.d.ts'] = uncompress( $'~/lib/typeScript/compiler/.res/lib.es6.d.ts.lzma' );
+		['~/lib/typeScript/compiler/lib.scriptHost.d.ts'] = uncompress( $'~/lib/typeScript/compiler/.res/lib.scriptHost.d.ts.lzma' );
+	};
+    newLine = '\r\n';
+    useCaseSensitiveFileNames = false;
+    write = function (s) { 
+    	 ..io.stdout.write(s);
+    };
+    readFile = function(fileName, encoding){ 
+    	return owner.fileData[fileName] : ..string.load(fileName);
+    }; 
+    writeFile = function(fileName, data, writeByteOrderMark){
+    	..string.save(fileName, data)
+    };
+    resolvePath = function (path) { 
+    	if( owner.fileData[path] ) return path;
+        return ..io.fullpath(path)
+    };
+    fileExists = function (path) { 
+    	if( owner.fileData[path] ) return true;
+        return ..io.exist(path);
+    };
+    directoryExists = function (path) {
+        return  ..fsys.isDir(path)
+    };
+    createDirectory = function (directoryName) {
+        ..fsys.createDir(directoryName)
+    };
+    getExecutingFilePath = function () {
+        return "~/lib/typeScript/compiler/tsc.js"
+    };
+    getCurrentDirectory = function () {
+        return ..fsys.getCurDir();
+    };
+    readDirectory = function(path, extension){
+    	var result = {};
+    	..fsys.enum( path, "*.*",
+    		function(dir,filename,fullpath,findData){ 
+    			if(filename){ 
+               		if( !extension || ..string.endWith(filename,extension) ){
+               			..table.push(result,fullpath)
+               		}
+    			} 
+    		}  
+    	);
+    	 
+    	return _vm.createArray(result);
+    }; 
+    getMemoryUsage = function(){
+    	return -1;
+    };
+    exit = function (exitCode) {
+        
+    }
+}
+
+var tcsCode = uncompress( $"~\lib\typeScript\compiler\.res\tsc.js.lzma" );
+tcsCode = ..string.replace(tcsCode,"ts\.sys\s*=\s*%()","ts.sys = __filesystem__;//");
+tcsCode = ..string.replace(tcsCode,"ts\.executeCommandLine\s*\(\s*ts\.sys\.args\s*\)","")
+
+_vm = ..web.script() 
+_vm.__filesystem__ = filesystem;  
+_vm.AddCode(tcsCode);
+
+compiler = _vm.CodeObject.ts;
+compiler[["execute"]] = function(...){
+	..fsys.setCurDir("/") 
+	filesystem.args = _vm.createArray( type(...) == type.table ? ... : { ... } );  
+	compiler.executeCommandLine(filesystem.args);
+}
+..fsys.setCurDir("/") 
+
+/**intellisense(typeScript)
+compiler.execute("-help") = 可指定多个启动参数或参数数组,例如_ARGV
+compiler.version = 版本号
+filesystem.fileData = 虚拟文件数组,\n键为文件名,值为文件数据
+filesystem.readFile(fileName,encoding) = @.readFile = function(fileName,encoding){
+    return ..string.load(fileName);
+}; 
+filesystem.writeFile(fileName,data,writeByteOrderMark) = @.writeFile = function(fileName,data,writeByteOrderMark){
+    ..string.save(fileName, data)
+};
+end intellisense**/
+
+ 
+/*
+..sevenZip.lzma.encodeFile('~/lib/typeScript/compiler/.res/lib.d.ts','~/lib/typeScript/compiler/.res/lib.d.ts.lzma');
+..sevenZip.lzma.encodeFile('~/lib/typeScript/compiler/.res/lib.es6.d.ts','~/lib/typeScript/compiler/.res/lib.es6.d.ts.lzma');
+..sevenZip.lzma.encodeFile('~/lib/typeScript/compiler/.res/tsc.js','~/lib/typeScript/compiler/.res/tsc.js.lzma');
+..sevenZip.lzma.encodeFile('~/lib/typeScript/compiler/.res/lib.scriptHost.d.ts','~/lib/typeScript/compiler/.res/lib.scriptHost.d.ts.lzma');
+*/ 
+
+ 

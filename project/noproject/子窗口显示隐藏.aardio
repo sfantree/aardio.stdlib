@@ -1,0 +1,20 @@
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form( bottom=399;parent=...;right=599;text="aardio Form" )
+winform.add( 
+btnPopup={ bottom=206;right=387;left=176;top=143;z=1;text="点这里弹出子窗口";cls="button" }
+)
+/*}}*/
+
+var 子窗口 = ..win.form( top=-50;bottom=185;parent=winform;right=301;left=-50;text="子窗口纠结的子窗口" )
+子窗口.onClose = function(){
+    子窗口.show(false);
+    return false;//禁止关闭
+}
+
+winform.btnPopup.oncommand = function(id,event){ 
+    子窗口.show( ); 
+}
+
+winform.show() 
+win.loopMessage();

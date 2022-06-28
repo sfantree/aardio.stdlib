@@ -1,0 +1,17 @@
+import baota;
+var bt = baota("http://ip地址:端口/","接口密钥")
+
+import console;
+var info = bt.system(action="GetSystemTotal");
+console.dumpJson(info);
+
+var info = bt.files(
+	path = "/www";
+	action = "GetDir";
+	tojs = "GetFiles";
+	p = 1;
+	showRow = 200;
+);
+console.dumpJson(info);
+
+console.pause();

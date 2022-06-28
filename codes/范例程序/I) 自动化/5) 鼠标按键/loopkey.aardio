@@ -1,0 +1,60 @@
+//循环按键
+import key;
+import winex;
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="可设定循环按键 ";right=408;bottom=203;parent=...)
+winform.add(
+btnLoop={cls="button";text="开始循环";left=142;top=135;right=247;bottom=167;z=1};
+btnQuit={cls="button";text="退出程序";left=261;top=134;right=366;bottom=166;z=2};
+editSetting={cls="edit";text="1";left=120;top=70;right=156;bottom=93;edge=1;multiline=1;num=1;style=8192;z=3};
+editWndTitle={cls="edit";text="记事本";left=120;top=34;right=251;bottom=57;edge=1;multiline=1;z=5};
+lbRepeat={cls="static";text="设定循环次数:";left=6;top=72;right=112;bottom=88;align="right";transparent=1;z=4};
+lbRepeat2={cls="static";text="必须小于200";left=168;top=75;right=274;bottom=91;transparent=1;z=8};
+lbTitle={cls="static";text="目标窗口标题:";left=6;top=37;right=112;bottom=53;align="right";transparent=1;z=6};
+lbTitle2={cls="static";text="支持模式匹配语法";left=260;top=37;right=392;bottom=55;transparent=1;z=7}
+)
+/*}}*/
+
+getSettingCount = function(){
+
+	//getSettingCount, 并转换为数值
+	var num = tonumber(winform.editSetting.text) 
+	
+	//输入正确性检测
+	if( num && num > 200){ 
+		winform.editSetting.showErrorTip("错误","请输入小于200的数值"   )  
+	}
+	
+	//返回数值
+	return num or 0;
+}
+
+winform.editSetting.onChange = function(){ 
+	getSettingCount(); //调用此函数检测正确性
+}
+
+winform.btnQuit.oncommand = function( ) { 
+    winform.close() //关闭窗口 
+}
+ 
+winform.btnLoop.oncommand = function( ) {
+ 
+ 	//激活需要控制的窗口
+ 	winex.findActivate( winform.editWndTitle.text )
+	
+	for(i=1;getSettingCount() ){
+		
+		//如果用户关闭程序
+		if( ! win.delay(1000) )
+			break; //中断循环
+			
+		//做你要做的事
+		key.press( "N" )
+	}
+}
+
+//显示窗口
+winform.show() 
+//消息循环
+win.loopMessage();

@@ -1,0 +1,24 @@
+import win.ui;
+//导入自定义的用户库
+/*DSG{{*/
+mainForm = win.form(text="haha";right=291;bottom=191;border="dialog frame";edge=1;frame=1;parent=...)
+mainForm.add(
+button={cls="button";text="查看对应字符";left=77;top=125;right=212;bottom=158;z=3};
+edit={cls="edit";left=214;top=67;right=266;bottom=91;edge=1;multiline=1;z=2};
+static2={cls="static";text="输入任意一个小于128的数值：";left=27;top=68;right=196;bottom=90;transparent=1;z=1}
+)
+/*}}*/
+
+mainForm.button.oncommand = function(id,event){
+	import string;
+	if(mainForm.edit.text) {
+	    var editNum = tonumber(mainForm.edit.text, 10);
+		var letter = "";
+		letter = string.pack(editNum);
+		win.msgbox(letter);
+	}
+	
+}
+
+mainForm.show()
+win.loopMessage();

@@ -1,0 +1,30 @@
+﻿//lib 加载运行时
+import win.path;
+import zlib.httpFile;
+
+namespace julia.lib;
+	
+var dllPath = ..io.appData("aardio\std\julia\julia-1.6.1\bin\libjulia.dll");
+..win.path.add(..io.appData("aardio\std\julia\julia-1.6.1\bin\") );
+
+..string.setenv("JULIA_BINDIR",..io.appData("aardio\std\julia\julia-1.6.1\bin\"));
+..string.setenv("JULIA_PROJECT",..io.fullpath("\"));
+//..win.path.add(..io.appData("aardio\std\julia\julia-1.6.1\depot"),"JULIA_DEPOT_PATH"); 
+
+if(!..io.exist(dllPath)){
+	if(! ..zlib.httpFile.download("https://mirrors.tuna.tsinghua.edu.cn/julia-releases/bin/winnt/x86/1.6/julia-1.6.1-win32.zip"
+	,"正在下载 Julia 语言",..io.appData("aardio/std/julia/down"),..io.appData("aardio/std/julia")) ){
+		return;
+	}
+}
+
+::LibJulia = ..raw.loadDll(dllPath,,"cdecl");
+::LibJulia.jl_init__threading();
+..table.gc(self,function(){
+	::LibJulia.jl_atexit_hook(0);
+});
+
+/**intellisense(::)
+::LibJulia = julia.lib 默加载的 libjulia.dll 组件\n!dllmodule.
+end intellisense**/
+

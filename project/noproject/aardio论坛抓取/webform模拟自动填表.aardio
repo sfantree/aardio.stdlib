@@ -1,0 +1,20 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="Web Form";right=599;bottom=399)
+winform.add()
+/*}}*/
+
+import web.form;
+var wb = web.form( winform );
+
+wb.go("https://plogin.m.jd.com/user/login.action?appid=100&returnurl=http%3A%2F%2Fhome.m.jd.com%2FmyJd%2Fhome.action")
+winform.show();
+wb.wait("");
+
+var ele = wb.queryEles(  tagName="INPUT";className="username"  );
+ele.value = "username"
+
+var ele = wb.queryEles(  tagName="INPUT";className="pwd" );
+ele.value = "123"
+
+win.loopMessage();

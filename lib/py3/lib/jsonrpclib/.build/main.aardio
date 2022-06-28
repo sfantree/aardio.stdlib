@@ -1,0 +1,23 @@
+import fsys;
+import ide; 
+
+//获取生成 EXE 文件所在目录
+var publisDir = ide.getPublisDir();
+if(!#publisDir) return; 
+
+//获取发布后 jsonrpclib 存储位置
+var pyLibTarget =  fsys.joinpath(publisDir,"\lib\py3\lib\jsonrpclib\.py\jsonrpclib\" ); 
+if( ! io.exist(pyLibTarget) ){ 
+	io.createDir( pyLibTarget );
+	
+	//查找扩展库中 Python 模块 jsonrpclib 所在目录
+	var libPath,libDir = io.libpath("py3.lib.jsonrpclib");
+	var pyLibSrc = fsys.joinpath(libDir,"\.py\jsonrpclib\*.*");
+	
+	//清除缓存
+	fsys.delete(fsys.joinpath(libDir,"\.py\jsonrpclib\__pycache__"));
+	
+	//复制 jsonrpclib 模块到发布目录
+	fsys.copy(pyLibSrc,pyLibTarget,0x10/*_FOF_NOCONFIRMATION*/  | 0x200/*_FOF_NOCONFIRMMKDIR*/); 
+}
+

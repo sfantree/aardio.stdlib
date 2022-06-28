@@ -1,0 +1,26 @@
+import win.ui;
+//导入自定义的用户库
+/*DSG{{*/
+mainForm = win.form(text="haha";right=384;bottom=321;border="dialog frame";edge=1;frame=1;parent=...)
+mainForm.add(
+button2={cls="button";text="Button";left=114;top=179;right=236;bottom=218;z=1}
+)
+/*}}*/
+
+mainForm.button2.oncommand = function(id,event){
+    import process;
+    // "C:\Users\lin\AppData\Roaming\Telegram Desktop\Telegram.exe" -workdir "C:/Users/lin/AppData/Roaming/Telegram Desktop/" -- "%1"
+    // tg://msg_url?channel=FuckCJMarketing
+	// process("C:\Users\lin\AppData\Roaming\Telegram Desktop\Telegram.exe -- tg://resolve?domain=shadiaooo")
+	
+	thread.invoke( 
+		function(){
+			mainForm.button2.disabled = true;
+			sleep(2000);
+			mainForm.button2.disabled = false;
+		}
+	)
+}
+
+mainForm.show()
+win.loopMessage();

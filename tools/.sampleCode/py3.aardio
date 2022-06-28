@@ -1,0 +1,12 @@
+import console;
+import py3;
+
+//显示python内核版本号
+console.log( py3.version ) 
+
+//下面的代码在自定义的名字空间下执行eval功能
+var dict = py3.dict() //创建一个自定义的名字空间
+dict.exec("x=123"); //在名字空间下执行代码
+
+console.log( tonumber( dict.eval("x") )  )
+console.pause();

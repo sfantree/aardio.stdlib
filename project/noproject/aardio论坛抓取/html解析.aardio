@@ -1,0 +1,21 @@
+import console; 
+//var num = console.getNumber( "请输入数值:" )
+
+import inet.http
+var http = inet.http(); 
+var html = http.get("http://bbs.aardio.com/forum.php?mod=viewthread&tid=22380");
+
+import string.html;
+var htmlDoc = string.html(html);
+
+
+//查询所有h1节点
+var h1s = htmlDoc.queryEles( id = "thread_subject"  );
+for i,h1 in table.eachIndex(h1s){
+    console.log(h1.innerText())
+}
+
+
+console.log("html:" ,type(html) );
+
+console.pause(true);

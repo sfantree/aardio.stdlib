@@ -1,0 +1,137 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=99;bottom=99;border="none";max=false;min=false;mode="popup";parent=...;title=false)
+winform.add(
+button={cls="button";text="Button";left=10;top=14;right=90;bottom=46;z=1}
+)
+/*}}*/
+
+import fsys.log;
+import config;
+
+
+
+// hook错误提示并写入日志文件
+global.onError = function( err,over ){ 
+    if(!over){
+        import debug;
+        var stack = debug.traceback(,"调用栈",3);
+        err =  ..string.concat(err,'\n',stack);
+    }
+    fsys.log.print( ..string.replace(err,"![\r\n]\n",'\r\n')  ); //CGI级别错误写入日志
+    return err;
+}
+
+
+// 悬浮窗跟随鼠标拖动
+winform.onMouseDown = function(wParam,lParam){
+    winform.hitCaption();
+}
+
+
+// 悬浮窗右键菜单
+import win.ui.menu;
+winform.popmenu=win.ui.popmenu(winform);
+winform.popmenu.add('打开',function(id){ //添加了一个打开主界面的菜单
+    winform.show();
+})
+winform.popmenu.add('退出',function(id){ //添加了一个退出程序的菜单
+   winform.close()
+})
+
+winform.wndproc = function(hwnd, message, wParam, lParam) {
+    select(message) {
+    case 0x205
+        /*_WM_RBUTTONUP*/
+        {
+            {
+                var x, y = win.getMessagePos(); //获得鼠标位置
+                winform.popmenu.popup(x, y, true) //popup弹出坐标，第三个参数如上
+            }
+        }
+    }
+}
+
+
+
+import winex;
+import mouse;
+import mouse.hook;
+global.hk = mouse.hook();
+// 键盘钩子记录最后一次按键位置
+global.lastLButtonUpHwnd = 0;
+global.hk.proc = function(msg,x,y){
+    select(msg) {
+        case 0x202/*_WM_LBUTTONUP*/{
+            //winform.richedit.print("左键弹起",x,y)
+            // http://bbs.aardio.com/forum.php?mod=viewthread&tid=11800
+            var hwndTarget = 0;
+            hwndTarget = winex.fromPointReal( mouse.getPos() ) : winex.fromPoint( mouse.getPos() );
+            global.lastLButtonUpHwnd = hwndTarget;
+            fsys.log.print("hwndTarget:" + tostring(hwndTarget, 16));
+        }
+    }   
+}
+
+import key;
+winform.button.oncommand = function(id,event){
+
+    
+    // 复制选中文本
+    if(global.lastLButtonUpHwnd) {
+        
+        if(global.lastLButtonUpHwnd == winform.hwnd) {
+             
+            winform.msgBox("请使用热键操作");
+            return;
+        }
+        
+        
+        
+        //1. 第一种方式 发送WM_COPY
+        //::SendMessageInt( global.lastLButtonUpHwnd, 0x0301/*_WM_COPY*/ , 0, 0);
+        //fsys.log.print("SendMessageInt:" + tostring(global.lastLButtonUpHwnd, 16));
+        
+        //2. 模拟按键 CTRL + C
+        key.pressEx( "CTRL","C" )
+        fsys.log.print("模拟复制按键 CTRL + C")
+    }
+    
+    
+    
+    
+    //fsys.log.print("click button");
+	//error("haha");    
+	//fsys.log.print(config.__appName);
+	var frmChild = winform.loadForm("/dlg/richwin.aardio");
+	//frmChild.show();
+	//frmChild.richedit.text = "";
+	
+	frmChild.richedit.paste();
+	frmChild.setTimeout(
+    	function(){
+        	win.close(frmChild.hwnd);
+    	}
+    	,1500
+    )
+}
+
+
+var hkid = winform.reghotkey(
+    function(id,mod,vk){
+        fsys.log.print("ctrl + e");
+        winform.button.oncommand();
+    } 
+,0x2/*_MOD_CONTROL*/,'E'#);
+
+
+//  调整为左上角
+var screenX,screenY = win.getScreen();
+win.setPos(winform.hwnd, screenX - 200, 0 + 100, winform.width, winform.height);
+
+
+win.setTopmost(winform.hwnd);
+
+winform.show() 
+win.loopMessage();
+

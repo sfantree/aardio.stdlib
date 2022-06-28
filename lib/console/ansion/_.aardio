@@ -1,0 +1,22 @@
+﻿import console;
+import win.version;
+
+namespace console.ansion{ 
+	ansion = {}
+	if(!_WINE) {
+		var ansion = false;
+		if(_WIN10_LATER){
+			if(..win.version.buildNumber>=10586){
+				ansion = true;
+			}
+		}
+		
+		if(!ansion){
+			..console["$(ANSION32.DLL)"] = ..raw.loadDll($"~\lib\console\ansion\.res\ANSI32.dll","ANSION32");
+		}	
+	}   
+}
+
+/**intellisense()
+console.ansion =  在启动线程导入一次即可,\n用于console库函数开启ANSI转义序列，\nWIN10 1511 以上操作系统已自带此功能
+end intellisense**/

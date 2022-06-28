@@ -1,0 +1,88 @@
+﻿import com;
+namespace com {
+	
+    class regexp {
+    	ctor(){
+			this.o = ..com.CreateObject("VBScript.RegExp");
+			if( ! this.o ) {
+			    return null,"VBScript.RegExp 初始化失败";
+			}
+			..table.gc(this,"Quit");
+		}; 
+		@_metaProperty;
+	}
+	
+}
+
+namespace com.regexp {
+    import util.metaProperty; 
+	_metaProperty = util.metaProperty( 
+	    setAttribute = function(pattern, original, caseSensitive = false, multiline = true, globalMatch = true){
+	    	if(caseSensitive == null) {caseSensitive = false}
+	    	if(multiline == null) {multiline = true}
+	    	if(globalMatch == null) {globalMatch = true}
+	    	owner.o.IgnoreCase = caseSensitive;
+	    	owner.o.Multiline = multiline;
+	    	owner.o.Singleline = true;
+	    	owner.o.Global = globalMatch;
+	    	owner.o.Pattern = pattern;
+	    	
+	    	owner.original = original;
+	    	//owner.o.IgnoreCase = caseSensitive;
+	    	var result = owner.o.Execute(original);
+	    	owner.r = result;
+	    	return not (result == null);
+	    }
+	    
+	    getPattern = function(){
+	    	if(owner.o.Pattern != null) {
+	    	    return owner.o.Pattern;
+	    	} else {
+	    	    return "";
+	    	}
+	    }
+	    
+	    getMatchCount = function(){
+	    	if(owner.r.Count != null) {
+	    	    return owner.r.Count;
+	    	} else {
+	    	    return 0;
+	    	}
+	    }
+	    
+	    replace = function(after){
+	    	var r = owner.o.Replace(owner.original, after);
+	    	
+	    	return r;
+	    }
+	    
+	    getMatchText = function(matchIndex, startPos){
+	    	var match = owner.r.Item[matchIndex - 1];
+	    	var r = match.Value;
+	    	if(startPos != null) {
+	    	    startPos = ..string.indexOf(owner.original, r, match.FirstIndex);
+	    	}
+	    	return r, startPos;
+	    }
+	    
+	    
+	    
+	);
+}
+
+/******
+import com.regexp;
+var o = com.regexp();
+o.setAttribute();
+
+******/
+import console;
+import com.regexp;
+var o = com.regexp();
+o.setAttribute("12", "123");
+var c = o.getMatchCount();
+console.log(c);
+var m = o.getMatchText(1);
+console.log(m);
+console.pause();
+

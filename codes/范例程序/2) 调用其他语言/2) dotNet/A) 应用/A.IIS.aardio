@@ -1,0 +1,29 @@
+//管理 IIS 服务器
+import dotNet; 
+
+//也可以用程序集对象的 new 函数直接创建对象
+Administration = dotNet.load("Microsoft.Web.Administration");
+ServerManager = Administration.import("ServerManager")
+var serverManager = ServerManager();
+
+//启动指定网站
+//注意 C# 中下标要改为 Sites.Item["www.example.com"]
+serverManager.Sites.Item["www.aardio.com"].Start()
+
+//注册 MIME
+/*
+var config = serverManager.GetWebConfiguration("www.example.com");
+var handlersSection = config.GetSection("system.webServer/handlers");
+
+var handlersCollection = handlersSection.GetCollection();
+var addElement = handlersCollection.CreateElement("add");
+addElement.Item["name"] = "aardio";
+addElement.Item["path"] = "*.aardio";
+addElement.Item["verb"] = "*";
+addElement.Item["modules"] = "FastCgiModule";
+addElement.Item["scriptProcessor"] = "D:\AardioCGI\Publish\AardioCGI.exe";
+handlersCollection.AddAt(0, addElement);
+*/
+
+//下面这句取消注释，可用于提交更新。
+//serverManager.CommitChanges();

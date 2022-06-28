@@ -1,0 +1,20 @@
+//点击窗口菜单
+import winex; 
+import process;
+
+var prcs = process("Notepad");
+var hwnd = winex.find("Notepad",,prcs.id);
+var hEdit = winex.findEx(hwnd,1,"Edit");
+winex.sendString("test",hEdit);
+
+//查找指定的菜单( "文件" 菜单下的 "另存为" )
+//var hMenu,menuId = winex.findMenu(hwnd ,"文件","另存为");
+//winex.click(hwnd,menuId);
+
+//点击菜单项( "文件" 菜单下的 "另存为" )
+winex.click( hwnd,"文件","另存为") 
+
+/*
+注意这种方式仅用于点击传统窗口菜单，
+无句柄菜单请改用 string.ocrLite 或 dotNet.ocr 等屏幕找字组件。
+*/

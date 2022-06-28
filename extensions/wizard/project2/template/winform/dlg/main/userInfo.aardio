@@ -1,0 +1,40 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=367;bottom=47;border="thin";exmode="none";mode="popup")
+winform.add(
+button={cls="button";text="登录";left=256;top=8;right=352;bottom=40;z=2};
+lbUser={cls="static";left=16;top=8;right=232;bottom=32;db=1;dl=1;dr=1;dt=1;transparent=1;z=1}
+)
+/*}}*/
+
+winform.updateUserInfo = function(){
+	if( ..globalUserName ){
+		winform.lbUser.text = '欢迎:' + ..globalUserName;
+		winform.button.text = "退出";
+	}
+	else {
+		winform.lbUser.text = '未登录';
+		winform.button.text = "登录";
+	}
+	
+	winform.lbUser.redrawTransparent();
+}
+
+winform.button.oncommand = function(id,event){
+	if( ..globalUserName ){
+		..globalUserName = null;
+	}
+	else {
+		if(winform.loadForm("\dlg\login\login.aardio").doModal()){
+			
+		}
+	}
+	
+	winform.updateUserInfo();	
+}
+
+winform.updateUserInfo();
+
+winform.show();
+win.loopMessage();
+return winform;

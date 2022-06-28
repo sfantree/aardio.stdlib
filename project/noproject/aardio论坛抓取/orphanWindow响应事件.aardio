@@ -1,0 +1,65 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=581;bottom=355)
+winform.add(
+custom={cls="custom";text="custom";left=55;top=74;right=383;bottom=290;hide=1;z=2};
+edit={cls="edit";left=56;top=46;right=243;bottom=74;edge=1;z=1}
+)
+/*}}*/
+
+winform.custom.add(
+        listview={cls="listview";gridLines=1;border=1;eedge=1;fullRow=1;msel=false;z=2};
+)
+
+winform.custom.listview.insertColumn("货号",100)
+winform.custom.listview.insertColumn("尺寸",100)
+
+winform.custom.orphanWindow();
+
+winform.edit.oncommand = function(id,event){
+        if( event  == 0x400 ){
+                winform.custom.listview.clear()
+                winform.custom.show(0x4);               
+                winform.custom.listview.addItem({"5151";"38"})
+                winform.custom.listview.addItem({"965121";"40"})
+        }
+}
+
+winform.edit.wndproc = function(hwnd,message,wParam,lParam){
+        if (message == 0x100/*_WM_KEYDOWN*/&& wParam == 0xD/*_VK_RETURN*/){
+                winform.custom.listview.setFocus()
+                winform.custom.listview.selIndex=1
+        }
+}
+
+winform.custom.listview.onnotify = function(id,code,ptr){
+        select(code) {
+        case 0xFFFFFFFD/*_NM_DBLCLK*/ {                    
+                winform.custom.show(false)              
+        }
+        //listview的回车键失去响应              
+        case 0xFFFFFFFC/*_NM_RETURN*/{                 
+                winform.custom.show(false)   
+        }
+     }       
+}
+//listview回调函数也不能响应
+winform.custom.listview.wndproc = function(hwnd,message,wParam,lParam){
+        if (message == 0x100/*_WM_KEYDOWN*/&& wParam == 0xD/*_VK_RETURN*/){
+                winform.custom.show(false)
+        }
+}
+
+winform.isDialogMessage = function(hwnd,msg){
+        if( msg.message == 0x100/*_WM_KEYDOWN*/&&msg.wParam == 0xD/*_VK_RETURN*/ ){               
+                return false;
+        }
+}
+
+// orphanWindow 孤儿窗口
+winform.custom.onOk = function(){
+        winform.msgbox("ok")
+}
+
+winform.show()
+win.loopMessage();

@@ -1,0 +1,64 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add(
+button={cls="button";text="button";left=461;top=377;right=568;bottom=421;z=4};
+button3={cls="button";text="button";left=616;top=376;right=723;bottom=420;z=5};
+checklist={cls="checklist";left=422;top=23;right=739;bottom=133;edge=1;items={};z=1};
+edit={cls="edit";text="edit";left=29;top=16;right=331;bottom=347;edge=1;multiline=1;z=3};
+listview={cls="listview";left=410;top=195;right=745;bottom=339;edge=1;z=2}
+)
+/*}}*/
+
+winform.edit.text = /*
+测试
+
+测试
+
+
+
+测试
+测试
+
+
+顶戴sdf
+*/
+
+winform.listview.insertColumn("",100);
+winform.listview.checkbox = true;
+
+winform.button.oncommand = function(id,event){
+    winform.checklist.clear();
+        winform.listview.clear();
+        tab = string.split(winform.edit.text,'<\r\n>')
+        for(i=1;#tab;1){
+            if(!#tab[ i ]) continue ;
+                //winform.listview.addItem(tab[ i ]);
+                //winform.listview.setChecked(i);
+                var index = winform.listview.addItem(tab[ i ]);
+                winform.listview.setChecked(index);
+        }
+    for(i=1;#tab;1){
+            if(!#tab[ i ]) continue ;
+                //winform.checklist.addItem(tab[ i ]);
+                //winform.checklist.setChecked(i);
+                var index = winform.checklist.addItem(tab[ i ]);
+                winform.checklist.setChecked(index);
+        }
+}
+
+winform.button3.oncommand = function(id, event) {
+    winform.checklist.clear();
+    winform.listview.clear();
+    for (i = 1; winform.edit.lineCount) {
+        var lt = winform.edit.lineText(i);
+        if (lt) {
+            winform.listview.setChecked(winform.listview.addItem(lt))
+            winform.checklist.setChecked(winform.checklist.addItem(lt))
+        }
+    }
+}
+
+
+winform.show()
+win.loopMessage();

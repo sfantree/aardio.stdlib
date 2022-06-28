@@ -1,0 +1,12 @@
+
+if( ___sqlite_dll__ ) error("不能导入不同版本的sqlite支持库",2)
+___sqlite_dll__ = raw.loadDll($"~/lib/sqlite/aes256/.res/sqlite3-aes256.dll","sqlite3-aes256.dll","cdecl")
+
+import sqlite.base;
+sqlite["aes256"] = sqlite.base;
+
+/**intellisense()
+sqlite.aes256 = 支持加密功能的 sqlite 扩展库,\n导入此扩展库以后,代码中仍然可以使用 sqlite\n参考: http://sourceforge.net/projects/wxcode/files/Components/wxSQLite3/
+sqlite.aes256("\数据库路径") =  这个函数是 sqlite 构造函数的别名,\n参数一指定数据库路径,支持自动创建数据库文件.\n第二个参数(可选参数)指定数据库密钥 
+sqlite.aes256() = !sqliteConn.
+end intellisense**/

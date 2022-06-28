@@ -1,0 +1,10 @@
+﻿//TOML解析器
+import console; 
+import string.toml;
+
+var str = string.toml.stringify({abc=123,d={1,2,3}});
+console.log( str );
+
+import process.code;
+process.code("~\lib\string\toml\.res");
+console.pause(true);

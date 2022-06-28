@@ -1,0 +1,228 @@
+﻿//externalServer 服务端
+import web.rpc.jsonServer;
+import web.socket.jsonServer;
+import string.aasdl;
+
+namespace web.rpc{
+	
+	class externalServer{
+		ctor(){
+			this.ws = ..web.socket.server(); 
+			this.rpc = ..web.socket.jsonServer(this.ws);
+			this.http = this.ws.httpServer; 
+			
+			this.httpHandler = {
+				["/aardio.js" ] = function(response,request){
+					var ip,port = this.ws.getLocalIp();
+					var js = ..string.replace($"~\lib\electron\app\.build\aardio\index.js"
+						,"@{{{$rpcServerPort}}}",tostring(port));
+					
+					if(!#this.$aasdl) this.$aasdl = ..string.aasdl(this.external); 
+					js = ..string.replace(js,"@{{{$rpcAasdl}}}",this.$aasdl);
+					
+					response.contentType = "text/javascript";
+					
+					response.write(js) 
+				}
+				["/rpc/http"] = function(response,request){
+					
+					var rpcSocket = topointer( request.headers["rpc-client-id"] );
+					if(rpcSocket) {
+						this.hActiveSocket = rpcSocket; 
+						var jsonServer = ..web.rpc.jsonServer(); 
+						jsonServer.rpc.external = this.rpc.external;
+						jsonServer.rpc.onError = function(err,requestData){
+							if(this.onError){
+								return this.onError(rpcSocket,err,requestData);
+							}
+							else {
+								errput(err,"electron/http/rpc error");
+							} 
+						};
+						jsonServer.rpc.run(rpcSocket);
+					}
+					else {
+						error("错误的RPC请求，请求头缺少：rpc-client-id",2)
+					}
+				}
+			}
+			
+			this.ws.onUpgradeToWebsocket = function(hSocket,request,response,protocol,origin){    
+				if( request.path == "/rpc/ws" ){
+					return this.rpc.start(hSocket);
+				} 
+				response.close();
+			}
+			
+			this.ws.onClose = function(hSocket,err){
+				if(this.onClose){
+					return this.onClose(hSocket,err);
+				}
+			}
+			
+			this.ws.onOpen = function(hSocket){
+				this.rpc.notify(hSocket,"rpcClientId",tonumber(hSocket) );
+			}
+			
+			this.ws.onError = function(hSocket,err){
+				if(this.onError){
+					return this.onError(hSocket,err);
+				}
+				else {
+					errput(err,"web.rpcServer/ws/rpc error");
+				} 
+			}
+		}; 
+		publish = function(...){
+			this.rpc.publish(...)
+		};
+		survey = function(...){
+			this.rpc.survey(...)
+		};
+		xcall = function($,method,...){
+			if( type($) == "string" )return this.xcallMain($,method,...);
+			return this.rpc.xcall($ : this.getActiveSocket(),method,...);
+		};
+		notify = function($,method,...){
+			if( type($) == "string" )return this.notifyMain($,method,...);
+			return this.rpc.notify($ : this.getActiveSocket(),method,...);
+		};
+		doScript = function($,js,...){
+			if( ... !== null ) js = ..string.format(js,...);
+			return this.notify($,"doScript",js);
+		};
+		callback = function(name,func){
+			if( type(name) != type.string ) error("参数@1必须是字符串",2);
+			if( (func!==null) && (type(func) != type.function )  )error("参数@2必须是函数对象",2);
+			this.rpc.xcallback[name] = func;
+		}; 
+		getActiveSocket = function(){
+			return this.hActiveSocket;
+		};
+		getUrl = function(path){
+			return this.http.getUrl(path);
+		};
+		start = function(serverPort,serverIp){
+			this.external = ..table.assign( this.external,{ 
+				$onUrlReady = function($,url){
+					if(this.onUrlReady){ this.onUrlReady($,url); }
+				};
+			})
+			
+			this.rpc.external = this.external;
+			var ret,err = this.ws.start(serverIp:"127.0.0.1",serverPort);
+			if(!ret) return null,err;
+			
+			{
+				var ip,port = this.http.getLocalIp();
+				
+				::Kernel32.SetEnvironmentVariable("aarStartEnviron",..web.json.stringify( {
+					rpcPort = port;
+					rpchttpServerUrl  = this.http.getUrl("rpc/http"); 
+					rpcServerUrl  = this.ws.getUrl("rpc/ws"); 
+					rpcMainServerUrl  = this.ws.getUrl("rpc/ws");   
+					appPath = ..io.fullpath("/");
+					nodePath =  ..io.fullpath("/node_modules/");
+					aasdl = ..string.aasdl.strip(this.external);
+				} ) );
+			}
+			
+			this.http.run( 
+				function(response,request){
+					response.headers["Access-Control-Allow-Headers"] = "Content-Type, Rpc-Client-Id, *"
+					
+					if(!this.accessControlAllowOrigin){
+						response.headers["Access-Control-Allow-Origin"] = "*";
+					}
+					else{
+						var origin = request.headers["origin"]
+						if( origin && this.accessControlAllowOrigin[[ origin ]]){
+							response.headers["Access-Control-Allow-Origin"] = origin
+							response.headers["Vary"] = "Origin";
+						}
+					}
+					 
+					if(request.method != "OPTIONS"){
+						var handler = this.httpHandler[request.path];
+						if( handler ){
+							if(type.isString(handler)) {
+								response.contentType = ..fsys.mime.fromData(handler,request.url,"text/html");
+								return response.write(handler); 
+							}
+							return handler(response,request);
+						}
+						response.loadcode( request.path);
+					}
+				} 	
+			);
+		
+			return ret,err;
+		}
+	}
+}
+
+/**details(用法说明)
+
+1、在 aardio 编写的本地软件中创建 RPC 服务端
+var rpcServer = web.rpc.externalServer()
+rpcServer.start();
+
+2、使用 rpcServer.getUrl("aardio.js") 取得 aardio.js 的地址，
+并在网页中使用该地址加载 aardio.js 
+
+3、网页如果使用了 typescript，源码工程中添加 global.d.ts 内容如下：
+
+```
+declare global {
+
+	interface aardioExternal {  
+	/* 添加 external 接口导出的 aardio  函数 */
+	test: (name: string,value: number) => Promise<string>; 
+	}
+}
+export {};
+```
+
+4、如果要限制调用 aardio 函数的域名，可以这样写
+
+rpcServer.accessControlAllowOrigin = {
+	["http://example.com"] = true
+}
+
+end details**/
+
+/**intellisense()
+web.rpc.externalServer = 创建可在普通网页浏览器引入与 aardio 本地软件交互的 RPC 服务端\n建议服务端IP保持默认值 127.0.0.1，\n即可在任意网页中调用 aardio.js 并导入 aardio 对象,\n可嵌入 HTTPS 网页
+web.rpc.externalServer() = 创建可在普通网页浏览器引入与 aardio 本地软件交互的 RPC 服务端,\n可自动支持标准库 nodeJs\n!webRpcExternalServer.
+end intellisense**/
+
+/**intellisense(!webRpcExternalServer)
+start(.(端口,IP) = 启动 RPC 服务端,\n所有参数可选,IP默认为 127.0.0.1,\n建议服务端IP保持默认值 127.0.0.1，\n即可在任意网页中调用 aardio.js 并导入 aardio 对象,\n可嵌入 HTTPS 网页
+getUrl("/aardio->js__") = 参数指定资源文件路径,\n转换并返回为可以通过内嵌HTTP服务端访问的网址,\n可将此函数获取的 aardio.js 嵌入任意浏览器本地打开的网页
+ws = aardio创建的WebSocket服务器\n!stdwebsocketserver.
+rpc = aardio创建的JSON-RPC服务端\n!stdwebsocketjsonserver.
+http = aardio创建的HTTP服务器\n!stdasynHttpServer.
+accessControlAllowOrigin = 指定允许写入 Access-Control-Allow-Headers 响应头的站点地址\n此属性必须为 null 或者指定为一个表对象,\n表的键为允许跨域调用的站点地址,值必须为 true
+publish(.(method,->->->) = 主动向所有客户端发送通知\nmethod指定网页客户端方法名,\n可添加任意个调用参数
+survey(.(method,->->->) = 发起调查任务,\n调用所有网页客户端的同名函数,\nmethod指定客户端方法名,\n可添加任意个调用参数\n\n请使用callback函数指定调查结束后客户端回调的函数
+notify(.($,"method",->->->) = 调用指定chrome函数,但不需要客户端回调反馈,\n\n参数@1指定客户端套接字句柄,\nRPC服务端远程回调函数名首字符为$时,\n第一个回调$参数即为当前客户端套接字句柄,\n除非熟悉getActiveSocket函数导致的潜在问题,请不要省略$参数
+xcall(.($,"method",->->->) = 调用chrome函数,\n参数@1指定客户端套接字句柄,\nRPC服务端远程回调函数名首字符为$时,第一个回调$参数即为当前客户端套接字句柄,\n除非熟悉getActiveSocket函数导致的潜在问题,请不要省略$参数\n\n在chrome的js代码使用 aardio.on("method")\n添加允许aardio调用的js回调函数.\n\n可选使用callback函数指定一个同名回调函数按收本次调用chrome的返回值 
+callback(name,callback) = @.callback("__/*要接收返回值的JS函数名,\n回调叁数$为RPC客户端套接字句柄\n成功result为返回值,失败err为错误信息*/",function($,result,err){\n	\n})
+doScript(.($,js,->->->) = 在chrome中执行javascript代码,忽略返回值,\n在js参数后可选指定多个字符串格式化参数用于调用string.form格式化代码,\n\n参数@1指定客户端套接字句柄,\nRPC服务端远程回调函数名首字符为$时,\n第一个回调$参数即为当前客户端套接字句柄,\n除非熟悉getActiveSocket函数导致的潜在问题,请不要省略$参数
+external = @.external = {
+	__/*可以在这里指定允许chrome访问的对象和函数\n在chrome里引用虚拟的"/aardio.js"导入aardio对象即可访问这里的成员函数,\n请在调用start函数以前设置此对象*/
+}
+getActiveSocket() = 获取RPC服务端当前活动套接字句柄\n,任何触发消息处理、异步套接字处理程序的代码都有可能改变这个函数的返回值\n任何时候都不推荐使用此函数\n\n更好的替代方案是在RPC函数名前添加$字符,用于通知aardio在回调参数中添加$参数\n回调$参数可以稳定可靠的获取当前套接字
+onUrlReady = @.onUrlReady = function(hSocket,url){
+	__/*页面加载完成并且页面上的DOM内容、aardio模块都已准备就绪*/
+}
+onError = @.onError = function($hSocket,err){
+	errput(err,"chrome/rpc error");__/*自定义RPC错误处理*/
+}
+onClose = @.onClose = function($hSocket,err){
+	__/*一个网页窗口断开连接触发此事件*/
+}
+httpHandler = @.httpHandler["/test.js" ] = function(response,request,session){
+	__/*自定义HTTP处理程序\n键为请求的路径,值为处理函数,\n值也可以直接指定响应字符串*/
+}
+end intellisense**/

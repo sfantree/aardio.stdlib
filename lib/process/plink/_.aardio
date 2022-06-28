@@ -1,0 +1,134 @@
+import process.popen;
+import process.job.limitKill;
+import fsys.file;
+
+namespace process;
+
+class plink{
+    ctor( ... ){ 
+        this = ..process.popen(..io.appData("/aardio/std/plink.exe",$"~/lib/process/plink/.res/plink.exe"),...);
+        
+        if( this ) {
+            this.codepage = 65001;
+        	this.__close__ = this.close;
+        	
+        	if(self.limitKill){
+        		this.assignToJobObject(..process.job.limitKill);
+        	}
+        }
+    };
+    close = function(){
+		if( this.stdIn ){
+			this.write('exit','\n');
+			sleep(10);
+		}
+		
+		this.__close__();
+	}  
+}
+
+namespace plink { 
+	
+	limitKill = true;
+	terminate = function(){ /*已废弃函数*/ } 
+
+	class shell{
+		ctor( hostName,password,user="root",severPort,ppk ){
+			if(..string.indexOf(hostName,":")){
+				var a,b = ..string.match(hostName,"([^:]+)\:(\d+)");
+				if(a && b){
+					hostName,severPort = a,b;
+				}
+			}
+			if(!severPort) severPort = "22"
+			
+			this.open = function(shellFile,...){
+				var tempfile;
+				var shell = "";
+				if(shellFile) {
+					if( #shellFile > 0x104/*_MAX_PATH*/ || (!..io.exist(shellFile)) ){
+    					tempfile = ..fsys.file.temp(,true);
+    					shellFile = ..string.crlf(shellFile,true);
+    					tempfile.write(shellFile);
+    					
+    					shellFile = tempfile.path;
+    				}
+    				
+    				shellFile = ..io.fullpath(shellFile)
+    				shell = "-m";
+    			}
+    			
+    			var po = ""
+    			if( ..io.exist(ppk) ){
+    				po = "-i";
+    				ppk = ..io.fullpath(ppk)
+    			}
+
+        		var prcs =  ..process.plink( "-l",user ,"-pw",'"'+(password:"")+'"',po,ppk,"-P",severPort,hostName,shell,shellFile,... );
+				if(prcs){
+					prcs.beforeClose = function(){
+						if(tempfile){
+							tempfile.delete();
+						}
+					}
+					
+					prcs.logger = this.logger;
+					return prcs;
+				} 
+			};
+		};
+		exec = function(shell,...){
+			var prcs = this.open( shell,... ) 
+			if( prcs ){
+				prcs.logResponse();
+				prcs.close(); 
+				return true;
+			}
+		};
+		bash = function(shell,...){
+		 	return this.exec(shell,"-bash",...)
+		}; 
+		verify = function(){
+			var prcs = this.open(""); 
+			prcs.waitOne(100) 
+			prcs.print('y') 
+			prcs.close();  
+		};
+		download = function( remotePath,localPath="/" ){
+			if(!remotePath) error("请使用参数@1指定远程路径",2)
+			if( ..string.indexAny(remotePath,"*?><|"";&![]'`(){}") ) error('linux文件名禁止使用以下字符:\n'+ "*?><|"";&![]'`(){}",2);
+    		..process.pscp.download( this.logger,remotePath,localPath,hostName,password,user,severPort)
+    	};
+    	upload = function( localPath,remotePath="." ){
+    		if(!remotePath) error("请使用参数@1指定远程路径",2)
+			if( ..string.indexAny(remotePath,"*?><|"";&![]'`(){}") ) error('linux文件名禁止使用以下字符:\n'+ "*?><|"";&![]'`(){}",2);
+    		..process.pscp.upload(  this.logger,localPath,remotePath,hostName,password,user,severPort)
+    	}; 
+	} 
+}
+
+/**intellisense()
+process.plink = 使用管道调用Putty命令行连接工具plink.exe\n[plink参数列表](https://the.earth.li/~sgtatham/putty/0.71/htmldoc/Chapter7.html#plink-usage)
+process.plink(命令行参数) = @.plink(  \n    ,"-l","用户名"\n    ,"-pw","密码"\n    ,"-P","22","服务器IP" \n    /*,"-m",io.fullpath("/更多shell命令.txt")*/\n    ,"ls __/*shell命令中请使用单引号代替双引号*/"\n    )
+process.plink() = !process_popen.
+process.plink.shell( = 用于自动登录
+process.plink.shell(.(服务器IP,登录密码,用户名,端口,私钥) = 除服务器IP以外其他参数都是可选参数\n用户名默认为"root",端口默认为22\n如果已经配置了SSH Key可以不用指定密码
+process.plink.shell() = !plink_shell.
+process.plink.terminate() = 关闭所有创建的plink进程
+process.plink.limitKill = 默认值为 true ,如果此参数为 true,\n则创建的所有 plink 进程绑定到 process.job.limitKill 作业对象,\n当前进程退出时,这些 plink 进程也会自动退出
+!plink_shell.verify() = 忽略首次登录时的服务器验证 
+!plink_shell.logger = 回显对象\n该对象必须有log或write成员函数用于进程回显
+!plink_shell.exec( = 执行脚本并回显进程输出
+!plink_shell.exec(.(脚本,其他参数) = 参数@1可以是脚本或文件路径\n其他参数注意包含空格且不含引号则会自动置入双引号内,\n标准输入输出、脚本参数默认使用 UTF-8 编码
+!plink_shell.open( = 执行脚本并返回创建的进程
+!plink_shell.open(.(脚本,其他参数) = 参数@1可以是脚本或文件路径\n其他参数注意包含空格且不含引号则会自动置入双引号内,\n标准输入输出、脚本参数默认使用 UTF-8 编码
+!plink_shell.bash( = 执行脚本并关闭交互模式
+!plink_shell.bash(.(脚本,其他参数) = 参数@1可以是脚本或文件路径\n其他参数注意包含空格且不含引号则会自动置入双引号内,\n标准输入输出、脚本参数默认使用 UTF-8 编码
+!plink_shell.bash() = !process_popen.
+!plink_shell.open() = !process_popen.
+!plink_shell.download( = 下载文件
+!plink_shell.download(.(远程路径,本地路径) = 本地路径可以指定下载目录,也可以指定完整的文件路径\n默认为工程目录
+!plink_shell.upload( = 上传文件
+!plink_shell.upload(.(本地路径,远程目录) = 远程目录默认为当前目录\n本地路径如果指定目录时不能包含空格,建议使用压缩包上传\n在服务端使用 7z -y x 指今解压缩
+end intellisense**/
+

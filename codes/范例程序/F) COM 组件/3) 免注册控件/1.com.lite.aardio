@@ -1,0 +1,43 @@
+//免注册
+import fonts.fontAwesome;
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="免注册嵌入 VB 控件";right=700;bottom=266)
+winform.add(
+edit={cls="edit";left=356;top=20;right=665;bottom=243;db=1;dl=1;dr=1;dt=1;edge=1;hscroll=1;multiline=1;vscroll=1;z=2};
+static={cls="static";text="Static";left=21;top=20;right=330;bottom=243;dl=1;dt=1;transparent=1;z=1}
+)
+/*}}*/
+
+import com.lite; 
+/*
+不想生成独立 EXE 文件可改为 com.lite("ocx文件路径") 
+支持内存加载的 ocx 可以写为 com.lite($"ocx文件路径") 可生成独立文件
+不支持内存加载,又想生成独立文件用下面的方法, ocx 不支持 Unicode 文件路径也用下面的方法解决。
+
+注意不是所有控件都支持免注册调用！！！
+不支持免注册的可以用 com.activeX.regsvr32 静默注册,不需要管理权限，
+也可以用 com.activeX.appData() 释放到 appData 目录注册，可生成独立 EXE 文件。
+*/
+var dll = com.lite.appData("aardio\vb6\Vb6Control.ocx" //dll 后缀名也可以
+	,$"~\codes\范例程序\2) 调用其他语言\F) VB\.vb6\Vb6Control.ocx")
+
+//不需要注册直接创建控件,不是内存 DLL可省略参数@2里指定的类名
+var vbCtrl = dll.createEmbedEx(winform.static);
+
+//响应 COM 事件
+vbCtrl.OnImageClick = function(value){
+	winform.edit.print("VB控件里点击了图像,事件参数:"+value)
+	return 100; //VB里这个事件的参数声明为 ByRef,所以添加返回值可以修改参数
+}
+
+//修改 VB 控件的属性
+vbCtrl.Picture = com.picture.loadObject( "~\codes\范例程序\D) 图形图像\.gdip.jpg" )
+
+//调用 VB 控件的函数
+var c = vbCtrl.Add(2,3);
+winform.edit.print("调用 VB 控件函数返回值:",c);
+winform.edit.print("请点击图像试试");
+
+winform.show();
+win.loopMessage();

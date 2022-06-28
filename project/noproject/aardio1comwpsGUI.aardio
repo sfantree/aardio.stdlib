@@ -1,0 +1,108 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=303;bottom=199)
+winform.add(
+button={cls="button";text="选择目录";left=16;top=160;right=88;bottom=192;font=LOGFONT(name='宋体');z=2};
+button2={cls="button";text="转换为docx";left=216;top=160;right=288;bottom=192;font=LOGFONT(name='宋体');z=3};
+edit={cls="edit";left=16;top=8;right=288;bottom=144;autohscroll=false;edge=1;font=LOGFONT(name='宋体');multiline=1;z=1}
+)
+/*}}*/
+
+import fsys;
+import fsys.dlg.dir;
+import process;
+
+// 选择目录下的所有wps文件
+winform.button.oncommand = function(id, event) {
+	var path = fsys.dlg.dir(, winform, '请选择包含wps文件的目录') if (not path) {
+		return;
+	}
+	global.WpsFiles = {};
+	fsys.enum(path, "*.wps",
+	function(dir, filename, fullpath, findData) {
+		if (filename) {
+			table.push(WpsFiles, fullpath);
+		}
+	},
+	true);
+
+	for (i = 1;#WpsFiles; 1) {
+		winform.edit.printf('%s', WpsFiles[i])
+	}
+}
+
+// 转换为docx
+winform.button2.oncommand = function(id, event) {
+	var WpsObject = com.TryCreateObject("KWPS.Application");
+	if (not WpsObject) {
+		winform.msgWarn("请先安装WPS专业版");
+		return;
+	}
+	
+	var newPaths = {}
+
+	for (i = 1;#WpsFiles; 1) {
+		var path = WpsFiles[i];
+		//var ext = string.match(path,"[^.]+$");
+		//var ext = fsys.getExtensionName(path);
+		var newPath = path + ".docx";
+
+		if (io.exist(newPath)) {
+			continue;
+		}
+
+		try {
+			WpsObject.Visible = false;
+			WpsObject.Documents.Open(path);
+			WpsObject.ActiveDocument.SaveAs2(newPath, 16);
+			table.push(newPaths, newPath);
+			WpsObject.ActiveDocument.Close();
+			//WpsFiles
+		} catch(e) {
+			//continue;
+		}
+	}
+
+	if (WpsObject) {
+		com.Release(WpsObject);
+		WpsObject = nil;
+	}
+	
+	if(#newPaths > 0) {
+	    process.explore(newPaths[1]);
+	}
+	
+
+	winform.msgbox("转换完成");
+
+}
+ 
+//拖放会触发onDropFiles事件
+::Shell32.DragAcceptFiles(winform.hwnd,true);
+winform.onDropFiles = function(files){
+    //winform.edit.print(files);
+    //return;
+    
+    
+    global.WpsFiles = {};
+    //global.WpsFiles = table.concat(global.WpsFiles, files);
+    //global.WpsFiles = table.unique(global.WpsFiles);
+    
+    for (i = 1;#files; 1) {
+        var extName = fsys.getExtensionName(files[i]);
+        if(extName != "wps") {
+            continue;
+        }
+		table.push(global.WpsFiles, files[i]);
+	}
+    
+    
+    
+    for (i = 1;#global.WpsFiles; 1) {
+		winform.edit.printf('%s', global.WpsFiles[i])
+	}
+
+}
+
+winform.show();
+win.loopMessage();

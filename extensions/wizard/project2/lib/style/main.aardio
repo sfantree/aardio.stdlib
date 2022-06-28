@@ -1,0 +1,47 @@
+﻿
+namespace style.main;
+
+strip = {
+	background = { 
+		hover = "/res/images/main-nav-bg-hover.png"; 
+		active = "/res/images/main-nav-bg-active.png"; 
+		default = "/res/images/main-nav-bg.png"; 
+	}
+	checked = { //指定选中状态的样式
+		background = { 
+			default = "/res/images/main-nav-bg-active.png";  
+		} 
+	} 
+}
+
+button = {
+    background = {  //背景
+        default = 0xFFFFFFFF;
+    }
+    color = { //文本颜色
+        hover = 0xF00000FF; 
+    } 
+    border = { //边框
+    	default = {width=0;}
+        hover = { bottom = 1;color= 0xFF1E9FFF; }
+        focus = { bottom = 1;color= 0xFF1E9FFF; }
+    } 
+}
+
+checkbox  = {
+	checked = { //选中状态的样式
+		foreground = { //前景图样式
+			default = "/res/images/check1.png";//默认状态
+			hover = "/res/images/check-hover1.png"; //鼠标移上去的状态
+			focus = "/res/images/check-hover1.png"; //鼠标移上去的状态
+			active = "/res/images/check-active1.png";//鼠标按下去的状态
+			disabled = "/res/images/check-disabled1.png";//控件禁用时的状态 
+		}
+	}
+	foreground = { //前景图样式
+		default = "/res/images/uncheck1.png";//默认状态
+		hover = "/res/images/uncheck-hover1.png"; //鼠标移上去的状态
+		active = "/res/images/uncheck-active1.png";//鼠标按下去的状态
+		disabled = "/res/images/uncheck-disabled1.png"; //控件禁用时的状态 
+	}
+} 

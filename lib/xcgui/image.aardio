@@ -1,0 +1,221 @@
+﻿//image 图像
+import util.metaProperty 
+namespace xcgui;
+
+class image{
+
+	ctor(path,repeat,left,top,right,bottom){ {
+		if( repeat === null ) repeat = "default";
+
+		var stretch = ( repeat=="stretch" || repeat=="scale");
+		var expand = (repeat=="expand") || (repeat=="expandBorder");
+		if( type(path) == type.pointer ) {
+			this.hImage = path;	
+		} 
+		else{
+			if( type(path) != type.string) return path;
+			
+			if(#path>0x208/*_MAX_PATH_U16*/){ 
+				if( ( bottom !== null) && (!expand) ){
+					this.hImage = topointer(::Xcgui.XImage_LoadMemoryRectA(path,#path,left,top,right,bottom,stretch) );
+				}
+				else{
+					this.hImage = topointer(::Xcgui.XImage_LoadMemoryA(path,#path,stretch) );
+				}
+				
+				if(!this.hImage) return;
+				_cachememory__[this] = true;
+			}
+			else{
+				var cacheId = ..string.concat(path,tonumber(repeat),tonumber(left),tonumber(top),tonumber(right),tonumber(bottom) );
+				if(_cache__[cacheId][["hImage"]])return _cache__[cacheId];
+
+				if(..io.exist(path)){
+					if( ( bottom !== null) && (!expand) ){
+						this.hImage = topointer(::Xcgui.XImage_LoadFileRect (..io.localpath(path):path,left,top,right,bottom));
+					}
+					else {
+						this.hImage = topointer(::Xcgui.XImage_LoadFile(..io.localpath(path):path,stretch));
+					}
+				}
+				else {
+					var bin = ..string.loadBuffer(path) : path; 
+					if( ( bottom !== null) && (!expand) ){
+						this.hImage = topointer(::Xcgui.XImage_LoadMemoryRectA(bin,#bin,left,top,right,bottom,stretch) );
+					}
+					else{
+						this.hImage = topointer(::Xcgui.XImage_LoadMemoryA(bin,#bin,stretch) );
+					}
+				}
+				
+				if(!this.hImage) return;	
+				
+				_cache__[cacheId] = this;
+				this.cacheId = cacheId;
+				this.path = path;
+			}
+		}
+		
+		::Xcgui.XImage_AddRef(this.hImage);
+		..table.gc(this,"release");
+		
+		this@ = _metaProperty
+		this.repeat = repeat;
+		
+		if( expand ){
+			this.expand(left,top,right,bottom);
+		}
+	} }; 
+	
+}
+
+namespace image{
+ 
+	_cache__ = {@{_weak="kv"}};
+	_cachememory__ = {@{_weak="kv"}};
+	
+	clear = function(){
+		for(k,img in _cache__) img.release();
+		for(img,v in _cachememory__) img.release();
+	}
+	
+	loadGdipImage = function(image){
+		return ..xcgui.image( ::Xcgui.XImage_LoadFromImage(image) )
+	}
+	
+	loadExtractIcon = function(path){
+		return ..xcgui.image( ::Xcgui.XImage_LoadFileFromExtractIcon(path) )
+	}
+	
+	loadIcon = function(hIcon){
+		return ..xcgui.image( ::Xcgui.XImage_LoadFileFromHICON(hIcon) )
+	}
+	
+	loadBitmap = function(hBitmap){
+		return ..xcgui.image( ::Xcgui.XImage_LoadFileFromHBITMAP(hBitmap) )
+	} 
+	
+	_metaProperty = ..util.metaProperty(
+		release = function(){ 
+			if(owner.hImage){
+				::Xcgui.XImage_Release(owner.hImage); 
+				owner.hImage = null;
+				
+				if(owner.cacheId){
+					_cache__[owner.cacheId] = null;
+				}
+				else {
+					_cachememory__[owner] = null;
+				}
+			}
+		}
+		expand = function(left,top,right,bottom){
+			::Xcgui.XImage_SetDrawTypeAdaptive(owner.hImage,left,top,right,bottom);
+		}
+		isExpanded = function(){
+			return ::Xcgui.XImage_IsAdaptive(owner.hImage); 
+		}
+		isStretch = function(){
+			return ::Xcgui.XImage_IsStretch(owner.hImage); 
+		}
+		isTile  = function(){
+			return ::Xcgui.XImage_IsTile(owner.hImage);  
+		}
+		setRotateAngle = function(v){
+			::Xcgui.XImage_SetRotateAngle(owner.hImage,v)
+		}
+		setTranColor = function(color){
+			::Xcgui.XImage_SetTranColor(owner.hImage,color)
+		}
+		setTranColorEx = function(color,tranColor){
+			::Xcgui.XImage_SetTranColorEx(owner.hImage,color,tranColor)
+		}
+		enableTranColor = function(v){
+			::Xcgui.XImage_EnableTranColor(owner.hImage,v); 	 
+		}
+		enableAutoDestroy = function(v){
+			::Xcgui.XImage_EnableAutoDestroy(owner.hImage,v); 		
+		}	
+		getWidth = function(){
+			return ::Xcgui.XImage_GetWidth(owner.hImage); 	
+		}
+		getHeight = function(){
+			return ::Xcgui.XImage_GetHeight(owner.hImage); 		
+		}	
+		center = {
+			_get = function(){
+				var t = ::Xcgui.XImage_IsCenter(owner.hImage); 
+				
+			}
+			_set = function(v){
+				return ::Xcgui.XImage_EnableCenter(owner.hImage,v); 	
+			}
+		}
+		repeat = {
+			_get = function(){
+				var t = ::Xcgui.XImage_GetDrawType(owner.hImage);
+				if( !t && owner.center ) return "center";
+				return repeat[t]; 
+			}
+			_set = function(v){
+				::Xcgui.XImage_SetDrawType(owner.hImage,repeat[v]); 	
+				owner.center = (v=="center" || v=="scale");
+			}
+		}
+		_topointer = function(){
+			return owner.hImage;
+		}
+	)
+	
+	repeat = {
+		["center"] = 0; //默认居中
+		["default"] = 0; //默认
+		["stretch"] = 1; //拉伸
+		["expand"] = 2; //九宫格贴图
+		["tile"] = 3; //平铺
+		["repeat-x"] = 3; //炫彩不支持，自动转换为tile
+		["repeat-y"] = 3; //炫彩不支持，自动转换为tile
+		["scale"] = 4; //保持比例,只缩小不放大
+		["expandBorder"] = 5; //九宫格贴图但不绘制中间部分
+		[0] = "default";
+		[1] = "stretch";
+		[2] = "expand";
+		[3] = "tile";
+		[4] = "scale";
+		[5] = "expandBorder";
+	} 
+}
+
+/***intellisense()
+xcgui.image = 图像
+xcgui.image( = 创建图像\n注意相同构造参数的对象会自动缓存,不会重复创建相同对象\n所以不应在参数@1中应传入文件路径,而非文件数据
+xcgui.image(.(文件路径,绘制类型) = 创建图像,支持资源路径,绘制类型参数可选\n绘制类型为字符串值，支持以下参数:\n"default" -- 默认,不指定绘制类型时默认为该值\n"center" -- 默认居中\n"stretch" -- 拉伸\n"tile" -- 平铺\n"repeat-x" -- 炫彩不支持，自动转换为tile\n"repeat-y" -- 炫彩不支持，自动转换为tile\n"scale" -- 保持比例,只缩小不放大\n"expand" -- 九宫格贴图\n"expandBorder" -- 九宫格贴图但不绘制中间部分
+xcgui.image(.(文件路径,绘制类型,左,上,右,下) = 如果绘制类型为九宫格,后面可增加四个参数指定切图坐标
+xcgui.image(.(文件路径,绘制类型,左,上,宽,高) = 如果绘制类型不是九宫格,后面可增加四个参数指定加载图片指定的部分\n加载后同样可以调用expand函数设置九宫格贴图
+xcgui.image.loadGdipImage(__) = 自gdip.image,或gdip.bitmap对象创建图像
+xcgui.image.loadExtractIcon(__) = 在参数指定的EXE或DLL路径的文件提取图标并创建图像
+xcgui.image.LoadIcon(__) = 自GDI图标句柄创建图像
+xcgui.image.loadBitmap(__) = 自GDI位图句柄创建图像
+xcgui.image() = !stdxcimage.
+xcgui.image.loadGdipImage() = !stdxcimage.
+xcgui.image.loadExtractIcon() = !stdxcimage.
+xcgui.image.LoadIcon() = !stdxcimage.
+xcgui.image.loadBitmap() = !stdxcimage.
+end intellisense***/
+
+/***intellisense(!stdxcimage)
+release() = 引用计数减一,如果没有其他对象使用该图像则销毁该对象
+expand(.(left,top,right,bottom) = 设置图片自适应九宫格
+isExpanded() = 是否自适应
+isStretch() = 是否拉伸
+isTile () = 是否为平铺图片
+setRotateAngle = 设置旋转角度 
+setTranColor(__)  = 指定图片透明颜色
+setTranColorEx(.(透明颜色,透明度) = 指定图片透明颜色及透明度
+enableTranColor(__/*true或false*/) = 启用或关闭图片透明色 
+enableAutoDestroy(__/*true或false*/) = 启用或关闭自动销毁,当与UI元素关联时有效	
+getWidth() = 宽度
+getHeight() = 高度
+center =  是否居中显示 
+repeat =  绘制类型,字符串值，所有类型如下：\n"default":默认\n"center":默认居中\n"stretch":拉伸\n"expand":九宫格\n"expandBorder":九宫格忽略中间\n"tile":平铺\n"scale":保持比例,只缩小不放大
+end intellisense***/

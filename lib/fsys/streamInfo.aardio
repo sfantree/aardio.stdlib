@@ -1,0 +1,47 @@
+﻿//streamInfo 命名数据流
+import fsys.file;
+
+namespace fsys
+
+class streamInfo{
+	ctor(...){
+ 		var file,err = ..fsys.file(...);
+ 		if(!file) return null,::GetLastError();
+ 			
+		var infoBlock = ..raw.buffer(96 * 1024);
+		var status = ::Ntdll.NtQueryInformationFile(file, { addr Status; INT Information; } 
+			, infoBlock,#infoBlock,22/*FileStreamInformation*/);
+			
+		if( 0 != status ) {
+			file.close();
+			return null,status;
+		}
+			
+		var pInfo = ..raw.toPointer(infoBlock);
+		do{
+			var info = ..raw.convert(pInfo, {
+  				INT nextEntryOffset;
+  				INT streamNameLength;
+  				LONG streamSize;
+  				LONG streamAllocationSize;
+			} )
+			
+			if(info.streamNameLength){
+				var name = ..string.fromUnicode(topointer(pInfo,24),,info.streamNameLength/2)	
+				..table.push(this,name);	
+			}
+		
+			pInfo = info.nextEntryOffset ? topointer(pInfo,info.nextEntryOffset) : null
+		}while(pInfo);
+		
+		file.close();
+	}; 
+	@{_type="array"}
+}
+
+/**intellisense()
+fsys.streamInfo = 用于获取文件或目录的全部数据流名称,\nNTFS 文件系统支持  Alternate Data Streams 特性,\n允许同一文件或目录附加存储多个命名数据流,\n普通读写文件默认访问的是主数据流（未命名流）,\n\n备用数据流（命名流）默认是不可见的，\n通过在文件名后 + ":" + "流名称" 可读写命名数据流
+fsys.streamInfo( = 用于获取文件或目录的全部数据流名称,\n成功返回数组,失败返回 null,错误代码,\n如果传入不存在或非NTFS分区的文件路径则返回 null\n\n因为#操作符可用于null或数组,\n可用#操作符判断是否存在命名数据流
+fsys.streamInfo(.(path) = 用于获取文件或目录的全部数据流名称,\n@path 参数指定文件或目录路径,\n成功返回数组,失败返回 null,错误代码
+fsys.streamInfo(.(path,mode,shareMode,creation,flagsAndAttributes,secAttrib) = 用于获取文件或目录的全部数据流名称,\n@path 参数指定文件或目录路径,\n\n其他所有参数与 fsys.file 相同,\n一般不必指定这些参数
+end intellisense**/

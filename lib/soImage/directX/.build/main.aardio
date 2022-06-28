@@ -1,0 +1,12 @@
+﻿import ide;
+import fsys;
+
+var publisDir = ide.getPublisDir();
+if(!#publisDir)return; 
+
+var pubDir =  fsys.joinpath(publisDir,"\lib\soImage\directX\.res\" ); 
+if( ! io.exist(pubDir) ){ 
+	var libPath,libDir = io.libpath("soImage.directX")
+	..fsys.createDir(pubDir);
+	..fsys.copy( fsys.joinpath(libDir,"\.res\d3dx9_43.dll") ,pubDir,0x10/*_FOF_NOCONFIRMATION*/  | 0x200/*_FOF_NOCONFIRMMKDIR*/);  
+}

@@ -1,0 +1,66 @@
+﻿//installer 网络安装包
+import zlib.httpFile;
+import process;
+
+namespace zlib;
+	
+class installer{
+	ctor( appName,url,parameters,savePath,x86exe,x64exe,winform,operation){
+		if(!savePath){
+			savePath = ..io.appData("aardio/inet/installer/");
+		}
+	
+		return ..zlib.httpFile.download(url
+			,"正在下载程序运行必需组件：" + appName,downloadDir,,,..win.getActive()
+			,function(downBox,extraDir){
+				downBox.text = "安装本程序运行必需组件：" + appName;  
+				downBox.labInfo.text = "请允许 " + appName + " 安装程序以管理权限启动  ……"; 
+				downBox.labProgress.text = ""; 
+	
+				downBox.progress.setProgressRange(0,100) 
+
+				var installer;
+				if(!x86exe){
+					fsys.enum( extraDir, "*.exe",
+						function(dir,filename,fullpath,findData){ 
+							if(filename){ 
+					           	installer = fullpath;
+					           	return true;
+							} 
+						}  
+					);
+				}
+				elseif(x64exe && _WIN_64 ){
+					installer = ..io.joinpath(extraDir,x64exe);
+				}
+				else{
+					installer = ..io.joinpath(extraDir,x86exe);
+				}
+				
+				var shInfo,err = ..process.executeEx(installer,parameters,operation : "runas",,,downBox[["hwnd"]]);
+				if(shInfo[["hProcess"]]){ 
+					downBox.labInfo.text = "正在安装，请稍候数分钟 ……" 
+					downBox.labProgress.text = "如果安全软件阻止安装，请选择「允许全部操作」"; 
+					downBox.progress.startProgress();  
+		
+					..thread.waitOne(shInfo.hProcess);
+					..raw.closehandle( shInfo.hProcess  );
+					
+					::Kernel32.MoveFileEx(this.savePath,null,0x4/*_MOVEFILE_DELAY_UNTIL_REBOOT*/)
+				}
+				else { 
+					return null,err:"未知错误";
+				}
+			}) 
+	}; 
+}
+
+installer.asInvoker = function(appName,url,parameters,savePath,x86exe,x64exe,winform){
+	return ..inet.installer(appName,url,parameters,savePath,x86exe,x64exe,winform,"open");
+}
+
+/**intellisense()
+zlib.installer( = 下载 *.zip、*.tar.gz、*.tgz 文件并解压启动包内安装程序\n通常启动安装程序加上 /? 参数可以查看该安装程序支持的参数
+zlib.installer(.(appName,url,parameters,savePath,x86exe,x64exe,winform) = 下载压缩包并启动压缩包内安装程序,以管理权限启动安装,\n@appName 参数下载窗口标题显示的应用程序名,\n@url 参数为下载地址,\n@parameters 参数为运行安装程序的参数,可选参数,\n@savePath 参数为存储路径,可选参数,\n@winform 用于指定父窗口,可选参数\n@x86exe 指定安装包中32位安装程序相对路径，\n@x64exe 指定安装包中64位安装程序相对路径，可选参数，\n用户阻止安装程序以管理权限启动返回false,成功启动并关闭返回true\n返回true并不表明安装过程中没有出错
+zlib.installer.asInvoker(.(appName,url,parameters,savePath,x86exe,x64exe,winform) = 下载压缩包并启动压缩包内安装程序,以当前进程权限启动安装,\n@appName 参数下载窗口标题显示的应用程序名,\n@url 参数为下载地址,\n@parameters 参数为运行安装程序的参数,可选参数,\n@savePath 参数为存储路径,可选参数,\n@winform 用于指定父窗口,可选参数\n@x86exe 指定安装包中32位安装程序相对路径，\n@x64exe 指定安装包中64位安装程序相对路径，可选参数，\n用户阻止安装程序以管理权限启动返回false,成功启动并关闭返回true\n返回true并不表明安装过程中没有出错
+end intellisense**/

@@ -1,0 +1,13 @@
+import process.popen
+import console;
+
+console.open();
+var prcs = process.popen(
+    "ping.exe" ,
+    " www.qq.com" ,
+    {flags =  0x1/*_STARTF_USESHOWWINDOW*/} //隐藏窗口
+);
+   
+//等待进程关闭
+thread.wait(prcs.thandle);
+console.pause();

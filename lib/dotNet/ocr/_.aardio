@@ -1,0 +1,275 @@
+﻿import dotNet; 
+import gdip.snap;
+import string.fuzzyMatching;
+import winex.mouse;
+
+namespace dotNet;
+
+var appDomain = ..dotNet.appDomain()
+var ocrAssembly = appDomain ? appDomain.loadFile($"~\lib\dotNet\ocr\.res\ocr.dll");
+
+class ocr{
+	ctor(){
+		if(!_WIN10_LATER) error("仅支持 Windows 10 以上系统",2); 
+		if(!ocrAssembly ) error("当前系统未安装.Net Framework",2);
+
+		this.ocrEngine = ocrAssembly.new("aardio.UwpOcrEngine");
+		var languages = this.ocrEngine.AvailableRecognizerLanguages();
+	  
+		if(#languages){
+			if(..table.indexOf(languages,"zh-Hans-CN")){
+				this.language = "zh-Hans-CN";
+			}
+			else {
+				this.language = ..table.pop(languages)
+			}	
+		} 	
+		
+		this.wordSpace = null;
+	};
+	availableLanguages = function(){
+		return this.ocrEngine.AvailableRecognizerLanguages()
+	};
+	detectBuffer = function(buffer){
+		if(!this.language){
+			error("未指定识别语言",2);
+		}
+		
+		var ocrResult = this.ocrEngine.Recognize( buffer,this.language); 
+		if(ocrResult && ocrResult.LineCount()){
+			var resultBlocks = {};
+			var  resultLines  = {};
+			for(lineIndex=1;ocrResult.LineCount();1){
+				var wordRects = ocrResult.GetWordRects(lineIndex-1);
+				var rect = {
+					left = wordRects[1][1];
+					top = wordRects[1][2];
+					right = wordRects[ wordRects.Length ][3];
+					bottom = wordRects[ wordRects.Length ][4];
+				}
+				
+				if(this.wordSpace){
+					text = ..string.join(words,this.wordSpace);
+				}
+				else {
+					var words = ocrResult.GetWords(lineIndex-1);
+					for(k,v in words){
+						if(..string.find(v,"^[\a\d]+$") ){
+							words[k] = " " + v + " ";
+						} 
+					}
+					
+					text = ..string.join(words);
+					text = ..string.replace(text," +"," ");
+				}
+				
+				..table.push(resultBlocks,{
+					words = words;
+					text = text;
+					wordRects = wordRects;
+					rect = rect;
+				});
+				
+				..table.push(resultLines,text);
+			}
+			
+			return $orcResult({
+				text = ..string.join(resultLines,this.wordSpace);
+				blocks  = resultBlocks;
+			}); 
+		} 
+	};
+	detectBitmap = function(bmp){
+		var result = this.detectBuffer(bmp.saveToBuffer("*.jpg"))
+		return result;	
+	};
+	detectImagePath = function(path){
+		var bmp = ..gdip.bitmap(path);
+		if(bmp){
+			var ret = this.detectBitmap(bmp);
+			bmp.dispose();
+			return ret;
+		}
+	};
+	detectScreen = function(hwnd,x,y,cx,cy){
+		if(hwnd && ! ::User32.IsWindow(hwnd) ){error("错误的窗口句柄",2)}
+		
+		var bmp = ..gdip.snap(hwnd,x,y,cx,cy)
+		var result = this.detectBuffer(bmp.saveToBuffer("*.jpg"))
+		bmp.dispose();
+		
+		return result;	
+	};
+	detectWindow = function(hwnd,x,y,cx,cy){
+		if(hwnd && ! ::User32.IsWindow(hwnd) ){error("错误的窗口句柄",2)}
+		
+		var bmp = ..gdip.snap.print(hwnd,x,y,cx,cy)
+		var result = this.detectBuffer(bmp.saveToBuffer("*.jpg"))
+		bmp.dispose();
+		
+		return result;	
+	};
+	detectClient = function(hwnd,x,y,cx,cy){
+		if(hwnd && ! ::User32.IsWindow(hwnd) ){error("错误的窗口句柄",2)}
+		
+		var bmp = ..gdip.snap.printClient(hwnd,x,y,cx,cy)
+		var result = this.detectBuffer(bmp.saveToBuffer("*.jpg"))
+		bmp.dispose();
+		
+		if(result) result.hwnd = hwnd;
+		return result;	
+	};
+	findClient = function(hwnd,text,miniSimilar){
+		var ret = this.detectClient(hwnd);
+		if(ret) return  ret.find(text,miniSimilar);	
+	};
+	waitClient = function(hwnd,text,miniSimilar,timeout,hwndWait){
+		if(hwnd && ! ::User32.IsWindow(hwnd) ){error("错误的窗口句柄",2)}
+		
+		return ..win.wait( 
+			function(){
+				var ret = this.detectClient(hwnd);
+				if(ret){ 
+					if( ret.findPoint(text,miniSimilar:0.6) ){
+						return ret;
+					}
+				}
+			},hwndWait: hwnd,timeout);	
+	};
+	clickClient = function(hwnd,text,miniSimilar){
+		var ret = this.detectClient(hwnd);
+		if(ret) return  ret.click(text,miniSimilar);	
+	};
+	waitClickClient = function(hwnd,text,miniSimilar,timeout,hwndWait){
+		var ret = this.waitClient(hwnd,text,miniSimilar,timeout,hwndWait);
+		if(ret) return  ret.click(text,miniSimilar);	
+	};
+	close = function(){
+		this.ocrEngine = null;
+		collectgarbage("collect");
+	};
+}
+
+namespace ocr{
+	
+	class $orcResult{ 
+		ctor(result){
+			this = result;
+		}
+		find = find;
+		findRect = findRect;
+		findPoint = findPoint;
+		search =  search;
+		click = click;
+	}
+		
+	$orcResult.find = function(txt,miniSimilar,startIndex){  
+		if(type(txt)==="table"){
+			for(i=1;#txt;1){
+				var tb,index = owner.find(txt[i],miniSimilar,startIndex)
+				if(tb){
+					return tb,index;
+				}
+			}
+			
+			return; 
+		}  
+		
+		var tbs = owner.blocks;
+		if(startIndex && startIndex!=1) tbs = ..table.slice(tbs,startIndex);
+			
+		for(i=1;#tbs;1){
+			if( tbs[i].text == txt ){
+				return tbs[i];
+			} 
+		} 
+	
+		var textArray = ..table.map(tbs,lambda(v)v.text);
+		
+		var fm = ..string.fuzzyMatching(txt);
+		var txt,similar,index = fm.find(textArray,miniSimilar);
+		if(index){
+			return tbs[index],index+(startIndex:0);
+		}
+	}
+	
+	$orcResult.findRect = function(txt,miniSimilar,startIndex){
+		var tb,index = owner.find(txt,miniSimilar,startIndex);
+		if(tb){
+			return ..table.assign(::RECT(),tb.rect),index;
+		}
+	} 
+	
+	$orcResult.findPoint = function(txt,miniSimilar,startIndex){
+		var rc = owner.findRect(txt,miniSimilar,startIndex);
+		if(rc){
+			return rc.left+(rc.right-rc.left)/2,rc.top+(rc.bottom-rc.top)/2; 
+		}
+	} 
+	
+	$orcResult.click = function(txt,miniSimilar,startIndex){
+		if(!owner.hwnd) error("此函数仅适用于 detectClient 函数的识别结果",2)
+		
+		var x,y = owner.findPoint(txt,miniSimilar,startIndex);
+		if(x||y){
+			..winex.mouse.click(owner.hwnd,x,y); 
+			return true;
+		}
+	}  
+		
+	$orcResult.search = function(txt,miniSimilar){
+		return ..string.fuzzyMatching(txt).search(owner.text,miniSimilar); 
+	} 
+}
+
+/**intellisense()
+dotNet.ocr = 识别屏幕或图像上文字的本地组件，\n系统自带组件，仅支持 Windows 10
+dotNet.ocr() = 创建OCR对象\n!stdDotNetOrc.
+end intellisense**/
+
+/**intellisense(!stdDotNetOrc)
+availableLanguages() = 返回支持的语言列表,返回值为字符串数组
+language = 字符串，设置识别用到的语言
+wordSpace =  单词分隔符，\n不指定则自动设置英文或数值使用空格，中文不分隔
+close() = 关闭对象,\n关闭以后不应再使用此对象,\n默认在对象被回收时会自动关闭
+detectBuffer(.(buffer) = 识别文字并返回识别结果对象,\nbuffer指定图像文件的内存数据,\n支持jpg,png,bmp等常见格式
+detectBitmap(__) = 传入 gdip.bimap 对象并识别文字,\n返回识别结果对象
+detectScreen(.(hwnd,x,y,cx,cy) = 自屏幕截图并识别文字,\n所有参数可选,可选用 @hwnd 参数指定窗口句柄,\n可选用 @x,y@ 参数指定坐标\n可选用 @cx,@cy 指定宽度和高度,\n返回识别结果对象
+detectWindow(.(hwnd,x,y,cx,cy) = 自窗口后台截图并识别文字,\n所有参数可选,可选用 @hwnd 参数指定窗口句柄,\n可选用 @x,y@ 参数指定坐标\n可选用 @cx,@cy 指定宽度和高度,\n返回识别结果对象
+detectClient(.(hwnd,x,y,cx,cy) = 自窗口客户区后台截图并识别文字,注意截图范围越小结果越准确,\n必须用 @hwnd 参数指定窗口句柄,\n可选用 @x,y@ 参数指定坐标\n可选用 @cx,@cy 指定宽度和高度,\n返回识别结果对象
+detectImagePath(.(path) = 自图像文件识别文字,\n参数指定图像文件路径 
+detectBuffer() = !stdDotNetOrcResult.
+detectBitmap() = !stdDotNetOrcResult.
+detectScreen() = !stdDotNetOrcResult.
+detectWindow() = !stdDotNetOrcResult.
+detectClient() = !stdDotNetOrcResult.
+detectImagePath() = !stdDotNetOrcResult.
+waitClient(.(hwnd,text,miniSimilar,timeout,hwndWait) = 等待@hwnd参数指定的窗口上出现@text指定的文本,\n@miniSimilar指定最小相似度,可选参数,默认为 0.6,\n@timeout 为可选的超时参数,单位毫秒,\n可选用 @hwndWait 指定等待窗口句柄,不指定则默认值为 @hwnd,\n成功返回true
+waitClickClient(.(hwnd,text,miniSimilar,timeout,hwndWait) = 等待@hwnd参数指定的窗口,查找并点击@text指定的文本,\n@miniSimilar指定最小相似度,可选参数,默认为 0.6,\n@timeout 为可选的超时参数,单位毫秒,\n可选用 @hwndWait 指定等待窗口句柄,不指定则默认值为 @hwnd,\n成功返回true
+clickClient(.(hwnd,text,miniSimilar) = 在@hwnd参数指定的窗口上查找并点击@text指定的文本,\n@miniSimilar指定最小相似度,可选参数,默认为 0.5,\n成功返回true
+findClient(.(hwnd,text,miniSimilar) = 在@hwnd参数指定的窗口上查找@text指定的文本,\n@miniSimilar指定最小相似度,可选参数,默认为 0.5,\n成功返回true
+end intellisense**/
+		
+/**intellisense(!stdDotNetOrcResult)
+text = 识别出的全部文本
+blocks = 识别结果文本块数组
+click( = 查找文本所在的区块正中点坐标,并发送鼠标点击消息
+click(.(txt,miniSimilar,startIndex) = 查找文本所在的区块正中点坐标,并发送鼠标点击消息,\n参数 @txt 指定要查找的文本,可传入文本数组,支持模糊匹配,\n@miniSimilar 指定最小相似度,可选参数,\n完全相似为1,完全不相似为0,默认最小相似度为0.5,\n可以降低相似度没有问题,此函数会自动获取相似度最高的结果,\n可选指定起始索引,\n成功返回值@1为匹配的文本坐标,返回值@2为找到的索引
+search(.(subString,miniSimilar) = 查找识别结果是否包含@subString指定的子字符串,支持模糊匹配,\n@miniSimilar 指定最小相似度,可选参数,\n完全相似为1,完全不相似为0,默认最小相似度为0.8,\n字符串较短时建议降低相似度
+find( = 查找文本,支持模糊匹配
+find(.(txt,miniSimilar,startIndex) = 查找文本,支持模糊匹配,\n参数 @txt 指定要查找的文本,可传入包含多个查询文本的数组,\n@miniSimilar 指定最小相似度,可选参数,\n完全相似为1,完全不相似为0,默认最小相似度为0.5,\n可以降低相似度没有问题,此函数会自动获取相似度最高的结果,\n可选指定起始索引,\n成功返回值@1为匹配的文本块信息,返回值@2为找到的索引
+findRect( = 查找文本所在的区块,支持模糊匹配
+findRect(.(txt,miniSimilar,startIndex) = 查找文本所在的区块,支持模糊匹配,\n参数 @txt 指定要查找的文本,可传入包含多个查询文本的数组,\n@miniSimilar 指定最小相似度,可选参数,\n完全相似为1,完全不相似为0,默认最小相似度为0.5,\n可以降低相似度没有问题,此函数会自动获取相似度最高的结果,\n可选指定起始索引,\n成功返回值@1为匹配的::RECT对象,返回值@2为找到的索引
+findPoint( = 查找文本所在的区块正中点坐标,支持模糊匹配
+findPoint(.(txt,miniSimilar,startIndex) = 查找文本所在的区块正中点坐标,支持模糊匹配,\n参数 @txt 指定要查找的文本,可传入包含多个查询文本的数组,\n@miniSimilar 指定最小相似度,可选参数,\n完全相似为1,完全不相似为0,默认最小相似度为0.5,\n可以降低相似度没有问题,此函数会自动获取相似度最高的结果,\n可选指定起始索引,\n成功返回值@1为匹配的文本坐标,返回值@2为找到的索引
+find() = !stdDotNetOrcResultBlock.
+findRect() = !rect.
+end intellisense**/
+
+/**intellisense(!stdDotNetOrcResultBlock)
+text = 识别出的全部文本
+wordRects = 字符或单词区块数组
+word = 字符或单词数组
+rect = 识别出的文本区块
+points = 文本框四角坐标,长度为4的坐标数组,\n每个坐都是包含x,y坐标属性的对象,\n!points.
+end intellisense**/

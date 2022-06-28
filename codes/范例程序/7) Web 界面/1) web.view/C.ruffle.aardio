@@ -1,0 +1,85 @@
+//开源 Flash
+//调用开源 Flash 播放器 Ruffle
+import inet.http;
+import web.ruffle;
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="WebView2 加载开源 Flash 播放器";right=966;bottom=622)
+winform.add()
+/*}}*/
+
+import web.view;
+var wb = web.view(winform);
+
+wb.external = {
+	getSwf = function(){ 
+		//可返回包含 SWF 文件二进制数据的数组、SAFEARRAY,buffer
+		return com.SafeArrayV( inet.http.get("https://update.aardio.com/v10.files/demo/transparent.swf") );
+		
+		//本地文件可以直接返回 buffer 
+		return string.loadBuffer("\res\tet.swf");
+		
+		//ruffle.js 自网址加载 swf 经常报错，所以上面用 aardio 加载 swf 文件再传给  ruffle.js
+	};
+	getRuffleScriptSrc = function(){
+		/*
+		用 web.ruffle 扩展库是为了把 HTML 代码与 aardio 代码写在一起，
+		如果创建了 aardio 工程，只要简单地将所有网页以及 ruffle.js 添加到工程的资源目录内，
+		然后用 wsock.tcp.simpleHttpServer.startUrl() 转换为网址就可以了。 
+		*/ 
+		return web.ruffle.getUrl("/ruffle/ruffle.js");
+	};
+	//浏览器仅仅是发出全屏指令,在这里用 aardio 控制全屏
+	fullscreen = lambda(fs) winform.fullscreen(fs); 
+}
+
+wb.html = /**
+<html><head>
+	<meta charset="utf-8" />
+	<title>Flash 播放器：Ruffle </title> 
+	<script id="ruffle"></script> 
+</head>
+<body style="width:100vw;height:100vh;margin:0;">  
+
+<div id="container" style="width:100%;height:100%;margin:0;"></div>
+<script>  
+	(async ()=>{
+		let ruffleScript = document.getElementById("ruffle");
+		ruffleScript.addEventListener("load", async (event) => {
+        	
+        	const ruffle = window.RufflePlayer.newest();
+        	const player = ruffle.createPlayer();
+        	
+ 			player.style.width = "100vw";
+ 			player.style.height = "100vh";
+ 			
+        	const container = document.getElementById("container");
+        	container.appendChild(player);
+         	
+         	let config = {  
+         	    parameters: "", //自定义 flashvars，例如 "key1=value1&key2=value2"
+				allowScriptAccess: true,
+         		scale: "showAll",
+    			quality: "high",
+    			letterbox: "on"
+    		};
+    		
+    		let dataOrUrl = await aardio.getSwf();
+    		if( typeof dataOrUrl == "string" ) config.url = dataOrUrl;
+    		else config.data = dataOrUrl; 
+        	player.load(config);
+    	});
+    	
+    	ruffleScript.src = await aardio.getRuffleScriptSrc  ();
+    	
+    	document.onfullscreenchange = function (event) {
+            aardio.fullscreen(!!document.fullscreenElement); //调用 aardio 窗口的全屏函数
+        }
+    })();
+</script>
+
+</body> 
+**/
+
+winform.show();
+win.loopMessage();

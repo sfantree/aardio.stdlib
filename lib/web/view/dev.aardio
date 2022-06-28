@@ -1,0 +1,143 @@
+﻿//dev 前端调试端口
+
+import crypt.bin;
+import wsock.tcp.client;
+import fsys;
+
+if(type(web[["view"]])!=type.class){
+	error("只能通过导入 web.view 导入 web.view.dev",2)
+}
+
+namespace web.view;
+
+class dev{
+	ctor( webView,url,devPort,timeout ){
+		
+		if(webView.export){
+			webView.export("____devSrc_aardio____",function(){
+				import nodeJs;
+				import process.code;
+				nodeJs.install();
+				process.code.install();
+				
+				..fsys.enum( "/", "*.*",
+					function(dir,filename,fullpath,findData){ 
+						if(!filename) {
+							if(..io.exist(..io.joinpath(fullpath,"package.json")) ){
+								loadcodex("~\extensions\trigger\edit.aardio",fullpath);
+								return false; 
+							}
+						}
+					} 
+					,false
+				); 
+			})
+			
+			webView.export("____devSrc_aardio2____",function(){
+				import nodeJs;
+				import process.code;
+				nodeJs.install();
+				process.code.install();
+				
+				..fsys.enum( "/", "*.*",
+					function(dir,filename,fullpath,findData){ 
+						if(!filename) {
+							if(..io.exist(..io.joinpath(fullpath,"package.json")) ){
+								import process.code;
+								if(process.code.install()){
+									process.code(fullpath);
+								}
+								return false; 
+							}
+						}
+					} 
+					,false
+				); 
+			})	
+		} 
+		
+		webView.html =  ..string.replace(self.html,"@${DEV_PORT}",tostring(devPort))
+		webView._form.show(true);
+		
+		timeout = timeout : 0.5;
+		var tcp = ..wsock.tcp.client();
+		if( tcp.connectTimeout("localhost",devPort,timeout) ){
+			webView.go("http://localhost:"+devPort)
+			tcp.close();
+		};
+		else {
+			webView._form.setInterval( 
+				function(){
+					if( tcp.connectTimeout("localhost",devPort,timeout) ){
+						webView.go("http://localhost:"+devPort)
+						tcp.close();
+						
+						return false;
+					};
+				},1000 
+			) 
+		}
+	};
+}
+
+dev.html = `
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style type="text/css">
+    html,body{ height:100%; margin:30px; } 
+    @font-face {
+  	font-family: 'FontAwesome'; 
+  	src:url(`+..crypt.bin.base64DataUrl( $"~\lib\fonts\.res\FontAwesome.ttf", "application/x-font-ttf;charset=utf-8")+`) format('truetype');
+  	font-weight: normal;
+  	font-style: normal;
+	}
+	.fa {
+  	display: inline-block;
+  	font: normal normal normal 14px/1 FontAwesome;
+  	font-size: inherit;
+  	text-rendering: auto;
+  	-webkit-font-smoothing: antialiased; 
+	}
+	
+	.fa-spin { 
+  	animation: fa-spin 2s infinite linear;
+	}
+ 	
+	@keyframes fa-spin {
+  	0% { 
+    	transform: rotate(0deg);
+  	}
+  	100% { 
+    	transform: rotate(359deg);
+  	}
+	}
+	
+	.fa-spinner:before {
+  	content: "\f110";
+	}
+	
+	h5{margin-bottom:0;padding-bottom:5px}
+    </style>
+    <script></script>
+</head>
+<body>
+<h3><span class ="fa fa-spin fa-spinner"></span> <span>正在等待 http://localhost:${DEV_PORT} 启动……</span></h3>
+<p>
+请 <a onclick="javascript:____devSrc_aardio2____()" href="javascript:void(0)" >点这里用 VS Code</a> 打开前端工程源码，<br>
+也可右键点工程「网页源码」目录, 在弹出菜单中点击「<a onclick="javascript:____devSrc_aardio____()" href="javascript:void(0)">用外部编辑器打开</a>」。<br>
+然后按 Ctrl + `` 打开 <a href="https://code.visualstudio.com/docs/editor/integrated-terminal" target="_blank">VSCode 终端</a>。<br>
+<br>
+<h5>调试步骤：</h5> 
+1、输入命令 <a href="https://docs.npmjs.com/cli/v7/commands/npm-install" target="_blank">npm install</a> 安装依赖，<br>
+2、然后运行 npm run start 启动调试服务器。<br>
+3、右键点击网页可打开 DevTools。<br>
+<br>
+<h5>发布步骤：</h5> 
+1、运行  npm run build 发布发布前端代码。<br>
+2、在 aardio 中按 F7 生成 exe 文件。
+</p>
+</body>
+</html>
+`	

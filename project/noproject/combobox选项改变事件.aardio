@@ -1,0 +1,19 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add(
+combobox={cls="combobox";left=128;top=128;right=312;bottom=152;edge=1;items={};mode="dropdown";z=1}
+)
+/*}}*/
+import console;
+for(i=1;5;1){
+	winform.combobox.add(tostring(i));
+}
+
+winform.combobox.onListChange= function(){ 
+	//console.log(winform.combobox.selIndex);
+	console.dump(winform.combobox.items);
+}
+
+winform.show();
+win.loopMessage();

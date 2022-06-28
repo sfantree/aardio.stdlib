@@ -1,0 +1,15 @@
+import web.rest.jsonLiteClient;
+var restClient = web.rest.jsonLiteClient();
+
+var jsonData = restClient.get("http://www.feihuo.com/Login/ajaxRegister?format=json",{
+    ['ajax'] = 'register-form';
+    ['nlogin'] = 1;
+    ['RegisterForm[username]'] = "username";
+    ['RegisterForm[password]'] = "password";
+    ['RegisterForm[repassword]'] = "repassword";
+    ['RegisterForm[channelid]'] = 62
+} )
+
+import console;
+console.dumpJson(jsonData)
+console.pause(true);

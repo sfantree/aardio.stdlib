@@ -1,0 +1,71 @@
+import console; 
+
+var tab = {
+    借款人 = "test1";
+    借款人婚姻 = "test2";
+    借款人实际居住地址 = "test3";
+    借款人民族 = "test4";
+    借款人电话 = "test";
+    借款人职业 = "test";
+    借款人身份证号码 = "test";
+    借款人身份证地址 = "test";
+    借款人配偶 = "test";
+    借款人配偶民族 = "test";
+    借款人配偶电话 = "test";
+    借款人配偶职业 = "test";
+    借款人配偶身份证号码 = "test";
+    借款人配偶身份证地址 = "test";
+    借款利率 = "test";
+    借款期限 = "test";
+    借款用途 = "test";
+    借款金额 = "test";
+    担保人1姓名 = "test";
+    担保人1婚姻 = "test";
+    担保人1实际居住地址 = "test";
+    担保人1民族 = "test";
+    担保人1电话 = "test";
+    担保人1职业 = "test";
+    担保人1身份证号码= "test";
+    担保人1身份证地址 = "test";
+    担保人1配偶 = "test";
+    担保人1配偶民族 = "test";
+    担保人1配偶电话  = "test";
+    担保人1配偶职业  = "test";
+    担保人1配偶身份证号码  = "test";
+    担保人1配偶身份证地址  = "test";
+    担保人2姓名 = "test";
+    担保人2婚姻 = "test";
+    担保人2实际居住地址 = "test";
+    担保人2民族 = "test";
+    担保人2电话 = "test";
+    担保人2职业 = "test";
+    担保人2身份证号码 = "test";
+    担保人2身份证地址 = "test";
+    担保人2配偶 = "test";
+    担保人2配偶民族 = "test";
+    担保人2配偶电话  = "test";
+    担保人2配偶职业  = "test";
+    担保人2配偶身份证号码  = "test";
+    担保人2配偶身份证地址  = "test"
+}  
+
+var columns={}
+var values={};
+
+for name,value in tab{
+    table.push(columns, name);
+    table.push(values, "@"+name);
+}
+
+var sql = string.format("insert into basicInfo (%s) values (%s)", string.join(columns,","), string.join(values,","));
+console.log(sql)
+//sqlConnection.prepare(sql).step(tab);
+
+var keys = table.keys(tab);
+var values = table.map(keys,lambda(v) '@'+v)
+console.dump(keys)
+console.dump(values)
+
+console.pause(true);
+
+

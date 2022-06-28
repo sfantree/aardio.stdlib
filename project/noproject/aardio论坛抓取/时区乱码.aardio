@@ -1,0 +1,33 @@
+import console;
+
+/*
+var str1 = "07";
+var str2 = "08";
+var str3 = "09";
+var str4 = "10";
+console.log("07转换为数值" ,tonumber(str1) );
+console.log("08转换为数值" ,tonumber(str2) );
+console.log("09转换为数值" ,tonumber(str3) );
+console.log("10转换为数值" ,tonumber(str4) );
+*/
+
+var str1 = "07";
+var str2 = "08";
+var str3 = "09";
+var str4 = "10";
+console.log("07转换为数值" ,tonumber(str1,10) );
+console.log("08转换为数值" ,tonumber(str2,10) );
+console.log("09转换为数值" ,tonumber(str3,10) );
+console.log("10转换为数值" ,tonumber(str4) );
+
+
+var t = tostring(time(time.now(),"%a %b %d %H:%M:%S %Z %Y", "enu"))
+console.log("t" , t  );
+
+//var num = console.getNumber( "请输入数值:" )
+var a = time.now();
+a.format = "%a %b %d %H:%M:%S %Z %Y";
+a.locale = "enu";
+console.log("a" , string.fromto(tostring(a), 65001, 0)  );
+
+console.pause(true);

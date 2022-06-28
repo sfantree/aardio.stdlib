@@ -1,0 +1,42 @@
+import console; 
+io.open();//打开控制台
+str=/*
+王小春 二年级 80
+黄日华 四年级 90
+梁朝伟 三年级 70
+刘嘉玲 四年级 100
+成龙 二年级 95
+*/
+tab={
+二年级80 = " 王小春";
+四年级90 = " 黄日华";
+三年级70 = " 梁朝伟";
+四年级100 = " 刘嘉玲";
+二年级95 =" 成龙";
+}
+function kpairs(tab,f) {
+    //kpairs被调用时创建闭包
+    var tarr = {}
+    //字典中的数据复制到一个数组中然后进行排序
+    for k in tab
+        table.push(tarr, k);
+
+    table.sort(tarr, f);//调用默认的排序函数f对字典中的键进行排序
+
+    var i = 0 //迭代器计数器.(在闭包中保存值)
+
+
+    return function () { //迭代函数
+        i = i + 1
+        if(not tarr[ i ])
+           return null
+        else
+            return tarr[ i ], tab[tarr[ i ]]
+    }
+
+}
+for k,v in kpairs(tab)
+io.print(k,v); //table中的键按字母顺序排序了
+
+//console.log("您输入的是" ,num );
+console.pause(true);

@@ -1,0 +1,218 @@
+﻿import com;
+namespace com;
+
+class ffmpegOcx{
+	ctor( winform ){
+		..com.activeX.createEmbed(winform,
+			"{17552B69-C1D4-4F98-AF94-AA25CD6CAAF1}",this,"~\lib\com\ffmpegOcx\.res\FFmpegOcx.ocx");
+		
+		this._object.FFmpeg_Initialize("\lib\ffmpegOcx.log");
+	};
+	initialize = function(path){
+		return this._object.FFmpeg_Initialize( ..io.fullpath(path) );
+	};
+	deinitialize = function(){
+		this._object.FFmpeg_Deinitialize()
+	};
+	start = function(path){
+		var len = this._object.FFmpeg_StartPlay( ..io.fullpath(path) );
+		this.status = "playing";
+		if(len>=0) this.filePath = ..io.fullpath(path) ;
+		return len;
+	};
+	pause = function(){
+		this._object.FFmpeg_PausePlay( 1 );
+		this.status = "paused";
+	};
+	resume = function(){
+		this._object.FFmpeg_PausePlay( 0 );
+		this.status = "playing"; 
+	};
+	seek  = function(second){
+		this._object.FFmpeg_SeekPlay( second);
+	};
+	stop = function(path){
+		this._object.FFmpeg_StopPlay();
+		this.status = null;
+	};
+	openDevice = function(strVideoDevice,strAudioDevice){
+		
+		var err = this._object.FFmpeg_OpenDevice(strVideoDevice,strAudioDevice);
+		if(!err){
+			this.status = "device.opened";  
+			this.filePath = null;
+		};
+		return err;
+	};
+	enumDevices = function(flag){
+		this._object.FFmpeg_EnumDevices(flag);
+	};
+	enumAudioDevices = function(func){
+		var d = this.onDevice;
+		this.onDevice = function(flag,name){
+			if(flag==0)func(name);
+		} 
+		this._object.FFmpeg_EnumDevices(0);
+		this.onDevice = d;
+	};
+	enumVideoDevices = function(func){
+		var d = this.onDevice;
+		this.onDevice = function(flag,name){
+			if(flag==1)func(name);
+		} 
+		this._object.FFmpeg_EnumDevices(1);
+		this.onDevice = d;
+	};
+	pauseDevice = function(){
+		var err  = this._object.FFmpeg_PauseDevice(1);
+		if(!err){
+			if(this.status = "device.opened") this.status = "device.paused"; 
+			elseif(this.status = "recording") this.status = "record.paused"; 
+		}
+		return err;
+	};
+	resumeDevice = function(){
+		var err  =this._object.FFmpeg_PauseDevice(0);
+		if(!err){
+			if(this.status = "device.paused")  this.status = "device.opened";
+			elseif(this.status = "record.paused") this.status = "recording"; 
+		}
+		return err;
+	};
+	closeDevice = function(){
+		this._object.FFmpeg_CloseDevice();
+		this.status = null;
+	};
+	startRecord = function(fileName){
+		if( this.status == "recording" ) {
+			this.stopRecord();
+		}
+		elseif( this.status != "device.opened" ) error("设备状态错误",2);
+		
+		var err = this._object.FFmpeg_StartRecord(..io.fullpath(fileName));
+		if(!err) this.status = "recording"; 
+		return err;
+	};
+	stretchRecord = function(stretch){
+		this._object.FFmpeg_StretchRecord(stretch);
+	};
+	stopRecord = function(){
+		this._object.FFmpeg_StopRecord();
+		eif(this.status = "recording") this.status = "device.opened"; 
+	};
+	putStyle = function(style){
+		this._object.FFmpeg_PutStyle(style-1);
+	};
+	putColor = function(r,g,b){
+		this._object.FFmpeg_PutColor(r,g,b);
+	};
+	putSize = function(size){
+		this._object.FFmpeg_PutSize(size);
+	};
+	putThick = function(thick){
+		this._object.FFmpeg_PutThick(thick);
+	};
+	capture = function(fileName){
+		return this._object.FFmpeg_Capture(..io.fullpath(fileName));
+	};
+	scale = function(delta){
+		this._object.FFmpeg_Scale(delta);
+	};
+	clear = function(){
+		this._object.FFmpeg_Clear();
+	};
+	stopRecord = function(){
+		this._object.FFmpeg_StopRecord();
+		if( this.status != "device.record" ) this.status = "device.opened";
+	};
+	getMediaInfo = function(filename){
+		var n = this._object.FFmpeg_MediaInfo(filename); 
+		return ..raw.convert({LONG v = n},{
+			int second;
+			word width;
+			word height;
+		} ); 
+	};
+	openCamera = function(strCamera){
+		return this._object.FFmpeg_OpenCamera(strCamera); 
+	};
+	closeCamera = function(){
+		return this._object.FFmpeg_CloseCamera(); 
+	};
+	enableBcr = function(enable){
+		return this._object.FFmpeg_EnableBCR(enable?1:0); 
+	};
+	displayPropert = function(filename){
+		return 0 = this._object.FFmpeg_DisplayProperty(filename);  
+	};
+	@_meta;
+}
+
+import win.guid;
+import com.activeX;
+namespace ffmpegOcx{
+
+	_meta = {
+		_set = function(k,v){
+			if( k == "onProgress" ) owner[["FFmpeg_Progress"]] = v;
+			elseif( k == "onAbort" ) owner[["FFmpeg_Abort"]] = v;
+			elseif( k == "onDevice" ) owner[["FFmpeg_Device"]] = v;
+			elseif( k == "onBarcode" ) owner[["FFmpeg_Barcode"]] = v;
+			else owner[[k]] = v;
+		}
+	}
+}
+
+/**intellisense()
+com.ffmpegOcx = FFmpeg控件
+com.ffmpegOcx(.(winform) = 创建FFmpeg控件,\n参数为窗体或控件对象
+com.ffmpegOcx() = !com_ffmpegOcx.
+end intellisense**/
+  
+/**intellisense(!com_ffmpegOcx)
+status = 控件当前工作状态,其值分别为：\n空值,"playing";"paused";"device.opened"; "device.paused";"device.record"; 
+initialize(.(日志文件名称) = 初始化FFmpegOcx资源\n成功返回0,错误返回错误代码
+deinitialize() = 清除FFmpegOcx资源
+enumDevices(.(flag) = 参数为1遍历视频设备\n参数为0遍历音频设备\n设备名称触发OnDevice事件，\n成功返回0,错误返回错误代码
+enumVideoDevices() = @.enumVideoDevices(\n 	function(name) winform.cbVideo.add(name); \n); 
+enumAudioDevices() = @.enumAudioDevices(\n 	function(name) winform.cbAudio.add(name); \n); 
+start(.(视频文件路径)  = 播放本地视频文件\n成功返回值为视频时长（大于或等于0),失败返回值为小于0的错误代码\n播放进度触发OnProgress事件，\n播放结束触发OnAbort事件
+filePath = 当前正在播放的文件路径
+pause() = 暂停播放视频
+resume() = 从暂停恢复播放视频
+seek(.(second) = 设定视频播放的位置(秒)
+stop() = 停止播放
+openDevice(.(strVideoDevice, strAudioDevice) = 打开视频、音频设备 参数:\nstrVideoDevice 视频设备名称 \nstrAudioDevice 音频设备名称，\n设备名称在OnDevice事件中获取,设备移除触发OnAbort事件
+pauseDevice() =  FFmpegOcx暂停采集视频、音频数据，画面静止不动\n成功返回0,错误返回错误代码
+resumeDevice() = 恢复预览\n成功返回0,错误返回错误代码
+closeDevice() = 关闭视频、音频设备,无返回值
+startRecord((.(录像文件名称) = 对视频、音频设备进行录像\n成功返回0,错误返回错误代码\n文件格式只支持mp4，分辨率、帧率依据设备分辨率、帧率 开启录像，须在打开设备之后进行\n录像进度OnProgress事件，
+StretchRecord(stretch) = 设置录像画面形式 参数 stretch 0: 录制原始视频帧；1: 录制缩放画面 返回值 无 说明 stretch为0，缩放预览画面，不会录制到文件中，即录制原始帧 stretch为1，缩放画面缩放，会录制到文件中 可随时设置录像画面形式
+stopRecord() = 停止录像
+putStyle(.(style) = 设置标注类型\n按住shift键，矩形、椭圆、三角形限制在正方形中进行绘制\n参数style可使用以下值:\n 1: 拖动 2: 画笔 3: 实线 4: 虚线 5: 点线 \n6: 实线右箭头 7: 实线左箭头 8: 实线双箭头 9: 矩形 \n10: 箭头矩形 11: 椭圆 12: 箭头椭圆 13: 三角形 14: 文本
+putColor(.(red,green,blue) = 设置标注颜色,默认红色,参数:\nred 红色分量 \ngreen 绿色分量 \nblue 蓝色分量
+putSize(.(字体大小) = 设置文本标注类型的字体大小,建议大小25~30,默认25
+putThick(.(线条粗细) = 设置线条粗细,建议大小1~5,默认1
+revoke() = 撤销当前标注\n可循环撤销标注的图形
+clear() = 清空所有标注
+capture(.(图片路径) = 抓取视频帧，保存图片\n只支持jpg格式 尺寸依据设备、视频文件分辨率 标注信息一同保存\n成功返回0,错误返回错误代码
+scale(.(delta) = 缩放预览画面,\n参数 delta可选以下值:\n 1: 放大预览画面；0: 缩小预览画面\n标注信息一同缩放 缩放不影响录像分辨率，直接影响录像画面，须在打开设备后进行 
+getMediaInfo(.(视频文件路径) = 返回一个包含视频时长，大小等属性的结构体
+openCamera(.(相机设备名称) = 打开相机设备
+closeCamera() = 关闭相机设备
+enableBcr(true) = 启用条码识别
+displayPropert() = 显示视频设备对话框
+onProgress(flag,second,size) = @.onProgress = function(flag,second,size){
+	__/*此事件用于反馈播放可录像进度\nflag为0表示播放进度；flag为1表示录像进度\nsecond为进度(秒数)\nsize为录像大小(字节)*/
+}
+onAbort(flag) = @.onAbort = function(flag){
+	__/*此事件用于反馈将[结束/移除]信息\n参数 flag 1: 视频播放结束；2: 视频设备移除*/
+}
+onDevice(flag,name) = @.onDevice = function(flag,name){
+	__/*此事件用于将设备名称反馈给调用者 \n参数 flag 1: 视频设备；0: 音频设备 name 设备名称*/
+}
+onBarcode(bcType,bcText) = @.onBarcode = function(bcType,bcText){
+	__/*此事件用于将条码识别结果反馈给调用者\n参数 bcType 条码类型 bcText 条码内容*/
+}  
+ end intellisense**/
+ 

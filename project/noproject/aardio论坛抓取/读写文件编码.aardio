@@ -1,0 +1,46 @@
+import win.ui;
+import console;
+
+/*DSG{{*/
+var winform = win.form(text="文件";right=468;bottom=237)
+winform.add(
+button={cls="button";text="read1";left=131;top=98;right=216;bottom=131;z=1};
+button2={cls="button";text="read2";left=267;top=99;right=345;bottom=129;z=2}
+)
+/*}}*/
+
+
+
+
+//        "d:\1\1.txt"        win7用记事本保存4行文本
+//1263 cctv 小学同学
+//1289        hnws        女粉丝
+//1292,xjts,泥泥家二舅
+//
+
+
+winform.button.oncommand = function(id,event){
+    var file1 = io.open ("/1.txt", "r");
+    //if()
+
+    for line in io.lines(file1) {
+            str = line
+            console.log(str)
+    }
+
+                       
+}
+
+winform.button2.oncommand = function(id,event){
+
+                        var file1 = io.open ("/1.txt", "r");
+               
+                        do {
+                           str = file1.read()
+                                console.log(str)
+                        }while( str != null )
+
+}
+
+winform.show()
+win.loopMessage();

@@ -1,0 +1,9 @@
+
+/*
+<td class = "A"> </td>
+<td class = "A">
+       <a class = "B" href= "C"> D
+       </a>
+*/
+
+var ele = wb.queryEles( innerHTML="D ";className="B" );

@@ -1,0 +1,24 @@
+﻿//shadow 阴影边框
+import win.ui.shadow;
+
+namespace xcgui;
+
+class shadow{
+	ctor(winform,shadowAlpha,shadowSize,roundRadius,innerRadius,shadowColor,interpolation,focusRatio ){
+		if( innerRadius === null ){
+			roundRadius = 8;
+			innerRadius = 8;
+		}
+		winform.show(true);
+		..win.delay(200);//炫彩启动有一个动画，没找到怎么关掉，也没找到动画完成的事件，所以这里先等一下
+		return ..win.ui.shadow(winform,shadowAlpha,shadowSize,roundRadius,innerRadius,shadowColor,interpolation,focusRatio)
+	}; 
+}
+
+/**intellisense()
+xcgui.shadow = 阴影边框
+xcgui.shadow( = 创建阴影边框
+xcgui.shadow(.(窗体对象,透明度,阴影大小,外圆角,内圆角,阻影颜色,插值位置,聚焦系数) = 除参数@1以外,其他所有参数可选\n透明度默认为80,255为不透明\n阴影大小默认为3像素\n外圆角,内圆角默认为8\n阴影颜色默认为0xFF000000,FF为透明度\n插值位置默认为0.15\n聚焦系数默认为15
+xcgui.shadow() = !win_ui_shadow.
+!win_ui_shadow._form = !winform.
+end intellisense**/

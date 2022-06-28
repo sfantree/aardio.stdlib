@@ -1,0 +1,180 @@
+//excel 电子表格  
+import com; 
+namespace com; 
+	
+class excel{
+	ctor( create = true ){
+		if( !create ){
+			this.oExcel = ..com.TryGetObject("Excel.Application","Ket.Application","ET.Application") 
+			if( ! this.oExcel ) return null,"请先打开Excel";
+		}
+		else {
+			this.oExcel = ..com.TryCreateObject("Excel.Application","Ket.Application","ET.Application")
+			if( ! this.oExcel ) return null,"请先安装Excel";
+			
+			this.oExcel.Visible = false; 
+			..table.gc(this,"Quit");
+		}
+	};
+	@_metaProperty;
+}
+
+namespace excel{ 
+	import util.metaProperty; 
+	_metaProperty = util.metaProperty( 
+		
+		alerts = {
+			_get = function(){
+				return owner.oExcel.Application.DisplayAlerts && owner.oExcel.Application.ScreenUpdating 
+			}		
+			_set = function( value ){
+				value = value?1:0
+				owner.oExcel.Application.DisplayAlerts = value
+				owner.oExcel.Application.ScreenUpdating = value
+			}
+		};
+		get = function(k){
+			return owner.oExcel[k]
+		};
+		set = function(k,v){
+			owner.oExcel[k] = v;
+		};
+		eachValue = function(ind){
+			var sheet = owner.ActiveWorkbook.Sheets(ind);
+			if(!sheet) return function(){};
+			
+			var row = sheet.UsedRange.row - 1
+			var colOffset = sheet.UsedRange.Column - 1;
+			
+			var rowEnd = row + sheet.UsedRange.Rows.Count;
+			var colCount = sheet.UsedRange.Columns.count;
+		
+			return function(){
+				row++;
+				var values = {};
+				for(col=1;colCount){
+					values[col] = sheet.Cells(row,col+colOffset).getValue();
+				}
+				
+				if(row<=rowEnd) return row,values;
+			} 
+		}; 
+		Open = function(path){
+			return owner.WorkBooks.Open( ..io.fullpath(path) ) 
+		};
+		SaveAs = function(path,format){
+			if(!#path) error("请指定保存路径",2);
+			
+			if(format===null){
+				var ext =  ..string.match(path,"[^.]+$");
+				if( ext ){
+					format = ( {
+						xls = 0x2B/*_xlExcel9795*/;
+						xlsx = 0x33/*_xlOpenXMLWorkbook*/;
+						xlsm = 0x2E/*_xlXMLSpreadsheet*/;
+						xlsb = 0x32/*_xlExcel12*/;
+					} ) [..string.lower(ext)];
+				}; 
+			} 
+			return owner.ActiveWorkbook.SaveAs( ..io.fullpath(path),format );
+		};
+		createFile = function(path){
+			if( ..io.exist(path) )
+				return owner.Open(path);
+				
+			var excel = owner.oExcel;
+			excel.WorkBooks.Add();//增加工作簿
+			excel.ActiveWorkbook.Sheets(1).Select();//选择第一个工作表
+			excel.ActiveWorkbook.SaveAs( ..io.fullpath(path) )  
+		};
+		Quit = function(){
+			if(owner.oExcel){
+				owner.oExcel.Quit();
+				..com.Release(owner.oExcel);
+				owner.oExcel = null;	
+			}
+		}
+		_topointer = lambda() owner.oExcel;
+	);
+}
+
+/**intellisense()
+com.excel = Excel 支持库\n请不要使用精简版 Excel,\n兼容 WPS 表格，小提示：可在「WPS 配置工具」中关闭广告推送\n参考: https://docs.microsoft.com/en-us/office/vba/api/overview/excel
+com.excel( __/*是否创建新实例*/ ) = 创建excel对象\n如果参数为false,则获取已打开的Excel对象.
+com.excel() = !excel.
+!excel.eachValue(工作表序号) = @for(i,values in ??.eachValue(1) ){ 
+	io.print("行号"+i,values[1],values[2])  
+}
+!excel.Visible = 是否显示 Excel 界面,\n注意这个属性的默认值是 false
+!excel.alerts = 是否允许操作提示与屏幕更新,\n这个属性会同时设置 Application 对象的 DisplayAlerts 与 ScreenUpdating 属性\n如果只想设置其中一个属性,请直接通过 Application 对象设置即可
+!excel.Application = 请参考: https://docs.microsoft.com/en-us/office/vba/api/excel.application%28object%29
+!excel.Application.DisplayAlerts = 是否允许操作提示
+!excel.Application.ScreenUpdating = 是否允许屏幕更新
+!excel.ActiveWorkbook = 活动工作簿\n请参考 https://docs.microsoft.com/en-us/office/vba/api/excel.application.activeworkbook \n!excel_book.
+!excel.Quit() = 退出Excel\n注意所有存储 Excel 创建或返回对象的变量离开作用域并被回收后才会完全退出,\n可调用 collectgarbage("collect") 提前回收资源，\n也可以调用 com.Release 函数显式释放指定的 COM 对象
+!excel.Open("/my->xls") = 打开excel文件
+!excel.Open() = !excel_book.
+!excel.SaveAs("/my->xls") = 存储excel文件
+!excel.createFile("/my->xls") = 如果目标文件存在则打开,\n否则创建新文件
+!excel.Run("__/*宏名称*/(参数)") = 运行宏 
+!excel_book.Sheets() = !excel_sheet.
+!excel_book.Sheets = !excel_sheet.
+!excel_book.ActiveSheet = !excel_sheet.
+!excel_book.Names.count = 名称计数
+!excel_book.Names(1__) = !excel_book_name.
+!excel_book_name.name = 名称
+!excel_book_name.RefersTo = 指向区域
+!excel_book.Sheets() = !excel_sheet.
+!excel_book.Sheets(1__) = 返回工作簿上的指定工作表
+!excel_book.Charts("__") = 返回指定名称的图表
+!excel_book.Worksheets("__")  = 返回指定名称的工作表
+!excel_book.DialogSheets("__")  = 返回指定名称的对话框工作表
+!excel_book.Sheets.Count = 工作表总数
+!excel_book.Sheets.Item(__) = 返回指定的工作表
+!excel_book.Title = 设置标题
+!excel_book.Subject = 设置主题
+!excel_book.close() = 关闭工作簿
+!excel_book.SaveAs = @.SaveAs( io.fullpath("\__.xls"),excel.fileType.xls )
+!excel_book.Save() = 保存
+!excel.Worksheets(1__) = 返回活动工作簿上的指定工作表
+!excel.Worksheets.Item(1__) = 返回活动工作簿上指定工作表; 
+!excel.Sheets(1__) = 返回工作簿上的指定工作表
+!excel.Charts("__") = 返回指定名称的图表
+!excel.Worksheets("__")  = 返回指定名称的工作表
+!excel.DialogSheets("__")  = 返回指定名称的对话框工作表
+!excel.Sheets.Count = 工作表总数
+!excel.WorkBooks.Add(__) = 添加并返回工作簿\n可选参数excel文件名\n新工作簿将成为活动工作簿
+!excel.WorkBooks.Open("__xls") = 打开xls文件
+!excel.ThisWorkbook = !excel_book.
+!excel_sheet.UsedRange.Rows.Count = 工作表总行数;
+!excel_sheet.Select() = 激活工作表
+!excel_sheet.Activate() = 激活指定的工作表
+!excel_sheet.Name = 工作表名字
+!excel_sheet.Cells(.(行,列) = 返回指定的单元格
+!excel_sheet.Cells.RowHeight= 所有单元格行高;
+!excel_sheet.Rows(1__).RowHeight = 指定行行高;
+!excel_sheet.Columns(2__).ColumnWidth = 列宽;
+!excel_sheet.Range("A:Z") = @.Range("A:Z__").clear() //清除A 至 Z列内容
+!excel_sheet.Range("1:2") = @.Range("1:2__").delete() //删除 1、2 行
+!excel_sheet.Range("B1") =  @.Range("B1").formula = "=$A$4+$A$10__" //单元格公式
+!excel_sheet.UsedRange.Columns.count = 列数
+!excel_sheet.UsedRange.Rows.Count = 行数
+!excel_sheet.Move(null,sheet2__) = 移动表数据
+!excel_sheet.Cells() = !excel_cell.
+!excel_cell.getValue2() = 读单元格值
+!excel_cell.setValue2(新值) = 写单元格值
+!excel_cell.Text =  列文本
+!excel.WorkBooks.Add() = !excel_book.
+!excel.WorkBooks.Open() = !excel_book.
+!excel.Sheets() = !excel_sheet.
+!excel.Worksheets() = !excel_sheet.
+!excel.Worksheets.Item() = !excel_sheet.
+!excel_book.Worksheets() = !excel_sheet.
+!excel_book.Worksheets.Item() = !excel_sheet.
+!excel.DialogSheets() = !excel_sheet.
+!excel.Charts() = !excel_sheet.
+!excel_sheet.Charts() = !excel_cell.
+!excel_cell.Range().clear() = 清除
+!excel_cell.Range().delete() = 删除
+!excel_cell.Range().formula = 公式 
+end intellisense**/

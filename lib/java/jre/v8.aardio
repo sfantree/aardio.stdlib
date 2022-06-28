@@ -1,0 +1,52 @@
+﻿//v8 运行时
+import java;
+import zlib.httpFile;
+import fsys;
+import web.rest.client;
+
+namespace java.jre.v8;
+path = null; 
+
+var jreDir = ..io.appData("aardio/std/OpenJDK/jre8");
+if(..io.exist(jreDir)){
+	..fsys.enum( jreDir, "jdk*-jre",
+		function(dirname,filename,fullpath,findData){ 
+			if(!filename){ 
+				path = fullpath;
+				return false;
+			}
+		} 
+		,false
+	);	
+}
+ 
+if(!..io.exist(path)){
+	var http = ..web.rest.client();
+	var openJdkMirrors = http.api("https://mirrors.tuna.tsinghua.edu.cn/AdoptOpenJDK/8/jre/x32/windows/","GET",`href\="(OpenJDK8U-jre_x86-32_windows_hotspot_\w+)\.zip"`);
+	var zipName = openJdkMirrors.get() 
+ 
+	var dir = ..zlib.httpFile.download("https://mirrors.tuna.tsinghua.edu.cn/AdoptOpenJDK/8/jre/x32/windows/" + zipName +".zip"
+		,"正在下载本程序必须组件: OpenJDK JRE v8",..io.appData("aardio/std/OpenJDK"),jreDir,"jre8.zip")	
+		
+	if(!dir) return; 
+	if(..io.exist(jreDir)){
+		..fsys.enum( jreDir, "jdk*-jre",
+			function(dirname,filename,fullpath,findData){ 
+				if(!filename){ 
+					path = fullpath; 
+					return false;
+				}
+			} 
+			,false
+		);	
+	}
+	
+ 	if(!path) return;
+}
+
+..java.path.setJreHome(path)
+
+/**intellisense()
+java.jre.v8 = 检测并在必要时自动下载 OpenJDK JRE v8,\n导入此库后，发布不用带 JRE,\n导入此库已自动导入 java 库
+java.jre.v8.path = 如果成功下载并设为 JRE 根目录,\n此属性为 JRE 根目录路径,\n否则此属性值为 null
+end intellisense**/

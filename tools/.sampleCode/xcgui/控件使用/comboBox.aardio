@@ -1,0 +1,26 @@
+/*
+使用import xcgui; 替换原来的 import win.ui;
+修改标准库的 win.form 指向 xcgui.window, 并保留 win.form的所有功能。
+在窗体设计器上添加自定义控件，类名修改为 "xc" + "炫彩控件类名",
+例如 xcgui.ctrl.ccombobox, 类名为 "xccombobox"
+*/
+import xcgui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469;bgcolor=15245824)
+winform.add(
+closebutton={cls="xcclosebutton";text="r";left=725;top=2;right=749;bottom=28;dr=1;dt=1;font=LOGFONT(name='Marlett');transparent=1;z=2};
+combobox={cls="xccombobox";left=457;top=92;right=616;bottom=121;bkBottom=7;bkLeft=11;bkRight=11;bkTop=6;dr=1;dt=1;edge=1;z=3};
+static={cls="xctext";text="   ";left=27;top=12;right=693;bottom=31;dl=1;dr=1;dt=1;z=1}
+)
+/*}}*/
+
+winform.combobox.addField("name");
+
+for(i=1;10;1){
+	winform.combobox.addString( string.format("name-%d-0",i) )
+}
+
+winform.combobox.selIndex = 2;
+
+winform.show();
+win.loopMessage();

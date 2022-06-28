@@ -1,0 +1,44 @@
+//创建托盘图标
+import win.ui;
+import win.ui.menu;
+/*DSG{{*/
+var winform = win.form(text="托盘图标";left=0;top=0;right=330;bottom=156)
+winform.add(
+button={cls="button";text="创建托盘图标";left=97;top=37;right=248;bottom=68;z=1}
+)
+/*}}*/
+
+//下面创建托盘图标
+import win.util.tray;
+winform.button.oncommand = function(id,event){ 
+	winform.tray = win.util.tray(winform)  
+	winform.tray.tip = "鼠标提示" //设置鼠标提示 
+}
+
+winform.onMinimize = function(lParam){
+	winform.tray = win.util.tray(winform);
+	winform.show(false); //隐藏窗口
+	return true;//阻击默认消息传递,取消最小化过程
+}
+
+//响应托盘消息
+winform.onTrayMessage = {
+	[0x205/*_WM_RBUTTONUP*/  ] = function(wParam){ 
+	    //弹出托盘菜单以前,一定要前置主窗口中,不然不点击菜单不会消失
+	    win.setForeground(winform.hwnd)
+	    winform.popmenu.popup() 
+	}; 
+}
+
+//下面创建托盘弹出菜单
+import win.ui.menu;
+winform.popmenu = win.ui.popmenu(winform);//创建弹出菜单
+winform.popmenu.add('&open',function(id){
+	//在下面输入菜单响应代码
+	
+});
+winform.popmenu.add();//分隔线
+winform.popmenu.add('&exit',function(id){ winform.close() })	
+
+winform.show(true);
+win.loopMessage();

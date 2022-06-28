@@ -1,0 +1,78 @@
+import process.chrome.app;
+import win.ui;
+/*DSG{{*/
+winform = win.form(text="4G查询系统";right=882;bottom=489;bgcolor=16777215;border="dialog frame")
+winform.add()
+/*}}*/
+/*
+在下面的external对象中指定允许chrome中使用JS直接调用的函数
+在网页中直接引用"/aardio.js"下面的external 会自动转换为js中的aardio对象.
+"/aardio.js"是由 aardio虚拟的JS文件(不用自己准备这个文件)。
+*/
+
+var indexAardio = /***
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="UTF-8">
+    <title>aardio嵌入chrome演示( 这里设置窗口标题 )</title>
+   
+    <script src="/aardio.js">
+   
+            //aardio <--> chrome 通信接口准备就绪则执行这里的JS脚本
+           
+           
+    </script>
+   
+  </head>
+  
+  <body>
+    <div onmousedown='javascript:  
+        aardio.hitCaption();
+        return false;
+    ' style="-webkit-user-select: none;cursor:default;background:#cce;padding:25px;margin:10px;">拖动窗口</div>
+    <input type="text"/>
+   <button onclick="alert(aardio.test('你好aardio');)">点这里调用aardio函数</button>  <button onclick="aardio.quit();">点这里退出</button>   <br> <br>
+   
+   aardio版本<?
+   = _AARDIO_VERSION
+   ?><br>
+   <script>
+   aardio.on("hello",(path)=>{
+                    alert(path)
+            })
+   </script>
+
+</html>
+***/
+
+var app = process.chrome.app(winform);//可选在参数中指定winform或custom控件并自动嵌入chrome到该窗口
+//WebSocke/RPC中遇到的错误都会触发这个函数,可以在这里自定义错误处理方式
+app.ws.onError = function(hSocket,err){
+        errput(err,"chrome/rpc error");//当然也可以在 global.onError 里自定义全部的错误信息怎么显示
+}
+
+app.external = {
+   
+    //加载一个页面完成会触发这个事件(要求引用了"/aardio.js")
+    onLoadUrl = function(url){
+        
+        //接收js函数的返回值
+                app.callback("hello",function(hSocket,result,err){
+                        app.msgbox(result : err,"调用js的hello函数以后返回值了");
+            })
+
+        //调用JS函数
+        app.survey("hello","aardio");
+    }
+    test = function(...){
+       win.msgbox(...)
+    }
+}
+//正式的启动chrome进程，aardio会自动把下面的文件转换为服务端请求
+app.start(indexAardio);
+winform.show();
+//网页中可以调用 aardio.quit() 退出,也可以直接关闭chrome窗口退出
+win.loopMessage();
+

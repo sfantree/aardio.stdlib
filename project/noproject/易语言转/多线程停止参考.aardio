@@ -1,0 +1,73 @@
+import console;
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="多线程停止参考";right=415;bottom=255)
+winform.add(
+button={cls="button";text="启动线程";left=16;top=16;right=120;bottom=40;z=1};
+button3={cls="button";text="停止线程";left=16;top=64;right=120;bottom=88;z=3};
+combobox={cls="combobox";left=280;top=64;right=360;bottom=88;edge=1;items={};mode="dropdown";z=6};
+edit={cls="edit";left=8;top=120;right=408;bottom=248;edge=1;multiline=1;z=2};
+edit2={cls="edit";left=192;top=64;right=264;bottom=88;edge=1;z=4};
+static={cls="static";text="线程ID：";left=136;top=64;right=184;bottom=88;center=1;transparent=1;z=5}
+)
+/*}}*/
+
+import time;
+import process;
+import thread.command;
+var listener = thread.command();
+
+listener.log = function( ... ){
+	var t = ..time();
+    t.format = "[%Y-%m-%d %H:%M:%S] ";
+    winform.edit.print( tostring(t), ... );
+}
+
+winform.button.oncommand = function(id,event){
+	thread.invoke( 
+		function(listener){
+			var thread_id = thread.getId();
+			listener.log("thread start...", thread_id);
+			
+			while(true){
+				if(thread.get("stop") == thread_id) {
+				    break;
+				}
+			    sleep(1000);
+			}
+			
+			listener.log("thread stop...", thread_id);
+		},listener
+	)
+	updateThread();
+}
+
+var thread_id = thread.getId();
+listener.log("main thread", thread_id);
+
+winform.button3.oncommand = function(id,event){
+	var t = winform.edit2.text;
+	if(not #t ) {
+	    win.msgbox("请指定线程ID");
+	}
+	t = tonumber(t);
+	thread.set("stop", t);
+	updateThread();
+}
+
+updateThread = function(){
+	winform.combobox.clear();
+	for threadEntry in process.eachThread(process.getId()) {  
+		winform.combobox.add(tostring(threadEntry.th32ThreadID));
+    }
+}
+
+
+winform.combobox.onListChange= function(){ 
+	winform.edit2.text = winform.combobox.selText;
+}
+
+updateThread();
+
+winform.show();
+win.loopMessage();

@@ -1,0 +1,145 @@
+import protobuf.message;
+import util.metaProperty;
+
+class Person {
+	ctor(reader){
+		this = ..protobuf.message(reader) 
+		
+    	this.fields[1] = "..protobuf.type.string";
+    	this.values[1] = null;
+     
+    	this.fields[2] = "..protobuf.type.int32";
+    	this.values[2] = null;
+     
+    	this.fields[3] = "..protobuf.type.string";
+    	this.values[3] = null;
+     
+    	this.fields[4] = "..Person.PhoneNumber";
+    	this.values[4] = { is_array = true; };
+       
+	} 
+	@_metaProperty ;
+}
+
+namespace Person {
+	class PhoneNumber {
+		ctor(reader){
+			this = ..protobuf.message(reader) 
+			
+	    	this.fields[1] = "..protobuf.type.string";
+	    	this.values[1] = null;
+	     
+	    	this.fields[2] = "..Person.PhoneType";
+	    	this.values[2] = null;
+	       
+		} 
+		@_metaProperty ;
+	}
+	
+	namespace PhoneNumber {
+	  
+	  
+		_metaProperty  = ..util.metaProperty( 
+			_tostring = function(){
+				return owner.serializeToString();
+			};
+			
+	    	number = {
+	    		_get = function(){ 
+	    			return owner._getValue(1);
+	    		}
+	    		_set = function( value ){
+	    			return owner._setValue(1, value);
+	    		} 	
+	    	}; 
+	     
+	    	type = {
+	    		_get = function(){ 
+	    			return owner._getValue(2);
+	    		}
+	    		_set = function( value ){
+	    			return owner._setValue(2, value);
+	    		} 	
+	    	}; 
+	        
+		)
+	}
+/**intellisense()
+Person.PhoneNumber = protobuf消息对象
+Person.PhoneNumber() = 创建protobuf消息对象\n!Person_PhoneNumber.
+!Person_PhoneNumber.parseFromString(__/*字符串*/) = 二进制数据反序列化到消息对象\n此函数自动清空所有数组值,但不会重置其他非数组字段值.\n因此应对新创建的对象调用此函数.
+!Person_PhoneNumber.serializeToString() = 序列化消息对象,返回二进制字符串
+!Person_PhoneNumber.number = protobuf.type.string
+!Person_PhoneNumber.type = !Person_PhoneType.
+end intellisense**/  
+    class PhoneType  {
+    	ctor(...){
+    		this = ..protobuf.type.enum(...)
+    	}
+    }   
+    namespace PhoneType {
+    	MOBILE = 0;
+    	HOME = 1;
+    	WORK = 2;
+    }  
+	_metaProperty  = ..util.metaProperty( 
+		_tostring = function(){
+			return owner.serializeToString();
+		};
+		
+    	name = {
+    		_get = function(){ 
+    			return owner._getValue(1);
+    		}
+    		_set = function( value ){
+    			return owner._setValue(1, value);
+    		} 	
+    	}; 
+     
+    	id = {
+    		_get = function(){ 
+    			return owner._getValue(2);
+    		}
+    		_set = function( value ){
+    			return owner._setValue(2, value);
+    		} 	
+    	}; 
+     
+    	email = {
+    		_get = function(){ 
+    			return owner._getValue(3);
+    		}
+    		_set = function( value ){
+    			return owner._setValue(3, value);
+    		} 	
+    	}; 
+     
+    	phone =  function(index){ 
+    		return owner._getArrayValue(4,index); 
+    	};
+    	phoneLength = {
+    		_get = function(){ 
+    				return owner._getArraySize(4);
+    		} 	
+    	}; 
+    	phoneArray = {
+    		_get = function(){ 
+    				return owner._getArray(4);
+    		} 	
+    	};  
+        
+	)
+}
+/**intellisense()
+Person = protobuf消息对象
+Person() = 创建protobuf消息对象\n!Person.
+!Person.parseFromString(__/*字符串*/) = 二进制数据反序列化到消息对象\n此函数自动清空所有数组值,但不会重置其他非数组字段值.\n因此应对新创建的对象调用此函数.
+!Person.serializeToString() = 序列化消息对象,返回二进制字符串
+!Person.name = protobuf.type.string
+!Person.id = protobuf.type.int32
+!Person.email = protobuf.type.string
+!Person.phoneLength = 返回数组长度
+!Person.phoneArray = 返回原始数组
+!Person.phone() = !Person_PhoneNumber.
+!Person.phone(1__/*索引*/) = Person.PhoneNumber
+end intellisense**/

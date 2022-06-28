@@ -1,0 +1,208 @@
+﻿//wmi 客户端
+import com;
+namespace com;
+
+class wmi{
+	ctor(path,computer){
+		return ..com.TryGetObject("winmgmts:{impersonationLevel=Impersonate}!\\" + (computer:".") + (path || "\root\cimv2"))
+	};
+}
+
+namespace wmi{
+	
+	sink = function(event){
+		var sinkObj = ..com.CreateObject( "WbemScripting.SWbemSink");
+		..com.Connect(sinkObj,event);
+		return sinkObj;
+	}   
+	
+	query = function(wql,path,...){ 
+		if(!wql) error("缺少 WQL 参数",2);
+		if(...){
+			wql = formatWqlParameters(wql,...);
+		}
+		elseif(type(path)=="table"){
+			wql = formatWqlParameters(wql,path);
+			path = null;
+		}
+		
+		var srv = ..com.wmi(path);
+		if(srv){
+		    var ret;
+			if(..string.find(wql,"\s")) ret = srv.ExecQuery(wql,,48/*WBEM_FLAG_RETURN_IMMEDIATELY | WBEM_FLAG_FORWARD_ONLY*/);
+			else ret = srv.InstancesOf(wql);
+			
+			..com.Release(srv);
+			return ret;
+		}
+	} 
+	
+	get = function(wql,property,path,...){
+		var items;
+		if( type(property) == "table") {
+			items = query(wql,property); 
+			property = null;
+		}
+		else items = query(wql,path,...); 
+		
+		if( items ) {
+			var item = ..com.first(items);
+			..com.Release(items);
+			
+			if(item && property) {
+				var ret = item[property];
+				..com.Release(item);
+				return ret;
+			}
+			return item;
+		}
+	}
+	
+	getProperties = function(wql,path,...){ 
+		if(!wql) return;
+		
+		var wqlIsObj = ..com.IsObject(wql); 
+		var item = wqlIsObj ? wql : get(wql,,path,...);
+		if(item){
+			var ret = {};
+			var p = item.properties_;
+			for index,obj in ..com.each(p) {
+				ret[obj.Name] = obj.Value;
+				..com.Release(obj);
+			} 
+			
+			..com.Release(p);
+			if(!wqlIsObj) ..com.Release(item);
+			return ret;
+		}
+	} 
+	
+	each = function(wql,path,...){
+		var items = query(wql,path,...);
+		if( items ) {
+			var next,free =  ..com.each(items);
+			..com.Release(items);
+			return next,free;
+		}
+		return function(){}
+	}
+	
+	eachProperties = function(wql,path,...){
+		if(!wql) return;
+		
+		var items = query(wql,path,...);
+		if( items ) {
+			var next,free = ..com.each(items);
+			..com.Release(items);
+			
+			return function(){
+				var i,item = next();
+				if(item) {
+					var r = getProperties(item);
+					..com.Release(item);
+					return r;
+				}
+			},free; 
+		}
+		return function(){} 
+	}
+	
+	getTable = function(wql,path,...){
+		var tab = {};
+		for item in eachProperties(wql,path,...){
+			..table.push(tab,item)
+		} 
+		
+		return tab;
+	}
+	
+	escape = function(v){
+		var t  = type(v);
+			
+		if( t = "string"){ 
+			return '"' +  ..string.replace(v,`['"\\]`,"\\\1") + '"';
+		}
+		elseif( t = "boolean" ){
+			return v ? "1" : "0";
+		}
+		elseif( t = "number" ){
+			return tostring(v);
+		}
+		elseif( t = "table" ) {
+			if(..time.istime(v)){
+				var f = v.format;
+				v.format = "%Y-%m-%d %H:%M:%S:000";
+				var ret  = "'" +  tostring(v) + "'";
+				v.format = f;
+				return ret;
+			}
+		}
+			
+		return ..string.replace(tostring(v),"\p","");
+	};
+	
+	formatWqlParameters = function(wql,...) { 
+		if( type( ... ) == "table" ){
+			var param = ...;
+			if(#param){
+				var i = 0;
+				wql = (..string.replace(wql,"\?*",
+					function(name) {
+						i++; return escape(param[i]); 
+					}
+				));	
+			}
+			
+			return (..string.replace(wql,"\@(<:+>|<\w+>[^\s\p]*)",
+					lambda(name) escape(param[name])
+			));
+		}
+		return ..string.format(wql,...);
+	}
+		
+}
+	
+/**intellisense()
+com.wmi = WMI / Windows Management Instrumentation 客户端\n参考文档 https://docs.microsoft.com/en-us/windows/win32/wmisdk/wmi-reference
+com.wmi( = 创建 WMI 客户端对象,失败返回 null
+com.wmi(.(path,computer) = 创建并返回 WMI 客户端对象,失败返回 null,\n所有参数可省略,\n@path 默认为 "\root\cimv2"\n@computer 默认为"."
+com.wmi() = !stdComObject.
+com.wmi.sink(event) = @.sink(\n	OnCompleted = function(hResult,wbemErrorObject,wbemAsyncContext){\n		\n	};\n	OnObjectPut = function(wbemObjectPath,wbemAsyncContext){\n		\n	};\n	OnObjectReady = function(wbemObject,wbemAsyncContext){\n		\n	};\n	OnProgress = function(upperBound,current,message,wbemAsyncContext){\n		\n	};\n)
+com.wmi.query( = 执行 WQL 查询
+com.wmi.query(.(wql,path,->->->) =  参数 @wql 可输入 WQL 查询语句或类名,\n调用 ExecQuery 返回查询结果,\n可选用参数 @path 指定 WMI 路径,默认为 "\root\cimv2"\n可选用参数@3及后续参数指定格式化参数,\n如果格式化参数是表,则可省略 @path 且不用保留参数位置,\n参数表可格式化 @号 开头的命名参数或以 ? 号为占位符的数组参数,\n如果参数不是一个表,则调用 string.format 格式化
+com.wmi.get( = 可输入WQL查询语句或类名,\n返回首个查询结果
+com.wmi.get(.(wql) =  参数 @wql 可输入WQL查询语句或类名,\n成功则返回首个查询结果,\n可选用参数@3指定 WMI 路径,默认为 "\root\cimv2"\n可选用参数@4及后续参数指定格式化参数,\n支持 @号 开头的命名参数或以 ? 号为占位符的匿名参数,\n如果参数不是一个表,则调用 string.format 格式化
+com.wmi.get(.(wql,property,path,->->->) =  参数 @wql 可输入WQL查询语句或类名,\n成功则返回首个查询结果中 @property 参数指定的属性值\n失败返回 null,\n可选用参数@path指定 WMI 路径,默认为 "\root\cimv2"\n可选用参数@4及后续参数指定格式化参数,\n如果格式化参数是表,则可省略 @property,@path 且不用保留参数位置,\n参数表可格式化 @号 开头的命名参数或以 ? 号为占位符的匿名参数,\n如果参数不是一个表,则调用 string.format 格式化
+com.wmi.getProperties( = 返回所有属性
+com.wmi.getProperties(.(wql,path,->->->) =  参数 @wql 可输入WQL查询语句或类名,\n可选用参数@path 指定 WMI 路径,默认为 "\root\cimv2",\n返回首个查询结果中所有属性组成的表,表以属性名为键,属性值为值,\n失败返回 null\n\n可选用参数@3及后续参数指定格式化参数,\n如果格式化参数是表,则可省略 @path 且不用保留参数位置,\n参数表可格式化 @号 开头的命名参数或以 ? 号为占位符的匿名参数,\n如果参数不是一个表,则调用 string.format 格式化 
+com.wmi.getProperties(.(wmiObject) =  参数 @wmiObject 可输入 WMI 对象,\n返回该对象所有属性组成的表,表以属性名为键,属性值为值,\n失败返回 null
+com.wmi.each(wql,path,->->->) =  @for index,item in com.wmi.each("__/*遍历 WMI 对象,\n可输入WQL查询语句或类名\n可选用参数@2指定 WMI 路径,默认为 "\root\cimv2"\n\n可选用参数@3及后续参数指定格式化参数,\n如果格式化参数是表,则可省略 @path 且不用保留参数位置,\n参数表可格式化 @号 开头的命名参数或以 ? 号为占位符的匿名参数,\n如果参数不是一个表,则调用 string.format 格式化*/") {
+	
+}
+com.wmi.eachProperties(wql,path,->->->) =  @for item in com.wmi.eachProperties("__/*遍历 WMI 对象的属性表,\n可输入WQL查询语句或类名\n可选用参数@2指定 WMI 路径,默认为 "\root\cimv2"\n\n可选用参数@3及后续参数指定格式化参数,\n如果格式化参数是表,则可省略 @path 且不用保留参数位置,\n参数表可格式化 @号 开头的命名参数或以 ? 号为占位符的匿名参数,\n如果参数不是一个表,则调用 string.format 格式化*/") {
+	
+} 
+com.wmi.getTable(.(wql,path,->->->) =  查询并返回包含所有返回 WMI 对象的属性表的数组\n @wql 参数可输入WQL查询语句或类名,\n可选用参数@path 指定 WMI 路径,默认为 "\root\cimv2"\n\n可选用参数@3及后续参数指定格式化参数,\n如果格式化参数是表,则可省略 @path 且不用保留参数位置,\n参数表可格式化 @号 开头的命名参数或以 ? 号为占位符的匿名参数,\n如果参数不是一个表,则调用 string.format 格式化
+com.wmi.formatWqlParameters(  = 格式化参数 @1 指定的 WQL 语句,\ncom.wmi.query 等函数调用此函数格式化 WQL 语句
+com.wmi.formatWqlParameters(.(wql,->->->) = 格式化参数 @1 指定的 WQL 语句,\n参数@2及后续参数指定格式化参数,\n支持 @号 开头的命名参数或以 ? 号为占位符的匿名参数,\n如果参数不是一个表,则调用 string.format 格式化
+com.wmi.each() = !SWbemObject.
+com.wmi.get() = !SWbemObject.
+end intellisense**/
+
+/**intellisense(!stdComObject)
+ExecQuery("SELECT * FROM Win32_BaseBoard__") = 使用 WQL 进行查询,返回 COM 对象,\n参数@2必须省略,可选用参数@3指定选项,\n半同步优化请将参数@3指定以下值 _wbemFlagReturnImmediately | _wbemFlagForwardOnly\n更多参数说明请参考 https://docs.microsoft.com/en-us/windows/win32/wmisdk/swbemservices-execquery
+ExecQueryAsync(.(sinkObj,wqlQuery) = 异步查询对象,\n参数@1必须传入 com.wmi.sink 创建的对象,\n参数@2指定 WQL 查询语句\n更多参数说明请参考 https://docs.microsoft.com/en-us/windows/win32/wmisdk/swbemservices-execqueryasync
+ExecNotificationQueryAsync(.(sinkObj,wqlQuery) = 执行异步查询以接收事件,\n参数@1必须传入 com.wmi.sink 创建的对象,\n参数@2指定 WQL 查询语句\n更多参数说明请参考 https://docs.microsoft.com/en-us/windows/win32/wmisdk/swbemservices-execnotificationqueryasync
+InstancesOf(.(strClass,iFlags) = 根据指定的类名,返回可使用 com.each 遍历的对象
+end intellisense**/
+
+/**intellisense()
+_wbemFlagReturnImmediately=@16/*_wbemFlagReturnImmediately*/
+_wbemFlagForwardOnly=@32/*_wbemFlagForwardOnly*/
+end intellisense**/
+
+/**intellisense(!SWbemObject)
+Put_() = 创建或更新 WMI 对象,\n修改属性后要调用这个函数才会生效,\n进程可能需要管理权限
+PutAsync_ = 异步创建或更新 WMI 对象
+Delete_ = 删除对象
+end intellisense**/

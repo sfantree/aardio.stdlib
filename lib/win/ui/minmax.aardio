@@ -1,0 +1,133 @@
+//minmax 限制窗口大小
+import win.appBar;
+namespace win.ui;
+
+class minmax{ 
+	ctor(winform,argsMinCx,argsMinCy,argsMaxCx,argsMaxCy){  
+		
+		if(winform._minmaxSetting){
+			this = winform._minmaxSetting;
+			..table.assign(this.argsMin,{cx=argsMinCx;cy=argsMinCy});
+			..table.assign(this.argsMax,{cx=argsMaxCx;cy=argsMaxCy});
+			return this;
+		}
+		
+		if( ! (argsMinCx && argsMinCy) ){
+			var rc = ..win.getPlacement(winform.hwnd).rcNormalPosition;
+			argsMinCx = rc.width();
+			argsMinCy = rc.height(); 
+		}
+		
+		this.argsMin = { cx=argsMinCx;cy=argsMinCy}
+		this.argsMax = { cx=argsMaxCx;cy=argsMaxCy}
+		
+		this.dpiScaleX = winform.dpiScaleX : 1;
+		this.dpiScaleY = winform.dpiScaleY : 1;
+		
+		this.updateMinMaxInfo = function(){
+			var x,y,cx,cy = 0,0,this.argsMax.cx,this.argsMax.cy;
+			if(winform.dpiScaleX && winform.dpiScaleY){
+				if(cx!==null) cx = cx / this.dpiScaleX * winform.dpiScaleX;
+				if(cy!==null) cy = cy / this.dpiScaleY * winform.dpiScaleY;	
+			} 
+			
+			if(..win.getStyle(winform.hwnd,0x800000/*_WS_BORDER*/)) { 
+				if(cx!==null) this.maxTrackSize.x = cx; 
+				if(cy!==null) this.maxTrackSize.y = cy;
+				return;
+			}
+			
+			var maxX,maxY = 0,0;
+			var monitorInfo = ..win.getMonitorInfo(winform.hwnd);
+			
+			if( monitorInfo){
+				if(!cx) cx = monitorInfo.rcWork.right - monitorInfo.rcWork.left; 
+				if(!cy) cy = monitorInfo.rcWork.bottom - monitorInfo.rcWork.top;
+				x = monitorInfo.rcWork.left - monitorInfo.rcMonitor.left;
+				y = monitorInfo.rcWork.top - monitorInfo.rcMonitor.top; 
+			}
+			else{
+				var rcWork = ..win.getWorkArea();
+				if(!cx) cx = rcWork.width();
+				if(!cy) cy = rcWork.height(); 
+      			x = rcWork.left;
+      			y = rcWork.top; 
+      		};
+
+      		var taskBar =  ..win.appBar.getTaskBar();
+      		if( taskBar ? taskBar.state == 1/*_ABS_AUTOHIDE*/){
+      			var edgeY = ::GetSystemMetrics(46/*_SM_CYEDGE*/);
+      			var edgeX = ::GetSystemMetrics(46/*_SM_CYEDGE*/);
+      		
+      			if( taskBar.uEdge == 0x3/*_ABE_BOTTOM*/ ){
+					cy -= edgeY;
+				}
+				elseif( taskBar.uEdge == 0x2/*_ABE_RIGHT*/ ){
+					cx -= edgeX;
+				}
+				elseif( taskBar.uEdge == 0x1/*_ABE_TOP*/ ){
+					y += edgeY;
+					cy -= edgeY;
+				}
+				elseif( taskBar.uEdge == 0x0/*_ABE_LEFT*/ ){
+					x += edgeX;
+					cx -= edgeX;
+				}
+			}
+			
+			if( this.minTrackSize.x >  cx ){
+				this.minTrackSize.x = cx;
+			}
+			if( this.minTrackSize.y >  cy ){
+				this.minTrackSize.y = cy;
+			}
+			
+      		this.maxSize.x = cx;
+      		this.maxSize.y = cy;
+      		this.maxTrackSize.x = cx;
+      		this.maxTrackSize.y = cy;
+      		this.maxPosition.x = x;
+      		this.maxPosition.y = y;
+      		
+      		return this;
+		}
+		winform.getMinMaxInfo = this.updateMinMaxInfo;
+		winform.onGetMinMaxInfo = function(hwnd, message, wParam, lParam){ 
+			..raw.convert(lParam,this); 
+			 
+			if(winform.dpiScaleX && winform.dpiScaleY){
+				this.minTrackSize.x = this.argsMin.cx / this.dpiScaleX * winform.dpiScaleX;
+				this.minTrackSize.y = this.argsMin.cy / this.dpiScaleY * winform.dpiScaleY;	
+			}
+			else {
+				this.minTrackSize.x = this.argsMin.cx;
+				this.minTrackSize.y = this.argsMin.cy;
+			} 
+			
+			this.updateMinMaxInfo(); 
+			..raw.copy(lParam,this); 
+			return 0;
+		};
+		 
+		winform._minmaxSetting = this; 
+	};  
+	struct reserved = ::POINT();
+	struct maxSize = ::POINT(argsMaxCx,argsMaxCy);
+	struct maxPosition = ::POINT();
+	struct minTrackSize = ::POINT(argsMinCx,argsMinCy);
+	struct maxTrackSize = ::POINT(argsMaxCx,argsMaxCy); 
+} 
+
+/**intellisense()
+win.ui.minmax = 窗口缩放范围设置器\n一个窗口只能
+win.ui.minmax( = 创建窗口缩放范围设置器\n一个窗口只能创建一次,重复调用将重用并返回第一次创建的设置器
+win.ui.minmax(.(winform,最小宽度,最小高度,最大宽度,最大高度) = 除第一个参数以外,其他参数可选\n默认最小为当前窗口大小,最大为最大化大小
+win.ui.minmax() = !minmaxSetting.
+!minmaxSetting.updateMinMaxInfo() = 重新计算窗口缩放大小范围\n!minmaxSetting.
+!minmaxSetting.maxSize = 自动维护此属性请不要修改,应修改 argsMax\n!point.
+!minmaxSetting.maxPosition = 自动维护此属性请不要修改,应修改 argsMax\n!point.
+!minmaxSetting.minTrackSize = 自动维护此属性请不要修改,应修改 argsMin\n!point.
+!minmaxSetting.maxTrackSize = 自动维护此属性请不要修改,应修改 argsMax\n!point.
+!minmaxSetting.argsMin = 用于限制窗口最小宽高,\n修改此属性与修改 win.ui.minmax 的构造参数作用一样\n!size.
+!minmaxSetting.argsMax = 用于限制窗口最大宽高,\n修改此属性与修改 win.ui.minmax 的构造参数作用一样\n\n!size.
+end intellisense**/

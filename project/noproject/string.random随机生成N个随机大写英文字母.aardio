@@ -1,0 +1,6 @@
+import console;
+
+math.randomize()
+var str = string.random(3,"ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+console.log( str );
+console.pause();

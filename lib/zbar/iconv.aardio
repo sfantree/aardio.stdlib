@@ -1,0 +1,44 @@
+﻿namespace zbar;
+
+class iconv{
+	ctor(fromCode,toCode){ 
+		this.descriptor = _libiconv.libiconv_open(toCode,fromCode) 
+		..table.gc(this,"close");
+	};
+	convert = function(str){
+		var outSize = #str*3+1;
+		var outbuf = ..raw.realloc(outSize)
+		var outBytesLeft = {INT size=outSize}
+		
+		var ret = _libiconv.libiconv(this.descriptor,{ptr inbuf = str; },{INT size = #str},{ptr outbuf = outbuf},outBytesLeft);
+		if(ret===0){
+			outSize = outSize - outBytesLeft.size;
+			ret = ..raw.tostring(outbuf,1,outSize);
+		}
+		else {
+			ret = null;
+		} 
+		
+		..raw.realloc(0,outbuf);
+		return ret;
+	};
+	close = function(){
+		if(this.descriptor){
+			_libiconv.libiconv_close(this.descriptor);
+			this.descriptor = null;
+		} 
+	} 
+}
+
+namespace iconv{
+	
+	var dllPath = ..io.appData("aardio\std\zbar\libiconv-2.dll",$"~\lib\zbar\.res\libiconv-2.dll");
+	_libiconv = ..raw.loadDll(dllPath,,"cdecl");   
+}
+
+/**intellisense()
+zbar.iconv(.(fromCode,toCode) = 创建转换对象,\n建议直接使用标准库函数 string.fromto 转换编码
+zbar.iconv() = !zbarIconv.
+!zbarIconv.convert(str) = 转换参数str指定的字符串编码，成功返回新的字符串,\n此函数不会自动设置UTF标记，\n建议改用标准库函数 string.fromto
+!zbarIconv.close() = 关闭对象
+end intellisense**/

@@ -1,0 +1,125 @@
+﻿//actCtx 清单加载
+import com.typeAttrs;
+
+namespace com;
+
+class actCtx{
+	ctor( dllPath ){
+		this.ax = ..com.CreateObject("Microsoft.Windows.ActCtx");
+		this.path = ..io.localpath(dllPath) || dllPath;
+		if(!..io.exist(this.path)){
+			error("请指定正确的待加载组件路径");
+		}
+	};
+	createDefaultManifest = function(outPath){
+		if(!outPath && !#this.manifest){
+			this.manifest = this.path + ".manifest";
+		}
+		
+		return createDefaultManifest(this.path,this.manifest);
+	};
+	firstCoClassId = function(){ 
+		if(this.path){
+			if(!this.$firstCoClassId) {
+				this.$firstCoClassId = ..com.typeAttrs.firstCoClass(this.path)[["GUID"]];
+			}
+			return this.$firstCoClassId;
+		} 
+	};
+	createEmbed = function(winform,clsId,embedObject){
+		if(!clsId){
+			clsId = this.firstCoClassId();
+			if(!clsId) error("请指定CLSID参数",2)
+		}
+		
+		var obj = this.createObject(clsId);
+		return winform.createEmbed(obj,embedObject);
+	};
+	createEmbedEx = function(winform,clsId){
+		var embed = this.createEmbed(winform,clsId);
+		embed@ = {
+			_get = embed._object;
+			_set = function(k,v){ 
+				if(type(v) === "function") owner[[k]] = v;
+				else owner._object[k] = v; 
+			}
+		};
+		
+		return embed;
+	}; 
+	createObject = function(progId) {
+		/*
+		this.ax.ManifestText 里指定 UTF-16 编码的清单，设 TMP 环境变量到组件目录也行。
+		但是这样会生成一大堆临时文件有些多此一举，而且这种跳过本地清单文件走偏门的方法应当尽量少用。 
+		*/
+		if( !#this.manifest ) {
+			this.createDefaultManifest();
+		}
+		this.ax.Manifest = ..io.localpath(this.manifest) || this.manifest;
+		return this.ax.CreateObject(progId);
+	};
+	getObject = function(progId) {
+		if( !#this.manifest ) {
+			this.createDefaultManifest(); 
+			if(this.manifestText){
+				..string.save(this.manifest,this.manifestText);
+			}
+		} 
+		this.ax.Manifest = ..io.localpath(this.manifest) || this.manifest;
+		return this.ax.GetObject(progId); 
+	};
+}
+
+namespace actCtx{
+    
+	createDefaultManifest = function(path,outPath){
+		var attr = ..com.typeAttrs.firstCoClass(path);
+		if(!attr) return null,"找不到类型库"
+		
+		var tPath = ..io.splitpath(path);
+		if(!tPath) return null,"输入文件路径错误"
+		
+		var xml = `<?xml version="1.0" encoding="`+(outPath?"UTF-8":"UTF-16")+`" standalone="yes"?>
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">  
+  <assemblyIdentity type="win32" name="COM" version="1.0.0.0"/>  
+  <file name="`+tPath.file+`"> 
+    <comClass clsid="`+attr.GUID+`" threadingModel="Both" progid="`+attr.name+`"/>
+  </file>
+</assembly>`;
+
+		if(!outPath){
+			return ..string.toUnicode(xml);
+		}
+		
+		return ..string.save(outPath,xml)
+	}  
+}
+
+/**intellisense()
+com.actCtx = 清单加载\n请参考调用系统 API 实现清单加载的 raw.activationContext 扩展库
+com.actCtx(.(dllPath) = 创建清单加载器,\n参数 @1 指定要加载的 DLL 或 OCX 文件路径。
+com.actCtx() = !stdComActCtx.
+end intellisense**/
+
+/**intellisense(!stdComActCtx)
+manifest = 指定清单文件路径
+createDefaultManifest( = 创建默认清单文件
+createDefaultManifest(.(outPath) = 获取首个 COM 类信息，\n生成 UTF-8 编码的 manifest 数据并保存到 @outPath 指定的文件路径\n不指定输出路径，则设置默认输入路径为 COM 组件文件名加".manifest"
+createObject(.(progId) = 创建对象，参数@1指定 ProgID
+getObject(.(progId) = 获取现有对象实例，参数@1指定 ProgID
+createObject( = 创建对象
+getObject( = 获取现有对象实例
+createEmbed( = 创建嵌入控件,返回控件容器对象,\n容器对象的 _object 成员是创建的 COM 对象,\n容器对象可通过添加成员函数响应 COM 对象事件，\n容器对象的主要作用是充当访问 COM 对象的中间代理对象。\n通常使用 util.metaProperty 为容器对象添加属性元表，\n属性元表可拦截属性、函数调用并调用 _object 对象,\n\ncreateEmbedEx 返回的容器已添加默认代理以直接访问 COM 对象
+createEmbed(.(winform,clsId,embedObj) = 创建嵌入控件,返回控件容器对象,\n容器对象的 _object 成员是创建的 COM 对象,\n容器对象可通过添加成员函数响应 COM 对象事件，\n容器对象的主要作用是充当访问 COM 对象的中间代理对象,\n@clsId 指定控件 CLSID,如果控件不是自内存加载,\n则可省略 @clsId 并由 firstCoClassId函数自动获取,\n可选在参数@3 中指定 COM 对象绑定的容器对象
+createEmbed() = !embedObject.
+createEmbedEx( = 创建嵌入控件,返回控件容器对象,\n容器对象的 _object 成员是创建的 COM 对象,\n容器对象可通过添加成员函数响应 COM 对象事件，\n容器对象的主要作用是充当访问 COM 对象的中间代理对象。\n此函数返回的容器已添加元表并创建代理以直接访问 COM 对象
+createEmbedEx(.(winform,clsId,embedObj) = 创建嵌入控件,返回控件容器对象,\n此函数返回的容器已添加元表并创建代理以直接访问 COM 对象,\n@clsId 指定控件 CLSID,如果控件不是自内存加载,\n则可省略 @clsId 并由 firstCoClassId函数自动获取,\n可选在参数@3 中指定 COM 对象绑定的容器对象
+createEmbedEx() = !embedObject.
+firstCoClassId() = 获取控件的首个 CLSID,\n通过内存加载控件时此函数不可用
+end intellisense**/
+
+/**intellisense(com.actCtx)
+createDefaultManifest( = 创建默认清单文件
+createDefaultManifest(.(dllPath) = 自 dllPath 获取首个 COM 类信息，\n直接返回包含生成 manifest 数据，\n返回数据为 UTF-16 编码的 Unicode 字符串
+createDefaultManifest(.(dllPath,outPath) = 自 dllPath 获取首个 COM 类信息，\n生成 UTF-8 编码的 manifest 数据并保存到 @outPath 指定的文件路径
+end intellisense**/

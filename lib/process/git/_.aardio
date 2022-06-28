@@ -1,0 +1,229 @@
+﻿import fsys;
+import process.popen;
+import inet.installer;
+
+namespace process;
+
+class git{
+	ctor(workdir){
+		this.workdir =  workdir;
+		this.path  = getInstallPath();
+		
+		if(!this.path){
+			
+			if( !install() ) return;
+			this.path  = getInstallPath();
+			if(!this.path)return null;
+		}
+		
+		..io.createDir(this.workdir)
+	};
+	ignore = function(txt){
+		..string.save( ..io.joinpath(this.workdir,".gitignore"), txt )
+	};
+	popen = function(p,...){
+		return ..process.popen(this.path,...?{p;...}:p,{workdir=..io.fullpath(this.workdir)})
+	};
+	open = function(p,...){
+		return ..process(this.path,...?{p;...}:p,{workdir=..io.fullpath(this.workdir)})
+	}; 
+	cmd = function(...){
+		var prcs = this.popen(...); 
+		var out,err = prcs.read(-1),prcs.readErr(-1);
+		prcs.logger = this.logger;
+		if(!this.logger)prcs.logResponse();
+		prcs.close();
+		return out,err;
+	};
+	init = function(...){
+		return this.cmd("init",...);
+	};
+	add = function(...){
+		return this.cmd("add",...);
+	};
+	addAll = function(...){ //
+		return this.cmd("add","-A",...);
+	};
+	addNoAll = function(...){ //
+		return this.cmd("add","--ignore-removal",...);
+	};
+	addUpdate = function(...){ //
+		return this.cmd("add","-u",...);
+	}; 
+	reset = function(...){
+		return this.cmd("reset",...);	
+	};
+	checkout = function(...){
+		return this.cmd("checkout",...);	
+	};
+	branch = function(...){
+		return this.cmd("branch",...);	
+	};
+	tag = function(...){
+		return this.cmd("tag",...);	
+	};
+	merge = function(...){
+		return this.cmd("merge",...);	
+	};
+	clean = function(...){
+		return this.cmd("clean",...);	
+	};
+	resetAndClean = function(){
+		return ..string.concat( 
+			this.cmd("reset","--hard","HEAD"),	
+			this.cmd("clean","-xdf")
+		)	
+	}
+	revert = function(...){
+		return this.cmd("revert",...);	
+	};
+	remote = function(...){
+		return this.cmd("remote",...);	
+	};
+	rm = function(...){
+		return this.cmd("rm",...);	
+	};
+	push = function(...){
+		return this.cmd("push",...);	
+	};
+	resetPush = function(commitId){
+		this.cmd("reset","--hard",commitId);
+		this.cmd("push","--force");
+	};
+	pull = function(...){
+		return this.cmd("pull",...);	
+	};
+	fetch = function(...){
+		return this.cmd("fetch",...);	
+	};
+	rebase = function(...){
+		return this.cmd("rebase",...);	
+	};
+	commit = function(...){
+		return this.cmd("commit","-m",...);	
+	}; 
+	clone = function(...){
+		return this.cmd("clone",...);	
+	};
+	status = function(...){
+		return this.cmd("status",...);	
+	};
+	log = function(...){
+		return this.cmd("log",...);	
+	};
+	show = function(...){
+		return this.cmd("show",...);	
+	};
+	diff = function(...){
+		return this.cmd("diff",...);	
+	};
+	stash = function(...){
+		return this.cmd("stash",...);	
+	};
+	user = function(name,email){
+		return ..string.concat( 
+			this.cmd("config","user.name",name),	
+			this.cmd("config","user.email",email)
+		)	
+	};
+	globalUser = function(name,email){
+		return ..string.concat( 
+			this.cmd("config","--global","user.name",name),	
+			this.cmd("config","--global","user.email",email)
+		)	
+	};
+}
+
+namespace git{ 
+	
+ 	getInstallPath = function(){
+    	return ..io.exist( ..fsys.getSpecial(0x26 /*_CSIDL_PROGRAM_FILES*/,"\Git\cmd\git.exe") )
+			|| ..io.exist( ..fsys.getSpecial(0x2a /*_CSIDL_PROGRAM_FILESX86*/,"\Git\cmd\git.exe") )
+			|| ..io.exist( ..fsys.getSpecial(0x1c /*_CSIDL_LOCAL_APPDATA*/,"\Git\cmd\git.exe") )
+			|| ( function(){
+				import win.reg;
+				var reg = win.regWow64("HKEY_LOCAL_MACHINE\Software\GitForWindows");
+				var installPath;
+				if(reg){
+					installPath = reg.queryValue("InstallPath");
+					reg.close();
+				};
+				
+				if(installPath){
+					return ..io.exist( ..io.joinpath(installPath,"cmd/git.exe"));
+				}; 			
+			} )(); 
+	}
+	
+	install = function(){
+		return..inet.installer("Git for Windows",{
+				x64 = "http://npm.taobao.org/mirrors/git-for-windows/v2.33.0.windows.2/Git-2.33.0.2-64-bit.exe";
+				x86 = "http://npm.taobao.org/mirrors/git-for-windows/v2.33.0.windows.2/Git-2.33.0.2-32-bit.exe";
+			},"/SILENT /SP- /SUPPRESSMSGBOXES /NOCANCEL /NORESTART") 
+	}
+}
+
+/**intellisense()
+process.git("__") = 创建 Git 工具，参数指定工作目录,\n如果系统未安装 Git 时将下载并安装 Git,\n[git安装程序](https://git-scm.com/download/win)
+process.git() = !process_git.
+process.git.getInstallPath() = 获取 git.exe 安装路径
+process.git.install() = 安装 Git for Windows
+end intellisense**/
+
+/**intellisense(!process_git)
+popen(__) = 指定一个或多个git启动参数,\n返回process.popen对象,\n\n不显示git控制台窗口，\n并可通过返回的进程管道读写进程输入输出
+open(__) = 指定一个或多个git启动参数,返回process对象
+cmd(__) = 指定一个或多个git启动参数,\n进程执行完成并关闭后,返回标准输出,以及错误输出\n[git指令文档](https://git-scm.com/docs)
+popen() = !process_popen.
+open() = !process.
+ignore(__) = 在参数中使用字符串指定忽略文件.gitignore的内容\n[忽略文件模板](https://github.com/github/gitignore)
+init() = 创建版本库
+remote("add","origin","__") = 添加远程仓库关联,\n参数@1指定名称,参数@2指定过程仓库地址
+remote("-v") = 查看远程仓库的信息
+remote("rm","origin") = 删除远程仓库关联
+push("origin","master") = 推送master分支到远程仓库origin,\n在这之前应当先将文件更改add到暂存区,\n然后在commit到本地版本库,\n\n可用remoteAdd函数添加远程仓库地址,\n首次推送时可增加"-u"参数
+push("origin,"tagName") = 推送tagName指定的标签到远程仓库origin,
+pull("origin","dev:master") = 取回远程仓库的dev分支,\n并与本地master分支合并\n如果与当前分支合并,冒号后面部分可以省略,\n如果当前分支与远程分支存在追踪关系,可省略远程分支名
+pull() = 如果当前分支只有一个远程追踪分支,\n可省略参数直接取回该分支
+fetch("origin","master") =   取回远程仓库origin的master分支,\n但不会自动与本地分支合并
+commit(__) = 提交暂存区更改到本地版本库,\n必须在参数中使用一个字符串参数指定更改日志
+clone("__") = 克隆远程仓库
+add("__") = 指定要添加到暂存区的文件名目录,\n文件名中可使用*通配符,\n\n暂存区(Stage)也称索引区(Index)\nIndex(Stage)是一个列表，用于记录有我们需要跟踪的所有文件
+addAll(__) = 保存添加所有新增、修改、删除文件操作,\n可远在参数中指定目录
+addNoAll(__) = 保存添加所有修改、新增文件操作，\n不包括删除文件,可远在参数中指定目录
+addUpdate(__) = 保存添加所有修改、删除文件操作,\n不包括新增文件,可远在参数中指定目录
+resetPush(.(commitId) = 远程仓库强制回退到指定的提交ID
+reset(.("--hard","HEAD~1") = 回退到上一个版本,并放弃之后的版本历史以及所有更改,\nHEAD指针、暂存区、工作区都回到上次的提交状态\n可以修改参数中的数字指定回退的版本数,也可以直接指定版本ID
+reset(.("HEAD") = 撤消对暂存区的更改并重新放回工作区,\n可增加一个参数指定文件或目录
+revert("HEAD~1") = 回退到上一个版本,\n可生成一次新的提交,版本历史是不会被破坏,\n可以修改参数中的数字指定回退的版本数,也可以直接指定版本ID
+branch() = 列出所有分支,前面是*号的为当前分支
+branch("branch") = 创建新分支,但不会切换过去
+branch("-d","branch") = 删除指定分支,\n参数@1改为大写"-D"则强行删除未合并的分支
+branch("--set-upstream-to=origin/master","master") = 手动建立本地分支与远程分支的追踪关系\n\n如果当前分支与远程分支存在追踪关系,pull可省略远程分支名
+tag() = 列出所有标签
+tag("tagName") = 设置标签
+tag("-d","tagName") = 删除标签
+merge(.(branch) = 合并指定分支
+checkout(.(branch) = 更新HEAD以指向branch分支，以及用branch指向的树更新暂存区和工作区
+checkout(.("-b",branch) = 创建并切换到branch分支
+checkout(.("--","->") = 撤消本地所有修改,\n为避免提交ID与文件路径同名冲突,请在参数@1中指定"--"
+checkout(.("--",filename) = 用暂存区中指定文件来覆盖工作区中的对应文件,\n为避免提交ID与文件路径同名冲突,请在参数@1中指定"--"
+checkout(.("HEAD",filename) = 直接用HEAD覆盖工作区\n相当于git reset HEAD + git checkout -- filename
+clean("-xdf") = 删除当前目录下没有被track过的文件或目录\n不管是否是.gitignore文件指定的文件或目录
+rm("-r","__") = 自版本库和暂存区删除文件,\n"-r" 参数允许递归删除目录下的文件
+resetAndClean() = 清空工作目录中所有未提交的内容\n删除当前目录下所有没有跟踪过的文件\n工作目录和缓存区恢复最近一次commit时的状态
+user(.(用户名,邮箱) = 设置用户名、邮件\n不指定参数查看用户名、邮箱
+globalUser(.(用户名,邮箱) = 设置全局用户名、邮件
+status() = 显示工作目录和暂存区的状态
+diff("HEAD") = 返回工作区和版本库的差异
+diff("--cached") = 返回暂存区和版本库的差异
+diff() = 返回工作区和暂存区的差异
+stash() = 备份工作现场
+stash("list") = 列出备份的工作现场
+stash("pop") = 使用备份的工作现场恢复工作区,\n并删除备份的工作现场
+log() = 查看提交历史
+rebase() = 变基操作
+show(__) = 显示相关信息
+logger = 指定进程管道的默认回显对象\n该对象必须有log或write成员函数用于输出回
+end intellisense**/
+

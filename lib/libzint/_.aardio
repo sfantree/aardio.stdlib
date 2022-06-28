@@ -1,0 +1,242 @@
+﻿import raw.struct;
+import gdip.bitmap;
+
+class libzint{
+	ctor(){{
+		var pSymbol = _dll.ZBarcode_CreateP(); 
+		this = ..raw.struct(zintSymbol,pSymbol);
+		this[["#pSymbol"]] = pSymbol;
+		
+		..table.gc(this,"delete");
+	}};
+	encode = function(str){
+		return _dll.ZBarcode_Encode(this,str,0);
+	};
+	encodeFile = function(fileName){
+		var fileName = ..string.fromto(..io.fullpath(fileName),65001,0);
+		return _dll.ZBarcode_Encode_File(this,fileName);
+	};
+	saveFile = function(outfile,angle=0){
+		this.outfile = ..string.fromto(..io.fullpath(outfile),65001,0);
+		_dll.ZBarcode_Print(this,angle);
+	}
+	saveBitmap = function(angle=0,newWidth,newHeight){ 
+		_dll.ZBarcode_Buffer(this,angle);
+		
+		var bmp = ..gdip.bitmap(this.bitmapWidth,this.bitmapHeight,0x26200A/*_PixelFormat32bppARGB*/);
+		var bmpData = bmp.lockMemory();
+		var scan0 = bmpData.Scan0;
+		var buff = ..raw.buffer(this.bitmapWidth*this.bitmapHeight*3,this.bitmap) 
+	
+		for(h=0;this.bitmapHeight-1;1){
+			var index = (this.bitmapWidth*3) * h;
+			var bmpIdx = bmpData.Stride * h;
+			
+			for(w=1;this.bitmapWidth){ 
+				
+				scan0[bmpIdx+4] = 0xFF;
+				scan0[bmpIdx+1],scan0[bmpIdx+2],scan0[bmpIdx+3] = buff[index+3],buff[index+2],buff[index+1] 
+					
+				index += 3;
+				bmpIdx += 4;
+			}
+		}
+
+		bmp.unlockMemory(bmpData);
+		
+		if(newWidth){
+			if(!newHeight) newHeight = newWidth;
+			var bmp2 = ..gdip.bitmap(newWidth,newHeight);
+			var graphics = bmp2.graphics.setInterpolationMode(5/*_InterpolationModeNearestNeighbor*/);
+			graphics.pixelOffsetMode = 4/*_PixelOffsetModeHalf*/; 
+			graphics.drawImageStretch(bmp,::RECT(0,0,newWidth,newHeight));
+			graphics.delete();
+			bmp.dispose();
+			return bmp2;
+		}
+		
+		return bmp;	
+	}
+	clear = function(){
+		_dll.ZBarcode_Clear(this);
+	};
+	delete = function(){
+		if(this[["#pSymbol"]]){
+			_dll.ZBarcode_Delete(this[["#pSymbol"]]);
+				this[["#pSymbol"]] = null;
+		}
+	}; 
+}
+
+namespace libzint{ 
+	_dll = ..raw.loadDll($"~\lib\libzint\.res\libzint.dll","libzint","cdecl");   
+
+	class zintSymbol {
+		int symbology = 0x14/*_BARCODE_CODE128*/;
+		int height;
+		int whiteSpacWidth;
+		int borderWidth;
+		int outputOptions;
+		BYTE fgColor[10] = "000000";
+		BYTE bgColor[10] = "ffffff";
+		BYTE outfile[256] = "";
+		float scale = 1.0;
+		int option1 =  -1;          
+		int option2;
+		int option3 = 928; // PDF_MAX
+		int showHrt = 1; // Show human readable text
+		int fontsize;
+		int inputMode;
+		int eci;
+		BYTE text[128];
+		int rows;
+		int width;
+		byte primary[128] = "";
+		BYTE encodedData[28600];
+		int rowHeight[200];
+		BYTE err[100];
+		pointer bitmap;
+		int bitmapWidth;
+		int bitmapHeight;
+		INT bitmapByteLength;
+		float dotSize;
+		pointer vector;
+		pointer rendered;
+		int debug;
+		
+		set_foregroundColor =  function( value ){
+			this.fgColor = ..string.format("%06X", value); 
+		};
+		get_foregroundColor = function(){
+			return tonumber(this.fgColor,16); 
+		}; 
+		set_backgroundColor  = function( value ){ 
+			this.fgColor = ..string.format("%06X", value); 
+		};
+		get_backgroundColor = function(){
+			return tonumber(this.bgColor,16); 
+		}; 	
+	}
+}
+
+
+/**intellisense()
+libzint = 条码扩展库\n扩展库作者:[popdes](http://www.htmlayout.cn/t/365) \n[基于开源组件libzint](https://sourceforge.net/projects/zint/) \nlibzint.dll使用BSD开源许可证可免费使用
+libzint() = 初始化条码组件
+libzint() = !libzint.
+!libzint.symbology = @.symbology = _BARCODE___/*条码编号*/
+!libzint.height = 高度
+!libzint.whiteSpacWidth = 白边宽度
+!libzint.borderWidth = 边框宽度
+!libzint.foregroundColor = 前景色  
+!libzint.backgroundColor  = 背景色 
+!libzint.scale = 缩放比
+!libzint.showHrt = 显示底部文本\n如果设置为1，则text必须含有内容
+!libzint.fontsize = 字体尺寸
+!libzint.text = 底部文本
+!libzint.option1 = 依赖于symbology，不同编码有不同意义
+!libzint.option2 = 依赖于symbology，不同编码有不同意义
+!libzint.outputOptions = 有无边框之类的控制
+!libzint.inputMode = 数值,编码格式
+!libzint.err = 错误信息
+!libzint.encode(.(str) = 编码@str参数指定的字符串
+!libzint.encodeFile(.(filename) = 编码@filename参数指定的文件
+!libzint.saveFile(.(文件路径,旋转角度) = 保存条码到文件,\n注意传入路径必须使用ANSI兼容的UTF8编码字符串\n如果需要存为png图像，请先调用saveBitmap函数保存为gidp.bitmap图像,\n再调用bitmap对象的save函数存为文件
+!libzint.saveBitmap(.(angle,newWidth,newHeight) = 获取内存条码图像,所有参数可选,\n@angle参数可选使用0,90,180,270之一的数值指定旋转角度,\n可选用@newWidth,@newHeight指定缩放后的图像大小,\n这里的缩放可修正二维码缩放后模糊的问题,\n返回值为gdip.bitmap对象
+!libzint.saveBitmap() = 获取内存条码图像,\n返回值为gdip.bitmap对象\n!gdipbitmap.
+
+_BARCODE_CODE11=@0x1/*_BARCODE_CODE11*/
+_BARCODE_C25MATRIX=@0x2/*_BARCODE_C25MATRIX*/
+_BARCODE_C25INTER=@0x3/*_BARCODE_C25INTER*/
+_BARCODE_C25IATA=@0x4/*_BARCODE_C25IATA*/
+_BARCODE_C25LOGIC=@0x6/*_BARCODE_C25LOGIC*/
+_BARCODE_C25IND=@0x7/*_BARCODE_C25IND*/
+_BARCODE_CODE39=@0x8/*_BARCODE_CODE39*/
+_BARCODE_EXCODE39=@0x9/*_BARCODE_EXCODE39*/
+_BARCODE_EANX=@0xD/*_BARCODE_EANX*/
+_BARCODE_EANX_CHK=@0xE/*_BARCODE_EANX_CHK*/
+_BARCODE_EAN128=@0x10/*_BARCODE_EAN128*/
+_BARCODE_CODABAR=@0x12/*_BARCODE_CODABAR*/
+_BARCODE_CODE128=@0x14/*_BARCODE_CODE128*/
+_BARCODE_DPLEIT=@0x15/*_BARCODE_DPLEIT*/
+_BARCODE_DPIDENT=@0x16/*_BARCODE_DPIDENT*/
+_BARCODE_CODE16K=@0x17/*_BARCODE_CODE16K*/
+_BARCODE_CODE49=@0x18/*_BARCODE_CODE49*/
+_BARCODE_CODE93=@0x19/*_BARCODE_CODE93*/
+_BARCODE_FLAT=@0x1C/*_BARCODE_FLAT*/
+_BARCODE_RSS14=@0x1D/*_BARCODE_RSS14*/
+_BARCODE_RSS_LTD=@0x1E/*_BARCODE_RSS_LTD*/
+_BARCODE_RSS_EXP=@0x1F/*_BARCODE_RSS_EXP*/
+_BARCODE_TELEPEN=@0x20/*_BARCODE_TELEPEN*/
+_BARCODE_UPCA=@0x22/*_BARCODE_UPCA*/
+_BARCODE_UPCA_CHK=@0x23/*_BARCODE_UPCA_CHK*/
+_BARCODE_UPCE=@0x25/*_BARCODE_UPCE*/
+_BARCODE_UPCE_CHK=@0x26/*_BARCODE_UPCE_CHK*/
+_BARCODE_POSTNET=@0x28/*_BARCODE_POSTNET*/
+_BARCODE_MSI_PLESSEY=@0x2F/*_BARCODE_MSI_PLESSEY*/
+_BARCODE_FIM=@0x31/*_BARCODE_FIM*/
+_BARCODE_LOGMARS=@0x32/*_BARCODE_LOGMARS*/
+_BARCODE_PHARMA=@0x33/*_BARCODE_PHARMA*/
+_BARCODE_PZN=@0x34/*_BARCODE_PZN*/
+_BARCODE_PHARMA_TWO=@0x35/*_BARCODE_PHARMA_TWO*/
+_BARCODE_PDF417=@0x37/*_BARCODE_PDF417*/
+_BARCODE_PDF417TRUNC=@0x38/*_BARCODE_PDF417TRUNC*/
+_BARCODE_MAXICODE=@0x39/*_BARCODE_MAXICODE*/
+_BARCODE_QRCODE=@0x3A/*_BARCODE_QRCODE*/
+_BARCODE_CODE128B=@0x3C/*_BARCODE_CODE128B*/
+_BARCODE_AUSPOST=@0x3F/*_BARCODE_AUSPOST*/
+_BARCODE_AUSREPLY=@0x42/*_BARCODE_AUSREPLY*/
+_BARCODE_AUSROUTE=@0x43/*_BARCODE_AUSROUTE*/
+_BARCODE_AUSREDIRECT=@0x44/*_BARCODE_AUSREDIRECT*/
+_BARCODE_ISBNX=@0x45/*_BARCODE_ISBNX*/
+_BARCODE_RM4SCC=@0x46/*_BARCODE_RM4SCC*/
+_BARCODE_DATAMATRIX=@0x47/*_BARCODE_DATAMATRIX*/
+_BARCODE_EAN14=@0x48/*_BARCODE_EAN14*/
+_BARCODE_VIN=@0x49/*_BARCODE_VIN*/
+_BARCODE_CODABLOCKF=@0x4A/*_BARCODE_CODABLOCKF*/
+_BARCODE_NVE18=@0x4B/*_BARCODE_NVE18*/
+_BARCODE_JAPANPOST=@0x4C/*_BARCODE_JAPANPOST*/
+_BARCODE_KOREAPOST=@0x4D/*_BARCODE_KOREAPOST*/
+_BARCODE_RSS14STACK=@0x4F/*_BARCODE_RSS14STACK*/
+_BARCODE_RSS14STACK_OMNI=@0x50/*_BARCODE_RSS14STACK_OMNI*/
+_BARCODE_RSS_EXPSTACK=@0x51/*_BARCODE_RSS_EXPSTACK*/
+_BARCODE_PLANET=@0x52/*_BARCODE_PLANET*/
+_BARCODE_MICROPDF417=@0x54/*_BARCODE_MICROPDF417*/
+_BARCODE_ONECODE=@0x55/*_BARCODE_ONECODE*/
+_BARCODE_PLESSEY=@0x56/*_BARCODE_PLESSEY*/
+_BARCODE_TELEPEN_NUM=@0x57/*_BARCODE_TELEPEN_NUM*/
+_BARCODE_ITF14=@0x59/*_BARCODE_ITF14*/
+_BARCODE_KIX=@0x5A/*_BARCODE_KIX*/
+_BARCODE_AZTEC=@0x5C/*_BARCODE_AZTEC*/
+_BARCODE_DAFT=@0x5D/*_BARCODE_DAFT*/
+_BARCODE_MICROQR=@0x61/*_BARCODE_MICROQR*/
+_BARCODE_HIBC_128=@0x62/*_BARCODE_HIBC_128*/
+_BARCODE_HIBC_39=@0x63/*_BARCODE_HIBC_39*/
+_BARCODE_HIBC_DM=@0x66/*_BARCODE_HIBC_DM*/
+_BARCODE_HIBC_QR=@0x68/*_BARCODE_HIBC_QR*/
+_BARCODE_HIBC_PDF=@0x6A/*_BARCODE_HIBC_PDF*/
+_BARCODE_HIBC_MICPDF=@0x6C/*_BARCODE_HIBC_MICPDF*/
+_BARCODE_HIBC_BLOCKF=@0x6E/*_BARCODE_HIBC_BLOCKF*/
+_BARCODE_HIBC_AZTEC=@0x70/*_BARCODE_HIBC_AZTEC*/
+_BARCODE_DOTCODE=@0x73/*_BARCODE_DOTCODE*/
+_BARCODE_HANXIN=@0x74/*_BARCODE_HANXIN*/
+_BARCODE_MAILMARK=@0x79/*_BARCODE_MAILMARK*/
+_BARCODE_AZRUNE=@0x80/*_BARCODE_AZRUNE*/
+_BARCODE_CODE32=@0x81/*_BARCODE_CODE32*/
+_BARCODE_EANX_CC=@0x82/*_BARCODE_EANX_CC*/
+_BARCODE_EAN128_CC=@0x83/*_BARCODE_EAN128_CC*/
+_BARCODE_RSS14_CC=@0x84/*_BARCODE_RSS14_CC*/
+_BARCODE_RSS_LTD_CC=@0x85/*_BARCODE_RSS_LTD_CC*/
+_BARCODE_RSS_EXP_CC=@0x86/*_BARCODE_RSS_EXP_CC*/
+_BARCODE_UPCA_CC=@0x87/*_BARCODE_UPCA_CC*/
+_BARCODE_UPCE_CC=@0x88/*_BARCODE_UPCE_CC*/
+_BARCODE_RSS14STACK_CC=@0x89/*_BARCODE_RSS14STACK_CC*/
+_BARCODE_RSS14_OMNI_CC=@0x8A/*_BARCODE_RSS14_OMNI_CC*/
+_BARCODE_RSS_EXPSTACK_CC=@0x8B/*_BARCODE_RSS_EXPSTACK_CC*/
+_BARCODE_CHANNEL=@0x8C/*_BARCODE_CHANNEL*/
+_BARCODE_CODEONE=@0x8D/*_BARCODE_CODEONE*/
+_BARCODE_GRIDMATRIX=@0x8E/*_BARCODE_GRIDMATRIX*/
+_BARCODE_UPNQR=@0x8F/*_BARCODE_UPNQR*/
+_BARCODE_ULTRA=@0x90/*_BARCODE_ULTRA*/
+_BARCODE_RMQR=@0x91/*_BARCODE_RMQR*/
+end intellisense**/

@@ -1,0 +1,37 @@
+import console; 
+var cmdline = /**
+
+curl 'https://curlconverter.com/main.css' \    
+  -H 'authority: curlconverter.com' \    
+  -H 'accept: text/css,*/*;q=0.1' \   
+  -H 'accept-language: zh-CN,zh;q=0.9,en;q=0.8,en-US;q=0.7' \
+  -H 'cache-control: no-cache' \
+  -H 'dnt: 1' \
+  -H 'pragma: no-cache' \
+  -H 'referer: https://curlconverter.com/' \
+  -H 'sec-ch-ua: " Not A;Brand";v="99", "Chromium";v="100", "Google Chrome";v="100"' \
+  -H 'sec-ch-ua-mobile: ?0' \
+  -H 'sec-ch-ua-platform: "Windows"' \     
+  -H 'sec-fetch-dest: style' \
+  -H 'sec-fetch-mode: no-cors' \
+  -H 'sec-fetch-site: same-origin' \
+  -H 'user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36' \
+  --compressed
+
+**/;
+
+import string.cmdline;
+
+cmdline = string.trim(cmdline);
+cmdline = string.replace(cmdline, "@\", "");
+cmdline = string.replace(cmdline, '@\r\n', " ");
+console.dump(cmdline);
+
+
+
+o = string.cmdline(string.trim(cmdline));
+
+console.dump(o);
+
+
+console.pause(true);

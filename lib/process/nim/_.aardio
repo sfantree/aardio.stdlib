@@ -1,0 +1,69 @@
+﻿import win; 
+import win.path;
+import process;
+import zlib.httpFile;
+import console;
+
+namespace process;
+
+class nim {
+	ctor( ... ){
+		..console.open();
+		
+		var nimPath = install();
+		if(!nimPath) return null;
+		
+		var parameters = {nimPath;...}
+		if(#parameters==2){
+			parameters = `"`+nimPath+`"` + " " + (...)
+		}
+		
+		var prcs,err = ..process( nimPath,parameters,{workdir=..io.fullpath(self.workDir)});
+		if(prcs){
+			prcs.waitOne();
+			..console.more(1);
+		}
+	}; 
+}
+
+namespace nim;
+
+workDir = ..io.fullpath("/")
+path = ..io.appData("aardio/std/nim/nim-1.4.8/bin/nim.exe")
+tccPath = ..io.appData("aardio/std/nim/tcc/tcc.exe")
+
+install = function(url){
+    
+    if( !..io.exist(path) ){
+		if(!..zlib.httpFile.download("https://nim-lang.org/download/nim-1.4.8_x32.zip"
+			,"正在下载 Nim",..io.appData("aardio/std/nim/down"),..io.appData("aardio/std/nim"))){
+			return;
+		}
+    }
+    
+    if( !..io.exist(tccPath) ){
+		if( !..zlib.httpFile.download("http://mirror.yongbok.net/nongnu/tinycc/tcc-0.9.24-win32-bin.zip"
+			,"正在下载 TinyCC",..io.appData("aardio/std/nim/down"),..io.appData("aardio/std/nim")) ){
+			return;	
+		}
+    }
+    
+	if(..io.exist(path) && ..io.exist(tccPath)){
+    	..win.path.add(..io.splitpath(path).dir);
+    	..win.path.add(..io.splitpath(tccPath).dir);
+    	
+    	var cfgPath  = ..io.appData("aardio/std/nim/nim-1.4.8/config/nim.cfg");
+    	var str = ..string.load(cfgPath)
+    	str = ..string.replace(str,"!\wcc\s*=\s*gcc!\W","cc = tcc",1);
+    	..string.save(cfgPath,str)
+    	
+    	return path; 
+    }
+}
+
+/**intellisense()
+process.nim =  Nim 编译器
+process.nim.workDir = 工作目录，默认为  io.fullpath("/")
+process.nim("c --app:lib -d:release -r test.nim") = 编译 Nim 代码,\n示例参数用于生成 DLL 文件
+end intellisense**/
+

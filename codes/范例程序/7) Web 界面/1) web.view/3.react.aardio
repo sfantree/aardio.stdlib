@@ -1,0 +1,89 @@
+//React hooks
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="WebView2";right=966;bottom=622)
+winform.add()
+/*}}*/
+
+import web.view;
+var wb = web.view(winform);
+
+/*
+注意 wb.export 导出的函数被JS调用返回的值使用JSON自动转换为JS对象，
+而 wb.external 导出的函数JS调用返回的表对象会转换为 Proxy 代理对象，表的成员也会转换为 Proxy 对象。 
+*/	
+wb.export(
+	getData = function(){
+		import sys.device;
+		var devInfo = sys.device(,"PCI");
+		
+		var result = table.array()
+		for( index,classGuid,deviceDesc 
+			in devInfo.each(8/*_SPDRP_CLASSGUID*/,0/*_SPDRP_DEVICEDESC*/) ){
+			table.push(result,{classGuid:classGuid,deviceDesc:deviceDesc});
+		}
+	  
+		return result;
+	};
+)
+
+wb.html = /**
+<!DOCTYPE html><html>
+<head>
+	<meta charset="utf-8" />
+	<title>WebView2</title> 
+	<script src="https://lib.baomitu.com/react/17.0.2/umd/react.production.min.js"></script>
+	<script src="https://lib.baomitu.com/react-dom/17.0.2/umd/react-dom.production.min.js"></script>
+	<script src="https://lib.baomitu.com/moment.js/2.29.1/moment.min.js"></script>
+	<script src="https://lib.baomitu.com/antd/4.17.0-alpha.3/antd.min.js"></script>
+	<link rel="stylesheet" href="https://lib.baomitu.com/antd/4.17.0-alpha.3/antd.min.css"> 
+	<script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
+	<style type="text/css"> 
+	</style>
+</head>
+<body>  
+
+<script type="text/babel"> 
+	const { useState,useEffect,useCallback,useRef } =  React;
+	const { Button,Table,DatePicker,Alert,Tooltip  } = antd;
+
+	const App = () => { 
+			const [data,setData] = useState([]);
+		
+			return ( 
+				<div style={{ width: '100%', margin: '0 auto', padding:'10px' }}>	 
+				<Button onClick={ 
+					async ()=> {
+						var ds = await getData();
+						setData(ds);
+					}
+				}>列出系统 PCI 硬件设备</Button>
+					
+				<br/><br/>
+				<Table size="middle"  dataSource={data} columns={[
+						{
+							title: 'GUID',
+							dataIndex: 'classGuid',
+							width: 300,
+							key: 'classGuid',
+						},
+						{
+							title: '硬件设备',
+							dataIndex: 'deviceDesc',
+							key: 'deviceDesc',
+						}
+				]} />
+				
+				</div> 
+			);
+	};
+		
+	ReactDOM.render(<App />, document.querySelector('#app')); 
+</script>
+
+<div id="app"></div>
+</body> 
+**/
+
+winform.show();
+win.loopMessage();

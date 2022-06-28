@@ -1,0 +1,16 @@
+
+/*
+json解析
+https://bbs.aardio.com/forum.php?mod=viewthread&tid=11166
+*/
+import console;
+io.open()
+var jsonstr=/**
+{"ean":"6918894563881","name":"","titleSrc":"http://....","guobie":"中国","price":6.6,"supplier":"杭州华味亨食品有限公司","sort_id":7,"faccode":"6918894","fac_name":"杭州华味亨食品有限公司","fac_status":"有效"}
+**/
+import web.json
+jsontab=web.json.parse(jsonstr)
+io.print(jsontab.price)
+//或者
+io.print(jsontab["price"])
+console.pause();

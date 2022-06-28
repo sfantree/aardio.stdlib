@@ -1,0 +1,8 @@
+import console; 
+console.open()
+
+import process
+var prcs = process("\script\build.bat");
+prcs.wait();
+ 
+console.pause(true);

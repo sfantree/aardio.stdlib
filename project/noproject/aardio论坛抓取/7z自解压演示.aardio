@@ -1,0 +1,25 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="7z自解压演示";right=670;bottom=300;max=false;min=false;parent=...)
+winform.add(
+pie={cls="plus";text="100%";left=39;top=22;right=323;bottom=284;clipBk=false;color=16777215;font=LOGFONT(h=-24);foreRepeat="center";foreground="\res\pie.png";repeat="center";z=1}
+)
+/*}}*/
+
+//设置扇形进度条范围
+winform.pie.setPieRange(1,100);
+winform.show()
+
+import sevenZip.decoder2;
+var archive = sevenZip.decoder2();
+archive.open( io._exepath )
+
+//设置解压进度
+archive.extractSetCompleted = function(lowSize,hiSize,percent){
+    winform.pie.text = percent + "%";
+    winform.pie.progressPercentage = percent;
+    win.peekPumpInputMessage();
+}
+archive.extract( "/")
+
+win.loopMessage();

@@ -1,0 +1,29 @@
+import console; 
+import thread;
+import thread.manage;
+Task = function(){
+/*
+	thread.lock("临界区名称",function(){
+		import console;
+		console.log("haha", thread.getId());
+		sleep(5000)
+	})
+*/
+	import console;
+	sleep(800);
+	console.log("haha", thread.getId());
+	
+}
+
+
+Main = function(){
+    pool = thread.manage(5);
+    for(i=1;10;1){
+    	pool.create(Task);
+    }
+    pool.waitClose();
+}
+
+Main();
+
+console.pause(true);

@@ -1,0 +1,40 @@
+//urlProtocol 自定义协议
+import win.reg;
+namespace web.urlProtocol{
+	register = function(protocol,path,cmdline,description,iconPath,localMachine){
+		if( _STUDIO_INVOKED ) return;
+		
+		var rootKey = localMachine ? "HKEY_LOCAL_MACHINE\SOFTWARE\Classes\" : "HKEY_CURRENT_USER\Software\Classes\"
+		rootKey = rootKey + protocol;
+		
+		var reg = ..win.reg(rootKey,false);
+		reg.setSzValue("", description : protocol );
+		reg.setSzValue("URL Protocol", path );
+		reg.close();
+		
+		reg = ..win.reg(rootKey + "\DefaultIcon");
+		reg.setSzValue("",iconPath : path );
+		reg.close();
+		
+		reg = ..win.reg(rootKey + "\shell\open\command");
+		
+		var cmdline = '"' + path + '"' + ( cmdline ? ( " " + cmdline ) : "") + ' "%1" '
+		reg.setSzValue("",cmdline);
+		reg.close(); 
+	} 
+	unRegister = function(protocol){
+		if(!#protocol) error("参数错误",2);
+		var reg = ..win.reg("HKEY_LOCAL_MACHINE\SOFTWARE\Classes");
+		reg.delKeyTree(protocol);
+		reg.close();
+		
+		var reg = ..win.reg("HKEY_CURRENT_USER\Software\Classes");
+		reg.delKeyTree(protocol);
+		reg.close();
+	}
+}
+
+/**intellisense(web.urlProtocol)
+unRegister(.(协议名) = 注销自定义协议
+register(.(协议名,启动路径,启动参数) = 注册自定义协议
+end intellisense**/

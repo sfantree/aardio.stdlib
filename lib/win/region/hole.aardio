@@ -1,0 +1,56 @@
+﻿//hole 挖空
+namespace win.region;
+
+class hole{
+	ctor( ctrl ){
+		if(!( ctrl[["hwnd"]] && ctrl.getParent()  ) ){
+			error("参数必须指定控件窗口",2)
+		}
+		
+		ctrl.hide = true;
+		ctrl.adjust = function(){
+			if(this.enabled) diffRectRgn(ctrl.getParent(),ctrl);
+		} 
+		
+		this.enabled = true;
+		diffRectRgn(ctrl.getParent(),ctrl);
+	};
+	enable = function(enabled){
+		this.enabled = enabled;
+		ctrl.hide = enabled;
+		
+		if(enabled){
+			diffRectRgn(ctrl.getParent(),ctrl);
+		}
+		else {
+			::User32.SetWindowRgn(ctrl.getParent().hwnd,null,true);
+		}
+	};
+}
+
+namespace hole{ 
+	
+	diffRectRgn = function (winform,ctrl) {
+    	var rcForm = winform.getRect(true);
+   		var rcCtrl = ctrl.getRect(true);
+   		rcCtrl.offset(-rcForm.left,-rcForm.top);
+   		rcForm.offset(-rcForm.left,-rcForm.top);
+   		
+    	var hRgnForm = ::Gdi32.CreateRectRgn( rcForm.ltrb() );
+    	var hRgnCtrl = ::Gdi32.CreateRectRgn( rcCtrl.ltrb() );
+    	var hRgnNew  = ::Gdi32.CreateRectRgn(0,0,1,1);
+   	
+    	::Gdi32.CombineRgn(hRgnNew,hRgnForm,hRgnCtrl,0x4/*_RGN_DIFF*/);
+    	::User32.SetWindowRgn(winform.hwnd,hRgnNew,true);
+   	
+    	::Gdi32.DeleteObject(hRgnForm);
+    	::Gdi32.DeleteObject(hRgnCtrl);
+	}; 
+}
+
+/**intellisense()
+win.region.hole = 用于挖空控件窗口所在区域
+win.region.hole(__) = 参数指定控件对象,\n自动挖空控件窗口所在区域,\n控件可指定自适应大小、固定边距等参数,\n控件的父窗口建议设为无边框,\n可使用 win.ui.simpleWindow 等创建自定义边框
+win.region.hole() = !winRegionHole.
+!winRegionHole.enable(__) = 参数可使用 true 或 false 指定是否挖空控件窗口所在区域
+end intellisense**/

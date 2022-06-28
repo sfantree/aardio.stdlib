@@ -1,0 +1,12 @@
+import ide;
+import fsys;
+
+var publisDir = ide.getPublisDir();
+if(!#publisDir)return; 
+
+var pubOcxDir =  fsys.joinpath(publisDir,"\lib\com\mschrt20\.res" ); 
+if( ! io.exist(pubOcxDir) ){ 
+	var libPath,libDir = io.libpath("com.mschrt20");
+	..fsys.copy( fsys.joinpath(libDir,"\.res\*.*") ,pubOcxDir,0x10/*_FOF_NOCONFIRMATION*/  | 0x200/*_FOF_NOCONFIRMMKDIR*/);
+ 
+}

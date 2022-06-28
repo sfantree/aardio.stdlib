@@ -1,0 +1,92 @@
+import console; 
+import gdip; 
+import gdip.image;
+import gdip.bitmap;
+import gdip.graphics;
+
+// gdip图片缩放
+// 参数 原始图片路径 目标图片路径 目标图片宽度 目标图片长度
+function GdipResize(ImagePath, TargetImagePath,TargetWidth, TargetHeight){
+	// GdipLoadImageFromFile
+	var gdipimage = gdip.image(ImagePath);
+	
+	var OriginalWidth = gdipimage.width;
+    var OriginalHeight = gdipimage.height;
+    
+    // GdipCreateBitmapFromScan0
+    var gdipbitmap = gdip.bitmap(TargetWidth, TargetHeight);
+    // GdipGetImageGraphicsContext
+    var gdipgraphics = gdip.graphics(gdipbitmap);
+    
+    // GdipDrawImageRectRect
+    gdipgraphics.drawImageRectRect( gdipimage, 0, 0, TargetWidth, TargetHeight,/*前面为输出区块,后面是从原图截取的区块*/  0,  0, OriginalWidth, OriginalHeight )
+    gdipbitmap.save(TargetImagePath);
+}
+
+GdipResize(ImagePath, TargetImagePath,TargetWidth, TargetHeight);
+
+
+
+
+
+var ImagePath = "G:\chromedl\图像批量缩放工具\制取结果\制取-2021年9月13日21时43分46秒\1.jpg";
+var gdipimage = gdip.image(ImagePath);
+
+var OriginalWidth = gdipimage.width;
+var OriginalHeight = gdipimage.height;
+
+// gdip.GetImageGraphicsContext
+
+var TargetWidth = 500;
+var TargetHeight = 600;
+
+
+var gdipbitmap = gdip.bitmap(TargetWidth, TargetHeight);
+var gdipgraphics = gdip.graphics(gdipbitmap);
+gdipgraphics.drawImageRectRect( gdipimage, 0, 0, TargetWidth, TargetHeight,/*前面为输出区块,后面是从原图截取的区块*/  0,  0, OriginalWidth, OriginalHeight )
+
+gdipbitmap.save("G:\chromedl\图像批量缩放工具\制取结果\制取-2021年9月13日21时43分46秒\12.jpg");
+
+
+
+/***
+
+GdipLoadImageFromFile
+
+
+
+
+GdipGetImageHeight
+GdipGetImageWidth
+
+GdipCreateBitmapFromScan0 创建自像素格式
+
+GdipGetImageGraphicsContext 创建自图像
+全局_返回码 ＝ GdipGetImageGraphicsContext (参数_Gdiplus图像.取指针 (), m_Graphics)
+置指针 (m_Graphics)
+
+
+图形.画图像缩放 (输入图片, 0, 0, 宽度, 高度)
+
+.版本 2
+
+.子程序 画图像缩放, 逻辑型, 公开, GdipDrawImageRect 按照指定的矩形缩放图像。
+.参数 参数_图像, GP图像
+.参数 参数_左边, 小数型
+.参数 参数_顶边, 小数型
+.参数 参数_宽度, 小数型
+.参数 参数_高度, 小数型
+.参数 参数_原图单位, 整数型, 可空, 默认为“单位_像素”
+
+.如果真 (是否为空 (参数_原图单位))
+    参数_原图单位 ＝ #单位_像素
+.如果真结束
+全局_返回码 ＝ GdipDrawImageRectRect (m_Graphics, 参数_图像.取指针 (), 参数_左边, 参数_顶边, 参数_宽度, 参数_高度, 0, 0, 参数_图像.取宽度 (), 参数_图像.取高度 (), 参数_原图单位, 0, 0, 0)
+返回 (全局_返回码 ＝ 0)
+
+
+***/
+
+
+
+console.pause(true);

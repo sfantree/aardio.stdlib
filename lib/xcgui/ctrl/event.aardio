@@ -1,0 +1,427 @@
+﻿//event 事件回调
+namespace xcgui.ctrl.event;
+
+ids = {
+	message = 1; //消息回调,所有事件触发
+	paint = 2; //元素绘制 
+	paintEnd = 3; //该元素及子元素绘制完成
+	paintScrollView = 4; //滚动视图绘制 
+	click = 34; //按钮点击
+	dblclick = 14; //鼠标左键双击
+	move = 5; //元素鼠标移动 
+	enter = 6; //元素鼠标进入 
+	hover = 7; //元素鼠标悬停 
+	leave = 8; //元素鼠标离开 
+	wheel = 9; //元素鼠标滚轮滚动
+	lbuttonDown = 10; //鼠标左键按下 
+	lbuttonUp = 11; //鼠标左键弹起 
+	rbuttonDown = 12; //鼠标右键按下 
+	rbuttonUp = 13; //鼠标右键弹起
+	focus = 31; //元素获得焦点 
+	killFocus = 32; //元素失去焦点 
+	destroy = 33; //元素销毁
+	check = 35; //按钮选中 
+	size = 36; //元素大小改变 
+	show = 37; //元素显示隐藏 
+	font = 38; //元素设置字体 
+	keyDown = 39; //元素按键 
+	char = 40; //输入字符 
+	setCapture = 51; //元素设置鼠标捕获 
+	killCapture = 52; //元素失去鼠标捕获 
+	cursor = 53; //设置鼠标光标 
+	scrollHorz = 54; //滚动视图元素水平滚动, //滚动视图触发 
+	scrollVert = 55; //滚动视图元素垂直滚动, //滚动视图触发 
+	scrollbar = 56; //滚动条元素滚动, //滚动条触发 
+	menuPopup = 57; //菜单弹出 
+	menuPopupWnd = 58; //菜单弹出窗口 
+	menuSelect = 59; //弹出菜单项选择 
+	menuDrawBackground = 60; //绘制菜单背景,
+	menuDrawitem = 61; //绘制菜单项, 
+	menuExit = 62; //弹出菜单退出 
+	trackbarChange = 63; //滑动条元素, //滑块位置改变 
+	progressChange = 64; //进度条元素, //进度改变 
+	comboboxChange = 71; //组合框下拉列表项选择 
+	comboboxDropDown = 72; //组合框下拉列表弹出 
+	comboboxCloseUp = 73; //组合框下拉列表退出 
+	listboxTempCreate = 81; //列表框元素, //项模板创建 
+	listboxTempCreateEnd = 82; //列表框元素, //项模板创建完成 
+	listboxTempDestroy = 83; //列表框元素, //项模板销毁 
+	listboxTempAdjustCoordinate = 84; //列表框元素, //项模板调整坐标 
+	listboxDrawitem = 85; //列表框元素, //项绘制 
+	listboxSelect = 86; //列表框元素, //项选择 
+	listTempCreate = 101; //列表元素, //项模板创建 
+	listTempCreateEnd = 102; //列表元素, //项模板创建完成 
+	listTempDestroy = 103; //列表元素, //项模板销毁 
+	listTempAdjustCoordinate = 104; //列表元素, //项模板调整坐标 
+	listDrawitem = 105; //列表元素, //绘制项 
+	listSelect = 106; //列表元素, //项选择 
+	listHeaderDrawitem = 107; //列表元素绘制列表头项 
+	listHeaderClick = 108; //列表元素, //列表头项点击 
+	listHeaderWidthChange = 109; //列表元素, //列表头项宽度改变 
+	listHeaderTempCreate = 110; //列表元素, //列表头项模板创建 
+	listHeaderTempCreateEnd = 111; //列表元素, //列表头项模板创建完成 
+	listHeaderTempDestroy = 112; //列表元素, //列表头项模板销毁 
+	listHeaderTempAdjustCoordinate = 113; //列表元素, //列表头项模板调整坐标 
+	treeTempCreate = 121; //树元素, //项模板创建 
+	treeTempCreateEnd = 122; //树元素, //项模板创建完成 
+	treeTempDestroy = 123; //树元素, //项模板销毁 
+	treeTempAdjustCoordinate = 124; //树元素, //项模板, //调整项坐标 
+	treeDrawitem = 125; //树元素, //绘制项 
+	treeSelect = 126; //树元素, //项选择 
+	treeExpand = 127; //树元素, //项展开收缩 
+	treeDragIteming = 128; //树元素, //用户正在拖动项, //可对参数值修改 
+	treeDragItem = 129; //树元素, //拖动项 
+	listviewTempCreate = 141; //列表视元素, //项模板创建 
+	listviewTempCreateEnd = 142; //列表视元素, //项模板创建完成 
+	listviewTempDestroy = 143; //列表视元素, //项模板销毁 
+	listviewTempAdjustCoordinate = 144; //列表视元素, //项模板调整坐标 
+	listviewDrawitem = 145; //列表视元素, //自绘项 
+	listviewSelect = 146; //列表视元素, //项选择 
+	listviewExpand = 147; //列表视元素, //组展开收缩 
+	pgridChange = 151; //属性网格元素 //项值改变 
+	pgridItemSet = 152; //属性网格项设置
+	pgridItemSelect = 153; //属性网格选择项
+	pgridItemAdjustCoordinat = 154; //属性网格调整坐标
+	pgridItemDestroy = 155; //属性网格项释放
+	change = 161; //用户修改内容, 只有当用户操作时才会触发
+	tabSelect = 221; //标签按钮选择改变 
+	tabDelete = 222; //标签按钮删除 
+	monthcalChange = 231; //月历元素日期改变, //未开放 
+	datetimeChange = 241; //日期时间元素, //内容改变, //未开放 
+	datetimePopupMonthcal = 242; //日期时间元素, //弹出月历卡片, //未开放 
+	datetimeExitMonthcal = 243; //日期时间元素, //弹出的月历卡片退出, //未开放 
+	dropfiles = 250; //文件拖放事件.
+}
+
+names ={}
+for(k,v in ids)names[v]=k;
+var names = names;
+
+send = function( ele,eventEle,event, wParam,lParam ){
+	var id = names[event];
+	if(!id) {
+		id = ..table.push(names,event);
+		ids[event] = id;
+	}
+	return ::Xcgui.XEle_SendEvent(ele,eventEle,id,wParam,lParam );
+}
+
+post = function( ele,eventEle,event, wParam,lParam ){
+	var id = names[event];
+	if(!id) {
+		id = ..table.push(names,event);
+		ids[event] = id;
+		
+	}
+	return ::Xcgui.XEle_PostEvent(ele,eventEle,id,wParam,lParam );
+}
+
+__events__ = {};
+
+reg = function(eleOwner,eventId,func){
+	eventId = ids[eventId] : eventId; 
+	if(!eventId) error("错误的事件ID",2);
+	
+	var hEle = ..raw.toPointer(eleOwner);
+	if(!hEle) error("错误的元素对象",2);
+	
+	var events = __events__[hEle];
+	if(!events) {
+		events = {};
+		__events__[hEle] = events;
+		
+		var callback = ..raw.tostdcall(destroy,protos[33],eleOwner);
+		events[callback] = 33; 
+		::Xcgui.XEle_RegEventC(eleOwner,33,callback );
+		events.destroy = {};
+	}
+	
+	if(eventId==33){
+		..table.push(events.destroy,func);
+		return func;
+	}
+	elseif(eventId==1){
+		var proc = func;
+		func = function(event,wParam,lParam,handled){
+			event = names[event];
+			var r,v = callex(,proc,owner,event,wParam,lParam,handled);
+			if(r) { if( v!==null ) return v,true;}
+			else {
+				error(v);
+			}
+		}
+	}
+	else {
+		var proc = func;
+		func = function(...){
+			var r,v = callex(,proc,owner,...);
+			if(r) { if( v!==null ) return v,true;}
+			else {
+				error(v);
+			}
+			
+		}
+	}
+	
+	var proto  = protos[eventId];
+	if(!proto) error("错误的事件ID",2);
+	
+	var callback = ..raw.tostdcall(func,proto,eleOwner); 
+	events[callback] = eventId;
+	
+	if( eventId == 3){
+		::Xcgui.XEle_EnableEvent_XE_PAINT_END(eleOwner,true);
+	}
+	elseif(eventId == 9){ 
+		::Xcgui.XEle_EnableEvent_XE_MOUSEWHEEL(eleOwner,true); 
+	}
+	elseif(eventId == 161){ 
+		::Xcgui.XRichEdit_EnableEvent_XE_RICHEDIT_CHANGE(eleOwner,true); 
+	}
+	elseif(eventId == 60){ 
+		::Xcgui.XMenu_EnableDrawBackground(eleOwner,true); 
+	}
+	elseif(eventId == 61){ 
+		::Xcgui.XMenu_EnableDrawItem(eleOwner,true); 
+	}
+
+	::Xcgui.XEle_RegEventC(eleOwner,eventId,callback );
+	return callback;
+}
+
+removeEvent = function(eleOwner,callback){
+	var hEle = ..raw.toPointer(eleOwner);
+	if(!hEle) error("错误的元素对象",2);
+	
+	var events = __events__[hEle];	
+	if(!events) return;
+	
+	if( type(callback) == type.function ){
+		for(k,v in events.destroy){
+			if(v==callback){
+				..table.remove(events.destroy,k);
+				return true;
+			}
+		}  
+	}
+	else {
+		for(c,id in events ){
+			if(c == callback){
+				::Xcgui.XEle_RemoveEventC(hEle,id,callback);
+				events[c] = null;
+				return true;
+			}
+		}
+	}
+}
+
+destroy = function(handled){
+	var hEle = ..raw.toPointer(owner);
+	if(!hEle) return;
+	
+	var events = __events__[hEle];
+	if(events) {
+	
+		var r,e;
+		var destroys = events.destroy;
+		for(i=1;#destroys;1){
+			r,e = destroys[i]();
+			if(!r) error(e); 
+		}
+		events.destroy = null;
+		
+		for(callback,id in events){
+			::Xcgui.XEle_RemoveEventC(hEle,id,callback);
+		}
+	}
+	__events__[hEle] = {};
+}
+
+protos = {
+	[34] = "int(bool &handled)";
+	[35] = "int(bool bCheck,bool &handled)";
+	[40] = "int(ADDR wParam,addr lParam,bool &handled)";
+	[73] = "int(bool &handled)";
+	[72] = "int(ptr hWindow,ptr hListBox,bool &handled)";
+	[71] = "int(int iItem,bool &handled)";
+	[241] = "int(bool &handled)";
+	[243] = "int(ptr hMonthCalWnd,ptr hMonthCal,bool &handled)";
+	[242] = "int(ptr hMonthCalWnd,ptr hMonthCal,bool &handled)";
+	[33] = "int(bool &handled)";
+	[250] = "int(ptr hDropInfo, bool &handled)";
+	[1] = "int(INT event, ADDR wParam, addr lParam, bool &handled)";
+	[39] = "int(ADDR wParam,addr lParam,bool &handled)";
+	[52] = "int(bool &handled)";
+	[32] = "int(bool &handled)";
+	[14] = "int(INT nFlags,{int x;int y} pt,bool &handled)";
+	[10] = "int(INT nFlags,{int x;int y} pt,bool &handled)";
+	[11] = "int(INT nFlags,{int x;int y} pt,bool &handled)";
+	[105] = "int(ptr hDraw,list_item_i* pItem,bool &handled)";
+	[108] = "int(int iItem, bool &handled)";
+	[107] = "int(ptr hDraw, ptr pItem, bool &handled)";
+	[113] = "int(ptr pItem,bool &handled)";
+	[110] = "int(ptr pItem,bool &handled)";
+	[111] = "int(ptr pItem,bool &handled)";
+	[112] = "int(ptr pItem,bool &handled)";
+	[109] = "int(int iItem, int nWidth bool &handled)";
+	[106] = "int(int iItem,bool &handled)";
+	[104] = "int(list_item_i* pItem,bool &handled)";
+	[101] = "int(list_item_i* pItem,bool &handled)";
+	[102] = "int(list_item_i* pItem,bool &handled)";
+	[103] = "int(list_item_i* pItem,bool &handled)";
+	[85] = "int(ptr hDraw,ptr pItem,bool &handled)";
+	[86] = "int(int iItem,bool &handled)";
+	[84] = "int(ptr pItem,bool &handled)";
+	[81] = "int(ptr pItem,bool &handled)";
+	[82] = "int(ptr pItem,bool &handled)";
+	[83] = "int(ptr pItem,bool &handled)";
+	[145] = "int(ptr hDraw,ptr pItem,bool &handled)";
+	[147] = "int(int iGroup,bool bExpand,bool &handled)";
+	[146] = "int(int iGroup,int iItem,bool &handled)";
+	[144] = "int(ptr pItem,bool &handled)";
+	[141] = "int(ptr pItem,bool &handled)";
+	[142] = "int(ptr pItem,bool &handled)";
+	[143] = "int(ptr pItem,bool &handled)";
+	[60] = "int(ptr hDraw,ptr pInfo,bool &handled)";
+	[61] = "int(ptr hDraw,ptr pInfo,bool &handled)";
+	[62] = "int(bool &handled)";
+	[57] = "int(ptr hMenu, bool &handled)";
+	[58] = "int(ptr hMenu,ptr pInfo,bool &handled)";
+	[59] = "int(int nItem,bool &handled)";
+	[231] = "int(bool &handled)";
+	[7] = "int(INT nFlags,{int x;int y} pt, bool &handled)";
+	[8] = "int(ptr hEleHover,bool &handled)";
+	[5] = "int(INT nFlags,{int x;int y} pt, bool &handled)";
+	[6] = "int(bool &handled)";
+	[9] = "int(INT nFlags,{int x;int y} pt,bool &handled)";
+	[2] = "int(ptr hDraw,bool &handled)";
+	[3] = "int(ptr hDraw,bool &handled)";
+	[4] = "int(ptr hDraw,bool &handled)";
+	[151] = "int(int nItemId,bool &handled)";
+	[152] = "int(int nItemId,bool &handled)";
+	[153] = "int(int nItemId,bool &handled)";
+	[154] = "int(ptr pItem,bool &handled)";
+	[155] = "int(int nItemId,bool &handled)";
+	[64] = "int(int pos,bool &handled)";
+	[12] = "int(INT nFlags,{int x;int y} pt,bool &handled)";
+	[13] = "int(INT nFlags,{int x;int y} pt,bool &handled)";
+	[161] = "int(bool &handled)";
+	[56] = "int(int pos,bool &handled)";
+	[54] = "int(int pos,bool &handled)";
+	[55] = "int(int pos,bool &handled)";
+	[51] = "int(bool &handled)";
+	[53] = "int(ADDR wParam,addr lParam,bool &handled)";
+	[31] = "int(bool &handled)";
+	[38] = "int(bool &handled)";
+	[37] = "int(bool bShow,bool &handled)";
+	[36] = "int(bool &handled)";
+	[63] = "int(int pos,bool &handled)";
+	[222] = "int(int iItem, bool &handled)";
+	[221] = "int(int iItem, bool &handled)";
+	[125] = "int(ptr hDraw,ptr pItem,bool &handled)";
+	[127] = "int(int id,bool bExpand,bool &handled)";
+	[126] = "int(int nItemId,bool &handled)";
+	[124] = "int(ptr pItem,bool &handled)";
+	[121] = "int(ptr pItem,bool &handled)";
+	[122] = "int(ptr pItem,bool &handled)";
+	[123] = "int(ptr pItem,bool &handled)";
+	[128] = "int(ptr pInfo,bool &handled)";
+	[129] = "int(ptr pInfo,bool &handled)"
+} 
+
+/*
+.onMessage= @.on("message",function(message,wParam,lParam){
+	if( message == "自定义事件名称" ) return 返回值;
+})
+.onPaint = @.on("paint",function(hDraw){
+	__
+})
+.onPaintEnd = @.on("paintEnd",function(hDraw){
+	__
+})
+.onPaintScrollView = @.on("paintScrollView",function(hDraw){
+
+})
+.onMove = @.on("move",function(nFlags,pt){
+	
+	__
+})
+.onEnter = @.on("enter",function(){
+
+})
+.onHover = @.on("hover",function(nFlags, pt){
+	
+	__
+})
+.onLeave = @.on("leave",function(hEleHover){
+
+})
+.onWheel = @.on("wheel",function(nFlags,pt){
+	
+	__
+})
+.onLbuttonDown = @.on("lbuttonDown",function(nFlags, pt){
+	
+	__
+})
+.onLbuttonUp = @.on("lbuttonUp",function(nFlags, pt){
+	
+	__
+})
+.onRbuttonDown = @.on("rbuttonDown",function(nFlags, pt){
+	
+	__
+})
+.onRbuttonUp = @.on("rbuttonUp",function(nFlags, pt){
+	
+	__
+})
+.onDblclick = @.on("dblclick",function(nFlags, pt){
+	
+	__
+})
+.onFocus = @.on("focus",function(){
+	__
+})
+.onKillFocus = @.on("killFocus",function(){
+	__
+})
+.onDestroy = @.on("destroy",function(){
+	__
+})
+.onSize = @.on("size",function(){
+	__
+})
+.onShow = @.on("show",function(shown){
+	__
+})
+.onSetFont = @.on("font",function(){
+	__
+})
+.onKeyDown = @.on("keyDown",function(wParam,lParam){
+	__
+})
+.onChar = @.on("char",function(wParam,lParam){
+	__
+})
+.onSetCapture = @.on("setCapture",function(){
+	__
+})
+.onKillCapture = @.on("killCapture",function(){
+	__
+})
+.onCursor = @.on("cursor",function(wParam,lParam){
+	__
+})
+.onDropfiles = @.on("dropfiles",function(wParam){
+	var files = ..win.getDropFile(wParam) __
+})
+
+*/
+
+
+/*
+
+
+
+*/

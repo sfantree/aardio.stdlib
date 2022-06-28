@@ -1,0 +1,66 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add(
+edit={cls="edit";left=8;top=8;right=744;bottom=240;edge=1;multiline=1;z=1}
+)
+/*}}*/
+
+import console;
+import process;
+
+import thread.command;
+
+var l = thread.command();
+
+l.log = function(...){
+	//import console;
+	var t = ..time();
+    t.format = "%Y-%m-%d %H:%M:%S";
+    str = tostring(t) + " ";
+    winform.edit.print(str, ...);
+}
+
+thread.invoke( 
+	function(winform){
+		import wsock.tcp.simpleHttpServer;
+        var server = wsock.tcp.simpleHttpServer("127.0.0.1",1428);
+		server.run(
+			function(response,request,session) {
+				import thread.command;
+				var uuid = thread.get("_uuid");
+				
+				
+				var l = thread.command.bind(tonumber(uuid));
+				l.log("info:", thread.getId());
+				response.write( "thread.getId:" + tostring(thread.getId()) + '\r\n' );
+				
+				if(l) {
+				    response.write( "thread.command:" + tostring((l.hwnd)) + '\r\n' );
+				} else {
+				    response.write( "thread.command:" + " null" + '\r\n' );
+				}
+				
+				var uuid = thread.get("_uuid");
+				if(uuid) {
+				    response.write( "_uuid:" + tostring( uuid ) + '\r\n' );
+				} else {
+				    response.write( "_uuid::" + " null" + '\r\n' );
+				}
+				
+				response.close(true);
+			}
+		) 
+	} , winform
+)
+
+l.log("thread.getId:", thread.getId());
+l.log("thread.command:", tostring((l.hwnd)));
+
+thread.set("_uuid", tostring((l.hwnd)) );
+
+l.log("_uuid:", thread.get("_uuid")  );
+
+
+winform.show();
+win.loopMessage();

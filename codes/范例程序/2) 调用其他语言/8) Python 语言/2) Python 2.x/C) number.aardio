@@ -1,0 +1,29 @@
+//数值
+import console; 
+import py2;
+
+//aardio 数值传入 Python 会默认转为浮点数
+//如果要创建 Python 整数请使用 py2.int 函数，例如:
+var pyInt = py2.int("12355678901235567890")
+
+//支持 aadio 中的常用运算符,注意这些运算符返回的都是 py2.object 对象
+console.log( pyInt+py2.int("12355678901235567890") );
+console.log( pyInt%3 ); 
+console.log( pyInt==3 );
+console.log( -pyInt );
+
+//可用 tostring() 转换为字符串,
+//注意 console.log() 已对所有参数调用 tostring() 转为字符串
+console.log( tostring(pyInt) )
+
+//创建 Python 浮点数
+var pyFloat = py2.float("12355678901235567890")
+
+//支持常用运算符
+var pyFloat = pyFloat / 0xFFFFFF;
+
+//转换为普通 aardio 数值
+var num = tonumber(pyFloat);
+
+console.log(num);
+console.pause(); 

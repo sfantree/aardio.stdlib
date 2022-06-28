@@ -1,0 +1,101 @@
+import fsys;
+import process.popen;
+namespace process;
+
+class pscp{
+    ctor( ... ){
+        this = ..process.popen(
+        	..fsys.appdata("/aardio/std/pscp.exe",$"~/lib/process/pscp/.res/pscp.exe")
+        	,...)
+    }; 
+}
+
+namespace pscp { 
+
+    download = function( echo,remotePath,localPath,sever,password,username="root",port="22",ppk){
+    	
+    	if(!remotePath) error("请使用参数@2指定远程路径",2)
+    	if(!localPath) error("请使用参数@3指定本地路径",2)
+    	if(!password) error("请使用参数@5指定登录密码",2)
+    	if(!sever) error("请使用参数@4指定服务器IP",2)
+    	
+    	if( ..string.indexAny(remotePath,"*?><|"";&![]'`(){}") )
+    		error('linux文件名禁止使用以下字符:\n'+ "*?><|"";&![]'`(){}",2);
+    		
+    	remotePath = ..string.replace(remotePath,"@@\","/");
+    		
+    	var po = ""
+    	if( ..io.exist(ppk) ){
+    		po = "-i";
+    		ppk = ..io.fullpath(ppk)
+    	}
+    		
+        var pscp = ..process.pscp(  
+			"-p","-v","-r",po,ppk
+    		,"-l",username
+    		,"-pw",'"'+password+'"'
+    		,"-P",tostring(port),sever + ":" + remotePath
+    		,..io.fullpath(localPath) 
+    		)
+    		
+    	if( type(echo) == type.table ) {
+    		pscp.logger = echo;
+    		echo = null;
+    	}
+    
+    	pscp.logResponse(echo)
+		pscp.close();
+    }
+    upload = function( echo,localPath,remotePath,sever,password,username="root",port="22",ppk){
+    	if(!localPath) error("请使用参数@2指定本地路径",2)
+    	if(!remotePath) error("请使用参数@3指定远程路径",2)
+    	if(!password) error("请使用参数@5指定登录密码",2)
+    	if(!sever) error("请使用参数@4指定服务器IP",2)
+    	
+    	if( ..string.indexAny(remotePath,"*?><|"";&![]'`(){}") )
+    		error('linux文件名禁止使用以下字符:\n'+ "*?><|"";&![]'`(){}",2);
+    		
+    	remotePath = ..string.replace(remotePath,"@@\","/");
+    	
+    	var po = ""
+    	if( ..io.exist(ppk) ){
+    		po = "-i";
+    		ppk = ..io.fullpath(ppk)
+    	}
+    	
+    	var dirOption = "";
+    	if( ..fsys.isDir(localPath) ){
+    		localPath = ..fsys.path.addBackslash(localPath);
+    		dirOption = "-r";//上传目录下的文件
+    	}
+        var pscp = ..process.pscp(  
+			"-p","-v",po,ppk
+			,"-P",tostring(port),
+    		,"-l",username
+    		,"-pw",'"'+password+'"'
+    		,dirOption
+    		,..io.fullpath(localPath) 
+    		,sever + ":" + remotePath
+    		)
+    	
+    	if( type(echo) == type.table ) {
+    		pscp.logger = echo;
+    		echo = null;
+    	}
+    		
+    	pscp.logResponse(echo)
+		pscp.close();
+    }
+}
+
+
+/**intellisense()
+process.pscp = 使用管道调用SCP/SFTP文件传输客户端
+process.pscp( 命令行参数  ) = @.pscp(  \n    ,"-p","-v"\n    ,"-l","用户名"\n    ,"-pw","密码"\n    ,"-P","22","服务器IP:服务器文件路径" \n    ,io.fullpath("本地文件路径") \n    )
+process.pscp() = !process_popen.
+process.pscp.download( = 下载文件
+process.pscp.download(.(回显函数,远程路径,本地路径,服务器地址,密码,用户名,端口) = 本地路径可以指定下载目录,也可以指定完整的文件路径\n如果不指定回显函数则输出到控制台,如果导入了console库会打开控制台\n回显函数有三个参数:全部输出,进程标准输出,进程错误输出\n用户名默认为root,端口默认为22,都是可选参数
+process.pscp.upload( = 上传文件
+process.pscp.upload(.(回显函数,本地路径,远程目录,服务器地址,密码,用户名,端口) = 远程目录路径可指定为".",即用户当前目录\n如果不指定回显函数则输出到控制台,如果导入了console库会打开控制台\n\n回显函数有三个参数:全部输出,进程标准输出,进程错误输出\n用户名默认为root,端口默认为22,都是可选参数
+end intellisense**/
+

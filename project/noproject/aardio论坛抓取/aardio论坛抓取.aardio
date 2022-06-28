@@ -1,0 +1,198 @@
+import console; 
+
+
+/*
+遍历所有csv文件
+参数：目标目录
+返回：文件名数组
+*/
+import fsys;
+var getAllCsv = function(objPath){
+	var csvFiles = {};
+	fsys.enum( objPath, "*.csv",
+		function(dir, filename, fullpath, findData){ 
+			if(filename){
+				 table.push(csvFiles, fullpath);
+	           	//winform.edit.printf('%s\n', filename)
+	        }
+		},
+		false
+	);
+	return csvFiles;
+}
+
+/*
+是否有分页
+*/
+import string.html;
+var hasOneMorePages = function(htmlString){
+    var htmlDoc = string.html(htmlString);
+    if(#htmlDoc == 0) {
+        return 0;
+    }
+	var pNodeWithClassIsPg = htmlDoc.queryEles(["class"] = "^pg$");
+/*
+	console.log(#pNodeWithClassIsPg);
+	for(i=1;#pNodeWithClassIsPg;1){
+		var nodeDoc = pNodeWithClassIsPg[i]
+	    if(nodeDoc.getAttribute("class") == "pg")
+	    {
+	    	console.log(nodeDoc);
+	        console.log("--------------");
+	    }
+	}
+*/
+	
+	//console.log("--------------");
+	//console.log(pNodeWithClassIsPg);
+	if(#pNodeWithClassIsPg == 0) {
+	    return 0;
+	}
+	var pNodeWithClassIsSpan = pNodeWithClassIsPg[1].queryEles( tagName = "span"  );
+	
+	//console.log(#pNodeWithClassIsSpan);
+	//console.log("--------------");
+	
+	if(#pNodeWithClassIsSpan == 0) {
+	    return nil;
+	}
+	var titleString = pNodeWithClassIsSpan[1].getAttribute("title");
+	
+	var pattern =  "\d+"
+    var strMatchResult = string.match( titleString, pattern );
+	return tonumber(strMatchResult)
+	
+}
+
+
+
+
+var hasOneMorePagesTest = function() {
+    var htmlString = $"G:\chromedl\aardio\project\noproject\bbs.txt";
+    var res = hasOneMorePages(htmlString);
+    console.dump(res);
+}
+
+//hasOneMorePagesTest();
+
+/*
+2. 
+*/
+import string.database;
+var getUrlsFromCsv = function(filepath){
+	var csvObject = string.database("," ,);
+	var dataTable = csvObject.load(filepath);
+	
+	var urls = {};
+	
+	for(i=1;#dataTable;1){
+		var eachLine = dataTable[i];
+		var url = eachLine[2];
+		var pattern =  "bbs.aardio.com"
+    	var strMatchResult = string.match( url, pattern );
+		if(strMatchResult) {
+	    	table.push(urls, url);
+		}
+	}
+	
+/*
+	for(i=1;#urls;1){
+		console.log(urls[i]);
+	}
+*/
+	
+	return urls;
+
+}
+import inet.http;
+
+
+// shortFileName
+var getPrefixName = function(path){
+	var p = ..string.indexAny(path,".");
+	if(p) return ..string.lower( ..string.left( path,(p - 1) ) );
+}
+
+// 获取tid
+import inet.url;
+var getTidFromUrl = function(urlString){
+	var obj = inet.url.split(urlString);
+	var obj2 = inet.url.splitParameters(obj.extraInfo)
+	return (obj2)[["tid"]];
+}
+
+// 保存网页
+var saveUrls= function(url, saveDir){
+	var tid = getTidFromUrl(url);
+	
+	if(io.exist(saveDir + "/" + tostring(tid) + ".html")) {
+	     return;
+	}
+	
+	var http = inet.http(); 
+	var html = http.get(url);
+	var page = hasOneMorePages(html);
+	
+	if(page == 0) {
+	    string.save(saveDir + "/" + tostring(tid) + ".html", html);
+	} else {
+	    for(i=1;page;1){
+	    	var urlStr = string.format("https://bbs.aardio.com/forum.php?mod=viewthread&tid=%s&page=%d", tid, i);
+	        var html2 = http.get(urlStr);
+	        string.save(saveDir + "/" + tostring(tid) + "_" + tostring(i) + ".html", html2);
+	    }
+	    
+	}
+}
+
+var main = function(){
+    
+    /*
+    //aardio默认 当前目录 使用 项目目录
+    
+    fsys.setCurDir();
+    console.log(fsys.getCurDir());
+    return;
+    */
+    
+	var csvFiles = getAllCsv("G:\aardio论坛抓取\板块");
+	//console.dump(csvFiles);
+	
+	for(i=1;#csvFiles;1){
+		var eachCsvFile = csvFiles[i];
+		var shortFileName = (fsys.getFileName(eachCsvFile));
+		//var urls = getUrlsFromCsv(eachCsvFile);
+		
+		var saveDir = getPrefixName(shortFileName);
+		if(not io.exist(saveDir)) {
+		    fsys.createDir(saveDir, true);
+		}
+		
+		var urls = getUrlsFromCsv(eachCsvFile);
+		for(j=1;#urls;1){
+			try{
+				saveUrls(urls[j], saveDir);
+			}
+			catch(e){
+				console.log(e);
+				console.log(urls[j]);
+				//continue;
+			}
+			//hasOneMorePages(urls);
+		}
+		
+		
+		
+	    console.dump(getPrefixName(shortFileName));
+	}
+	
+	
+	
+}
+
+main();
+
+console.pause(true);
+
+
+

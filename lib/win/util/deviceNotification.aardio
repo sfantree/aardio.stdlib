@@ -1,0 +1,217 @@
+//deviceNotification 设备监视
+import win.guid;
+import sys.volume;
+
+namespace win.util; 
+
+class deviceNotification {
+
+    ctor( winform,clsid ){
+       
+        if(!winform){
+			this = ..win.form( {} );
+			this.messageOnly();
+		}
+		else {
+			this = winform;
+		}
+		
+        var dbcc = DEV_BROADCAST_DEVICEINTERFACE();
+        dbcc.size =  ..raw.sizeof(dbcc) 
+        dbcc.deviceType =  5/*_DBT_DEVTYP_DEVICEINTERFACE*/
+        if( clsid ) {
+        	if(type(clsid)==type.string) clsid = guid.fromString(clsid);
+			dbcc.classGuid = clsid
+			this._hDevNotify = ::User32.RegisterDeviceNotificationW(winform.hwnd, dbcc,0/*_DEVICE_NOTIFY_WINDOW_HANDLE*/ )
+		}
+		else {
+			 this._hDevNotify = ::User32.RegisterDeviceNotificationW(winform.hwnd, dbcc,4/*_DEVICE_NOTIFY_ALL_INTERFACE_CLASSES*/ )
+		}
+       
+        this.wndproc = function(hwnd,message,wParam,lParam){
+    		if(message == 0x0219/*_WM_DEVICECHANGE*/) {
+    			var eventType = wParam; 
+    			var event,volumeEvent = mapProcName[eventType],mapProcName.VOLUME[eventType] 
+    			
+    			if( lParam && (this[event] || this[volumeEvent]) ){
+    			    var pDevData = topointer(lParam);
+    				var dbd = ..raw.convert( pDevData,{ 
+						INT size;
+						INT deviceType;
+						INT reserved;
+					} ) 
+					
+					var devData;
+    				if( dbd.deviceType == 2/*_DBT_DEVTYP_VOLUME*/){
+    					devData = ..raw.convert( pDevData,DEV_BROADCAST_VOLUME());
+    					devData.drives = ..sys.volume.getLogicalDrives(devData.unitMask)
+    					devData.drive = devData.drives[[1]]
+    					devData.driveType = ..sys.volume.getDriveType(devData.drive); 
+    					devData.deviceName = ..sys.volume.getDeviceName(devData.drive);
+    					devData.isMedia = devData.flags === 1/*_DBTF_MEDIA*/;
+    					devData.isNet = devData.flags === 2/*_DBTF_NET*/;
+    					
+    					if(this[volumeEvent])invoke(this[volumeEvent],this,devData,pDevData)
+    				}
+    				elseif( dbd.deviceType == 5/*_DBT_DEVTYP_DEVICEINTERFACE*/ ){
+    					devData = ..raw.convert( pDevData,DEV_BROADCAST_DEVICEINTERFACE()); 
+    					devData.name = ..string.fromUnicode( topointer(lParam +..raw.sizeof(devData)-2),,-1 );
+    				}
+    				elseif( dbd.deviceType == 3/*_DBT_DEVTYP_PORT*/ ){
+    					devData = ..raw.convert( pDevData,DEV_BROADCAST_PORT()); 
+    					devData.name = ..string.fromUnicode( topointer(lParam +..raw.sizeof(devData)-2),,-1 );
+    				}
+    				elseif( dbd.deviceType == 6/*_DBT_DEVTYP_HANDLE*/ ){
+    					if( eventType == 0x8006/*_DBT_CUSTOMEVENT*/)
+    						devData = ..raw.convert( pDevData,DEV_BROADCAST_HANDLE());
+    					else {
+    						devData = ..raw.convert( pDevData,{INT size;INT deviceType;INT reserved;PTR handle;PTR hDevNotify})
+    					}
+    					 
+    				}
+    				elseif( dbd.deviceType == 0/*_DBT_DEVTYP_OEM*/){
+    					devData = ..raw.convert( pDevData,DEV_BROADCAST_OEM()); 
+    				}
+    				
+    				if(this[event])invoke(this[event],this,dbd.deviceType,devData,pDevData)
+           		} 
+    		}
+    	} 
+    	winform._onDestroy = function(){
+        	if( this._hDevNotify ) ::User32.UnregisterDeviceNotification(this._hDevNotify);
+		}
+    } 
+} 
+
+namespace deviceNotification{
+	
+	mapProcName = {
+		[0x8000/*_DBT_DEVICEARRIVAL*/] = "onDeviceArrival";
+		[0x8001/*_DBT_DEVICEQUERYREMOVE*/] = "onDeviceQueryRemove";
+		[0x8002/*_DBT_DEVICEQUERYREMOVEFAILED*/] = "onDeviceQueryRemoveFailed";
+		[0x8003/*_DBT_DEVICEREMOVEPENDING*/] = "onDeviceRemovePending";
+		[0x8004/*_DBT_DEVICEREMOVECOMPLETE*/] = "onDeviceRemoveComplete";
+		[0x8005/*_DBT_DEVICETYPESPECIFIC*/] = "onDeviceTypeSpecific"; 
+		[0x8006/*_DBT_CUSTOMEVENT*/] = "onCustomEvent"; 
+		
+		VOLUME = {
+			[0x8000/*_DBT_DEVICEARRIVAL*/] = "onVolumeArrival";
+			[0x8001/*_DBT_DEVICEQUERYREMOVE*/] = "onVolumeQueryRemove";
+			[0x8002/*_DBT_DEVICEQUERYREMOVEFAILED*/] = "onVolumeQueryRemoveFailed";
+			[0x8003/*_DBT_DEVICEREMOVEPENDING*/] = "onVolumeRemovePending";
+			[0x8004/*_DBT_DEVICEREMOVECOMPLETE*/] = "onVolumeRemoveComplete";
+		}
+	}
+	class DEV_BROADCAST_DEVICEINTERFACE {
+ 		INT size;
+ 		INT deviceType;
+ 		INT reserved;
+ 		struct classGuid = ..win.guid();
+ 		WORD name[1];
+	};
+	
+	class DEV_BROADCAST_VOLUME { 
+ 		INT size;
+ 		INT deviceType;
+ 		INT reserved;
+ 		INT unitMask;
+ 		WORD flags;
+	};
+	
+	class DEV_BROADCAST_PORT {
+  		INT size;
+  		INT deviceType;
+  		INT reserved;
+  		WORD name[1];
+	};
+	
+	class DEV_BROADCAST_HANDLE {
+  		INT size;
+  		INT deviceType;
+  		INT reserved;
+  		PTR handle;
+  		PTR hDevNotify;
+  		struct eventguid = ..win.guid();
+  		int nameOffset;
+  		BYTE data[1];
+	};
+	
+	class DEV_BROADCAST_OEM {
+  		DWORD size;
+  		DWORD deviceType;
+  		DWORD reserved;
+  		DWORD identifier;
+  		DWORD suppFunc;
+	}; 
+} 
+
+/**intellisense()
+win.util.deviceNotification = 设备检测
+win.util.deviceNotification() = !win_deviceNotification.
+win.util.deviceNotification(__/*输入winform对象*/) = 创建一个设备通知窗口\n在添加或移除设备时可响应通知消息\n可选使用参数@2指定GUID
+!win_deviceNotification.onDeviceArrival = @.onDeviceArrival = function(devType,devData,pDevData){
+	if( devType == 2/*_DBT_DEVTYP_VOLUME*/ ){
+		if( devData.isMedia ){
+			io.print("插入光盘",devData.drives[1] )
+		}
+		elseif( devData.isNet ){
+			io.print("添加网络卷",devData.drives[1])
+		}
+		else {
+			io.print("添加磁盘",devData.drives[1])
+		}
+	}
+}
+!win_deviceNotification.onDeviceRemoveComplete = @.onDeviceRemoveComplete = function(devType,devData,pDevData){
+	if( devType == 2/*_DBT_DEVTYP_VOLUME*/ ){
+		if( devData.isUsbDevice ){
+			io.print("移除U盘",devData.drives[1])
+		}
+	}
+}
+!win_deviceNotification.onDeviceQueryRemove = @.onDeviceQueryRemove = function(devType,devData,pDevData){
+ 
+}
+!win_deviceNotification.onDeviceQueryRemoveFailed = @.onDeviceQueryRemoveFailed = function(devType,devData,pDevData){
+ 
+}
+!win_deviceNotification.onDeviceRemovePending = @.onDeviceRemovePending = function(devType,devData,pDevData){
+ 
+}
+!win_deviceNotification.onDeviceTypeSpecific = @.onDeviceTypeSpecific = function(devType,devData,pDevData){
+ 
+}
+!win_deviceNotification.onVolumeArrival = @.onVolumeArrival = function(devData,pDevData){
+	if( devData.isMedia ){
+		io.print("插入光盘",devData.drives[1] )
+	}
+	elseif( devData.isNet ){
+		io.print("添加网络卷",devData.drives[1])
+	}
+	elseif(sys.storage.isUsbDevice(devData.drives[1])){
+		io.print("插入U盘",devData.drives[1] )
+	}
+}
+!win_deviceNotification.onVolumeRemoveComplete = @.onVolumeRemoveComplete = function(devData,pDevData){
+	io.print("移除：",devData.drives[1])
+}
+end intellisense**/
+
+ /**intellisense()
+_DBT_DEVTYP_OEM=@0/*_DBT_DEVTYP_OEM*/
+_DBT_DEVTYP_DEVNODE=@1/*_DBT_DEVTYP_DEVNODE*/
+_DBT_DEVTYP_VOLUME=@2/*_DBT_DEVTYP_VOLUME*/
+_DBT_DEVTYP_PORT=@3/*_DBT_DEVTYP_PORT*/
+_DBT_DEVTYP_NET=@4/*_DBT_DEVTYP_NET*/
+_DBT_DEVTYP_DEVICEINTERFACE=@5/*_DBT_DEVTYP_DEVICEINTERFACE*/
+_DBT_DEVTYP_HANDLE=@6/*_DBT_DEVTYP_HANDLE*/
+_DBT_DEVTYP_DEVINST=@7/*_DBT_DEVTYP_DEVINST*/
+_WM_DEVICECHANGE=@0x0219/*_WM_DEVICECHANGE*/ 
+_DBT_DEVICEARRIVAL=@0x8000/*_DBT_DEVICEARRIVAL*/
+_DBT_DEVICEQUERYREMOVE=@0x8001/*_DBT_DEVICEQUERYREMOVE*/
+_DBT_DEVICEQUERYREMOVEFAILED=@0x8002/*_DBT_DEVICEQUERYREMOVEFAILED*/
+_DBT_DEVICEREMOVEPENDING=@0x8003/*_DBT_DEVICEREMOVEPENDING*/
+_DBT_DEVICEREMOVECOMPLETE=@0x8004/*_DBT_DEVICEREMOVECOMPLETE*/
+_DBT_DEVICETYPESPECIFIC=@0x8005/*_DBT_DEVICETYPESPECIFIC*/
+_BROADCAST_QUERY_DENY=@0x424D5144/*BROADCAST_QUERY_DENY*/
+end intellisense**/

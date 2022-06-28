@@ -1,0 +1,63 @@
+//dynamic
+import dotNet.v4;//.Net 4.x 才支持 dynamic 对象
+var compiler = dotNet.createCompiler("C#"); //创建C#编译器
+
+//必须引入下面的几个 DLL
+compiler.Reference(
+	"System.Core.dll","Microsoft.CSharp.dll"
+);
+
+compiler.Source = /****** 
+using System; 
+using System.Dynamic;
+
+namespace CSharpLibrary  
+{    
+    public class Object  
+    {   
+        //只要将 aardio 对象类型写为 dynamic 就可以自由调用了。
+        public object Hello( dynamic aardioObject, dynamic aardioFunction ){
+            
+            //调用 aardio 函数
+            var num = aardioFunction(12,3);
+            
+            //修改 aardio 对象属性
+        	aardioObject.属性名 = num;  
+        	
+        	//调用 aardio 对象函数
+ 			var ret = aardioObject.执行aardio(" console.log('在C#中执行aardio代码') ");
+ 	 
+ 			//读 aardio 对象属性 
+            return aardioObject.test.abc; 
+        } 
+    }   
+} 
+******/
+
+compiler.import("CSharpLibrary"); //自程序集导入名字空间   
+
+//使用 C# 编写的类构造对象实例
+var netObj = CSharpLibrary.Object();
+
+var aardioObject =  { 
+	test = { abc = 12345;  }
+    属性名 = 123; 
+    执行aardio = function( code ){ 
+        loadcode(code)(); 
+        return 123;
+    }  
+}
+
+import console;
+//调用实时编译的 C# 函数
+var ret = netObj.Hello( 
+	aardioObject,
+	function(a,b){
+    	console.log("aardio 函数被 C# 调用了,参数:",a,b)
+		return a + b; 
+	} 
+); 
+
+console.dump(ret);
+console.dumpJson(aardioObject);
+console.pause();

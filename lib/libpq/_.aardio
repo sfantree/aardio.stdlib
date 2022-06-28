@@ -1,0 +1,460 @@
+﻿import web.json;
+import string.list;
+
+var api = raw.loadDll("~\lib\libpq\.res\libpq.dll",,"cdecl")
+class libpq{
+	ctor( sonnectionString ){
+		if( type(sonnectionString) == type.table){
+		
+			var list = ..string.list(," ","=","''");
+			list.mixin(
+				user = "postgres";
+				port = 5432;
+			);
+			list.mixin(sonnectionString);
+			
+			sonnectionString = tostring(list);
+		}
+		
+		this.conn = api.PQconnectdbP(sonnectionString:"");
+		if (api.PQstatus(this.conn) != 0/*CONNECTION_OK*/){
+			var err =  ..string.concat("Connection to database failed: ", ..raw.str( api.PQerrorMessageP(this.conn) ));
+			api.PQfinish(this.conn);
+			return null,err; 
+		}
+		..table.gc(this,"close");
+	};
+	parameterStatus = function(paramName){
+		var s = api.PQparameterStatusP(this.conn,paramName);
+		if(s) return ..raw.str(s);
+	};
+	charset = function(){
+		return this.parameterStatus("server_encoding"); 
+	};
+	backendPid = function(){
+		return api.PQbackendPID(this.conn); 
+	};
+	execParams = function(command,...){
+	   var paramValues = { ...}; 
+	   var _,nParams = ..table.range(paramValues);
+	   paramValues.length = nParams;
+	   var paramTypes = { length = nParams;};
+	   var paramFormats = { length = nParams};
+	   var paramLengths = { length = nParams};
+	   
+	   
+	   for(i=1;nParams;1){
+	   		var t = type(paramValues[i]);
+	   		paramFormats[i] = 1;
+	   		
+	   		if( t == type.buffer){
+	   			paramFormats[i] = 0;
+	   			paramTypes[i] = 17/*BYTEAOID*/;
+	   			paramLengths[i] = #(paramValues[i]);
+	   		}
+	   		elseif( t == type.string){
+	   			paramTypes[i] = 25/*TEXTOID*/; 
+	   			paramLengths[i] = #(paramValues[i]);
+	   		}
+	   		elseif( t == type.number){
+	   			paramTypes[i] = 701/*FLOAT8OID*/;
+	   			paramValues[i] = tostring(paramValues[i]);
+	   			paramLengths[i] = #(paramValues[i]);
+	   		}
+	   		elseif( t == type.boolean){
+	   			paramTypes[i] = 16/*BOOLOID*/;
+	   			paramValues[i] = paramValues[i] ? "t" : "f";
+	   			paramLengths[i] = 1;
+	   		}
+	   		elseif( ..time.istime(paramValues[i])){
+	   			paramTypes[i] = 1114/*TIMESTAMPOID*/;
+	   			paramValues[i] = tostring(..time.iso8601(paramValues[i]));
+	   			paramLengths[i] = #(paramValues[i]);
+	   		}
+	   		elseif( t == type.table){
+	   			paramTypes[i] = 114/*JSONOID*/;
+	   			paramValues[i] = ..web.json.stringify(paramValues[i]);
+	   			paramLengths[i] = #(paramValues[i]);
+	   		}
+	   }
+	   
+	   var p = api.PQexecParamsP(this.conn,command,nParams,
+			{INT v[] = paramTypes},
+			{ptr v[] = paramValues},
+			{INT v[] = paramLengths},
+			{INT v[] = paramFormats},
+			this.resultFormat ); 	
+		
+		if(!p) return;
+		
+		var st = api.PQresultStatus(p);
+		if( st == 2/*PGRES_TUPLES_OK*/){
+			return pqresult(p);
+		} 
+		else{
+			if( st >= 5/*PGRES_BAD_RESPONSE*/){
+				var err = api.PQresultErrorMessageP(p);
+				if( err ) err = ..raw.str(err);
+				
+				api.PQclear(p);
+				return null,err;
+			} 
+			api.PQclear(p);
+			return st;
+		}
+	};
+	exec = function(command,...){
+		if(...) command = this.formatSqlParameters(command,...);
+		var p = api.PQexecP(this.conn,command); 
+		if(!p) return;
+		
+		var st = api.PQresultStatus(p);
+		if( st == 2/*PGRES_TUPLES_OK*/){
+			return pqresult(p);
+		} 
+		else{
+			if( st >= 5/*PGRES_BAD_RESPONSE*/){
+				var err = api.PQresultErrorMessageP(p);
+				if( err ) err = ..raw.str(err);
+				
+				api.PQclear(p);
+				return null,err;
+			} 
+			api.PQclear(p);
+			return st;
+		}
+	};
+	getTable = function(command,...){
+		var res,err = this.exec(command,...);
+		if(!res) return res,err;
+		return res.getTable();
+	};
+	each = function(command,...){
+		var res,err = this.exec(command,...);
+		if(!res) return function(){}
+		return res.each();
+	};
+	escapeString = function (str) {
+		if(!#str) return str;
+		var buffer = ..raw.buffer(#str*2 + 1);
+		var len = api.PQescapeString(buffer, str, #str);
+		return ..string.left(buffer,len);
+	}; 
+	formatSqlParameters = function(sql,...) { 
+		if( type( ... ) == "table" ){
+			var param = ...;
+			return ..string.replace(sql,"\@(<:+>|<\w+>)",
+				function(name){
+					var v =  param[name];
+					var t  = type(v);	
+					if( t = "string" ){
+						return ..string.concat("'", this.escapeString(v), "'");
+					} 
+					elseif( t = "number" ){
+						return tostring(v);
+					}
+					elseif( ( t = "table" ) && ..time.istime(v) ) {
+						var f = v.format;
+						v.format = "%Y-%m-%d %H:%M:%S";
+						var ret  = "'" +  tostring(v) + "'";
+						v.format = f;
+						return ret;
+					} 
+					return ..string.replace(tostring(v),"\p","");
+				} 
+			); 
+		}
+		return ..string.format(sql,...);
+	}; 
+	putCopyData = function(buffer,errormsg){
+		if(buffer===null) return api.PQputCopyEnd(this.conn,errormsg);
+		return api.PQputCopyData(this.conn,buffer,#buffer);
+	};
+	getCopyData = function(buffer){
+		var buffer ={ptr p}
+		var len = PQgetCopyData(PGconn *conn,buffer,false);
+		if( len < 0 ){
+			if( len == -1) return null;
+			if( len == -2) return null,..raw.str( api.PQerrorMessage(this.conn) );
+		}
+		if( len ) return ..raw.buffer(len,buffer.p);
+	};
+    errorMessage = function(){
+		return ..raw.str( api.PQerrorMessageP(this.conn) )
+	};     
+	close = function(){
+		if(this.conn){
+			api.PQfinish(this.conn);
+			this.conn = null;
+		};
+	}; 
+}
+
+namespace libpq{
+	class pqresult{
+		ctor( pqRes  ){
+			if( api.PQresultStatus(pqRes) != 2/*PGRES_TUPLES_OK*/){
+				api.PQclear(this.pqRes);
+				return null;
+			}
+				
+			this.pqRes = pqRes;
+			..table.gc(this,"clear");
+		};
+		clear  = function(){
+			if(this.pqRes){
+				api.PQclear(this.pqRes);
+				this.pqRes = null;
+			};
+		}
+		ftype = function(col){
+			return  ! api.PQftype(this.pqRes,col-1);
+		}
+		ftext = function(col){
+			return !api.PQfformat(this.pqRes,col-1);
+		}
+		ftable = function(col){
+			return api.PQftable(this.pqRes,col-1);
+		}
+		fname = function(col){
+			var n = api.PQfnameP(this.pqRes,col-1);
+			if(n) return ..raw.str(n);
+		}
+		fnumber = function(name){
+			return api.PQfnumber(this.pqRes,name)+1;
+		}
+		ntuples = function(){
+			return api.PQntuples(this.pqRes);
+		}
+		nfields = function(){
+			return api.PQnfields(this.pqRes);
+		}
+		value = function(row,col){
+			row--;
+			col--;
+			
+			//if( api.PQgetisnull(this.pqRes, row,col) ) return null;
+			var ptr = api.PQgetvalueP(this.pqRes, row,col);
+			var len = api.PQgetlength(this.pqRes, row,col);
+			var text = !api.PQfformat(this.pqRes,col);
+			var t = api.PQftype(this.pqRes,col);
+			var fp = fparser[t];
+ 			
+			if( text && ptr) { 
+				if( t == 17/*BYTEAOID*/) return ..string.unhex( ..raw.buffer(len-2,topointer(ptr,2)),"");
+				ptr = ..raw.tostring(ptr,1,len);
+			}
+			
+			if(fp) return fp(ptr,len,text);
+			error("暂不支持类型:" + t);
+		 	
+		}
+		each = function(){
+			var tuples = this.ntuples();
+			var cols = this.nfields();
+			var row = 0;
+			return function(){
+				row++;
+				if( row > tuples) return;
+				
+				var result = {}
+				for(i=1;cols;1){
+					result[i] = this.value(row,i);
+				}
+				
+				return ..table.unpackArgs(result);
+			} 
+		}
+		getTable = function(){ 
+			var cols = this.nfields();
+			var fields = {};
+			for(i=1;cols;1){
+				fields[i] = this.fname(i);
+				if( fields[i] == "?column?" || fields[i] == "row" ){
+					fields[i] = "column" + i;
+				}
+			}
+			
+			var result = {}
+			for(row=1;this.ntuples();1){
+				var r = {}
+				for(i=1;cols;1){
+					r[ fields[i] ] = this.value(row,i);
+				}
+				result[row] = r;
+			}
+			
+			return result; 	
+		}
+		
+		
+	} 
+	pqresult.fparser ={
+		[/*NULLOID*/0] = function(p,len,text){ 
+		};
+		[/*BOOLOID*/16] = function(p,len,text){ 
+			if(text) return p == "t";
+			return  !!..raw.convert(p,{byte v}).v;
+		};
+		[/*BYTEAOID*/17] = function(p,len,text){
+			if(text){
+				return ..string.unhex( ..string.right(p,-3) ,"")
+			} 
+		};
+		[/*CHAROID*/18] = function(p,len,text){  
+			if(text) return ( tonumber(p,10) );
+			return ..raw.swap(  ..raw.convert(p,{byte v}).v );
+		};
+		[/*NAMEOID*/19] = function(p,len,text){  
+			return p;
+		};
+		[/*INT8OID*/20] = function(p,len,text){  
+			if(text) return ..math.size64( p );
+			return ..raw.swap(  ..raw.convert(p,{int v}).v );
+		};
+		[/*INT2OID*/21] = function(p,len,text){  
+			if(text) return ( tonumber(p,10) );
+			return ..raw.swap(  ..raw.convert(p,{int v}).v );
+		};
+		[/*INT2VECTOROID*/22] = function(p,len,text){ if(text)return p; };
+		[/*INT4OID*/23] = function(p,len,text){  
+			if(text) return ( tonumber(p,10) );
+			return ..raw.swap(  ..raw.convert(p,{int v}).v )
+		};
+		[/*REGPROCOID*/24] = function(p,len,text){  
+			if(text) return ( tonumber(p,10) );
+			return ..raw.swap(  ..raw.convert(p,{int v}).v )
+		};
+		[/*TEXTOID*/25] = function(p,len,text){ 
+			return p; 
+		};
+		[/*OIDOID*/26] = function(p,len,text){  
+			if(text) return ( tonumber(p,10) );
+			return ..raw.swap(  ..raw.convert(p,{int v}).v )
+		};
+		[/*TIDOID*/27] = function(p,len,text){  
+			if(text) return ( tonumber(p,10) );
+			return ..raw.swap(  ..raw.convert(p,{int v}).v )
+		};
+		[/*XIDOID*/28] = function(p,len,text){  
+			if(text) return ( tonumber(p,10) );
+			return ..raw.swap(  ..raw.convert(p,{int v}).v )
+		};
+		[/*CIDOID*/29] = function(p,len,text){  
+			if(text) return ( tonumber(p,10) );
+			return ..raw.swap(  ..raw.convert(p,{int v}).v )
+		};
+		[/*OIDVECTOROID*/30] = function(p,len,text){ if(text)return p; };
+		[/*PG_TYPE_RELTYPE_OID*/71] = function(p,len,text){ if(text)return p; };
+		[/*PG_ATTRIBUTE_RELTYPE_OID*/75] = function(p,len,text){ if(text)return p; };
+		[/*PG_PROC_RELTYPE_OID*/81] = function(p,len,text){ if(text)return p; };
+		[/*PG_CLASS_RELTYPE_OID*/83] = function(p,len,text){ if(text)return p; };
+		[/*JSONOID*/114] = function(p,len,text){ 
+			 if(text) return..web.json.parse( p ); 
+		};
+		[/*POINTOID*/600] = function(p,len,text){ if(text)return p; };
+		[/*LSEGOID*/601] = function(p,len,text){ if(text)return p; };
+		[/*PATHOID*/602] = function(p,len,text){ if(text)return p; };
+		[/*BOXOID*/603] = function(p,len,text){ if(text)return p; };
+		[/*POLYGONOID*/604] = function(p,len,text){ if(text)return p; };
+		[/*LINEOID*/628] = function(p,len,text){ if(text)return p; };
+		[/*FLOAT4OID*/700] = function(p,len,text){  
+			if(text) return ( tonumber(p,10) );
+			return ..raw.swap(  ..raw.convert(p,{int v}).v )
+		};
+		[/*FLOAT8OID*/701] = function(p,len,text){  
+			if(text) return ( tonumber(p,10) );
+			return ..raw.swap(  ..raw.convert(p,{int v}).v )
+		};
+		[/*ABSTIMEOID*/702] = function(p,len,text){ if(text)return p; };
+		[/*RELTIMEOID*/703] = function(p,len,text){ if(text)return p; };
+		[/*TINTERVALOID*/704] = function(p,len,text){ if(text)return p; };
+		[/*UNKNOWNOID*/705] = function(p,len,text){ if(text)return p; };
+		[/*CIRCLEOID*/718] = function(p,len,text){ if(text)return p; };
+		[/*CASHOID*/790] = function(p,len,text){ if(text)return p; };
+		[/*MACADDROID*/829] = function(p,len,text){ if(text)return p; };
+		[/*INETOID*/869] = function(p,len,text){ if(text)return p; };
+		[/*CIDROID*/650] = function(p,len,text){ if(text)return p; };
+		[/*INT4ARRAYOID*/1007] = function(p,len,text){ if(text)return p; };
+		[/*ACLITEMOID*/1033] = function(p,len,text){ if(text)return p; };
+		[/*BPCHAROID*/1042] = function(p,len,text){ if(text)return p; };
+		[/*VARCHAROID*/1043] = function(p,len,text){ if(text)return p; };
+		[/*DATEOID*/1082] = function(p,len,text){ 
+			if(text)return ..time(p,"!%Y-%m-%d"); }
+		;
+		[/*TIMEOID*/1083] = function(p,len,text){ 
+			if(text)return ..time(p,"!%H:%M:%S"); }
+		;
+		[/*TIMESTAMPOID*/1114] = function(p,len,text){ 
+			if(text)return ..time.iso8601(p); 
+		};
+		[/*TIMESTAMPTZOID*/1184] = function(p,len,text){ 
+			if(text)return ..time.iso8601(p); 
+		};
+		[/*INTERVALOID*/1186] = function(p,len,text){ if(text)return p; };
+		[/*TIMETZOID*/1266] = function(p,len,text){ 
+			if(text)return time.gmt (p,"!%H:%M:%S")
+		};
+		[/*BITOID*/1560] = function(p,len,text){ if(text)return p; };
+		[/*VARBITOID*/1562] = function(p,len,text){ if(text)return p; };
+		[/*NUMERICOID*/1700] = function(p,len,text){  
+			if(text) return ( tonumber(p,10) );
+			error("暂不支持该类型",2)
+		};
+		[/*REFCURSOROID*/1790] = function(p,len,text){ if(text)return p; };
+		[/*REGPROCEDUREOID*/2202] = function(p,len,text){ if(text)return p; };
+		[/*REGOPEROID*/2203] = function(p,len,text){ if(text)return p; };
+		[/*REGOPERATOROID*/2204] = function(p,len,text){ if(text)return p; };
+		[/*REGCLASSOID*/2205] = function(p,len,text){ if(text)return p; };
+		[/*REGTYPEOID*/2206] = function(p,len,text){ if(text)return p; };
+		[/*RECORDOID*/2249] = function(p,len,text){ if(text)return p; };
+		[/*CSTRINGOID*/2275] = function(p,len,text){ if(text)return p; };
+		[/*ANYOID*/2276] = function(p,len,text){ if(text)return p; };
+		[/*ANYARRAYOID*/2277] = function(p,len,text){ if(text)return p; };
+		[/*VOIDOID*/2278] = function(p,len,text){ if(text)return p; };
+		[/*TRIGGEROID*/2279] = function(p,len,text){ if(text)return p; };
+		[/*LANGUAGE_HANDLEROID*/2280] = function(p,len,text){ if(text)return p; };
+		[/*INTERNALOID*/2281] = function(p,len,text){ if(text)return p; };
+		[/*OPAQUEOID*/2282] = function(p,len,text){ if(text)return p; };
+		[/*ANYELEMENTOID*/2283] = function(p,len,text){ if(text)return p; }; 
+	}
+} 
+
+/**intellisense()
+libpq(.( 连接参数 ) = 打开数据库连接,\n连接参数可以是字符串，也可以是指定任意个配置参数的表,\n常用的配置字段如下：\nlibpq(\n	host ="连接主机,不指定时默认localhost"; \n	hostaddr ="连接主机的IP地址,可省略" ;\n	port = "服务端口,不指定默认值为5432"; \n	dbname = "数据库名,不指定时默认和用户名相同"; \n	user = "不指定时默认值为postgres";\n	password = "密码";\n	connect_timeout = "超时值,0为不限时间";\n	options = "发送给服务器的命令行选项" \n	sslmode = "SSL模式,4个可选值：disable,allow,prefer （缺省）,require "\n)
+libpq()= !stdlibpq.
+end intellisense**/
+
+/**intellisense(!stdlibpq)
+parameterStatus("__/*参数名*/") = 返回服务器参数设置
+charset() = 服务端编码
+backendPid() = 服务器的进程号ID;
+resultFormat = 其值为0或空值时execParams返回数据使用文本模式，\n值为1使用二进制模式
+execParams(__) = 执行SQL,并可添加不定个数的参数\nSQL中用 $1，$2 等引用后面的参数\n\n如果失败返回null,错误信息\n如果成功并且执行的是返回数据的命令，返回libpq.pqresult对象\n否则返回状态码
+exec(__) = 执行SQL,并可添加不定个数的参数\n如果参数@2是一个表,则调用formatSqlParameters格式化,SQL中的以数名以@字符开始\n如果是其他类型的参数,调用string.format格式化\n如果失败返回null,错误信息\n\n如果成功并且执行的是返回数据的命令，返回libpq.pqresult对象\n否则返回状态码
+execParams() = !stdlibpqresult.
+exec() = !stdlibpqresult.
+getTable(__) = 执行SQL并返回一个包含查询结果的表\n如果参数@2是一个表,则调用formatSqlParameters格式化,SQL中的以数名以@字符开始\n如果是其他类型的参数,调用string.format格式化
+each(__) = 执行SQL并返回一个遍历查询结果的迭代器\n如果参数@2是一个表,则调用formatSqlParameters格式化,SQL中的以数名以@字符开始\n如果是其他类型的参数,调用string.format格式化
+escapeString(__) = 转义参数指定的字符串
+formatSqlParameters(__) = 格式化SQL\n如果参数@2是一个表,则调用formatSqlParameters格式化,SQL中的以数名以@字符开始\n如果是其他类型的参数,调用string.format格式化
+putCopyData(.(buffer,err) = 发送数据\nbuffer参数为null结束发送,指定err参数返回错误信息并结束发送
+getCopyData() = 接收数据\n成功返回buffer对象,失败返回null,错误信息
+errorMessage() = 返回错误信息
+close() = 关闭连接\n在对象析构时会自动调用此函数
+end intellisense**/
+
+/**intellisense(!stdlibpqresult)
+clear() = 释放资源\n在对象析构时会自动调用此函数
+ftype(.(列序号) = 返回列类型
+ftext(.(列序号) = 列是否以文本模式返回数据
+ftable(.(列序号) = 字段所在的表的 OID
+fname(.(列序号) = 字段名
+fnumber(.(字段名) = 字段名转换为列序号
+ntuples() = 返回行数
+nfields() = 返回列数
+value(.(行序号,列序号) = 返回值
+getTable() = 返回一个包含查询结果的表
+each() = 返回一个遍历查询结果的迭代器
+end intellisense**/
+

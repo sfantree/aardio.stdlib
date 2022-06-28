@@ -1,0 +1,51 @@
+//图标动态配色
+import fonts.fontAwesome;
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="plus 控件 - 动态调整字体图标样式";right=759;bottom=469)
+winform.add(
+checkbox={cls="plus";text="请点击这里试一试";left=77;top=30;right=286;bottom=61;align="left";dl=1;dt=1;font=LOGFONT(h=-13);iconStyle={align="left";font=LOGFONT(h=-15;name='FontAwesome')};iconText='\uF00D';textPadding={left=24};z=1}
+)
+/*}}*/
+
+//iconText,iconColor 都可以在 skin 函数里动态指定
+winform.checkbox.skin({
+	
+	//未选中普通状态样式
+	iconColor = { 
+		default =0xFFFF4500 //默认状态字体图标颜色
+	};
+	color = { 
+		hover = 0xFFEE2222; //鼠标悬停状态字体颜色
+		active = 0xEE221111; //鼠标按下状态字体颜色
+	};
+	
+	//选中状态样式
+	checked={
+		iconText='\uF00C'; //选中后显示的图标文本
+		iconColor = {  
+			default = 0xFF228B22; //选中后默认状态字体图标颜色
+		};
+		color = { 
+			hover = 0xFFEE2222; 
+			active = 0xEE221111;
+		}
+	}
+})
+
+//控件图标字体与样式,这个在设计器已经指定了，所以代码可以省略
+//winform.checkbox.iconStyle={align="left";font=LOGFONT(h=-15;name='FontAwesome')};
+
+//控件字体图标,这个在设计器已经指定了，所以代码可以省略
+//winform.checkbox.iconText='\uF00D';
+
+/*
+一个 plus 控件上可以放两段不同的文本，
+并可以配置不同的字体、颜色、边距:
+
+text 属性指定文本，color 指定文本颜色，font 指定文本字体。
+iconText 指定图标文本, iconColor 指定图标颜色，iconStyle.font 指定图标字体。
+*/
+
+winform.show();
+win.loopMessage();

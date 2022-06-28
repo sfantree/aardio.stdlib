@@ -1,0 +1,20 @@
+﻿import process.php.simpleHttpServer;
+process.php.simpleHttpServer.cgiPath = "~\lib\php\.dll\php-cgi.exe";
+
+namespace php.simpleHttpServer;
+
+startUrl = function(path,documentRoot){ 
+ 	return ..process.php.simpleHttpServer.startUrl(path,documentRoot,"~\lib\php\.dll\php-cgi.exe"); 
+}
+
+/*
+import php;
+*/
+
+/**intellisense()
+php.simpleHttpServer = 调用 process.php.simpleHttpServer 以 CGI 方式启动 PHP,\nphp-cgi.exe 路径默认指定为 "~\lib\php\.dll\php-cgi.exe";
+php.simpleHttpServer.startUrl( =  查找可用端口创建PHP/CGI服务器，返回返回完整URL\n此服务端限制使用本机IP127.0.0.1访问,并随机分配端口不会出现端口冲突\n如果PHP/CGI服务器已启动则直接返回URL而不是重复启动服务器,\n注意当前线程结束时,此服务器线程会自动退出
+php.simpleHttpServer.startUrl(.(path,documentRoot) = 查找可用端口创建PHP/CGI服务器，返回返回完整URL\n如果PHP/CGI服务器已启动则直接返回URL而不是重复启动服务器,\n省略参数返回首页URL,尾部不包含斜杠\n可选用@path参数指定请求目标文件的相对路径\n可选使用参数@documentRoot指定网站根目录,默认为"/"
+end intellisense**/
+
+

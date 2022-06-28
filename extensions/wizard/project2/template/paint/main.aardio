@@ -1,0 +1,125 @@
+import fonts.painttest;
+import win.ui;
+/*DSG{{*/
+mainForm = win.form(text="简单画板";right=1004;bottom=667;bgcolor=16777215;border="none";clipch=1)
+mainForm.add(
+bk={cls="bk";left=-10;top=0;right=1008;bottom=629;db=1;dl=1;dr=1;dt=1;forecolor=12632256;z=1};
+btnEllipse={cls="plus";text="圆形";left=690;top=629;right=764;bottom=665;align="left";bgcolor=4802979;color=3145728;db=1;dr=1;font=LOGFONT(h=-15);iconStyle={align="left";font=LOGFONT(h=-15;name='painttest');padding={left=7}};iconText='\uE644';notify=1;textPadding={left=26};z=8};
+btnEraser={cls="plus";text="橡皮檫";left=763;top=629;right=851;bottom=665;align="left";bgcolor=4802979;color=3145728;db=1;dr=1;font=LOGFONT(h=-15);iconStyle={align="left";font=LOGFONT(h=-15;name='painttest');padding={left=7}};iconText='\uE6B3';notify=1;textPadding={left=26};z=4};
+btnLine={cls="plus";text="直线";left=471;top=629;right=545;bottom=665;align="left";bgcolor=4802979;color=3145728;db=1;dr=1;font=LOGFONT(h=-15);iconStyle={align="left";font=LOGFONT(h=-15;name='painttest');padding={left=7}};iconText='\uE686';notify=1;textPadding={left=26};z=6};
+btnPen={cls="plus";text="铅笔";left=398;top=629;right=472;bottom=665;align="left";bgcolor=4802979;color=3145728;db=1;dr=1;font=LOGFONT(h=-15);iconStyle={align="left";font=LOGFONT(h=-15;name='painttest');padding={left=7}};iconText='\uE6B4';notify=1;textPadding={left=26};z=3};
+btnRadiant={cls="plus";text="射线";left=544;top=629;right=618;bottom=665;align="left";bgcolor=4802979;color=3145728;db=1;dr=1;font=LOGFONT(h=-15);iconStyle={align="left";font=LOGFONT(h=-15;name='painttest');padding={left=7}};iconText='\uE600';notify=1;textPadding={left=26};z=7};
+btnRect={cls="plus";text="矩形";left=617;top=629;right=691;bottom=665;align="left";bgcolor=4802979;color=3145728;db=1;dr=1;font=LOGFONT(h=-15);iconStyle={align="left";font=LOGFONT(h=-15;name='painttest');padding={left=7}};iconText='\uE625';notify=1;textPadding={left=26};z=5};
+btnSave={cls="plus";text="保存";left=925;top=629;right=999;bottom=665;align="left";color=3145728;db=1;dr=1;font=LOGFONT(h=-15);iconStyle={align="left";font=LOGFONT(h=-15;name='painttest');padding={left=6}};iconText=' \uE684';notify=1;textPadding={left=27};z=10};
+btnUndo={cls="plus";text="撤消";left=850;top=629;right=924;bottom=665;align="left";color=3145728;db=1;dr=1;font=LOGFONT(h=-15);iconStyle={align="left";font=LOGFONT(h=-15;name='painttest');padding={left=7}};iconText='\uE606';notify=1;textPadding={left=26};z=11};
+plus={cls="plus";left=13;top=29;right=994;bottom=616;bgcolor=16777215;clipBk=false;color=255;db=1;dl=1;dr=1;dt=1;foreRepeat="stretch";notify=1;z=2};
+plusPenColor={cls="plus";left=13;top=635;right=42;bottom=659;bgcolor=10582829;db=1;dl=1;edge=1;font=LOGFONT(h=-16;name='FontAwesome';charset=0);notify=1;z=9};
+tbPenWidth={cls="plus";left=49;top=640;right=391;bottom=655;bgcolor=-13791839;color=4999093;db=1;dl=1;dr=1;foreRight=17;forecolor=-6194387;paddingBottom=6;paddingTop=6;z=12}
+)
+/*}}*/
+
+import win.util.paint;
+var paint = win.util.paint(mainForm.plus);
+	
+mainForm.btnRect.oncommand = function(id,event){
+	paint.drawMode = "rect";//改变当前绘画工具为矩形
+}
+
+mainForm.btnLine.oncommand = function(id,event){
+	paint.drawMode = "line"//改变当前绘画工具为直线
+}
+
+mainForm.btnPen.oncommand = function(id,event){
+	paint.drawMode = "pen";//改变当前绘画工具为画笔
+}
+	
+mainForm.btnEraser.oncommand = function(id,event){
+	paint.drawMode = "eraser";//改变当前绘画工具为矩形橡皮擦
+	mainForm.tbPenWidth.progressPos = 20;
+}
+
+mainForm.btnEllipse.iconTextRenderingHint = 4/*_TextRenderingHintAntiAlias*/;
+mainForm.btnEllipse.predraw();
+mainForm.btnEllipse.oncommand = function(id,event){
+	paint.drawMode = "ellipse";//改变当前绘画工具为圆形
+}
+
+mainForm.btnRadiant.iconTextRenderingHint = 4/*_TextRenderingHintAntiAlias*/; 
+mainForm.btnRadiant.predraw();
+mainForm.btnRadiant.oncommand = function(id,event){
+	paint.drawMode = "radiant";//改变当前绘画工具为射线
+}
+
+//用户开始绘图时触发此事件
+paint.onStartDrawing = function(){
+	paint.drawColor = mainForm.plusPenColor.backgroundColor;//设置画笔颜色
+	paint.drawWidth = mainForm.tbPenWidth.progressPos;//设置画笔宽度
+}
+
+//设置控件外观样式
+import style; 
+mainForm.tbPenWidth.skin(style.trackbar);
+mainForm.plusPenColor.skin(style.color)
+mainForm.btnSave.skin(style.hyperlink);
+mainForm.btnUndo.skin(style.hyperlink);
+mainForm.btnLine.skin(style.pen)
+mainForm.btnPen.skin(style.pen)
+mainForm.btnEraser.skin(style.pen)
+mainForm.btnRect.skin(style.pen)
+mainForm.btnRadiant.skin(style.pen)
+mainForm.btnEllipse.skin(style.pen);
+
+//修改默认选中画笔，要放在设置样式后面（因为设置样式以后才会成为单选按钮）
+mainForm.btnPen.checked = true;
+mainForm.btnPen.oncommand();
+
+//弹出取色窗口
+import win.ui.ctrl.pick;
+mainForm.plusPenColor.oncommand = function(id,event){
+	if(!(mainForm.picker && mainForm.picker.valid ) ){
+		mainForm.picker = win.ui.ctrl.pick(mainForm);
+		mainForm.picker.text = "简单画板 - 选择颜色"; 
+		mainForm.picker.setColor(mainForm.plusPenColor.backgroundColor);
+		
+		mainForm.picker.onColorChange = function(argb){
+			mainForm.plusPenColor.background = argb;
+		}	
+	}
+
+	mainForm.picker.show(); 
+}
+
+//保存图像
+import fsys.dlg;
+mainForm.btnSave.oncommand = function(id,event){
+	var path = fsys.dlg.save("*.png|*.png||")
+	if(path)mainForm.plus.foreground.save(path)
+}
+
+//撤消
+mainForm.btnUndo.iconTextRenderingHint = 4/*_TextRenderingHintAntiAlias*/;
+mainForm.btnUndo.predraw();
+mainForm.btnUndo.oncommand = function(id,event){
+	paint.undo();
+}
+
+//按 ESC 键
+mainForm.onCancel = function(){
+	paint.undo();    
+}
+
+//按 Enter 键
+mainForm.onOk = function(){
+    mainForm.btnSave.oncommand();
+}
+
+//plus控件切换到滑块模式
+mainForm.tbPenWidth.setTrackbarRange(1,100);
+mainForm.tbPenWidth.progressPos = 3;
+
+//无边框窗口添加边框、阴影、标题上栏
+import win.ui.simpleWindow;
+win.ui.simpleWindow(mainForm);
+
+mainForm.show();
+return win.loopMessage();

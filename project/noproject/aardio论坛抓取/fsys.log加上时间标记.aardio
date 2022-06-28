@@ -1,0 +1,61 @@
+import console; 
+import fsys.log
+import time
+
+namespace my{
+	class log{
+   	        // 默认日志路径 /config/app$.log
+        	ctor( path ){
+                	this = ..fsys.log(path) //调用基类构造对象原型
+        	};       
+	
+        	//        如果 put 改成 print, 就覆盖了基类的print。要调用继承的基类的print，就要另起函数名
+        	put = function(...){
+                	var t = ..time.now()
+                	t.format="%Y%m%d-%H%M%S";
+               	
+                	var args = {...}
+                	..table.insert(args, tostring(t) + "...") // 通常时间非重要信息，以...作视觉区分方便查看
+               	
+                	this.print( ..table.unpack(args) )
+        	};       
+	}
+}
+
+namespace my2{
+
+    class log{
+        
+        ctor( path ){
+            this = ..fsys.log(path)
+            this.basePrint = this.print;
+        };      
+        print = function(...){
+            var t = ..time.now()
+            t.format="%Y%m%d-%H%M%S";
+            
+            var args = {...}
+            ..table.insert(args, tostring(t) + "...") // 通常时间非重要信息，以...作视觉区分方便查看
+            
+            this.basePrint( ..table.unpack(args) )
+        };        
+    }
+}
+
+
+var log = my.log()
+log.print("测试")
+
+var log2 = my.log()
+log2.put(" test it")
+
+// 重载父类方法fsys.log
+var log3 = my2.log()
+log.print(" test it")
+
+// 原版
+var log4 = fsys.log()
+log4.print( time() , "测试")
+
+console.pause(true);
+

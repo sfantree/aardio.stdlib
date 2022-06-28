@@ -1,0 +1,37 @@
+//Flash 动画
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="web.blink.flash 动画";right=1008;bottom=616)
+winform.add()
+/*}}*/
+
+import web.blink.flash;
+var flash = web.blink.flash( winform );//创建透明窗口请改为 web.kit.flash.transparent
+winform.show(); 
+
+//导出函数给 Flash
+flash.external = {
+	func = function(){} 
+}
+
+//指定初始化属性，建议在指定 movie 属性以前指定
+flash.bgcolor = "transparent";
+flash.wMode = "transparent";
+flash.quality = "high"; 
+flash.flashVars = {a="v1",b="v2"};
+
+//修改此属性或调用 render() 函数才会打开 Flash 动画。
+flash.movie = "https://update.aardio.com/v10.files/demo/transparent.swf";
+
+//调用 Flash 控件函数
+var flashVersion = flash.getVariable("$version")
+winform.msgbox("Flash 版本:" + flashVersion)
+
+//如下调用 Flash 导出的函数
+/*
+flash.xcall("Flash导出函数名",任意个调用参数)
+flash.Flash导出函数名(任意个调用参数)
+*/
+
+//winform.fullscreen(); //全屏函数
+win.loopMessage();

@@ -1,0 +1,96 @@
+﻿//默认库源代码
+namespace tsclib;
+
+api = ..raw.loadDll(  $"~/lib/tsclib/.res/TSCLIB.dll","TSCLIB.dll","stdcall"  ); 
+openport = function(printerName){
+	return api.openport(printerName);
+}
+
+closeport = function(){
+	return api.closeport();
+}
+
+sendcommand = function(command){
+	return api.sendcommand(command);
+}
+
+setup = function(labelWidth,labelHeight,speed,density,sensor,vertical,offset){
+	return api.setup(labelWidth,labelHeight,speed,density,sensor,vertical,offset);
+}
+
+clearbuffer = function(){
+	return api.clearbuffer();
+}
+
+barcode = function(x,y,codeType,height, readable, rotation,narrow,wide, code){
+	return api.barcode(x,y,codeType,height, readable, rotation,narrow,wide, code);
+}
+
+qrcode = function(x,y,eccLevel,width, mode, rotation,model,mask,dataString){
+	return api.qrcode(x,y,eccLevel,width, mode, rotation,model,mask, dataString);
+}
+
+printerfont = function(x,y,fontName,rotation,xmul, ymul, content){
+	return api.printerfont(x,y,fontName,rotation,xmul, ymul, ..string.fromto(content,65001,0));
+}
+
+printlabel = function(numberOfSet,numberOfCopy){
+	return api.printlabel(numberOfSet,numberOfCopy);
+}
+
+formfeed = function(){
+	return api.formfeed();
+}
+
+nobackfeed = function(){
+	return api.nobackfeed();
+}
+
+downloadpcx = function(fileName,imageName){
+	return api.downloadpcx(fileName,imageName);
+}
+
+windowsfont = function(x,y,fontheight, rotation,fontstyle,fontunderline,szFaceName,content){
+	return api.windowsfontUnicode(x,y,fontheight, rotation,fontstyle,fontunderline,szFaceName,..string.toUnicode(content));
+}
+
+sendBinaryData = function(hexData){
+	return api.sendBinaryData(hexData,#hexData);
+}
+
+usbportqueryprinter = function(){
+	return api.usbportqueryprinter();
+}
+
+usbportwrite = function(command){
+	return api.usbportwrite(command);
+}
+
+usbprintername = function(){
+	var ptr = api.usbprintername();
+	if( ptr ) return ..raw.str(topointer(ptr));
+}
+
+about = function(){
+	return api.about();
+}
+
+/**intellisense(tsclib)
+openport(.(printerName) = 打开打印机
+closeport() = 关闭打印机
+sendcommand(.(command) = 发送命令
+setup(.(labelWidth,labelHeight,speed,density,sensor,vertical,offset) = 设置
+clearbuffer() = 清空缓冲
+qrcode(.(x,y,eccLevel,width, mode, rotation,model,mask,dataString) = 打印二维码\nx QRCODE条码左上角X座标\ny QRCODE条码左上角Y座标\neccLevel 错误纠正能力等级\n	L 7%\n	M 15%\n	Q 25%\n	H 30%\nwidth 1~10\nmode 自动生成编码/手动生成编码\n	A Auto\n	M Manual\nrotation 顺时针旋转角度\n	0 不旋转\n	90 顺时针旋转90度\n	180 顺时针旋转180度\n	270 顺时针旋转270度\nmodel 条码生成样式\n	M1 (预设), 原始版本\n	M2 扩大版本\nmask 范围：S0~S8，预设S7\ndataString 条码资料内容
+barcode(.(x,y,codeType,height, readable, rotation,narrow,wide, code) = 输出条码
+printerfont(.(x,y,fontName,rotation,xmul, ymul, content) = 输出文本
+printlabel(.(numberOfSet,numberOfCopy) = 打印标签
+formfeed() = 跳页，该函数需在setup 后使用
+nobackfeed() = 设定纸张不回吐
+about() = 关于
+downloadpcx(.(fileName,imageName) = 下载单色PCX 格式图文件至打印机
+windowsfont(.(x,y,fontheight, rotation,fontstyle,fontunderline,szFaceName,content) = 使用Windows TTF 字型打印文字
+sendBinaryData(.(hexData) = 发送二进制数据
+end intellisense**/
+
+

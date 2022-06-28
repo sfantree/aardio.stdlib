@@ -1,0 +1,153 @@
+﻿//scrollbar 滚动条控件	
+import win.ui.ctrl.metaProperty;//导入控件属性元表支持
+namespace win.ui.ctrl;  
+
+class scrollbar{
+    ctor(parent,tParam){ 
+    	if(tParam){
+			if(!tParam.horz) tParam.style |= 0x1/*_SBS_VERT*/;   
+			this.scrollMessage = tParam.horz ? 0x114/*_WM_HSCROLL*/ : 0x115/*_WM_VSCROLL*/;	
+			this._bar = 0x2/*_SB_CTL*/
+		} 
+		
+		this.line = 1;
+		this.wheelLines = 3;
+    }
+	@_metaProperty;
+} 
+
+namespace scrollbar{
+
+	class INFO {
+  		INT cbSize = 28;
+  		INT fMask = 0;
+  		int min;
+  		int max;
+  		INT page;
+  		int pos;
+  		int trackPos;
+	} 
+
+	_metaProperty = ..win.ui.ctrl.metaProperty( 
+	
+		scrollWindowTo = function(pos,rect,clipRect){
+			if(owner._bar === 1/*_SB_VERT*/){
+				::User32.ScrollWindow(owner.hwnd,0, owner.pos - pos,rect,clipRect); 
+			}
+			elseif(owner._bar ===  0/*_SB_HORZ*/){
+				::User32.ScrollWindow(owner.hwnd,owner.pos - pos,0,rect,clipRect); 
+			}
+			else {
+				error("仅窗口滚动条支持此函数",2)
+			}
+			
+			::User32.SetScrollPos(owner.hwnd,owner._bar,pos,true); 
+		};
+		updateWheelLines = function(){
+			var r,wheelLines = ::User32.SystemParametersInfo(0x68/*_SPI_GETWHEELSCROLLLINES*/,0,{INT v},0);
+		 	owner.wheelLines = wheelLines.v;
+		 	return owner.wheelLines;
+		};
+		pos = {
+			_get = function(){ 
+				return ::User32.GetScrollPos(owner.hwnd,owner._bar)
+			};
+			_set = function( v ){
+				::User32.SetScrollPos(owner.hwnd,owner._bar,..math.abs(v),v>=0); 
+			};  
+		};
+		show = function(s){
+			if( s === null ) s = true;
+			return !!::User32.ShowScrollBar(owner.hwnd,owner._bar,!!s);
+		};
+		enable = function(flag){
+			return ::User32.EnableScrollBar(owner.hwnd,owner._bar,flag:0);
+		};
+		setRange = function(min,max,page,redraw){
+			return owner.setInfo( {fMask=0x1/*_SIF_RANGE*/|0x2/*_SIF_PAGE*/;min=min;max=max;page=page},redraw);  
+		};
+		getRange = function(){
+			var info = owner.getInfo({fMask=0x1/*_SIF_RANGE*/|0x2/*_SIF_PAGE*/|0x4/*_SIF_POS*/});
+			if( info ) return info.min,info.max,info.page,info.pos;
+		}; 
+		getInfo = function(info){
+			var info = ..table.assign( INFO(),info );
+			if( info.fMask === null ) info.fMask = 0x17/*_SIF_ALL*/;
+			if( ::User32.GetScrollInfo(owner.hwnd,owner._bar,info ) ) return info
+		}
+		setInfo = function(info,redraw){
+			if( redraw === null ) redraw = true;
+			var info = ..table.assign( INFO(),info );
+			if(info.pos !== null)info.fMask |= 0x04/*_SIF_POS*/;
+			if(info.page !== null)info.fMask |= 0x02/*_SIF_PAGE*/;
+			if(info.max !== null)info.fMask |= 0x01/*_SIF_RANGE*/; 
+			if(info.disableNoScroll !== null) info.fMask |= 0x8/*_SIF_DISABLENOSCROLL*/; 
+			if( info.fMask === null ) info.fMask = 0x17/*_SIF_ALL*/;
+			return ::User32.SetScrollInfo(owner.hwnd,owner._bar,info,!!redraw ) ) 
+		}
+	) 
+}
+ 
+/***intellisense() 
+!scrollbar.cls = 设计时类名
+!scrollbar.className = 运行时类名
+!scrollbar.adjustWindow() = 仅绑定窗口的滚动条此函数有效,\窗口调整大小时必须使用此函数重新滚动窗口到滚动条当前位置
+!scrollbar.scrollWindowTo(.(pos,rect,clipRect) = 仅绑定窗口的滚动条此函数有效,\n@pos 参数指定滚动条绝对位置,\n可选用 @rect 传入 ::RECT 结构体指定滚动区块,,\n可选用 @clipRect 传入 ::RECT 结构体指定剪切区块
+!scrollbar.scrollMessage = 滚动条消息ID\n水平滚动条为 _WM_HSCROLL,\n垂直滚动条为 _WM_HSCROLL
+!scrollbar.pos = 获取或设置滚动按钮的当前位置\n如果赋值为负数、可禁止窗口重绘
+!scrollbar.line = 行高
+!scrollbar.updateWheelLines() = 返回系统设置的鼠标滚轮滚动行数,\n并更新 wheelLines 的值
+!scrollbar.wheelLines = 鼠标滚轮滚动行数,默认值为 3\n调用 updateWheelLines 函数可获取系统设置并更新该值
+!scrollbar.setRange(1,100) = 设置滚动条范围
+!scrollbar.getRange() = 返回 4 个数值\n分别为 min,max,page,current,\nmin 为滚动条范围最小值,\nmax 为滚动条范围最大值,\npage为分页大小,\ncurrent 为滚动条当前位置 
+!scrollbar.enable( _ESB___ ) = 激活一个或两个滚动条箭头或是使其失效
+!scrollbar.hwnd = 控件句柄
+!scrollbar.id = 控件ID 
+!scrollbar._parentForm = 创建该控件的父窗口（win.form对象）,\n设计时窗体容器是所有拖放在窗体上的控件的 _parentForm,\n\n即使窗口移除子窗口样式、更改父子关系，或以 orphanWindow显示,\n控件的 _parentForm 始终都不会改变\n!winform.
+!scrollbar.getParent() = 返回父窗口\n!scrollbar.
+!scrollbar.setParent(__/*控件对象*/) = 改变父窗口 
+!scrollbar.hide = 控件是否隐藏
+!scrollbar.disabled = 是否禁用
+!scrollbar.left = 左侧坐标
+!scrollbar.right = 右侧坐标
+!scrollbar.top = 顶部坐标
+!scrollbar.bottom = 底部坐标
+!scrollbar.width = 宽度
+!scrollbar.height = 高度
+!scrollbar.redraw() = 刷新
+!scrollbar.show(true__) = 显示控件
+!scrollbar.getRect() = 控件区块位置(::RECT结构体)
+!scrollbar.getRect(true) = 控件屏幕区块位置(::RECT结构体)  
+!scrollbar.setRect(rc) = 设置控件区块位置(::RECT结构体)  
+!scrollbar.setRect(rc,true) = 设置控件屏幕区块位置(::RECT结构体)
+!scrollbar.getClientRect() =  控件客户区块位置(::RECT结构体)\n!rect.
+!scrollbar.getFont() = 控件字体(::LOGFONT结构体)\n!logfont.
+!scrollbar.setFont(__/*指定字体*/) = 指定LOGFONT字体对象,或逻辑字体句柄 
+!scrollbar.setFont(混入字体属性) = @.setFont(point=10;name="宋体");
+!scrollbar.theme = 外观主题,例如\nwinform.button.theme = "Explorer"\nwinform.button.theme = false
+!scrollbar.modifyStyle(.(remove,add,swpFlags) = 修改窗口样式,所有参数都是可选参数,\n@remove 用数值指定要移除的样式,可使用 _WS_ 前缀的常量\n@add 用数值指定要添加的样式,可使用 _WS_ 前缀的常量\n@swpFlags 可选用数值指定调整窗口选项,可使用 _SWP_ 前缀的常量\n如果指定了 @swpFlag ,则使用该参数调用::SetWindowPos\n细节请参考 win.modifyStyle 函数源码 
+!scrollbar.modifyStyleEx(.(remove,add,swpFlags) = 修改窗口扩展样式,所有参数都是可选参数,\n@remove 用数值指定要移除的样式,可使用 _WS_EX_ 前缀的常量\n@add 用数值指定要添加的样式,可使用 _WS_EX_ 前缀的常量\n@swpFlags 可选用数值指定调整窗口选项,可使用 _SWP_ 前缀的常量\n如果指定了 @swpFlag ,则使用该参数调用::SetWindowPos\n细节请参考 win.modifyStyle 函数源码
+!scrollbar.capture = 是否捕获全局鼠标消息
+!scrollbar.close() = 关闭控件窗口
+!scrollbar.invalidate(__/*可选使用::RECT()对象指定客户区*/) = 使窗口绘图区无效
+!scrollbar.invalidate(__/*可选使用::RECT()对象指定客户区*/,0) = 使窗口绘图区无效\n不刷新背景
+!scrollbar.update() = 重绘invalidate函数指定的区块
+!scrollbar.setFocus() = 设置焦点 
+!scrollbar.setPos(.(x坐标,y坐标,宽,高,插入位置,参数) = 调整窗口位置或排序,所有参数可选\n同时指定x,y坐标则移动位置\n同时指定宽高则改变大小\n指定插入位置(句柄或_HWND前缀常量)则调整Z序
+!scrollbar.getPos() = 返回相对坐标,宽,高\nx,y,cx,cy=win.getPos(hwnd)
+!scrollbar.getInfo() = 返回滚动条信息
+!scrollbar.setInfo() = @.setInfo(\n    fMask = fMask;\n    min = min;\n    max = max;\n    page = page;\n    pos = pos;\n    trackPos = trackPos;\n)
+!scrollbar.sendMessage(.(msg,wParam,lParam) = 发送窗口消息\n此函数用法请参考 ::User32.SendMessage
+!scrollbar.postMessage(.(msg,wParam,lParam) = 投递窗口消息到消息队列中\n此函数用法请参考 ::User32.PostMessage
+?win.ui.ctrl.scrollbar  =!scrollbar.
+win.ui.ctrl.scrollbar() = 滚动条控件\n!scrollbar.
+end intellisense***/
+
+/**intellisense()
+_SIF_DISABLENOSCROLL=@0x8/*_SIF_DISABLENOSCROLL*/
+_SIF_PAGE=@0x2/*_SIF_PAGE*/ 
+_SIF_POS=@0x4/*_SIF_POS*/
+_SIF_RANGE=@0x1/*_SIF_RANGE*/
+_SIF_TRACKPOS=@0x10/*_SIF_TRACKPOS*/
+_SIF_ALL=@0x17/*_SIF_ALL*/
+end intellisense**/

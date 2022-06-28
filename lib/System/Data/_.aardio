@@ -1,0 +1,7 @@
+﻿import dotNet;
+dotNet.import("System.Data")
+
+/**intellisense()
+System.Data = .Net System.Data 名字空间\n!dotNetNameSpace.
+end intellisense**/
+

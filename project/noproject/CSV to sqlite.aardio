@@ -1,0 +1,56 @@
+import fsys
+import sqlite;
+import string;
+
+var count =0;
+var temp;
+var crea='
+CREATE TABLE List(
+GAMEID INTEGER PRIMARY KEY ASC,
+GAMETYPE TEXT,
+GAMENAME TEXT,
+GAMEPATH TEXT,
+GAMESTART TEXT,
+DOSBOXVER TEXT,
+GAMEP1 TEXT,
+GAMEP2 TEXT,
+DOSBOXP1 TEXT,
+DOSBOXV1 TEXT,
+DOSBOXP2 TEXT,
+DOSBOXV2 TEXT,
+DOSBOXP3 TEXT,
+DOSBOXV3 TEXT,
+DOSBOXP4 TEXT,
+DOSBOXV4 TEXT
+)'
+var sqlConnection = sqlite("gamelist.s3db")  
+if( not sqlConnection.existsTable("List") ){
+        //Create table
+        sqlConnection.exec(crea);
+}
+var f=io.open("list.csv","r");
+f.read("%s");
+var current =f.seek()
+var size = f.seek("end")
+f.seek("set", current)
+
+sqlConnection.exec("begin");
+do{
+        var b=f.read("%s")
+        if b==null {break}  
+        count=count+1
+        var tb =string.split(b,",")
+        temp=""
+        for (i=2;16;1) {
+                temp=temp+","+'"'+tb[i]+'"'
+        }  
+        temp="insert into List values (" +tb[1]+temp +")"
+        sqlConnection.exec( temp);
+}while( f.seek()<size)
+sqlConnection.exec("commit;")
+
+io.open();
+io.print("CSV to SQLite")
+io.print ("Total + tostring(count) + "items send to db");
+execute("pause")
+io.close();

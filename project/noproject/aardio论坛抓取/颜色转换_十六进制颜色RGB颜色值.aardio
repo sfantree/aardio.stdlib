@@ -1,0 +1,13 @@
+
+import win
+import gdi
+import console;
+
+var x,y = 100,100
+var rgb = string.format("%X", gdi.getPixel(x,y,win.getDesktop()))
+console.log("RGB: 0x" + rgb)
+with string{
+    ..console.log(format("B:0x%s, G:0x%s, R:0x%s", sub(rgb,1,2), sub(rgb,3,4), sub(rgb,5,6)))
+}
+
+console.pause(true);

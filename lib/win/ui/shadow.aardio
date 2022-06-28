@@ -1,0 +1,239 @@
+//shadow 阴影边框
+import gdip.path;
+import gdip.pathGradientBrush; 
+import gdip.graphics; 
+import win.cur;
+
+namespace win.ui;
+
+class shadow{ 
+	ctor( winform,shadowAlpha,shadowSize,roundRadius,innerRadius,shadowColor,interpolation,focusRatio) { 
+		if(winform._shadowWindow) return winform._shadowWindow;
+		winform._shadowWindow = this;
+		
+		if( shadowSize === null ) shadowSize = 9;
+		if( roundRadius === null ) roundRadius = shadowSize;
+		if( interpolation === null ) interpolation = 0.14;
+		if( shadowColor === null) shadowColor = 0xFF000000;
+		if( shadowAlpha === null ) shadowAlpha = 70; 
+		if( focusRatio === null ) focusRatio = 15;
+		
+		var dpiScaleX,dpiScaleY = ..gdi.getDpiScale();
+		
+		shadowSize = shadowSize * dpiScaleX;
+		roundRadius = roundRadius * dpiScaleX;
+	 	if(innerRadius) innerRadius = innerRadius * dpiScaleX; 
+		
+		var x,y,cx,cy = winform.getPos(); 
+		var frmShadow = ..win._form(
+			cls="AARDIO_SHADOWEDGE";left=x-shadowSize;top=y-shadowSize;right=x+cx+shadowSize*2;bottom=y+cy+shadowSize*2;
+			border = "none";mode="popup";exmode="toolwindow";max=false;min=false;sysmenu=false;title=false;parent=winform.hwnd;
+			exstyle = 0x80000/*_WS_EX_LAYERED*/;  
+		)
+		
+		this._form = frmShadow;
+		this._parent = winform;
+		this.show = function(flag){
+			frmShadow.show(flag?4/*_SW_SHOWNOACTIVATE*/: 0/*_SW_HIDE*/);
+		}
+		
+		var shadowColor1 = shadowColor&0x01FFFFFF;
+		var shadowColor2 = shadowColor&0x05FFFFFF;
+		this.onDrawShadow = function(hdc,hMemDc,hMemBitmap,width,height){
+		
+			var graphics = ..gdip.graphics(hMemDc);
+			graphics.smoothingMode = 2/*_SmoothingModeHighQuality*/;
+			 
+			var rcShadow = ::RECT(0,0,width,height) 
+    		var path = ..gdip.path();
+    		if( roundRadius )
+    			path.addRoundRect(rcShadow,roundRadius);
+    		else 
+    			path.addRectangle( rcShadow.left,rcShadow.top,rcShadow.width(),rcShadow.height() );
+    		
+    		var shadowBrush = ..gdip.pathGradientBrush(path);  
+			shadowBrush.setInterpolationColors( {shadowColor1;shadowColor2,shadowColor;shadowColor}
+				,{0;interpolation/2,interpolation;1} );
+		 		
+		 	shadowBrush.setFocusScales((width-focusRatio*shadowSize)/width, (height-focusRatio*shadowSize)/height); 
+   
+   			rcShadow.inflate( -shadowSize ,-shadowSize  ); 
+   			rcShadow.offset(0,-1);
+   			if( innerRadius ){
+   				var pathClip = ..gdip.path();
+   				pathClip.addRoundRect(rcShadow,innerRadius); 
+   				graphics.setClipPath(pathClip, 4/*_GdipCombineModeExclude*/);
+   				pathClip.delete();
+   			}
+   			else{
+   				graphics.setClipRect( rcShadow.left, rcShadow.top,rcShadow.width(),rcShadow.height(), 4/*_GdipCombineModeExclude*/)
+   			}
+			graphics.fillPath(shadowBrush,path);
+			 
+			shadowBrush.delete(); 
+			path.delete();
+			graphics.delete(); 
+		}
+		 
+		var transprent = 1;
+		this.transprent = function(v){
+			if(!..win.isWindow(frmShadow.hwnd)) return;
+			if(v == transprent ) return;
+			transprent = v;
+			this._onDrawShadow();
+		}
+		
+		this._onDrawShadow = function(){
+			..gdi.layeredBuffer( frmShadow.hwnd, 
+				function( hdc,hMemDc,hMemBitmap,width,height ){
+					if( height < 45 ) return;
+					this.onDrawShadow(hdc,hMemDc,hMemBitmap,width,height)
+					..gdi.updateLayeredWindow( frmShadow.hwnd,hMemDc,::SIZE(width,height) ,..gdi.blendFunction(shadowAlpha/*透明度*/*transprent)  );   
+				}
+			)
+		}
+		frmShadow._adjust = function( cx,cy ) {
+			if(! ::User32.IsWindow(frmShadow.hwnd) ) return;
+			
+			var rc =  winform.getRect(); 
+			rc.inflate( shadowSize, shadowSize ); 
+			rc.offset(0,1);
+	 		..win.setRect(frmShadow.hwnd,rc);
+	 		this._onDrawShadow();
+		};
+		
+ 		frmShadow.disabled = !winform.hasResizeBorder && !..win.getStyle(winform.hwnd,0x10000/*_WS_MAXIMIZEBOX*/);
+		this.setResizeBorder = function(v){
+			frmShadow.disabled = !v;
+		};
+		
+ 		frmShadow.wndproc = {
+    		[0x84/*_WM_NCHITTEST*/ ] = function(hwnd,message,wParam,lParam){
+    			if( ..win.isZoomed(winform.hwnd) ) return;
+    			var x,y = ..win.getMessagePos(lParam); 
+				var htborder = ..win.hitBorder(..win.getRect(frmShadow.hwnd),x,y,12 * dpiScaleX); 
+				if(htborder) return htborder; 
+    		}
+    		[0x20/*_WM_SETCURSOR*/] = function(hwnd,message,wParam,lParam){
+    			var ht,message = ..win.getMessagePos(lParam); 
+				var c = __cursor[ht];
+				if( c ) { 
+					..win.cur.setCur(c);
+					return true;
+				} 
+    		}
+    	};
+    	
+    	frmShadow.onMouseActivate = function(hwndTop,hitTest,message){
+    		select(hitTest) { 
+				case 0xB/*_HTRIGHT*/  winform.hitRight(); 
+				case 0x11/*_HTBOTTOMRIGHT*/  winform.hitBottomright(); 
+				case 0xF/*_HTBOTTOM*/ winform.hitBottom(); 
+				case 0x10/*_HTBOTTOMLEFT*/ winform.hitBottomleft(); 
+				case 0xA/*_HTLEFT*/ winform.hitLeft(); 
+				case 0xC/*_HTTOP*/ winform.hitTop(); 
+				case 0xD/*_HTTOPLEFT*/ winform.hitTopleft(); 
+				case 0xE/*_HTTOPRIGHT*/ winform.hitTopright();
+			} 
+    			
+ 			return 0x4/*_MA_NOACTIVATEANDEAT*/
+ 		};
+ 		
+ 		winform._onPosChangedWithShadow = function(flags,hwndInsertAfter,x,y,cx,cy){
+			if(!(flags & 2/*_SWP_NOMOVE*/)){
+				frmShadow.setPos( x - shadowSize,y - shadowSize + 1 );
+			}
+
+			if(flags & 0x40/*_SWP_SHOWWINDOW*/){
+				frmShadow._adjust(); 
+				frmShadow.show(4/*_SW_SHOWNOACTIVATE*/);  
+			}
+			elseif(flags & 0x80/*_SWP_HIDEWINDOW*/){
+				frmShadow.show(false);  
+			}
+ 		}
+ 		
+ 		winform._adjustWithShadow = function( cx,cy,wParam ) {
+			if( wParam == 0x1/*_SIZE_MINIMIZED*/ ) return;
+			if( wParam != 0x2/*_SIZE_MAXIMIZED*/  ){
+				frmShadow._adjust();
+				if( ..win.isVisible(winform.hwnd) ){
+					frmShadow.show(0x4/*_SW_SHOWNOACTIVATE*/);
+				}
+			}
+			else {
+				frmShadow._adjust();//防止最大化可能出现的残影
+				frmShadow.show(false);
+			}  
+		};
+		
+		if( ..win.isVisible( winform.hwnd ) ){
+			frmShadow._adjust();
+			frmShadow.show(0x4/*_SW_SHOWNOACTIVATE*/);
+		}
+	};
+}
+
+namespace shadow{
+	__cursor = {
+		[0xC/*_HTTOP*/]  = ..win.cur.load(0x7F85/*_IDC_SIZENS*/);
+		[0xF/*_HTBOTTOM*/] = ..win.cur.load(0x7F85/*_IDC_SIZENS*/);
+		[0xA/*_HTLEFT*/]  = ..win.cur.load(0x7F84/*_IDC_SIZEWE*/);
+		[0xB/*_HTRIGHT*/] = ..win.cur.load(0x7F84/*_IDC_SIZEWE*/);
+		[0xD/*_HTTOPLEFT*/] = ..win.cur.load(0x7F82/*_IDC_SIZENWSE*/);
+		[0x11/*_HTBOTTOMRIGHT*/] = ..win.cur.load(0x7F82/*_IDC_SIZENWSE*/);
+		[0xE/*_HTTOPRIGHT*/] = ..win.cur.load(0x7F83/*_IDC_SIZENESW*/);
+		[0x10/*_HTBOTTOMLEFT*/] = ..win.cur.load(0x7F83/*_IDC_SIZENESW*/); 
+	}
+}
+
+/**intellisense()
+win.ui.shadow = 阴影边框
+win.ui.shadow( = 创建阴影边框\n创建阴影后,窗体对象的_shadowWindow属性被设置为此对象
+win.ui.shadow(.(窗体对象,透明度,阴影大小,外圆角,内圆角,阻影颜色,暗部插值位置,聚焦系数) = 除参数@1以外,其他所有参数可选\n透明度默认为70,255为不透明\n阴影大小默认为9像素\n外圆角默认为阴影大小\n内圆角默认为空\n阴影颜色默认为0xFF000000,FF为透明度\n暗部插值位置默认为0.15,这个值是阴影内侧暗部插值点距外边界的百分比\n聚焦系数默认为15,以该系数乘以阴影大小换算为距离外边界的百分比,\n加大聚焦系数会淡化阴影
+win.ui.shadow() = !win_ui_shadow.
+!win_ui_shadow._form = !winform.
+!win_ui_shadow.show(true) = 暂时显示或隐藏阴影\n阴影会跟随所有者窗体自动显示隐藏,此函数仅用于特殊情况
+!win_ui_shadow.onDrawShadow(hdc,hMemDc,hMemBitmap,width,height) = @.onDrawShadow = function(hdc,hMemDc,hMemBitmap,width,height){\n	var graphics = ..gdip.graphics(hMemDc);\n	graphics.smoothingMode = 4/*_GdipSmoothingModeAntiAlias*/;\n	__\n	graphics.delete();\n} 
+!win_ui_shadow.setResizeBorder(true) = 允许通过拖动阴影边框改变父窗口大小\n如果窗口当前已经应用win.ui.resizeBorder添加了拖动边框,\n则默认启用此属性,不再需要调用此函数
+!win_ui_shadow.transprent(__) = 设置透明度,参数为0到1之间的小数\n通过wiform.transprent修改窗口透明度时,\n会自动调用wiform._shadowWindow.transprent函数同步透明度
+end intellisense**/
+
+/**details(关于无边框窗口)
+无边框窗口：指的是在窗体设计器中将窗体的边框(border) 属性设为 "none"，
+这种窗口不再有边框、标题栏。
+
+注意隐藏标题栏、并将边框设为 "resizable"等不是无边框窗口，
+这种效果在不同操作系统上显示效果都很差，要么是多出一圈，要么顶上多出一块。
+不要这么做。
+
+无边框窗口只要使用下面的代码就可以在窗口周围添加阴影，
+并同时使用阴影实现完美的可拖动改变大小效果（即 resizable 边框 ）。
+
+import win.ui.shadow;
+win.ui.shadow(winform);
+
+尤其是嵌入浏览器组件，直接使用 win.ui.resizeBorder 添加可拖动边框可能不起作用。
+win.ui.shadow 可以通过阴影实现 win.ui.resizeBorder 的功能。
+
+如果只想添加阴影，不想支持可拖动边框，可以下面这样写：
+
+import win.ui.shadow;
+win.ui.shadow(winform).setResizeBorder(false)
+
+在无边框窗口上，可以自行实现标题栏按钮，调用以下函数模拟标题栏按钮消息
+
+winform.hitMax() //模拟点击最大化按钮
+winform.hitMin() //模拟点击最小化按钮
+winform.hitClose() //模拟点击关闭按钮
+
+winform.onMouseDown  = function(wParam,lParam){
+	winform.hitCaption()	
+}
+
+标准库提供了以下的类可以直接在无边框窗口上创建虚拟的标题栏以及可拖动边框:
+
+win.ui.simpleWindow 实现最普通的标题栏。
+win.ui.simpleWindow2 实现的标题栏没有最大化按钮。
+win.ui.simpleWindow3 标题栏使用分层窗口实现，并使用 orphanWindow 悬浮在父窗口上面。
+end details**/

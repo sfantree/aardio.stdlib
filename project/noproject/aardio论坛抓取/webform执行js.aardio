@@ -1,0 +1,26 @@
+import web.form;
+/*DSG{{*/
+var winform = win.form(text="Web Form";right=648;bottom=361 )
+/*}}*/
+
+//创建web窗体
+var wb = web.form( winform );
+
+//写入网页HTML   
+wb.html = /*
+    <script>
+        var pageVar = 123;
+    </script>
+*/
+
+//修改js变量
+wb.script.pageVar = 456;
+
+//获取JS变量，注意变量名加上get前缀转换为函数取值
+var pageVar = wb.script.getpageVar();
+
+//调用js函数
+wb.script.alert( pageVar );
+
+//启动消息循环
+win.loopMessage();

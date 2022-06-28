@@ -1,0 +1,80 @@
+//嵌入控件
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="嵌入 .Net 控件";right=759;bottom=510)
+winform.add(
+button={cls="button";text="读取数据";left=495;top=439;right=739;bottom=504;color=14120960;db=1;dr=1;font=LOGFONT(h=-14);note="获取数据源中的数据";z=3};
+custom={cls="custom";left=25;top=25;right=736;bottom=274;db=1;dl=1;dr=1;dt=1;z=1};
+edit={cls="edit";left=26;top=290;right=737;bottom=435;autohscroll=false;db=1;dl=1;dr=1;edge=1;multiline=1;vscroll=1;z=2}
+)
+/*}}*/
+
+import System.Type;
+import System.Data;
+import System.Windows.Forms;
+var Forms = System.Windows.Forms;
+
+//.Net 控件必须用 Forms.CreateEmbed 创建一个窗口包住再嵌入 aardio 窗口
+var dataGridView = Forms.CreateEmbed("DataGridView",winform.custom); 
+dataGridView.ColumnHeadersHeightSizeMode = 2; //避免在高分屏下错乱 
+dataGridView.AutoSizeRowsMode  = 11/*DisplayedCells*/ //修正部分高分屏下不显示复选框
+ 
+//添加数据列
+var dataTable = System.Data.DataTable("DT"); 
+dataTable.Columns.Add("名称");//添加列
+dataTable.Columns.Add("计数",System.Type.GetType("System.Double")); //添加指定数据类型的列
+dataTable.Columns.Add("选择",System.Type.GetType("System.Boolean")); //自动显示复选框 
+
+//绑定数据源到视图
+var dataView = System.Data.DataView(dataTable);
+dataGridView.DataSource = dataView;
+dataGridView.EditMode=2; 
+ 
+//先移除自动生成的列
+dataGridView.Columns.Remove("名称"); 
+
+//下面添加下拉框以替换上面移除的列
+var cmbColumn = Forms.DataGridViewComboBoxColumn();
+cmbColumn.Width = 120; 
+cmbColumn.Name = "Name";
+cmbColumn.DataPropertyName  = "名称";//对应上面 dataTable 里的字段名
+cmbColumn.HeaderText = "名称"; //显示在列标题里的文本
+ 
+//如果名称与显示值一样，那直接给 cmbColumn.DataSource 赋值一个数组就可以
+//下面绑定下拉候选框的数据源，上面的 DataPropertyName 才是真正要读写的数据值。
+cmbColumn.DisplayMember = "Name";//下拉框显示文本的属性名
+cmbColumn.ValueMember = "Value"; //下拉框选项值的属性名
+cmbColumn.DataSource = dotNet.createNameValueList(
+	{ "王五","张三"},
+	{ "WangWu","ZhangSan"}
+);
+
+//添加这个新的下拉框到数据视图
+dataGridView.Columns.Add(cmbColumn); 
+
+//移动到第一列
+dataGridView.Columns.Item["Name"].DisplayIndex = 0;
+
+//添加测试数据
+var row = dataTable.NewRow(); 
+row.ItemArray = {"WangWu",123, true}
+dataTable.Rows.Add(row);   
+
+//添加事件(event)
+dataTable.ColumnChanged = function(sender,eventArgs){
+	var columnName = eventArgs.Column.ColumnName;
+	var value  = eventArgs.Row.getItem(columnName);  
+	winform.edit.print("已改变列：",columnName," 已变更值：",value);
+}
+
+//读取数据
+winform.button.oncommand = function(id,event){ 
+ 
+	for(i=1;dataTable.Rows.Count;1){ 
+	 	var arr = dataTable.Rows[i].ItemArray; 
+ 		winform.edit.print( arr[1] )	; 
+	} 
+}
+
+winform.show();
+win.loopMessage();

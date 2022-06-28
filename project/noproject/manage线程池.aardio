@@ -1,0 +1,41 @@
+import console;
+import thread.manage;
+
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add(
+button={cls="button";text="Button";left=80;top=104;right=176;bottom=136;z=1};
+button2={cls="button";text="Button";left=248;top=104;right=344;bottom=136;z=2}
+)
+/*}}*/
+
+g_threadpool = null;
+g_run = false;
+
+
+function task(){
+	sleep(1000);
+}
+
+winform.button.oncommand = function(id,event){
+	g_threadpool = thread.manage(10);
+	
+	for(i=1;5;1){
+		g_threadpool.createSuspended(task);
+	}
+	
+	g_threadpool.resume();
+	g_run = true;
+}
+
+winform.button2.oncommand = function(id,event){
+	if(g_run == true) {
+	    g_threadpool.quitMessage();
+	    g_threadpool = null;
+	    g_run = false;
+	}
+}
+
+winform.show();
+win.loopMessage();

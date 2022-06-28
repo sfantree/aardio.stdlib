@@ -1,0 +1,49 @@
+﻿//res 资源操作
+namespace xcgui.res;
+
+load = function(path){
+	if( ..io.exist(path) ) {
+		path = ..io.exist(path);
+		return ::Xcgui.XC_LoadResource(path,..io.splitpath(path).dir);
+	}
+	else {
+		return ::Xcgui.XC_LoadResourceFromString(..string.loadBuffer(path),..io.fullpath(path),..io.splitpath(..io.fullpath(path)).dir); 
+	}
+}
+
+getId = function(name){
+	return ::Xcgui.XRes_GetIDValue(name);
+}
+
+getColor = function(name){
+	return ::Xcgui.XRes_GetColor(name);
+}
+
+getImage = function(name){
+	var h = topointer( ::Xcgui.XRes_GetImage(name) );
+	if(h) return ..xcgui.image(h);
+}
+
+getFont = function(name){
+	var h = topointer( ::Xcgui.XRes_GetFont(name) );
+	if(h) return ..xcgui.font(h);
+}
+
+getBackground = function(name){
+	var h = topointer( ::Xcgui.XRes_GetBkM(name) );
+	if(h) return ..xcgui.background(h);
+}
+
+/**intellisense(xcgui)
+res = 资源操作
+res.load(__) = 加载资源文件
+res.getId("__") = 获取资源ID,数值
+res.getColor("__") = 获取颜色
+res.getImage("__") = 获取图像
+res.getFont("__") = 获取字体
+res.getBackground("__") = 获取背景管理器
+res.getImage() = 获取图像
+res.getFont() = !stdxcfont.
+res.getBackground() = !stdxcbkmanager.
+end intellisense**/
+

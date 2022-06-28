@@ -1,0 +1,30 @@
+//加密数据库
+import console;
+import sqlite.aes128
+
+//打开加密数据库,对于加密数据库,输入错误的密钥, 所面的所有操作都会报错
+var sqlConnection = sqlite.aes128("/dbAes128.db","输入密钥") 
+
+//创建表 
+if( not sqlConnection.existsTable("film") ){  
+	sqlConnection.exec( "CREATE TABLE film(title, length, year, starring);")  
+}  
+  
+//创建预处理命令
+var cmd = sqlConnection.prepare("INSERT INTO film values (@title,@length,@year, 'Jodie Foster');" )
+
+//提交
+cmd.step( {
+	"title":"标题";
+	"length":4;
+	"year":time.now();
+} );
+
+cmd.finalize(); //释放
+
+//迭代方式查询数据 
+for title, length, year, starring in sqlConnection.each("SELECT * FROM film") {
+	console.log( title, length, year, starring  ) 
+}
+
+console.pause();

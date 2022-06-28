@@ -1,0 +1,19 @@
+import process;
+import key;
+
+process.executeWaitInput("notepad.exe");
+key.send( "这样就可以实现打字效果了。",200);
+
+key.sendString("直接发送字符串。");
+
+/*
+其他发送字符串函数：
+
+winex.say();
+winex.sayIme();
+winex.sayAnsi();
+winex.sayImeAnsi();
+winex.sendString();
+winex.setText();
+winex.key.send();
+*/

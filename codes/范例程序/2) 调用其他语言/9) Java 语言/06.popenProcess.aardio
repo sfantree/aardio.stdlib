@@ -1,0 +1,48 @@
+﻿//运行jar程序
+import java;
+import console; 
+import java.yuiCompressor;//下载一个jar用于测试
+ 
+/*
+实际上调用Java虚拟机,
+并且调用 main函数也可以有运行jar程序,例如：
+
+import java;
+java.addClassPath("~\lib\java\yuiCompressor\.res\yuicompressor.jar")
+
+var jvm = java(); 
+YUICompressor = jvm.import( "com.yahoo.platform.yui.compressor.YUICompressor");  
+var ret = YUICompressor.main({"d:\test.js",	"-o","d:\testmin.js"})
+
+但是这样运行有一个问题, jar中的 main 函数通常会假设自己是一个独立进程,
+这样例如上面的 YUICompressor ,他在出错时就会调用 System.exit() 关闭当前进程.
+对于这类程序就可以考虑用下面的方法创建子进程,关闭子进程不会影响到父进程
+*/
+var prcs = java.popenProcess( 
+	"-verbose:class",//记录类载入信息
+	"-jar",//运行jar
+	io.fullpath( "~\lib\java\yuiCompressor\.res\yuicompressor.jar" ),
+	"d:\test.js"
+); 
+ 
+var tOutBuffer = {}; 
+for( all,out,err in prcs.each() ){
+    console.log( out,err );
+    table.push( tOutBuffer,all);
+}
+
+//在输出结果中搜索类加载信息
+var outBuffer = string.join( tOutBuffer );
+var logClass = {}
+for classPath,filePath in string.gmatch(outBuffer 
+	,"\[Loaded\s+(.+?)\s+from\s+([^\]]+)" ) { 
+	logClass[classPath] = filePath;
+}
+
+//这个就是得到的结果了
+for(classPath,filePath in logClass){
+	console.log(classPath) 
+	console.log( " =>",fsys.shortpath(filePath),'\n' ) 
+}
+
+console.pause();

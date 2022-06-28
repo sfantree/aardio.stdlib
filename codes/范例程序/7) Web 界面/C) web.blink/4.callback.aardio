@@ -1,0 +1,90 @@
+//浏览器事件回调
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="浏览器事件回调";right=848;bottom=585)
+winform.add(
+custom={cls="custom";text="custom";left=26;top=16;right=823;bottom=436;db=1;dl=1;dr=1;dt=1;z=1};
+edit={cls="edit";left=26;top=467;right=825;bottom=567;db=1;dl=1;dr=1;edge=1;multiline=1;z=2}
+)
+/*}}*/
+
+import web.blink.form;
+var mb = web.blink.form(winform.custom)
+
+mb.onUrlChanged = function(url){ 
+	winform.edit.print("网址已变更",url);
+}
+
+mb.onTitleChanged = function(title){ 
+	winform.edit.print("标题已变更",title);	
+}
+
+mb.onDocumentReady = function(isMainFrame){
+	winform.edit.print("文档已下载完成并准备就绪",url);		
+}
+
+mb.onNavigation = function(url,navigationType){ 
+	if( navigationType == 0/*_WKE_NAVIGATION_TYPE_LINKCLICK*/ ){
+		winform.edit.print("点击了连接",url)
+	}
+	return true;//允许网址被打开
+}
+
+mb.onRequestBegin = function(hRequest,url){
+
+    
+    if (url== "http://tieba.baidu.com/") {
+    	mb.requestSetMimeType(hRequest, "text/html");
+    	mb.requestSetData(hRequest,'<html><body>欢迎！</body></html>')
+    	
+    	//返回值其实没啥用，调用了上面的代码会自动取消请求
+    	return true;
+    }
+    elseif (url== "http://xueshu.baidu.com/") {
+      
+        //暂停请求
+    	mb.requestHold(hRequest);
+    	
+    	//创建线程
+    	thread.invoke( 
+    		function(mb,hRequest){
+    			sleep(1000);
+    			
+    			mb.requestSetMimeType(hRequest, "text/html");
+    			mb.requestSetData(hRequest,'<html><body>多线程异步修改请求数据</body></html>');
+    			mb.requestContinue(hRequest)
+    		},mb,hRequest
+    	)
+    	
+    	return true;
+    }   
+    elseif (url== "http://map.baidu.com/") {
+    	mb.hookOnRequestEnd(hRequest);
+    }   
+}
+
+mb.onRequestEnd = function(hRequest,url,responseDataPtr,size){
+    /*
+    可以通过返回值直接修改数据,
+    也可以直接修改responseDataPtr指向的内存值（不用返回值）
+    */
+    return '<body>内容已被onRequestEnd事件修改</body>'
+} 
+
+mb.onAlertBox = function(str){
+    	 
+    return true;   
+}
+
+import win.inputBox
+mb.onPromptBox = function(title, default){
+    var box = win.inputBox(winform);
+    box.text = title;
+    box.input.text = default;
+    return box.doModal();
+};
+
+mb.go("http://www.baidu.com") 
+winform.show();
+
+win.loopMessage();

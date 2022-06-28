@@ -1,0 +1,48 @@
+import win.ui;
+import carl.ctrl.treeviewex;
+import console
+/*DSG{{*/
+var winform = win.form(text="ERP框架treeview扩展库演示";right=349;bottom=249;parent=...)
+winform.add(
+static={cls="static";text="请点击以上节点演示";left=41;top=208;right=320;bottom=239;transparent=1;z=2};
+treeview={cls="treeview";left=31;top=16;right=335;bottom=189;asel=false;bgcolor=15793151;edge=1;exstyle=131072;style=256;z=1}
+)
+/*}}*/
+ 
+//库源码
+//https://github.com/carlaau/aardio-erp/blob/master/lib/carl/ctrl/treeviewex.aardio
+ 
+console.open()
+var hitem = winform.treeview.insertItem( text="程序目录" );
+var hSubItem = winform.treeview.insertItem( { text="子目录" },hitem/*父节点*/);
+  
+hitem = winform.treeview.insertItem( { 
+        text = "children数组指定子节点"; 
+        children = { 
+            { text = "子节点"  };
+            { text = "子节点2" };
+        }
+} ) 
+ 
+var tvEx = win.ui.ctrl.treeviewex(winform.treeview)
+tvEx.onnotify = function(id,code,ptr) {
+    /*响应通知*/   
+    return tvEx.exOnnotify(id,code,ptr); 
+};
+ 
+tvEx.exCheckBoxesChanged = function(hItem, checked){
+    var tab = tvEx.getItemData(hItem)
+    if(!tab) return ; 
+    console.log("选中事件",table.tostring(tab),checked)
+}
+tvEx.exMouseClick = function(hItem){
+    var tab = tvEx.getItemData(hItem)
+    if(!tab) return ; 
+    console.log("单击事件",table.tostring(tab))
+}
+//tvEx.exIsToggle = true;//开启点击节点时折叠的就展开，展开的就折叠，默认已开启
+//tvEx.exIsChecked = true;//开启1.打勾节点则全选所有子节点,不打勾则全不选子节点，2.子节点其中一个打勾,则父节点打勾,默认已开启
+winform.treeview.exExpandAll();//全部展開
+     
+winform.show() 
+win.loopMessage();

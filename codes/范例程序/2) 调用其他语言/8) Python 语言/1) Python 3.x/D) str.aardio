@@ -1,0 +1,16 @@
+//字符串
+import console; 
+import py3;
+
+//创建 Python 字符串
+var pyStr = py3.str("字符串"); //返回一个 py3.object 对象
+console.log( pyStr.toStr()  ); //转为 Python 字符串，返回一个 py3.object 对象
+
+console.log( pyStr.toString()  ); //转为 aardio 字符串,Pyton 字节数组转为 buffer
+console.log( tostring(pyStr)  ); //转为 aardio 字符串,实际就是调用 yStr.toString()
+console.log( pyStr ); //console.log 已经默认调用了 tostring()
+
+//parseValue() 也可以获取纯字符串,
+//区别是 pyStr.toString() 遇到字符串之外的 Python 类型时也会尝试自动转换为字符串
+console.log( pyStr.parseValue() )
+console.pause();

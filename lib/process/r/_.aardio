@@ -1,0 +1,223 @@
+﻿import win.reg;
+import web.json;
+import process.popen;
+import process.rpc.jsonClient;
+import process.job.limitKill;
+
+namespace process;
+
+class r{
+	ctor(...){ 
+		var path = install();
+		if(!path) return;
+		  
+		var args = ...;
+		if(type.isString(args) ){
+			if( !..string.startWith(args,"--")  ) args = ..table.assign(,options);
+			else args = {};
+			
+			..table.push(args,...);
+			for(k,v in args){
+				 if(type(v)=="table"){
+				 	args[k] = ..web.json.stringify(v);
+				 }
+			}
+		}
+		
+		//移除回车,避免 R 报错
+		args = ..string.crlf(..process.joinArguments(args),'\n'); 
+		
+		var prcs,err = ..process.popen(path,args,{ workDir = workDir }); 
+		if(prcs) prcs.codepage = codepage;
+		return prcs,err;
+	}; 
+}
+
+namespace r{
+	
+	if( _WIN10_LATER ) codepage =  65001;//4.2 以上在 Win10 以及之后的操作系统使用 UTF-8 编码
+	workDir = ..io.fullpath("/");
+	options = {"--vanilla"}
+	 
+	libPaths = {};
+	setLibPaths = function(paths){
+		for(k,v in paths) {
+			paths[k]  = ..io.fullpath( ..string.expand(v) );
+			..io.createDir(paths[k]);
+		}
+		
+		libPaths = ..table.assign({},paths);
+		..string.setenv("R_LIBS_USER",..string.join(paths,";"));
+	}
+	setLibPaths({..io.appData("aardio/std/r/site-library")});
+	
+	exec = function(code,...){
+		var prcs;
+		if(..io.exist(code) ){
+			prcs = ..process.r(code,...);
+		}
+		elseif( ..io.localpath(code) ) {
+			prcs = ..process.r("-e",..string.load(code),... );
+		}
+		else {
+			prcs = ..process.r("-e",code,...);
+		}
+		
+		var out = prcs.readAll();
+		if(#out ){
+			if( !..string.match(out,"\[\d+\]\s+") ) return ..web.json.tryParse(out) || out;
+			return out;
+		}
+	}
+	
+	start = function(code,...){
+		var code = ..string.loadcode("?>" + code);
+		
+		args = ..table.assign(,options);
+		..table.push(args,"-e",code);
+		
+		var codes = {...};
+		for i,v in ..table.eachIndex(codes){
+			if(..io.exist(v) || ..io.localpath(v)){
+				v = ..string.load(v);
+			}
+			
+			..table.push(args,"-e",v);
+		}
+		
+		var prcs,err = ..process.r(args);
+		if(prcs) prcs.assignToJobObject(..process.job.limitKill); 
+		return prcs,err;
+	}
+	
+	startRpc = function(code,...){
+		if(!require("rjson","https://mirrors.ustc.edu.cn/CRAN/") ) return;
+		
+		var code = ..string.loadcode("?>" + code);
+		
+		args = ..table.assign(,options);
+		..table.push(args,"-e",code);
+		
+		var codes = {...};
+		for i,v in ..table.eachIndex(codes){
+			if(..io.exist(v) || ..io.localpath(v)){
+				v = ..string.load(v);
+			}
+			
+			..table.push(args,"-e",v);
+		}
+		
+		..table.push(args,"-e",$"~\lib\process\r\.res\rjson-server.r");
+		var prcs =  ..process.r(args);
+		if(prcs){
+			return ..process.rpc.jsonClient(prcs);
+		}
+	}
+	
+	require = function(package,repos){
+		var path = existPath("library\" + package);
+		if(path) return path;
+		
+		for(k,v in libPaths){
+			 path = ..io.exist( ..io.joinpath(v,package));
+			 if(path) return path;
+		}
+		
+		exec(`install.packages('`+package+`', repos='`+(repos:`https://cran.rstudio.com/`)+`')`); 
+		
+		var path = existPath("library\" + package);
+		if(path) return path;
+		
+		for(k,v in libPaths){
+			 path = ..io.exist( ..io.joinpath(v,package));
+			 if(path) return path;
+		}
+	}
+	
+	self.loadcode = function(code,...){ 
+		var prcs = ..process.r("-e",..string.loadcode("?>" + code,...));
+		return prcs.readAll();
+	}
+	
+	self@ = {
+		_set = function(k,v){
+			if(k=="code"){
+				self.loadcode(v);
+			}
+			else {
+				self[[k]] = v;
+			} 
+		} 
+	}
+	
+	existPath = function(path){
+		var root = ..win.reg.queryWow64("HKEY_LOCAL_MACHINE\SOFTWARE\R-core\R\","InstallPath") || ..win.reg.query("HKEY_LOCAL_MACHINE\SOFTWARE\R-core\R\","InstallPath");
+		if(root) return  ..io.exist( ..io.joinpath(root,path) );	
+	}
+	 
+	getScriptPath = function(){
+		var root = ..win.reg.queryWow64("HKEY_LOCAL_MACHINE\SOFTWARE\R-core\R\","InstallPath")  || ..win.reg.query("HKEY_LOCAL_MACHINE\SOFTWARE\R-core\R\","InstallPath");
+		if(root){ 
+			if( !_WIN_64 || self.x86 ){
+				var path = ..io.joinpath(root,"bin\i386\Rscript.exe");
+				if(..io.exist(path) ) return path;  	
+			} 
+			
+			//v4.2 以后仅支持 64位
+			var path = ..io.joinpath(root,"bin\x64\Rscript.exe");
+			if(..io.exist(path) ) return path; 	 
+		}
+	}
+	
+	install = function(){
+		var path = getScriptPath();
+		if(path) return path; 
+		
+		import web.rest.htmlClient;
+		import inet.url;
+		
+		var http = web.rest.htmlClient();
+		var html = http.get("https://cloud.r-project.org/bin/windows/base/");
+		http.close();
+		
+		if(html){
+			var lnk = html.queryEles( tagName = "a";innerText="Download\s+R" )
+			if(#lnk && lnk[1].href){
+				import inet.installer;
+				
+				var href = inet.url.joinpath("https://cloud.r-project.org/bin/windows/base/",lnk[1].href);
+				var r = inet.installer("R",href,"/SP- /SILENT /SUPPRESSMSGBOXES /NORESTART  /CURRENTUSER" )
+				return getScriptPath();
+			}
+		}
+	} 
+}
+
+/**intellisense()
+process.r(__) = 运行 RScript.exe，\n成功返回空串或进程标准输出，失败返回错误输出信息，\n可传入多个参数，\n单个参数如果包含空格或引号等需要转义的字符，自动进行转义处理\n如果参数@1不是以 -- 开如，则支持 process.r.options 中指定的默认选项,\n可用 process.r.workDir 指定默认工作目录
+process.r() = !process_popen.
+process.r = R 语言扩展库，\n运行 R 代码时，如果没有 R 语言环境将自动下载安装
+process.r.getScriptPath() = 返回 Rscript.exe 路径
+process.r.x86 = 如果设为 true，则始终运行 32 位 Rscript.exe
+process.r.existPath(__) = 查找 R 安装目录，并检测否存在参数@1指定的子目录，\n如果存在返回完整路径。\n不指定参数返回 R 安装目录根目录
+process.r.setLibPaths(__) = 参数可用一个数组指定默认的 R 包搜索目录，可使用环境变量。\n不建议指定需要管理权限才能读写的 R 安装目录，\n默认包目录为 { "%localappdata%/aardio/std/r/site-library" }
+process.r.require("__/*包名*/","https://mirrors->ustc->edu->cn/CRAN/") = 如果指定的 R 包未安装，则安装该包，\n参数@1 为包名，参数@2 为镜像地址，\n成功返回包安装路径
+end intellisense**/
+
+/**intellisense(process.r)
+codepage = 指定 R 编译器进程默认代码页，设为空值使用系统默认代码页，\nWin10以及更新的操作系统默认值为 65001，\nR 4.2 开始在 Win10以及更新的操作系统使用 UTF-8 编码（代码页 65001）
+workDir = 工作目录\n默认为 "/" 目录，也就是 aardio 应用程序根目录\n应用程序根目录在开发时指工程目录或工程外的启动代码所在目录，\n发布后指 EXE 目录
+options = 应指定为 null 或包含运行 RScript.exe 默认选项参数的数组，\n默认值为 {"--vanilla"}
+exec( = 执行 R 代码,\n除代码以外的参数，如果参数是表则转换为 JSON，\n在 R 语言中请用 args <- commandArgs(T) 取参数，\n用 rjson 包解析 JSON，\nR 语言中用 cat 输出的内容，aardio 视为 JSON 解析并返回值
+exec(.(code,->->->) = 参数@code 可以是 R 代码或 R 代码文件路径，\n可指定多个启动参数，\n单个启动参数如果包含空格或引号等需要转义的字符，自动进行转义处理
+loadcode(.(code,->->->) =  使用 aardio 模板语法加载 R 代码,\n参数 code 可以是 aardio 代码或 aardio 代码文件路径,\n所有参数传入 string.loadcode 函数解析并返回 R 代码,\n具体用法请参考该函数以及 aardio 模板语法说明
+code = @.code = /***\n__/*请输入要执行的 R 代码，支持 aardio 模板语法*/\n***/
+start( = 启动 RScript.exe 执行多个 R 代码，返回 process.popen 对象
+start(.(code,->->->) = 所有参数都可以是 R 代码或 R 代码文件路径，\n仅第一个参数支持 aardio 模板语法
+startRpc( =  执行多个 R 代码，并启动 启动 JSON-RPCS 服务端，\n返回 process.rpc.jsonClient 对象
+startRpc(.(code,->->->) = 所有参数都可以是 R 代码或 R 代码文件路径，\n仅第一个参数支持 aardio 模板语法
+startRpc() = !process_rpcJsonClient.
+start() = !process_popen.
+end intellisense**/
+
+

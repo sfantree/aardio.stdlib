@@ -1,0 +1,35 @@
+
+import win.ui;
+/*DSG{{*/
+var winform = win.form(parent=...; text="动作片";right=622;bottom=491 )
+winform.add(
+baidu={ bottom=473;right=597;left=352;multiline=1;top=12;font=LOGFONT( name="宋体";h=-12 );z=2;text="";edge=1;cls="edit" };
+qq={ bottom=477;right=251;left=30;multiline=1;top=11;font=LOGFONT( name="宋体";h=-12 );z=1;text="";edge=1;cls="edit" };
+button={ bottom=144;right=333;left=263;top=108;font=LOGFONT( name="宋体";h=-12 );z=3;text="开始";cls="button" }
+)
+/*}}*/
+
+winform.button.oncommand = function(id,event){
+
+    thread.create(fun,"http://www.baidu.com",winform.baidu.hwnd)
+
+    thread.create(fun,"http://www.qq.com",winform.qq.hwnd)
+}
+
+
+fun=function(url,hwnd){
+    import win.ui;
+    import inet.http
+    import win.ui.ctrl.edit
+    edit=win.ui.ctrl.edit()
+    edit.hwnd=hwnd
+    http=inet.http()
+    str=http.get(url)
+    edit.text=str
+}
+
+
+
+winform.show()
+win.loopMessage();
+return winform;

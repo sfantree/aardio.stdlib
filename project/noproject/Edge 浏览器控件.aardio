@@ -1,0 +1,24 @@
+import win.ui;
+var winform = win.form(text="Edge 浏览器控件 - web.view";right=759;bottom=469;bgcolor=16777215)
+
+import web.view;
+var wb = web.view(winform);
+
+wb.export({
+alert = function(msg){
+winform.msgbox(msg);
+return 123;
+}
+nativeLog = function(msg){
+winform.msgbox(msg);
+}
+})
+
+wb.html = /**
+<script type="text/javascript">
+alert("test").then( v=>nativeLog(v))
+</script>
+**/
+
+winform.show();
+win.loopMessage();

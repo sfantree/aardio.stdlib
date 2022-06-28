@@ -1,0 +1,35 @@
+import console; 
+import win;
+//import wsock;
+console.open();
+
+import wsock;
+//import wsock.tcp;
+//import wsock.tcp;
+import wsock.tcp.asynServer;
+var server = wsock.tcp.asynServer();
+
+server.onOpen = function(hSocket,err){
+    var client = server.client(hSocket);
+    var ip, port = client.getRemoteIp();
+	console.log(ip, port, "connect");
+}
+
+server.onReceive = function(hSocket,err){
+    var client = server.client(hSocket);
+    var b = client.readAll()
+    console.log(string.hex(b));
+}
+
+server.onClose = function(hSocket,err){
+    var client = server.client(hSocket);
+    var ip, port = client.getRemoteIp();
+    
+    console.log(ip, port, "close");
+	//console.log("close");	
+}
+
+server.start("127.0.0.1", 666);
+
+
+win.loopMessage();

@@ -1,0 +1,90 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=191;bottom=167)
+winform.add(
+button={cls="button";text="生成DLL";left=49;top=45;right=145;bottom=80;font=LOGFONT(name='宋体');z=1};
+button2={cls="button";text="调用DLL";left=49;top=94;right=145;bottom=126;font=LOGFONT(name='宋体');z=2}
+)
+/*}}*/
+
+var codeUtf8 = /** 
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <windows.h>
+
+int __stdcall DllMain(void * hinstDLL, unsigned long fdwReason, void * lpvReserved) {
+
+	if (fdwReason == 1/*DLL_PROCESS_ATTACH*/ ){ 
+		
+	}
+	return 1;
+}
+
+/* 位置1：这里添加C函数 */
+__declspec(dllexport) int Test_Square(int x) 
+{     
+	return x * x;
+}  
+
+
+
+__declspec(dllexport) int file_size(const char* filename)
+{
+    FILE *fp = fopen(filename,"r");
+    if(!fp) return -1;
+    fseek(fp,0L,SEEK_END);
+    int size = ftell(fp);
+    fclose(fp);
+    return size;
+}
+
+/* 延迟返回 */
+__declspec(dllexport) get_return_1s(int x)
+{
+    Sleep(5000);
+    return x * x;
+}
+
+
+**/
+
+winform.button.oncommand = function(id,event){
+	import tcc; 
+	var vm = tcc();
+	vm.addLib( 
+		"user32",
+		"kernel32",
+		"gdi32"
+	) 
+	vm.output( "/bin.dll", codeUtf8 );
+	vm.close(); 
+}
+
+winform.button2.oncommand = function(id,event){
+	var dll = raw.loadDll( "/bin.dll" );
+
+	// 位置2：这里添加C函数
+	
+	//var func = dll.api( "Test_Square","int(int)", "cdecl" ); 
+	//var result1 = func(12);
+	//winform.msgbox((result1))
+	
+	var func2 = dll.api( "file_size","int(pointer)", "cdecl" ); 
+	var filepath = "‪H:\BaiduNetdiskDownload\pdf转mobi（六寸）工具包\pdf转mobi（六寸）工具包\briss-0.9 切白边\bcmail-jdk15-1.46.jar";
+	var filepath2 = "G:\chromedl\aardio\codes\范例程序\Chrome\app.aardio"
+	//var ansi_str = string.fromto( filepath2 )
+	//var result2 = func2(ansi_str);
+	//winform.msgbox((result2));
+	
+	var func3 = dll.api( "get_return_1s","int(int)", "cdecl" ); 
+	var result3 = -1;
+	result3 = func3(12);
+	winform.msgbox((result3));
+	
+}
+
+winform.show();
+win.loopMessage();
+return winform;

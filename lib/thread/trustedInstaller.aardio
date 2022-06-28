@@ -1,0 +1,36 @@
+﻿//trustedInstaller 权限
+import service;
+namespace thread;
+
+class trustedInstaller{
+	ctor( proc ){
+		var srvMgr = ..service.manager(); 
+		var prcs = srvMgr.startAndWait("TrustedInstaller");
+		if(!prcs) return false;
+		
+		var hThread = ..thread.open(prcs.tid,0x0200/*_THREAD_DIRECT_IMPERSONATION*/)
+ 		if(!hThread) return false;
+ 		
+		var err = ::Ntdll.NtImpersonateThread(..thread.getHandle(),hThread,{
+			INT cbSize = 16;
+			INT ImpersonationLevel = 2/*SecurityImpersonation*/;
+			INT ContextTrackingMode;
+			INT EffectiveOnly;
+		} );
+		if(err) return false;
+		
+		var r = proc(); 
+ 		
+		..raw.closehandle(hThread);
+		::Advapi32.RevertToSelf();
+		srvMgr.close();
+		prcs.free();
+		
+		if( r === false ) return false;
+		return true; 
+	}; 
+}
+
+/**intellisense()
+thread.trustedInstaller(proc) = @.trustedInstaller(\n	function(){\n		__/*此函数内代码已获取 TrustedInstaller 权限\n当前进程需以管理权限启动*/\n	}\n)
+end intellisense**/

@@ -1,0 +1,81 @@
+﻿//objectType 对象类型
+
+namespace xcgui;
+
+objectType = {
+	[1]="window";
+	[2]="modalWnd";
+	[3]="frameWnd";
+	[4]="floatWnd";
+	[105]="adapterListview";
+	[121]="listItem";
+	[37]="propertygrid";
+	[106]="adapterMap";
+	[61]="shape";
+	[51]="richeditFolder";
+	[12]="popupMenuWnd";
+	[81]="menu";
+	[123]="listviewItem";
+	[38]="richeditColor";
+	[11]="comboboxWnd";
+	[13]="popupMenuChildWnd";
+	[62]="shapeText";
+	[86]="paneCell";
+	[23]="richedit";
+	[27]="list";
+	[31]="menubar";
+	[39]="richeditSet";
+	[30]="tree";
+	[113]="layoutObjectGroup";
+	[63]="shapePicture";
+	[34]="toolbar";
+	[32]="trackerbar";
+	[111]="layoutListview";
+	[64]="shapeRect";
+	[40]="tabbar";
+	[84]="font";
+	[112]="layoutList";
+	[65]="shapeEllipse";
+	[20]="objectUi";
+	[24]="combobox";
+	[28]="listbox";
+	[33]="progress";
+	[82]="image";
+	[-1]="error";
+	[114]="layoutObjectItem";
+	[67]="shapeGroupbox";
+	[83]="hdraw";
+	[101]="layoutObject";
+	[115]="layoutPanel";
+	[68]="shapeGif";
+	[42]="pane";
+	[50]="richeditFile";
+	[116]="background";
+	[122]="listviewGroup";
+	[85]="flash";
+	[25]="scrollbar";
+	[29]="listview";
+	[35]="calendar";
+	[43]="paneSplit";
+	[102]="adapter";
+	[26]="scrollview";
+	[41]="textlink";
+	[87]="web";
+	[103]="adapterTable";
+	[66]="shapeLine";
+	[36]="datetimepick";
+	[44]="menubarButton";
+	[52]="listHeader";
+	[0]="nothing";
+	[104]="adapterTree";
+	[22]="button";
+	[21]="ele";
+		
+	get = function(h){
+		return owner[::Xcgui.XC_GetObjectType(h)]; 
+	};
+}
+
+/**intellisense()
+xcgui.objectType.get(__) = 返回对象类型,文本格式
+end intellisense**/

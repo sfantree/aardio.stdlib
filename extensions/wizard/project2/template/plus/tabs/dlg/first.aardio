@@ -1,0 +1,20 @@
+import fonts.fontAwesome;
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="设置";right=984;bottom=589;bgcolor=16777215)
+winform.add(
+btnTest={cls="plus";text='\uF0C7   某按钮';left=702;top=529;right=886;bottom=565;bgcolor=11580047;db=1;dr=1;font=LOGFONT(h=-16;name='FontAwesome');notify=1;tabstop=1;z=2};
+lbTip={cls="static";left=63;top=523;right=695;bottom=572;db=1;dl=1;dr=1;transparent=1;z=1}
+)
+/*}}*/
+
+import style; 
+winform.btnTest.skin(style.primaryButton); 
+
+winform.btnTest.oncommand = function(id,event){
+	winform.msgbox("hello")
+}
+
+winform.show();
+win.loopMessage();
+return winform;

@@ -1,0 +1,198 @@
+﻿import string.builder;
+import util.metaProperty;
+namespace xcgui.adapter;
+
+class table{
+	ctor(hAdapter){
+		if(hAdapter===null){
+			this.hAdapter = topointer( ::Xcgui.XAdTable_Create() );
+		}
+		else {
+			this.hAdapter = topointer(hAdapter);
+		}
+		if(!this.hAdapter)return;
+	};
+	@_metaProperty;
+}
+
+
+namespace table{
+	_metaProperty = ..util.metaProperty(
+		sort = function(column,bAscending){
+			return ::Xcgui.XAdTable_Sort(owner.hAdapter,column,bAscending);
+		}
+		getDataType = function(item,column){
+			return ::Xcgui.XAdTable_GetItemDataType(owner.hAdapter,item,column);
+		}
+		getFieldDataType = function(item,fieldName){
+			return ::Xcgui.XAdTable_GetItemDataTypeEx(owner.hAdapter,item,fieldName);
+		}
+		addField = function(fieldName){
+			return ::Xcgui.XAdTable_AddColumn(owner.hAdapter,fieldName);
+		}
+		setField = function(fieldName){
+			return ::Xcgui.XAdTable_SetColumn(owner.hAdapter,fieldName);
+		}
+		printf = function(...){
+			return ::Xcgui.XAdTable_AddItemText(owner.hAdapter,(..string.format(...)));
+		}
+		addString = function(value){
+			return ::Xcgui.XAdTable_AddItemText(owner.hAdapter,value);
+		}
+		addFieldString = function(fieldName,value){
+			return ::Xcgui.XAdTable_AddItemTextEx(owner.hAdapter,fieldName,value);
+		}
+		addImage = function(image,repeat,top,right,bottom){
+			if(type(image) == type.string) image = ..xcgui.image(image,repeat,top,right,bottom);
+			return ::Xcgui.XAdTable_AddItemImage(owner.hAdapter,image);
+		}
+		addFieldImage = function(fieldName,image,repeat,top,right,bottom){
+			if(type(image) == type.string) image = ..xcgui.image(image,repeat,top,right,bottom);
+			return ::Xcgui.XAdTable_AddItemImageEx(owner.hAdapter,fieldName,image);
+		}
+		insertString = function(item,value){
+			return ::Xcgui.XAdTable_InsertItemText(owner.hAdapter,item,value);
+		}
+		insertFieldString = function(item,fieldName,value){
+			return ::Xcgui.XAdTable_InsertItemTextEx(owner.hAdapter,item,fieldName,value);
+		}
+		insertImage = function(item,image,repeat,top,right,bottom){
+			if(type(image) == type.string) image = ..xcgui.image(image,repeat,top,right,bottom);
+			return ::Xcgui.XAdTable_InsertItemImage(owner.hAdapter,item,image);
+		}
+		insertFieldImage = function(item,fieldName,image,repeat,top,right,bottom){
+			if(type(image) == type.string) image = ..xcgui.image(image,repeat,top,right,bottom);
+			return ::Xcgui.XAdTable_InsertItemImageEx(owner.hAdapter,item,fieldName,image);
+		}
+		setString = function(item,column,value){
+			return ::Xcgui.XAdTable_SetItemText(owner.hAdapter,item,column,value);
+		}
+		setFieldString = function(item,fieldName,value){
+			return ::Xcgui.XAdTable_SetItemTextEx(owner.hAdapter,item,fieldName,value);
+		}
+		setInt = function(item,column,value){
+			return ::Xcgui.XAdTable_SetItemInt(owner.hAdapter,item,column,value);
+		}
+		setFieldInt = function(item,fieldName,value){
+			return ::Xcgui.XAdTable_SetItemIntEx(owner.hAdapter,item,fieldName,value);
+		}
+		setFloat = function(item,column,value){
+			return XAdTable_SetItemFloat(owner.hAdapter,item,column,value);
+		}
+		setFieldFloat = function(item,fieldName,value){
+			return XAdTable_SetItemFloatEx(owner.hAdapter,item,fieldName,value);
+		}
+		setImage = function(item,column,image,repeat,left,top,right,bottom){
+			if(type(image) == type.string) image = ..xcgui.image(image,repeat,left,top,right,bottom);
+			return ::Xcgui.XAdTable_SetItemImage(owner.hAdapter,item,column,image);
+		}
+		setFieldImage = function(item,fieldName,image){
+			if(type(image) == type.string) image = ..xcgui.image(image,repeat,top,right,bottom);
+			return ::Xcgui.XAdTable_SetItemImageEx(owner.hAdapter,item,fieldName,image);
+		}
+		delete = function(item){
+			return ::Xcgui.XAdTable_DeleteItem(owner.hAdapter,item);
+		}
+		deleteEx = function(item,nCount){
+			return ::Xcgui.XAdTable_DeleteItemEx(owner.hAdapter,item,nCount);
+		}
+		clear = function(){
+			return ::Xcgui.XAdTable_DeleteItemAll(owner.hAdapter);
+		}
+		clearField = function(){
+			return ::Xcgui.XAdTable_DeleteColumnAll(owner.hAdapter);
+		}
+		count = function(){
+			return ::Xcgui.XAdTable_GetCount(owner.hAdapter);
+		}
+		fieldCount = function(){
+			return ::Xcgui.XAdTable_GetCountColumn(owner.hAdapter);
+		}
+		getString = function(item,column){
+			var sb = ..string.builder(500);
+			::Xcgui.XAdTable_GetItemText(owner.hAdapter,item,column,sb,250);
+			return sb.fromUnicode();
+		}
+		getFieldString = function(item,fieldName){
+			var sb = ..string.builder(500);
+			::Xcgui.XAdTable_GetItemTextEx(owner.hAdapter,item,fieldName,sb,250);
+			return sb.fromUnicode();
+		}
+		getImage = function(item,column){
+			return ..xcgui.image( topointer(::Xcgui.XAdTable_GetItemImage(owner.hAdapter,item,column)) );
+		}
+		getFieldImage = function(item,fieldName){
+			return ..xcgui.image( topointer(::Xcgui.XAdTable_GetItemImageEx(owner.hAdapter,item,fieldName)) );;
+		}
+		getInt = function(item,column){
+			var out = {int value}
+			::Xcgui.XAdTable_GetItemInt(owner.hAdapter,item,column,out);
+			return out.value;
+		}
+		getFieldInt = function(item,fieldName){
+			var out = {int value}
+			::Xcgui.XAdTable_GetItemIntEx(owner.hAdapter,item,fieldName,out);
+			return out.value;
+		}
+		getFloat = function(item,column){ 
+			var out = {float value}
+			XAdTable_GetItemFloat(owner.hAdapter,item,column,out);
+			return out.value; 
+		}
+		getFieldFloat = function(item,fieldName){
+			var out = {float value}
+			::Xcgui.XAdTable_GetItemFloatEx(owner.hAdapter,item,fieldName,out);
+			return out.value; 
+		}
+		_topointer = function(){
+			return owner.hAdapter; 
+		}
+	)
+	
+	XAdTable_SetItemFloat = ::Xcgui.api("XAdTable_SetItemFloat","bool(int item, int column, float value)")	
+	XAdTable_SetItemFloatEx = ::Xcgui.api("XAdTable_SetItemFloatEx","bool(int item, int column,ustring fieldName,float value)")
+}
+
+/**intellisense()
+xcgui.adapter.table() = 数据适配器\n!stdxcadaptertable.
+end intellisense**/
+
+/**intellisense(!stdxcadaptertable)
+sort(.(column,bAscending) = 对内容进行排序
+getDataType(.(item,column) = 获取项数据类型
+getFieldDataType(.(item,fieldName) = 获取项数据类型
+addField(__) = 添加数据列
+setField(__) = 设置数据列
+addString(__) = 添加数据项,默认值放到第一列
+addFieldString(.(fieldName,value) = 添加数据项,填充指定列数据
+addImage(__) = 添加数据项,默认值放到第一列
+addFieldImage(.(fieldName,hImage) = 添加数据项,并填充指定列数据
+insertString(.(item,value) = 插入数据项,填充第一列数据
+insertFieldString(.(item,fieldName,value) = 插入数据项,并填充指定列数据
+insertImage(.(item,hImage) = 插入数据项,填充第一列数据
+insertFieldImage(.(item,fieldName,hImage) = 插入数据项,并填充指定列数据
+setString(.(item,column,value) = 设置项数据
+setFieldString(.(item,fieldName,value) = 设置项数据
+setInt(.(item,column,value) = 设置项数据
+setFieldInt(.(item,fieldName,value) = 设置项数据
+setFloat(.(item,column,value) = 设置项数据
+setFieldFloat(.(item,fieldName,value) = 设置项数据
+setImage(.(item,column,hImage) = 设置项数据
+setFieldImage(.(item,fieldName,hImage) = 设置项数据
+delete(__) = 删除项
+deleteEx(.(item,nCount) = 删除多个项
+clear() = 删除所有项
+clearField() = 删除所有列,并且清空所有数据
+count() = 获取项数量
+fieldCount() = 获取列数量
+getString(.(item,column) = 获取项文本内容
+getFieldString(.(item,fieldName) = 获取项文本内容
+getImage(.(item,column) = 获取项图片句柄\n!stdxcimage.
+getFieldImage(.(item,fieldName) = 获取项图片句柄\n!stdxcimage.
+getImage() = !stdxcimage.
+getFieldImage() = !stdxcimage.
+getInt(.(item,column) = 获取项值
+getFieldInt(.(item,fieldName) = 获取项值
+getFloat(.(item,column) = 获取项值
+getFieldFloat(.(item,fieldName) = 获取项值
+end intellisense**/

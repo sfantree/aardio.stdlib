@@ -1,0 +1,346 @@
+﻿import sys.vc14;
+import sys.info;
+import string.fuzzyMatching;
+import gdip.snap;
+import winex.mouse;
+import gdi;
+
+namespace string;
+
+class ocrLite{
+	ctor(models,outputBitmap,outputConsole,numThreads){
+		if(!models){
+			models = self.defaultModels;
+		}
+		
+		if(type.isString(models)){
+			var dir = ..io.fullpath(models)
+			if(::Kernel32.GetFileAttributes(models)& 0x10/*_FILE_ATTRIBUTE_DIRECTORY*/ ){
+				models = {
+					dbNet = ..io.joinpath(dir,"dbnet.onnx"); 
+					crnnNet = ..io.joinpath(dir,"crnn_lite_lstm.onnx"); 
+					angleNet = ..io.joinpath(dir,"angle_net.onnx"); 
+					crnnNetKeys = ..io.joinpath(dir,"keys.txt"); 
+				}
+			}
+			else {
+				models = null;
+			}
+		}
+		
+		if(!models){
+			error("未指定模型,可导入 string.ocrLite.defaultModels 库加载默认模型",2)
+		}
+		
+		if(!..io.exist(models[["dbNet"]])){ 
+			return null,"未找到：" +(models[["dbNet"]] : "dbnet.onnx");
+		}
+		
+		if(!..io.exist(models[["crnnNet"]])){ 
+			return null,"未找到：" +(models[["crnnNet"]] : "crnn_lite_lstm.onnx");
+		}
+		
+		if(!..io.exist(models[["angleNet"]])){ 
+			return null,"未找到：" +(models[["angleNet"]] : "angle_net.onnx");
+		}
+		
+		if(!..io.exist(models[["crnnNetKeys"]])){
+			return null,"未找到：" +(models[["crnnNetKeys"]] : "keys.txt");
+		}
+		
+		if(outputConsole){
+			..io.utf8 = true;
+			if(..console)..console.open(true)
+			else ..io.open();
+		}
+		
+		this.handle = _dll.OcrCreateP(numThreads : ..sys.info().dwNumberOfProcessors
+		, models.dbNet, models.angleNet,models.crnnNet, models.crnnNetKeys
+		, !!outputConsole,!!outputBitmap); 
+		
+		if(!this.handle){
+			return null,"创建 OCR 对象失败";
+		}
+
+		this.$config = {
+			int padding = 50; 
+			int maxSideLen = 1024;
+			float boxScoreThresh = 0.6; 
+			float boxThresh = 0.3; 
+			float unClipRatio = 2.0;
+			bool doAngle = 1;
+			bool mostAngle= 1;
+		} 
+		
+		..table.gc(this,"close");
+	};
+	close = function(){
+		if(this.handle){
+			_dll.OcrDelete(this.handle);
+			this.handle = null;
+		}
+	};
+	config = function(cfg){
+		..table.assign(this.$config,cfg);
+	};
+	detectBuffer = function(buffer){
+		var pResult = _dll.OcrDetectP(this.handle,buffer,#buffer,this.$config);
+		if(!pResult) return;
+ 
+ 		var result;
+		var length = ..raw.convert(pResult,{INT length}).length
+		if(length){ 
+			result = ..raw.convert(pResult,$ocrResult(length))
+			result.blocks.length = null;
+			
+			if(result.resultBitmapBufferSize){
+				result.resultBitmap = ..gdip.bitmap( ..raw.buffer(result.resultBitmapBufferSize,result.resultBitmapBuffer));
+				result.resultBitmapBuffer = null;
+				result.resultBitmapBufferSize = null;	
+			}
+			
+			for(i,b in result.blocks){
+				if(b.charScoreSize){
+					b.charScores = ..raw.convert(b.charScores,{float v[]={length=b.charScoreSize}}).v;
+				}
+				else {
+					b.charScores = null;
+				}
+				
+				b.charScoreSize = null;
+			}
+			
+		}
+
+		_dll.OcrFreeDetectResult(pResult);
+		return result;
+	};
+	detectImage = function(...){
+		var bmp = ..gdip.bitmap(...)
+		var result = this.detectBuffer(bmp.saveToBuffer("*.jpg"))
+		bmp.dispose();
+		
+		return result;	
+	};
+	detectBitmap = function(bmp){
+		var result = this.detectBuffer(bmp.saveToBuffer("*.jpg"))
+		return result;	
+	};
+	detectScreen = function(hwnd,x,y,cx,cy){
+		if(hwnd && ! ::User32.IsWindow(hwnd) ){error("错误的窗口句柄",2)}
+		
+		var bmp = ..gdip.snap(hwnd,x,y,cx,cy)
+		var result = this.detectBuffer(bmp.saveToBuffer("*.jpg"))
+		bmp.dispose();
+		
+		return result;	
+	};
+	detectWindow = function(hwnd,x,y,cx,cy){
+		if(hwnd && ! ::User32.IsWindow(hwnd) ){error("错误的窗口句柄",2)}
+		
+		var bmp = ..gdip.snap.print(hwnd,x,y,cx,cy)
+		var result = this.detectBuffer(bmp.saveToBuffer("*.jpg")) 
+		bmp.dispose();
+		
+		return result;	
+	};
+	detectClient = function(hwnd,x,y,cx,cy){
+		if(hwnd && ! ::User32.IsWindow(hwnd) ){error("错误的窗口句柄",2)}
+		
+		var bmp = ..gdip.snap.printClient(hwnd,x,y,cx,cy)
+		var result = this.detectBuffer(bmp.saveToBuffer("*.jpg"))
+		bmp.dispose(); 
+		
+		if(result) {
+			result.hwnd = hwnd;
+			result.startX = x:0;
+			result.startY = y:0;
+		}
+		return result;	
+	};
+	findClient = function(hwnd,text,miniSimilar){
+		var ret = this.detectClient(hwnd);
+		if(ret) return  ret.find(text,miniSimilar);	
+	};
+	waitClient = function(hwnd,text,miniSimilar,timeout,hwndWait){
+		if(hwnd && ! ::User32.IsWindow(hwnd) ){error("错误的窗口句柄",2)}
+		
+		return ..win.wait( 
+			function(){
+				var ret = this.detectClient(hwnd);
+				if(ret){ 
+					if( ret.findPoint(text,miniSimilar:0.6) ){
+						return ret;
+					}
+				}
+			},hwndWait: hwnd,timeout);	
+	};
+	clickClient = function(hwnd,text,miniSimilar){
+		var ret = this.detectClient(hwnd);
+		if(ret) return  ret.click(text,miniSimilar);	
+	};
+	waitClickClient = function(hwnd,text,miniSimilar,timeout,hwndWait){
+		var ret = this.waitClient(hwnd,text,miniSimilar,timeout,hwndWait);
+		if(ret) return  ret.click(text,miniSimilar);	
+	};
+}
+
+namespace ocrLite {
+    
+    ..sys.vc14.require("2017");
+    
+    _dll = ..raw.loadDll(
+    	..io.appData("aardio\OcrLiteOnnx\OcrLiteV1.dll",$"~\lib\string\ocrLite\.res\OcrLiteOnnx.dll")
+    	,,"cdecl")
+
+    class $ocrResult{ 
+        ctor(length){
+        	this.blocks = {
+        		length = length;
+				{ 
+					str text;
+					float boxScore;
+					INT charScoreSize;
+					ptr charScores;
+					struct points[4] = {{int x;int y;}};
+				}
+			}
+        }
+        
+		INT length;
+		str text;
+		ptr resultBitmapBuffer;
+		INT resultBitmapBufferSize;
+		struct blocks[]; 
+		find = find;
+		findRect = findRect;
+		findPoint = findPoint;
+		search =  search;
+		click = click;
+	}
+		
+	$ocrResult.find = function(txt,miniSimilar,startIndex){  
+		if(type(txt)==="table"){
+			for(i=1;#txt;1){
+				var tb,index = owner.find(txt[i],miniSimilar,startIndex)
+				if(tb){
+					return tb,index;
+				}
+			}
+			
+			return; 
+		}  
+		
+		var tbs = owner.blocks
+		if(startIndex && startIndex!=1) tbs = ..table.slice(tbs,startIndex);
+		
+		var foundCount = 0;
+		for(i=1;#tbs;1){
+			if( tbs[i].text == txt ){
+				return tbs[i];
+			} 
+		} 
+	
+		var textArray = ..table.map(tbs,lambda(v)v.text);
+		
+		var fm = ..string.fuzzyMatching(txt);
+		var txt,similar,index = fm.find(textArray,miniSimilar);
+		if(index){
+			return tbs[index],index+(startIndex:0);
+		}
+	}
+	
+	$ocrResult.findRect = function(txt,miniSimilar,startIndex){
+		var tb,index = owner.find(txt,miniSimilar,startIndex);
+		if(tb){
+			var points = tb.points;
+    		return ::RECT(points[1].x ,points[1].y,points[3].x,points[3].y),index;
+		}
+	} 
+	
+	$ocrResult.findPoint = function(txt,miniSimilar,startIndex){
+		var rc = owner.findRect(txt,miniSimilar,startIndex);
+		if(rc){
+			return rc.left+rc.width()/2,rc.top+rc.height()/2; 
+		}
+	}
+	
+	$ocrResult.click = function(txt,miniSimilar,startIndex){
+		if(!owner.hwnd) error("此函数仅适用于 detectClient 函数的识别结果",2)
+		
+		var x,y = owner.findPoint(txt,miniSimilar,startIndex); 
+		if(x||y){
+			..winex.mouse.click(owner.hwnd,x+owner.startX,y+owner.startY); 
+			return true;
+		}
+	}  
+	
+	$ocrResult.search = function(txt,miniSimilar){
+		return ..string.fuzzyMatching(txt).search(owner.text,miniSimilar); 
+	} 
+}
+
+/*
+此扩展库源码使用双许可证：
+1、此扩展库不包含 chineseocr_lite_dll 组件的 aardio 源码可按 aardio 开源许可证自由使用。
+2、如果包含 chineseocr_lite_dll 组件使用此扩展库,则必须遵守开源许可证（ GPL ）：
+https://github.com/aardio/chineseocr_lite_dll/blob/main/LICENSE
+*/
+
+/**intellisense()
+string.ocrLite = 识别屏幕或图像上文字的本地组件,开源免费,\n[此扩展库开源许可证（ GPL ）](https://github.com/aardio/chineseocr_lite_dll/blob/main/LICENSE)
+string.ocrLite() = !stringOcrLite.
+string.ocrLite( = 创建OCR对象,所有参数可选,\n在屏幕上找到文字以后可使用 winex.mouse, mouse 等库函数自动点击,\n使用 aardio 工具里的「探测器->窗口探测器」可生成窗口检测或点击的示例代码
+string.ocrLite(.(models,outputBitmap,outputConsole,numThreads) = 创建OCR对象,所有参数可选,注意截图范围越小结果越准确,\n@models 参数指定模型目录,或包含模型路径配置的参数表,\n导入 string.ocrLite.defaultModels 可嵌入默认模型,\n指定@outputBitmap为true时OCR结果对象会包含resultBitmap字段,\n@outputConsole 为true会向控制台输出调试信息,\n@outputConsole设为true时会自动以UTF8编码打开控制台,\n@numThreads指定线程数,一般不需要指定
+end intellisense**/
+
+/**intellisense(!stringOcrLite)
+close() = 关闭对象,\n关闭以后不应再使用此对象,\n默认在对象被回收时会自动关闭
+detectBuffer(.(buffer) = 识别文字并返回识别结果对象,\nbuffer指定图像文件的内存数据,\n支持jpg,png,bmp等常见格式
+detectImage(.(->->->) = 使用传入参数创建 gdip.bimap 对象并识别文字,\n参数与 gdip.bimap 相同,返回识别结果对象\n,注意截图范围越小结果越准确,
+detectBitmap(__) = 传入 gdip.bimap 对象并识别文字,注意截图范围越小结果越准确,\n返回识别结果对象
+detectScreen(.(hwnd,x,y,cx,cy) = 自屏幕截图并识别文字,注意截图范围越小结果越准确,\n所有参数可选,可选用 @hwnd 参数指定窗口句柄,\n可选用 @x,y@ 参数指定坐标\n可选用 @cx,@cy 指定宽度和高度,\n返回识别结果对象
+detectWindow(.(hwnd,x,y,cx,cy) = 自窗口后台截图并识别文字,注意截图范围越小结果越准确,\n必须用 @hwnd 参数指定窗口句柄,\n可选用 @x,y@ 参数指定坐标\n可选用 @cx,@cy 指定宽度和高度,\n返回识别结果对象
+detectClient(.(hwnd,x,y,cx,cy) = 自窗口客户区后台截图并识别文字,注意截图范围越小结果越准确,\n必须用 @hwnd 参数指定窗口句柄,\n可选用 @x,y@ 参数指定坐标\n可选用 @cx,@cy 指定宽度和高度,\n返回识别结果对象
+detectBuffer() = !stringOcrLiteResult.
+detectImage() = !stringOcrLiteResult.
+detectBitmap() = !stringOcrLiteResult.
+detectScreen() = !stringOcrLiteResult.
+detectWindow() = !stringOcrLiteResult.
+detectClient() = !stringOcrLiteResult.
+config(OCR参数表) = @.config({ 
+	padding = 50; 
+	maxSideLen = 1024; 
+	boxScoreThresh = 0.6; 
+	boxThresh = 0.3;
+	unClipRatio = 2.0; 
+	doAngle = 1;
+	mostAngle= 1;__/*配置OCR参数,细节请参考 chineseocr_lite 项目文档和源码*/
+})
+waitClient(.(hwnd,text,miniSimilar,timeout,hwndWait) = 等待@hwnd参数指定的窗口上出现@text指定的文本,\n@miniSimilar指定最小相似度,可选参数,默认为 0.6,\n@timeout 为可选的超时参数,单位毫秒,\n可选用 @hwndWait 指定等待窗口句柄,不指定则默认值为 @hwnd,\n成功返回true
+waitClickClient(.(hwnd,text,miniSimilar,timeout,hwndWait) = 等待@hwnd参数指定的窗口,查找并点击@text指定的文本,\n@miniSimilar指定最小相似度,可选参数,默认为 0.6,\n@timeout 为可选的超时参数,单位毫秒,\n可选用 @hwndWait 指定等待窗口句柄,不指定则默认值为 @hwnd,\n成功返回true
+clickClient(.(hwnd,text,miniSimilar) = 在@hwnd参数指定的窗口上查找并点击@text指定的文本,\n@miniSimilar指定最小相似度,可选参数,默认为 0.5,\n成功返回true
+findClient(.(hwnd,text,miniSimilar) = 在@hwnd参数指定的窗口上查找@text指定的文本,\n@miniSimilar指定最小相似度,可选参数,默认为 0.5,\n成功返回true
+end intellisense**/
+		
+/**intellisense(!stringOcrLiteResult)
+text = 识别出的全部文本
+resultBitmap = 识别结果图像,图像上已经标记了文本框,\n创建 string.ocrLite 对象指定outputBitmap参数为true可启用此字段,\ngdip.bitmap对象\n!gdipbitmap.
+blocks = 识别结果文本块数组
+search(.(subString,miniSimilar) = 查找识别结果是否包含@subString指定的子字符串,支持模糊匹配,\n@miniSimilar 指定最小相似度,可选参数,\n完全相似为1,完全不相似为0,默认最小相似度为0.8,\n字符串较短时建议降低相似度
+find( = 查找文本,支持模糊匹配
+find(.(txt,miniSimilar,startIndex) = 查找文本,支持模糊匹配,\n参数 @txt 指定要查找的文本,可传入包含多个查询文本的数组,\n@miniSimilar 指定最小相似度,可选参数,\n完全相似为1,完全不相似为0,默认最小相似度为0.5,\n可以降低相似度没有问题,此函数会自动获取相似度最高的结果,\n可选指定起始索引,\n成功返回值@1为匹配的文本块信息,返回值@2为找到的索引
+findRect( = 查找文本所在的区块,支持模糊匹配
+findRect(.(txt,miniSimilar,startIndex) = 查找文本所在的区块,支持模糊匹配,\n参数 @txt 指定要查找的文本,可传入包含多个查询文本的数组,\n@miniSimilar 指定最小相似度,可选参数,\n完全相似为1,完全不相似为0,默认最小相似度为0.5,\n可以降低相似度没有问题,此函数会自动获取相似度最高的结果,\n可选指定起始索引,\n成功返回值@1为匹配的::RECT对象,返回值@2为找到的索引
+findPoint = 查找文本所在的区块正中点坐标,支持模糊匹配
+findPoint(.(txt,miniSimilar,startIndex) = 查找文本所在的区块正中点坐标,支持模糊匹配,\n参数 @txt 指定要查找的文本,可传入包含多个查询文本的数组,\n@miniSimilar 指定最小相似度,可选参数,\n完全相似为1,完全不相似为0,默认最小相似度为0.5,\n可以降低相似度没有问题,此函数会自动获取相似度最高的结果,\n可选指定起始索引,\n成功返回坐标值 x,y
+find() = !stringOcrLiteResultBlock.
+findRect() = !rect.
+end intellisense**/
+
+/**intellisense(!stringOcrLiteResultBlock)
+text = 识别出的全部文本
+boxScore = 文本块置信度,数值
+charScores = 字符置信度数组
+points = 文本框四角坐标,长度为4的坐标数组,\n每个坐都是包含x,y坐标属性的对象,\n!points.
+end intellisense**/

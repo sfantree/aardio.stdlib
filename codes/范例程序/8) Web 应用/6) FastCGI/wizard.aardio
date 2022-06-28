@@ -1,0 +1,94 @@
+//部署教程
+import fonts.fontAwesome;
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aadio网页部署到服务器步骤";right=1142;bottom=710)
+winform.add(
+btnNext={cls="plus";text='\uF061';left=1051;top=674;right=1113;bottom=697;color=8421376;db=1;dr=1;font=LOGFONT(h=-21;name='FontAwesome');notify=1;z=4};
+btnPrev={cls="plus";text='\uF060';left=970;top=674;right=1032;bottom=697;color=8421376;db=1;dr=1;font=LOGFONT(h=-21;name='FontAwesome');notify=1;z=3};
+plus={cls="plus";left=-193;top=-95;right=1143;bottom=664;bgcolor=16777215;color=12639424;db=1;dl=1;dr=1;dt=1;font=LOGFONT(h=-96;name='FontAwesome');foreRepeat="scale";notify=1;repeat="scale";z=1};
+plusLink={cls="plus";text="打开教程";left=764;top=674;right=826;bottom=697;db=1;dr=1;notify=1;z=2}
+)
+/*}}*/
+
+winform.show(3/*_SW_MAXIMIZE*/); 
+
+import web.rest.htmlClient;
+var http = web.rest.htmlClient();
+var bbs = http.api("http://bbs.aardio.com/forum.php?mod=viewthread&tid=22327&extra="
+	,,{"https\://upload-images.jianshu.io/upload_images/[\w-]+.png"});
+var images = bbs.get();
+
+images.index = 0;
+
+var nextImage = function(step){
+    
+    images.index =  images.index + step;
+    if( images.index > #images ) {
+        images.index = #images;
+        winform.msgbox("已经是最后一步了");
+        return;
+    } 
+    
+    if( images.index < 1 ) {
+        images.index = 1;
+        winform.msgbox("已经是第一步了");
+        return;
+    } 
+    winform.text = "正在打开图像...."
+    
+    var img = images[images.index];
+    if( type(img) == type.string ){ 
+        img = inet.http.get(img);  
+		
+        if( img ){
+            img = gdip.bitmap(img);
+            images[images.index] = img;
+        }
+    }
+    
+    winform.plus.setBackground(img,,true);  
+    winform.text = "aadio网页部署到服务器步骤:" + images.index;
+}
+nextImage(1);
+
+winform.plusLink.skin(
+    color = { 
+        hover = 0xFFFF0000;
+        active = 0xFF00FF00; 
+        default = 0xFF0000FF;
+    }
+    border = {
+        hover = {bottom=1;color=0xE90000FF}
+    }
+)
+winform.plusLink.oncommand = function(id,event){
+    thread.invokeAndWait(
+        function(){
+            import process
+            process.execute("http://bbs.aardio.com/forum.php?mod=viewthread&tid=22327&extra=")
+        } 
+    )
+}
+
+winform.btnNext.skin(
+    color = { 
+        hover = 0xFFFF0000;
+        active = 0xFF00FF00;  
+    } 
+)
+winform.btnNext.oncommand = function(id,event){
+    nextImage(1);   
+}
+
+winform.btnPrev.skin(
+    color = { 
+        hover = 0xFFFF0000;
+        active = 0xFF00FF00;  
+    } 
+)
+winform.btnPrev.oncommand = function(id,event){
+    nextImage(-1);  
+}
+
+win.loopMessage();

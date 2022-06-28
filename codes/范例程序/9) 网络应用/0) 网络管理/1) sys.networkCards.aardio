@@ -1,0 +1,36 @@
+//网卡设备
+import console; 
+import sys.networkCards;
+
+//列出所有网卡设备
+for networkCard in sys.networkCards.each(){
+	console.log(networkCard.netConnectionId)
+	console.log(networkCard.description)
+	console.log(networkCard.pnpInstanceId)
+	
+	if(networkCard.enabled){
+		
+		/*
+		networkCard.adapter 是使用  inet.adapter 查询到的连接配置信息。
+		网卡禁用状态就不存在这个属性。
+		*/
+		console.log(networkCard.adapter.mac); //MAC 地址
+		console.log(networkCard.adapter.adapterName); //GUID
+		//console.log(networkCard.adapter.description); //网卡描述
+		//console.log(networkCard.adapter.netConnectionId); //网络连接 ID
+		//console.log(networkCard.adapter.pnpInstanceId); //设备实例ID
+		
+		for( addr in networkCard.adapter.ipAddressList.eachAddress() ){
+			console.log(addr.ipAddress );
+		}  
+		
+		console.log("网卡已启用");
+	}
+	else {
+		console.log("网卡已禁用");
+	}
+	
+	console.more()
+}
+	
+console.pause(true);

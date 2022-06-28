@@ -1,0 +1,535 @@
+/*
+可遵循 aardio 许可证在 aardio 程序中自由使用本组件,
+禁止在非 aardio 开发的程序中引用本组件的任何部份(包含但不限于 soImage.dll 组件)
+*/ 
+class soImage{
+	ctor( hImage ){ {
+		var t = type(hImage);
+		if( t == type.pointer ){
+			this.hImage = hImage;
+		}
+		else{
+			this.hImage = dll.CreateImageObjectP();  
+		}
+		
+		..table.gc(this,"delete"); 
+	} };
+	@_meta;
+}
+
+namespace soImage { 
+	dll = ..raw.loadDll($"~/lib/soImage/.res/soImage.dll","soImage.dll");
+
+	_meta = {
+		_topointer = function(){
+			return owner.hImage;
+		};
+		_get = {
+			copy = function(left,top,right,bottom){
+				if( owner.hImage ){
+					if(right && bottom){
+						img = dll.CopyImageObjectAndCropP(owner.hImage,left,top,right,bottom); 
+					}
+					else {
+						img = dll.CopyImageObjectP(owner.hImage);
+					}  
+					
+					if(img){
+						return ..soImage(img)
+					}
+				}
+			};
+			delete = function(){
+				if( owner.hImage ){
+					dll.DeleteImageObject(owner.hImage)
+					owner.hImage = null;
+				}
+			}
+			isValid = function(){
+				return dll.ImageIsValidB(owner.hImage);
+			}
+			init = function(w=0,h=0,bpp=24,ext){ 
+				return dll.ImageInitB(owner.hImage,w,h,bpp,dll.ImageCheckType(ext:"*.bmp") )
+			} 
+			load = function(path){ 
+				//var fullpath = ..io.exist(path)
+				//if( fullpath ) return dll.ImageLoadW(owner.hImage,fullpath); 
+				 
+				var buffer = ..string.loadBuffer(path);  
+				if( buffer ){
+					if( buffer[1] == 0xFF &&  buffer[2] == 0xD8 ){
+						path="*.jpg"
+					}
+					elseif( buffer[1] == 0x89 &&  buffer[2] == 0x50 &&  buffer[3] == 0x4e &&  buffer[4] == 0x47){
+						path="*.png"
+					} 
+					elseif( buffer[1] == 0x47 &&  buffer[2] == 0x49 &&  buffer[3] == 0x46){
+						path="*.gif"
+					}
+					/*
+					elseif( buffer[1] == 0x0C &&  buffer[2] == 0xED){
+						path="*.tiff"
+					}
+					*/
+					return dll.ImageFromStringB(owner.hImage,buffer,#buffer,..string.toUnicode(path));
+				}
+			}
+			save = function(path){
+				var fullpath = ..io.fullpath(path)
+				if( fullpath ){
+					return dll.ImageSaveW(owner.hImage,fullpath)
+				}
+			}
+			getBytes = function(ext){
+				if(!ext)ext="*.bmp";
+				len = {int value};
+				var p = dll.ImageToStringP(owner.hImage,..string.toUnicode(ext),len);
+				if(p) {
+					var bytes = ..raw.tostring(p,1,len.value);
+					dll.ImageFreeString(owner.hImage,p);
+					return bytes;
+				}
+			}
+			setBytes = function(buffer,ext,len){
+				if(!ext){
+					ext="*.bmp";
+					if(!len){
+						if( buffer[1] == 0xFF &&  buffer[2] == 0xD8 ){
+							ext="*.jpg"
+						}
+						elseif( buffer[1] == 0x89 &&  buffer[2] == 0x50 &&  buffer[3] == 0x4e &&  buffer[4] == 0x47){
+							ext="*.png"
+						}
+						elseif( buffer[1] == 0x47 &&  buffer[2] == 0x49 &&  buffer[3] == 0x46){
+							ext="*.gif"
+						}
+					}
+				}
+				
+				if(!len)len = #buffer;
+				if(!len) return false,"图像数据不能为空";
+				return dll.ImageFromStringB( owner.hImage,buffer,len,..string.toUnicode(ext));
+			}
+			capture = function(hwnd=0,x=0,y=0,cx=0,cy=0,zoom){
+				return dll.ImageCaptureB(owner.hImage,hwnd,x,y,cx,cy,zoom);
+			}
+			captureCursor = function(){
+				//@Deprecated
+				var cursor = {INT cbSize = 20; INT flags; pointer hCursor;struct pt = ::POINT() }
+				if(::User32.GetCursorInfo(cursor) && cursor.hCursor){
+					owner.fromIcon(cursor.hCursor,true);
+					return cursor.pt.x,cursor.pt.y;	
+				}
+			}
+			fromBitmap = function(hBmp,hPalete){
+				return dll.ImageCreateFromHbmpB(owner.hImage,hBmp,hPalete);
+			}
+			fromIcon = function(hIcon,transparent){
+				if(transparent===null) transparent = true;
+				return dll.ImageCreateFromHicoB(owner.hImage,hIcon,!!transparent);
+			}
+			toClipBD = function(){
+				return dll.ImageSaveClipbdB(owner.hImage);
+			}
+			fromClipBD = function(){
+				return dll.ImageLoadClipbdB(owner.hImage);
+			} 
+			getWidth = function(){
+				return dll.ImageWidth(owner.hImage);
+			}
+			getHeight = function(){
+				return dll.ImageHeight(owner.hImage);
+			}
+			clear = function(){
+				return dll.ImageClearB(owner.hImage);
+			}
+			resize = function(x,y,inMethod){
+				return dll.ImageResizeB(owner.hImage,x,y,inMethod:0);
+			}
+			resize2 = function(x,y,inMethod,ofMethod,da){
+				return dll.ImageResize2B(owner.hImage,x,y,inMethod:5,ofMethod:5,da);
+			}  
+			getDib = function(){
+				return dll.ImageGetDibP(owner.hImage);
+			} 
+			getBits = function(row){
+				if( row === null ){
+					return topointer( dll.ImageGetData(owner.hImage) );
+				}
+				
+				var p,len = ImageGetBits(owner.hImage,row,0); 
+				if(p) {
+					var buf = ..raw.malloc(len )
+					::CopyMemory(buf,p,len);
+					return buf;
+				} 
+			} 
+			getData = function(){
+				var w,h = owner.getWidth(),owner.getHeight();
+				if( !(w&&h) ) return;
+				
+				var bpp = owner.bpp(0);
+				if( bpp > 8 ) bpp = bpp/8;
+				
+				var data = ..raw.malloc(w*bpp*h);
+				var addr = tonumber(..raw.toPointer(data));
+ 				for(row=1;h){
+ 					var p,len = ImageGetBits(owner.hImage,row,0); 
+					::Kernel32.RtlMoveMemory( addr,p,len);
+					addr = addr + len;
+ 				}
+ 				return data;
+			};
+			setBits = function(row,buffer){
+				var p,len = ImageSetBits(owner.hImage,row,buffer,#buffer);
+				if(p) return ..raw.tostring(p,1,len);
+			}; 
+			getPixel = function(x,y){
+				return dll.ImageGetPixel(owner.hImage,x,y); 
+			}; 
+			setPixel = function(x,y,clr){ 
+				if( type(x)!=type.number )
+					error("xxx",2)
+				dll.ImageSetPixel(owner.hImage,x,y,clr); 
+			}; 
+			setTransColor = function(bTrans,nClr){
+				dll.ImageSetTransColorB(owner.hImage,bTrans,nClr); 
+			}; 
+			getTransColor = function(){
+				dll.ImageGetTransColor(owner.hImage); 
+			};
+			bpp = function(bits,errorDiffusion){
+				return dll.ImageBpp(owner.hImage,bits,errorDiffusion) & 0xFF;
+			}; 
+			decreaseBpp = function(bpp,colors,bits,errorDiffusion){
+				dll.DecreaseBpp8(owner.hImage,bpp,colors,bits,!!errorDiffusion);
+			}; 
+			crop = function(left,top,right,bottom){
+				dll.ImageCropB(owner.hImage,left,top,right,bottom); 
+			}; 
+			median = function(size){
+				return dll.ImageMedianB(owner.hImage,size); 
+			}; 
+			repair = function(radius,iterations){
+				ImageRepair(owner.hImage,radius,iterations); 
+			}; 
+			mix = function(img,x=0,y=0,t=0){
+				if( ! img[["hImage"]] ) error("参数一必须是 soImage 对象 ",2)
+				return dll.ImageMixB( owner.hImage,img[["hImage"]],t,x,y);
+			};
+			paint = function(hdc,x=0,y=0,cx,cy){ 
+				if(!cx) cx = owner.getWidth();
+				if(!cy) cy = owner.getHeight();
+				dll.ImagePaintB( owner.hImage,hdc,x,y,cx,cy);
+			};
+			cmp = function( img ){
+				if( ! img[["hImage"]] ) error("参数一必须是 soImage 对象 ",2)
+				return dll.ImageMatch( owner.hImage,img[["hImage"]] );
+			};
+			cmp2 = function( img ){
+				if( ! img[["hImage"]] ) error("参数一必须是 soImage 对象 ",2)
+				return dll.ImageMatch2D( owner.hImage,img[["hImage"]] );
+			};
+			cmp3 = function( img ){
+				if( ! img[["hImage"]] ) error("参数一必须是 soImage 对象 ",2)
+				return dll.ImageMatch3( owner.hImage,img[["hImage"]] );
+			};
+			findImage = function( img,x=0,y=0,x2=0,y2=0,step=5){
+				if( ! img[["hImage"]] ) error("参数一必须是 soImage 对象 ",2)
+				var sm,x,y = ImageFind( owner.hImage,img[["hImage"]],x,y,x2,y2,step );
+				if(sm)return sm,x,y;
+			};
+			findImageInWindow = function( hwnd,x=0,y=0,x2=0,y2=0,step=5){
+				hwnd = hwnd[["hwnd"]] : hwnd;
+				if(! ::User32.IsWindow(hwnd) )error("无效的窗口句柄 ",2)
+				
+				var imgScreen = ..soImage();
+				imgScreen.capture(hwnd);
+				if(!imgScreen.isValid()){
+					return;
+				}
+
+				var sm,x,y = ImageFind( owner.hImage,imgScreen[["hImage"]],x,y,x2,y2,step );
+				if(sm){
+					return sm,x,y;
+				}
+			};
+			findColor= function( color,x=0,y=0,x2=0,y2=0 ){ 
+				var ok, x,y = ImageFindColor( owner.hImage,color,x,y,x2,y2  );
+				if(ok)return x,y;
+			}; 
+			splitRgb = function( ){ 
+				var ok,a,b,c = ImageSplitRGB( owner.hImage   );
+				if(ok)return ..soImage(a),..soImage(b),..soImage(c);
+			};
+			splitHsl = function( ){ 
+				var ok,a,b,c = ImageSplitHSL( owner.hImage   );
+				if(ok)return ..soImage(a),..soImage(b),..soImage(c);
+			};
+			splitXyz = function( ){ 
+				var ok,a,b,c = ImageSplitXYZ( owner.hImage   );
+				if(ok)return ..soImage(a),..soImage(b),..soImage(c);
+			};
+			splitYiq = function( ){ 
+				var ok,a,b,c = ImageSplitYIQ( owner.hImage   );
+				if(ok)return ..soImage(a),..soImage(b),..soImage(c);
+			};
+			splitYuv = function( ){ 
+				var ok,a,b,c = ImageSplitYUV( owner.hImage   );
+				if(ok)return ..soImage(a),..soImage(b),..soImage(c);
+			};
+			splitCmyk = function( ){ 
+				var ok,a,b,c,d = ImageSplitCMYK( owner.hImage   );
+				if(ok)return ..soImage(a),..soImage(b),..soImage(c),..soImage(d);
+			};
+			split = function( row,col ){ 
+				var tab = {}
+				var proc_c = ..raw.tocdecl( 
+					function(pImg){
+						..table.push( tab,..soImage(pImg) )
+					},"void(pointer pImg)"
+				);	
+				var len = dll.ImageSplit( owner.hImage,row,col,proc_c );
+				return tab;
+			};
+			splitAuto = function( noise ){ 
+				var tab = {}
+				var proc_c = ..raw.tocdecl( 
+					function(pImg){
+						..table.push( tab,..soImage(pImg) )
+					},"void(pointer pImg)"
+				);	
+				var len = dll.ImageSplitAuto( owner.hImage,noise,proc_c );
+				return tab;
+			};
+			getJpegQuality = function(){ 
+				return dll.ImageGetJpegQuality( owner.hImage ) & 0xFF; 
+			};
+			setJpegQuality = function(q ){ 
+				dll.ImageSetJpegQualityB( owner.hImage,q ); 
+			};
+			getNumFrames = function(){ 
+				return 0xFF & dll.ImageGetNumFrames( owner.hImage ); 
+			};
+			getFrame = function(){ 
+				return 0xFF & dll.ImageGetFrame( owner.hImage ) + 1; 
+			};
+			setFrame = function( nFrame ){ 
+				return dll.ImageSetFrameB( owner.hImage,nFrame - 1 ); 
+			};
+			getFrameDelay = function(){ 
+				return dll.ImageGetFrameDelay( owner.hImage ); 
+			};
+			setFrameDelay = function( d ){ 
+				return dll.ImageSetFrameDelayB( owner.hImage,d ); 
+			};
+			grayScale = function(){ 
+				return dll.ImageGrayScale( owner.hImage); 
+			};
+			flip = function(){ 
+				return dll.ImageFlip( owner.hImage); 
+			};
+			mirror = function(){ 
+				return dll.ImageMirror( owner.hImage); 
+			};
+			negative = function(){ 
+				return dll.ImageNegative( owner.hImage); 
+			};
+			rotateLeft = function(){ 
+				return dll.ImageRotateLeft( owner.hImage); 
+			};
+			rotateRight = function(){ 
+				return dll.ImageRotateRight( owner.hImage); 
+			};
+			setDisposalMethod = function(disposalMethod){ 
+				return dll.ImageSetDisposalMethod( owner.hImage,disposalMethod); 
+			} 
+			setRetreiveAllFrames = function(flag){ 
+				return dll.ImageSetRetreiveAllFrames( owner.hImage,flag); 
+			} 
+			setTransIndex = function(index){ 
+				return dll.ImageSetTransIndex( owner.hImage,index); 
+			} 
+			getPixelIndex = function(x,y){ 
+				return dll.ImageGetPixelIndex( owner.hImage,x,y); 
+			}
+		}
+	} 
+	
+	checkType = function(ext){
+		if(!ext)return 0;
+		return dll.ImageCheckType(ext);
+	} 
+
+	class gifFile{
+		ctor( filePath,loops,comment){
+			this.path = ..io.fullpath(filePath);
+			if(!this.path) error("参数指定的文件路径错误",2);
+			
+			var tPath = ..io.splitpath(this.path);
+			if(!#tPath.file)  error("参数指定的文件路径错误",2);
+			
+			if(! ..io.createDir(tPath.dir) ) return null,"参数指定的文件路径错误";
+			this.handle = dll.ImageGifOpenFileP(this.path);
+			
+			if(comment){
+				dll.ImageGifSetComment(this.handle,(tostring(comment)));
+			}
+			
+			if(loops){
+				dll.ImageGifSetLoops(this.handle,(tonumber(loops)));
+			}
+				
+			if(!this.handle) return null;
+			
+			this.frameDelay = 10;
+			this.transColor = null;
+			this.disposalMethod = null;
+		};
+		setComment = function(comment){
+			dll.ImageGifSetComment(this.handle,(tostring(comment:"")));
+		};
+		setLoops = function(loops){
+			dll.ImageGifSetLoops(this.handle,(tonumber(loops:0)));
+		};
+		write = function(soImageObject,localColorMap,frameDelay,localDisposalMethod){
+			if( frameDelay!==null ){
+				soImageObject.setFrameDelay(frameDelay);
+			}
+	
+			return dll.ImageGifWriteFileB(this.handle,soImageObject,localDisposalMethod,localColorMap);
+		}; 
+		count = function(){
+			if(this.handle) return ..raw.convert(this.handle,{int index}).index +1;
+			return this.frameCount;
+		};
+		close = function(){
+			if(this.handle){
+				this.frameCount = dll.ImageGifCloseFile(this.handle);
+				this.handle = null;
+			}
+		}
+	}
+	
+	gifFile.dll = dll;
+	
+	ImageGetBits = dll.api("ImageGetBits","pointer(POINTER hImage,int row,int &len)" )
+	ImageSetBits = dll.api("ImageSetBits","void(POINTER hImage,int row,pointer buffer,int len)" ) 
+	ImageRepair = dll.api("ImageRepair","byte(POINTER hImage,float radius,int iterations)" ) 
+	ImageFind = dll.api("ImageFind","int(POINTER hImage,POINTER hFindImage,int &x,int &y,int x2,int y2,int step)" )
+	ImageFindColor = dll.api("ImageFindColor","byte(POINTER hImage,INT color,int &x,int &y,int x2,int y2)" )
+	ImageSplitRGB = dll.api("ImageSplitRGB","int(POINTER hImage,pointer &a,pointer &b,pointer &c)" )
+	ImageSplitHSL = dll.api("ImageSplitHSL","int(POINTER hImage,pointer &a,pointer &b,pointer &c)" )
+	ImageSplitXYZ = dll.api("ImageSplitXYZ","int(POINTER hImage,pointer &a,pointer &b,pointer &c)" )
+	ImageSplitYIQ = dll.api("ImageSplitYIQ","int(POINTER hImage,pointer &a,pointer &b,pointer &c)" )
+	ImageSplitYUV = dll.api("ImageSplitYUV","int(POINTER hImage,pointer &a,pointer &b,pointer &c)" )
+	ImageSplitCMYK = dll.api("ImageSplitCMYK","int(POINTER hImage,pointer &a,pointer &b,pointer &c,pointer &d)" )
+}
+ 
+/**intellisense()
+soImage() = 创建图像\n!soImage.
+soImage.checkType("*->bmp") = 参数为图像路径或文件名,\n返回数值格式的图像数型
+soImage.gifFile(.("GIF文件路径",循环次数,注释) = 创建GIF文件\n消除方法指的是下一帧擦除上帧背景的方法,可选1,2,3
+soImage.gifFile() = !soImageGifFile.
+end intellisense**/
+
+/**intellisense(!soImageGifFile)
+write(.(图像,保留局部调色板,本帧延时,保留局部处理方法) = 参数@1必须是 soImage 对象，\n此函数会自动检测图像，图像无效则不写入，\n其他参数为可选参数,不指定则使用默认值\n保留局部调色板增大体积但是图像颜色更丰富,\n\n如果图像位宽高于8位则会降至8位，\n建议事先调用 decreaseBpp 函数降低位宽可获得更好的输出效果。
+transColor = 指定默认透明色\n如果为null表示不透明
+frameDelay = 默认每帧延时，以0.01秒为单位,默认为0.1秒
+disposalMethod = 定义默认的背景清除方法\nPotoshop 动画帧右键菜单里「处理」「不处理」其实就是这里说的背景清除方法,\n0、不定义清除方法\n1、不清除背景，下一帧的内容显示在当前帧的内容上面，\n2、恢复背景色，然后再显示下一帧的内容\n3、恢复上一帧，然后再显示下一帧的内容\n\n[可以看这里的动画演示了解这个属性的作用](http://www.theimage.com/animation/pages/disposal.html)
+count() = 获取当前已写入的图像帧数
+close() = 写入GIF文件结束标记,并关闭文件
+end intellisense**/
+
+/**intellisense(!soImage)
+delete()  =  删除图像
+init(.(宽,高,位宽,"*->bmp") = 所有参数可选
+copy( =  复制图像
+copy() =  复制图像\n!soImage.
+copy(.(左,上,右,下) = 复制并剪切图像，\n返回新图像，不会修改原图
+isValid() = 图像是否有效
+load(.("路径") = 载入图像文件
+save(.("路径") = 保存图像文件
+getBytes("*->bmp") = 返回图像数据
+setBytes(.(数据,"*->bmp") = 修改图像数据,\n参数@1可以是字符串对象、buffer缓区、或普通指针\n如果参数@1为普通指针,则必须在参数@3中指定内存长度\n否则参数@3为可选参数(用于指定图像数据长度)
+capture(.(窗口句柄,x坐标,y坐标,宽度,高度,鼠标放大百分比) = 抓屏,所有参数可选,\n如果不指定鼠标放大百分比则不截图不含鼠标指针,\n放大百分比为 100 表示指针原始大小,忽略系统鼠标放大设置,\n此函数会自动清屏并调整为合适图像位宽（BPP）\n明确指定窗口或坐标缩小抓屏面积可优化性能，\n使用 win.getScreenPos 可获取一个或多个显示器组成的虚拟屏幕位置与大小
+fromBitmap(.(位图句柄,色板句柄) = 自位图句柄创建图像,\n参数2可选
+fromIcon(.(图标句柄,是否透明图标) = 自图标句柄创建图像,\n参数@2为可选参数 
+toClipBD() = 图像复制到剪贴板
+fromClipBD() = 自剪板板获取图像
+getWidth() = 获取宽度
+getHeight() = 获取高度
+clear() = 清空图像
+resize(.(宽,高,插值方法) = 调整图像大小,\n可选用参数@3指定插值方法，可选值：\n0 双线性插值，较慢\n1 邻近插值，最快，效果差\n2 双立方法，效果最好\n默认使用双线性插值
+resize2(.((宽,高,插值方法,边缘方法,禁止平均法) = 调整图像大小\n可选用参数@2指定插值方法,可选值如下：\n1 NEIGHBOUR;2 BILINEAR;3 BSPLINE;4 BICUBIC;5 BICUBIC2;LANCZOS 6;\n7 BOX;8 HERMITE;9 HAMMING;10 SINC;11 BLACKMAN;12 BESSEL; 13 GAUSSIAN;\n14 QUADRATIC;15 MITCHELL;16 CATROM;17 HANNING;18 POWER;\n默认值为 BICUBIC2\n\n边缘取值可选方法如下：\n1 COLOR;2 BACKGROUND;3 TRANSPARENT;4 WRAP;5 REPEAT;6 MIRROR;\n默认值为 REPEAT\n\n可选指定参数@5为 true 以禁用平均法缩小图像
+getDib() = 返回 DIB 指针
+getData() = 返回图像行列数据\n返回值为buffer数组
+getBits(__/*行号*/) = 返回指定行图像数据,指定参数时返回值为buffer类型数组\n不指定参数时直接返回全部图像原始数据指针值
+setBits(.(行号,数据) = 修改图像指定行数据
+getPixel(.(x,y) = 返回指定坐标点RGB颜色数值
+setPixel(.(x,y,颜色) = 修改指定坐标点RGB颜色数值
+setTransColor(.(是否透明,透明颜色) = 修改透明颜色,参数@2使用RGB颜色数值\nGIF 应当改用 setTransIndex
+getTransColor() = 获取透明颜色
+bpp( = 修改或获取图像位宽
+bpp(.(8) = 修改图像位宽\n参数为0是获取图像当前位宽
+bpp(.(8,true) = 修改图像位宽，允许误差扩散
+crop(.(左,上,右,下) = 剪切图像
+median(2) = 中值滤波,参数指定半径
+repair(.(修复半径,修复次数) = 修复被破坏的图片 
+mix(.(混合图像,x坐标,y坐标,混合样式) =  除参数1以外，其他参数可选,\n混合样式请使用_MIX_前缀的常量
+paint(.(hdc,x坐标,y坐标,宽度,高度) = 在指定GDI设备句柄上绘图,所有参数可选
+cmp(.(匹配图像) = 返回图像差异值，完全相似返回0 完全不相似为两个图片的面积相加,\n精确匹配能力一般，模糊识别的能力较强
+cmp2(.(匹配图像) = 返回差异值，完全一样为0，完全不一样为1，通常返回的是1到0之间的小数，数字越小表示两个图片越接近相似,\n精确匹配能力较差，模糊识别的能力一般
+cmp3(.(匹配图像) = 返回相似度，完全一样为0，完全相似返回0 完全不相似为单个图片的面积\n精确匹配能力最强，模糊识别的能力最差
+findImageInWindow(.(窗口句柄,x坐标,y坐标,结束x坐标,结束y坐标,搜索步进) = 找图，所有参数可选,\n成功返回相似度,匹配图像的右下角坐标\n\n注意这是找图,不能用来找文字,找验证码,\n也不是提供任何样本图像都能有完美的、百分百的成功率,\n查找的样本图像要尽可能的小,并尽可能裁剪去掉背景,突出查找特征
+findImage(.(屏幕图像,x坐标,y坐标,结束x坐标,结束y坐标,搜索步进) = 找图，除参数一以外，所有参数可选,\n成功返回相似度,匹配图像的右下角坐标\n\n注意这是找图,不能用来找文字,找验证码,\n也不是提供任何样本图像都能有完美的、百分百的成功率,\n查找的样本图像要尽可能的小,并尽可能裁剪去掉背景,突出查找特征
+findColor(.(匹配颜色,x坐标,y坐标,结束x坐标,结束y坐标) = 找色，除参数@1以外，所有参数可选,\n参数@1使用RGB颜色数值\n成功返回2个值，分别为最接近颜色的x坐标,y坐标,\n失败返回null
+splitRgb() = 拆分为RGB三个图像 
+splitHsl() = 拆分为HSL三个图像 
+splitXyz() = 拆分为XYZ三个图像 
+splitYiq() = 拆分为YIQ三个图像 
+splitYuv() = 拆分YUV三个图像 
+splitCmyk() = 拆分为CMYK四个图像 
+split(.(行,列) = 按指定的行,列数目拆分并返回多个图像，\n返回值为数组
+splitAuto(.(杂点系列) = 自动拆分并返回多个图像，\n返回值为数组
+getJpegQuality() = 返回JPGE图像质量
+setJpegQuality(80) = 修改JPGE图像质量,参数为1到100之间
+getNumFrames() = 返回图像帧数目
+getFrame() = 返回图像活动帧
+setFrame(__) = 设置图像活动帧,起始索引为1,\n此函数并不影响当前加载的图像,\n而是在下次加载图像时起作用
+getFrameDelay() = 返回帧延时
+setFrameDelay(10) = 修改帧延时,以0.01秒为单位
+grayScale() = 转换为灰度图
+flip() = 垂直翻转
+mirror() = 左右翻转
+negative() = 反相
+rotateLeft() = 左旋
+rotateRight() = 右旋
+setDisposalMethod(.(disposalMethod) = 定义 GIF 图像的背景清除方法\nPotoshop 动画帧右键菜单里「处理」「不处理」其实就是这里说的背景清除方法,\n0、不定义清除方法\n1、不清除背景，下一帧的内容显示在当前帧的内容上面，\n2、恢复背景色，然后再显示下一帧的内容\n3、恢复上一帧，然后再显示下一帧的内容\n\n[可以看这里的动画演示了解这个属性的作用](http://www.theimage.com/animation/pages/disposal.html)
+setRetreiveAllFrames(.(flag) = 允许载入所有帧
+setTransIndex(.(index) = 设置透明索引
+getPixelIndex(.(x,y) = 获取指定坐标颜色索引
+decreaseBpp(.( = 生成最优调色版并降低像素位宽为 8 位。\n此函数专用于生成颜色更加自然的 GIF 文件。 
+decreaseBpp(.(bpp,colors,colorBits,errorDiffusion) = 生成最优调色版并降低像素位宽为 8 位。\n此函数专用于生成颜色更加自然的 GIF 文件。\n\n@bpp 参数请指定为 8，其他参数不必指定。\n可选用 @colors 参数指定最大颜色数。\n@colorBits 指定颜色分量有效位数，应指定为 8 或省略。\n@errorDiffusion 可选指定是否允许误差扩散
+end intellisense**/
+
+ /**intellisense()
+_MIX_DEFAULT=@0/*_MIX_DEFAULT*/
+_MIX_MASK=@1/*_MIX_MASK*/
+_MIX_SRCCOPY=@2/*_MIX_SRCCOPY*/
+_MIX_DSTCOPY=@3/*_MIX_DSTCOPY*/
+_MIX_BLENDALPHA=@4/*_MIX_BLENDALPHA*/
+_MIX_SRCBLEND=@5/*_MIX_DSTBLEND*/
+_MIX_SCREEN=@6/*_MIX_SCREEN*/
+_MIX_ADD=@7/*_MIX_ADD*/
+_MIX_SUB=@8/*_MIX_SUB*/
+_MIX_AND=@9/*_MIX_AND*/
+_MIX_XOR=@0xA/*_MIX_XOR*/
+_MIX_OR=@0xB/*_MIX_OR*/
+_MIX_AVG=@0xC/*_MIX_AVG*/
+end intellisense**/
+
+/*
+本组件基于开源项目 CxImage,libjpeg,libpng: https://sourceforge.net/projects/cximage/
+*/

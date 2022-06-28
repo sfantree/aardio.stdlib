@@ -1,0 +1,39 @@
+﻿import fsys;
+import fsys.version;
+import win.path;
+
+namespace py3.lib.systemSitePackages;
+	
+var pythonPath = ..win.path.search("Python.exe");
+if(!pythonPath){
+	if(..string.startWith(..py3.version,"3.8.")){ 
+		pythonPath = ..io.appData("Programs\Python\Python38-32\Python.exe")
+	}
+	elseif(..string.startWith(..py3.version,"3.10.")){ 
+		pythonPath = ..io.appData("Programs\Python\Python310-32\Python.exe")
+	}
+	elseif(..string.startWith(..py3.version,"3.6.")){ 
+		pythonPath = ..io.appData("Programs\Python\Python36-32\Python.exe")
+	}
+	elseif(..string.startWith(..py3.version,"3.4.")){ 
+		pythonPath = "C:\Python34\Python.exe"
+	}
+	 
+	if(pythonPath) pythonPath = ..io.exist(pythonPath);
+}
+
+
+if(pythonPath){
+	path = ..fsys.path.replaceFile(pythonPath,"Lib\site-packages");
+	if(..py3.appendPath){
+		..py3.appendPath(path);
+	}
+	
+	version = ..fsys.version.getInfo(pythonPath)[["productVersion"]]
+}
+
+/**intellisense()
+py3.lib.systemSitePackages = 请先导入 py3 扩展库,\n查找系统安装的 Python 安装第三方模块的目录,\n并调用 py3.appendPath 函数添加该目录以导入该目录下的所有模块
+py3.lib.systemSitePackages.path = 系统安装的 Python 安装第三方模块的目录路径,\n找不到可能返回 null 
+py3.lib.systemSitePackages.version = 系统 Python 版本
+end intellisense**/

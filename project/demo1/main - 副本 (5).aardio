@@ -1,0 +1,53 @@
+import win.clip;
+import console;
+//win.clip.write("把我写到剪板板")
+
+
+var v1 = function(){
+	var txt;
+	if(!::User32.OpenClipboard(0))
+		return;	
+		
+	var format_id = 0;
+	console.dump((format_id))
+	
+	
+	//format_id = ::User32.RegisterClipboardFormat("Rich Text Format");
+	
+	format_id =0;
+	do {
+		format_id = ::User32.EnumClipboardFormats(format_id);
+		
+		if(format_id) {
+		    if( ::User32.IsClipboardFormatAvailable(format_id) ) {
+		         console.log(string.format("format %04x was listed as available",format_id ))
+		    
+		    }
+		}
+		
+	}
+	while(format_id != 0)
+	
+/*
+	while ((format_id = ::User32.EnumClipboardFormats(format_id))) {
+	    //console.dump(format_id)
+	    console.dump((format_id))
+	}
+*/
+	
+/*
+	var countFormats = -1;
+	countFormats = ::User32.CountClipboardFormats()
+	console.dump(countFormats)
+	
+*/
+	
+	::User32.CloseClipboard();  
+
+	return txt;
+}
+
+v1()
+console.pause()
+
+

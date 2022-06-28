@@ -1,0 +1,16 @@
+import console; 
+
+import sys.tpmInfo;
+var tpmInfo = sys.tpmInfo.get();
+ 
+if(tpmInfo){
+	console.log("支持 TPM");
+	console.log("TPM 是否启用：",tpmInfo.enabled);
+	console.log("TPM 是否激活：",tpmInfo.activated);
+	console.log("TPM 支持版本：",tpmInfo.version)
+}
+else {
+	console.log("不支持 TPM");
+}
+ 
+console.pause()

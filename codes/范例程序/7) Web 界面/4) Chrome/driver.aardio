@@ -1,0 +1,52 @@
+﻿//WebDriver 自动化
+import chrome.driver;
+
+//创建 chromeDriver 对象,
+//协议文档 https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol
+//更多用法 https://bbs.aardio.com/forum.php?mod=viewthread&tid=22544
+var driver = chrome.driver(); 
+//driver.addArguments("--start-maximized") //添加 Chrome 启动参数
+ 
+//创建会话，打开chrome浏览器，调用参数仅用于演示( 可以省略 )。
+var browser = driver.startBrowser( {
+    loggingPrefs  = { browser = 'ALL', performance = 'ALL', };
+	perfLoggingPrefs = {
+    	enableNetwork = true,
+    	enablePage= false,
+    	enableTimeline = false
+	} 
+});
+
+//打开网页
+browser.go("http://www.baidu.com")
+
+//查找文本输入框,返回的DOM对象也可以使用ququerySelector继续查找子节点
+var ele = browser.querySelector("body").querySelector("#kw"); 
+
+//在网页输入框输入内容
+ele.setValue( "ChromeDriver" )
+
+//调用JS，并且可以返回值（也可以返回DOM节点对象）
+var searchButton = browser.doScript(` 
+		//可以使用arguments访问aardio传来的参数
+		return arguments[0].querySelector("#su");
+	`
+	,browser.querySelector("body")//可以传任意个调用参数给JS,还可以直接传DOM节点对象
+)
+
+//JS返回的DOM节点对象也可以操作控制
+searchButton.click();
+
+//打开网页
+browser.go("https://httpbin.org/cookies")
+
+//修改 cookie
+var ret,err = browser.cookie( { 
+	cookie = { name = "GUID",value = "09031171412667840400",domain=".httpbin.org"} 
+} )
+ 
+//driver.startBrowser() 指定 loggingPrefs, perfLoggingPrefs
+var log = browser.se.log(type="performance");
+ 
+browser.refresh();
+ 

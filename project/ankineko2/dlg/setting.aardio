@@ -1,0 +1,92 @@
+import win.ui;
+/*DSG{{*/
+var winform2 = win.form(text="aardio form";right=759;bottom=469)
+winform2.add(
+btnApiTest={cls="button";text="测试";left=453;top=74;right=557;bottom=104;z=6};
+btnApply={cls="button";text="应用";left=518;top=409;right=687;bottom=443;z=4};
+btnCancel={cls="button";text="取消";left=311;top=409;right=457;bottom=442;z=3};
+btnConfirm={cls="button";text="确定";left=83;top=409;right=229;bottom=440;z=2};
+editApi={cls="edit";left=68;top=74;right=413;bottom=104;edge=1;multiline=1;z=5};
+static={cls="static";text="设置Anki Connect地址：";left=68;top=52;right=227;bottom=83;transparent=1;z=1}
+)
+/*}}*/
+
+var checkApiUrlFormat = function(url){
+	var pattern =  "http[s]?\://[^\s]*\:\d*"
+	return (..table.count((..string.gmatch(url, pattern))) != 0)
+}
+
+var checkApiUrlConnect = function(url){
+    // http://127.0.0.1:8765
+	import inet.http;
+	var http = inet.http();
+	http.setTimeouts(100, 100, 100)
+	var html,err,errCode = http.get(url);
+	http.close();
+	if(html){ 
+		return true;
+	} else {
+		return false;
+	}
+}
+
+winform2.btnApiTest.oncommand = function(id,event){
+    winform2.btnApiTest.disabled = true;
+    var url = winform2.editApi.text;
+	if(! checkApiUrlFormat(url)){
+	    winform2.msgbox(
+	           "请输入正确的API格式，例如 http://127.0.0.1:1234"
+	           );
+	    winform2.btnApiTest.disabled = false;
+	    return;
+	}
+	if(checkApiUrlConnect(url)) {
+		winform2.msgbox(
+	           "连接成功"
+	           );
+	} else {
+		winform2.msgbox(
+	           "连接失败"
+	           );
+	}
+		    winform2.btnApiTest.disabled = false;
+	    return;
+}
+
+
+winform2.btnConfirm.oncommand = function(id,event){
+		winform2.msgbox(
+	           "btnConfirm"
+	           );
+}
+
+winform2.btnCancel.oncommand = function(id,event){
+	        winform2.msgbox(
+	       "btnCancel"
+	       );
+}
+
+winform2.btnApply.oncommand = function(id,event){
+        winform2.msgbox(
+	       "btnApply"
+	       );
+    
+}
+
+
+var readConfig = function(){
+    import io;
+	var iniFilePath = io.fullpath("/config.ini");
+	import fsys.ini
+    var iniObj = ..fsys.ini(iniFilePath);
+    var sec = iniObj.getSection("main");
+    if(sec.api) {
+        winform2.editApi.text = sec.api;
+    }
+}
+readConfig();
+
+
+winform2.show();
+win.loopMessage();
+return winform2;

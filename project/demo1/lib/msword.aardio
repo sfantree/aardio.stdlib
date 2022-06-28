@@ -1,0 +1,24 @@
+﻿//word 电子文档
+import com; 
+
+class msword{
+	ctor( create = true ){
+		if( !create ){
+			this.oWord = ..com.TryGetObject("Word.Application") 
+			if( ! this.oExcel ) return null,"请先安装Word";
+		}
+		else {
+			this.oWord = ..com.TryCreateObject("Word.Application")
+			if( ! this.oExcel ) return null,"请先安装Word";
+			
+			this.oWord.Visible = false; 
+			..table.gc(this, "Quit");
+		}
+	};
+	@_metaProperty;
+}
+
+
+namespace msword{
+	
+}

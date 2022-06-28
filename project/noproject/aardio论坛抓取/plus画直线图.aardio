@@ -1,0 +1,28 @@
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form(text="鼠标按下拖动画直线";right=599;bottom=399)
+winform.add(
+plus={cls="plus";left=9;top=7;right=594;bottom=394;db=1;dl=1;dr=1;dt=1;notify=1;z=1}
+)
+/*}}*/
+
+import gdip.pen;
+winform.plus.onDrawContent = function(graphics,rc){
+        var pen = winform.plus.pen;
+        if(pen){
+                graphics.drawLine(pen,winform.plus.x1,winform.plus.y1,winform.plus.x2,winform.plus.y2)
+        }
+}
+winform.plus.onMouseDown = function(wParam,lParam){
+        winform.plus.pen = gdip.pen(0xFFFFFF00,5);
+        winform.plus.x1,winform.plus.y1 = win.getMessagePos(lParam);
+}
+winform.plus.onMouseMove = function(wParam,lParam){
+        if( wParam & 0x1/*_MK_LBUTTON*/ ){
+                winform.plus.x2,winform.plus.y2 = win.getMessagePos(lParam);
+                winform.plus.redrawTransparent()
+        }
+}
+
+winform.show()
+win.loopMessage();

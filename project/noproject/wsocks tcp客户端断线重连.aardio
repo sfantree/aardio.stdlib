@@ -1,0 +1,42 @@
+import console; 
+import wsock.tcp.asynClient; 
+import win;
+import win.ui;
+
+winform = win.form();
+
+console.open();
+
+checkConn = function(){
+	console.log("timer.onTimer","checkConn");
+	if(g_tcpClient == null || ( (g_tcpClient) && (not (g_tcpClient.isConnected() ) )  ) ) {
+	    g_tcpClient = wsock.tcp.asynClient();
+	    g_tcpClient.connect("127.0.0.1", 7510);
+	}
+}
+
+g_tcpClient = wsock.tcp.asynClient();
+g_tcpClient.connect("127.0.0.1", 7510);
+
+/*
+import win.timer;
+timer = win.timer(, 1500);
+timer.onTimer = function(hwnd,msg,id,tick){
+    checkConn()
+}
+timer.enable = true;
+*/
+
+winform.setInterval( 
+	function(){
+		checkConn();
+	},1500 
+)
+
+
+
+win.loopMessage();
+
+//console.pause(true);
+
+

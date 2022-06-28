@@ -1,0 +1,8 @@
+import console; 
+import crypt.bin;
+
+var crxPath = "H:\sangfor\EditThisCookie\EditThisCookie.crx";
+var crxBufferBase64 = crypt.bin.encodeBase64(string.loadBuffer(crxPath));
+
+console.log(crxBufferBase64);
+console.pause(true);

@@ -1,0 +1,531 @@
+if( _STUDIO_INVOKED && _STUDIO_INVOKED != "process" ){ 
+	error("web.kit不能在IDE嵌入线程模式下启动!",2)
+}
+
+namespace web.kit {
+
+	if( !_STUDIO_INVOKED){
+		_dllPath = ..io.appData("aardio/std/wke/1.2.1.4/wke.dll",$"~\lib\web\kit\.dll\wke.dll")
+		_dllPathX = ..io.appData("aardio/std/wke/1.2.1.4/wkex.dll",$"~\lib\web\kit\.dll\wkex.dll")
+	}
+	else {
+		_dllPath = "~\lib\web\kit\.dll\wke.dll";
+		_dllPathX = "~\lib\web\kit\.dll\wkex.dll"	
+	}
+	
+	::Kernel32.SetCurrentDirectoryW(..io.appData("aardio\std\np-plugin\"));
+	_dll = ..raw.loadDll(_dllPath,"webkit.wke.dll","cdecl");
+	_dll.wkeInitialize()
+
+	..table.gc(self,function(){
+		_dll.wkeFinalize();
+	} );
+}
+
+import web.json;
+import web.kit.view;	
+
+namespace web.kit {	
+	var wke = _dll; 
+	var __view__ = view;
+
+	_proxyType = { 
+    	HTTP = 1;
+    	SOCKS4 = 2;
+    	SOCKS4A = 3;
+    	SOCKS5 = 4;
+    	SOCKS5HOSTNAME = 5;
+	
+	};
+	
+	_wkeSettings = {
+    	struct proxy = {
+   			int type;
+   			BYTE hostname[100];
+   			WORD port;
+   			BYTE username[50];
+   			BYTE password[50];
+		
+		} 
+    	BYTE cookieFilePath[1024];
+    	INT mask;
+	};
+	
+	configure = function(cfg){
+		..table.mixr(_wkeSettings,cfg);
+		if(!_wkeSettings.mask)_wkeSettings.mask = 0;
+		if(type( _wkeSettings.proxy.type) == type.string){
+			_wkeSettings.proxy.type = _proxyType[..string.upper(_wkeSettings.proxy.type)] : 0;
+			_wkeSettings.mask = _wkeSettings.mask | 1/*WKE_SETTING_PROXY*/;
+		}
+		if(_wkeSettings.cookieFilePath) {
+			_wkeSettings.cookieFilePath = ..string.fromto(..io.localpath(_wkeSettings.cookieFilePath ) : _wkeSettings.cookieFilePath) ;
+			_wkeSettings.mask = _wkeSettings.mask | (1<<1)/*WKE_SETTING_COOKIE_FILE_PATH*/;
+		}
+		wke.wkeConfigure(_wkeSettings);
+	}
+	
+	jsInt = wke.api("wkeJSInt","LONG(POINTER jsExecState,int)" );
+	jsFloat = wke.api("wkeJSFloat","LONG(POINTER jsExecState,float)" );
+	jsDouble = wke.api("wkeJSDouble","LONG(POINTER jsExecState,double)" );
+	jsToDouble = wke.api("wkeJSToDouble","double(POINTER jsExecState,LONG value)" );
+	
+	jsBoolean = wke.api("wkeJSBool","LONG(POINTER jsExecState,bool)" );
+	jsUndefined = wke.api("wkeJSUndefined","LONG(POINTER jsExecState)" );
+	jsNull = wke.api("wkeJSNull","LONG(POINTER jsExecState)" );
+	jsTrue = wke.api("wkeJSTrue","LONG(POINTER jsExecState)" );
+	jsFalse = wke.api("wkeJSFalse","LONG(POINTER jsExecState)" );
+	
+	jsString = wke.api("wkeJSString","LONG(POINTER jsExecState,string s)" );
+	jsEval = wke.api("wkeJSEval","LONG(POINTER jsExecState,string s)" );
+	jsCall = wke.api("wkeJSCall","LONG(POINTER jsExecState,LONG func,LONG thisObject,struct args,int argCount)" )
+	jsCallGlobal = wke.api("wkeJSCallGlobal","LONG(POINTER jsExecState,LONG func,struct args,int argCount)" )
+	
+	jsBuildValue = function(jsExecState,v,aardioOwner){
+		if(v===null){
+			return jsNull(jsExecState);
+		}
+		
+		var t,mt = type(v);
+		if( t == "number" ){
+			return jsDouble(jsExecState,v);
+		}
+		elseif( t == "string" ){
+			return jsString(jsExecState,v );
+		}
+		elseif( t == "boolean" ){
+			return jsBoolean(jsExecState,v);
+		}
+		elseif( t == "table" ){
+			if( v.jsValue ) return v.jsValue;
+			if( #v ){
+				return jsEmptyArray(jsExecState,,v).jsValue;
+			} 
+			
+			if(..time.istime(v) ){
+				return jsEval(jsExecState,"new Date("+ tonumber(v) + " * 1000)");
+			}
+			return jsData(jsExecState,v).jsValue;
+		}
+		elseif( t == "cdata"  ){
+			if(mt == "math.size64") return v;
+			return jsData(jsExecState,v,aardioOwner).jsValue;
+		}
+		elseif( t == type.function ){
+			return jsData(jsExecState,v,aardioOwner).jsValue;
+		}
+		elseif( t == type.buffer ){
+			var jsValue = jsEval(jsExecState," new Uint8Array("+#v+")"); 
+			for(i=1;#v;1){
+				wke.wkeJSSet( jsExecState,jsValue,tostring(i-1),jsDouble(jsExecState,v[i])); 
+			}
+			return jsValue; 
+		}
+		return jsNull(jsExecState); 
+	}
+	var jsBuildValue = jsBuildValue;
+	
+	var __ind__ = 0/0;
+	var __parse__ = {
+		[0/*JSTYPE_NUMBER*/] = function(jsExecState,v){
+			return jsToDouble(jsExecState,v);
+		};
+		[1/*JSTYPE_STRING*/]= function(jsExecState,v){  
+			var s = wke.wkeJSToTempString(jsExecState,v);
+			if( s ) return ..raw.str( topointer(s) );
+		}
+		[2/*JSTYPE_BOOLEAN*/] = function(jsExecState,v){
+			return !!( wke.wkeJSToBool(jsExecState,v) & 0xFF);
+		};
+		[3/*JSTYPE_OBJECT*/] = function(jsExecState,v){
+			if( wke.wkeJSIsNull(jsExecState,v) ){
+				return null;
+			}
+			elseif( wke.wkeJSIsArray(jsExecState,v) ){
+				return jsEmptyArray(jsExecState,v);
+			}
+			else {
+				var obj = jsEmptyObject(jsExecState,v);
+				if( obj.getTime && ( type( obj.toUTCString ) == type.function)  ){
+					return ..time.gmt( obj.toUTCString() );
+				}
+				return obj;
+			}
+		};
+		[4/*JSTYPE_FUNCTION*/] = function(jsExecState,jsFunctionValue,thisObject){
+		 	var jsFunction;
+			if( thisObject ){
+				jsFunction = function(...){ 
+					var args = {...};
+					var _,len = ..table.range(args);
+					var jsargs;
+					if(len){
+						jsargs = { LONG args[] = {} };
+						for(i=1;len;1){
+						 	..table.push(jsargs.args,jsBuildValue(jsExecState,args[i]));
+						} 
+					}
+					else {
+						jsargs = {};
+					}
+					return jsParseValue( jsExecState,jsCall(jsExecState,jsFunctionValue,thisObject.jsValue,jsargs,len) );
+				} 
+			}
+			else {
+				jsFunction = function(...){ 
+					var args = {...};
+					var _,len = ..table.range(args);
+					var jsargs;
+					if(len){
+						jsargs = { LONG args[] = {} };
+						for(i=1;len;1){
+						 	..table.push(jsargs.args,jsBuildValue(jsExecState,args[i]));
+						} 
+					}
+					else {
+						jsargs = {};
+					}
+					
+					return jsParseValue( jsExecState,jsCallGlobal(jsExecState,jsFunctionValue,jsargs,len) );
+				} 	
+			}
+			
+			return jsEmptyObject(jsExecState,jsFunctionValue,,jsFunction); 
+		};
+		[5/*JSTYPE_UNDEFINED*/] = function(jsExecState,v){
+			return null;
+		};
+	} 
+	jsTypeOf = wke.wkeJSTypeOf;
+	jsParseValue = function(jsExecState,v,thisObject){
+		var t = wke.wkeJSTypeOf(jsExecState,v);
+		var f = __parse__[t];
+		if(f) return f(jsExecState,v,thisObject);
+	}
+	var jsParseValue = jsParseValue;
+	
+	jsArg = wke.api("wkeJSParam","LONG(pointer jsExecState,int idx)") 
+	jsParseArg = function(jsExecState){
+		lastCallbackJsExecState = jsExecState;
+		
+		var args = {}; 
+		var count = wke.wkeJSParamCount(jsExecState);
+		for(i=1;count;1){
+			var jsv = jsArg(jsExecState,i-1);
+			args[i] = jsParseValue(jsExecState,jsv);
+		}
+		return ..table.unpackArgs(args,1,count);
+	}
+	var jsParseArg = jsParseArg;
+	
+	lastView = function(){
+		return lastCallbackJsExecState ? __view__.fromJsExecState(lastCallbackJsExecState)
+	}
+	
+/*jsData{{*/
+	class jsData{
+		ctor( jsExecState,aardioData,aardioOwner ){ {
+			this._value = aardioData;
+			this._owner = aardioOwner;
+			
+			var tname = (type(aardioData) == type.function ? "Function" : "Object");
+			this._valuePointer = ..raw.malloc( {
+					BYTE typeName[100] = tname;
+    				pointer propertyGet = _propertyGetCallback;
+    				pointer propertySet = _propertySetCallback;
+    				pointer finalize = _jsFinalizeCallback;
+    				pointer callAsFunction = _jsCallAsFunctionCallback;
+    				INT id  = _registry.reg(this);
+			} )
+		
+			
+			if( tname == "Function"  )
+				this.jsValue = jsFunction(jsExecState,this._valuePointer);
+			else 
+				this.jsValue = jsObject(jsExecState,this._valuePointer);	
+		} };
+	
+	}
+	
+	import util.registry;
+	namespace jsData{
+		_registry = ..util.registry();
+		jsFunction = wke.api("wkeJSFunction","LONG(PTR es,ptr obj)" );
+		jsObject = wke.api("wkeJSObject","LONG(PTR es,ptr obj)" );
+		jsGetData = wke.api("wkeJSGetData","ptr(PTR es,LONG object)" ); 
+		var jsNull = ..web.kit.jsNull;
+		
+		_propertyGetCallback = ..raw.tocdecl( 
+			function(jsExecState,object,propertyName){
+				var jsData = jsGetData(jsExecState,object);
+				var dataId = ..raw.convert(jsData,{INT id},116).id;
+				var data  = _registry[dataId];
+				if(!data) return jsNull();
+
+				return jsBuildValue(jsExecState,data._value[propertyName],data._value);
+			},"LONG(ptr jsExecState,LONG object,string propertyName)");
+
+		_propertySetCallback = ..raw.tocdecl( 
+			function(jsExecState,object,propertyName,value){
+				var jsData = jsGetData(jsExecState,object);
+				var dataId = ..raw.convert(jsData,{INT id},116).id;
+				var data  = _registry[dataId];
+				if(!data) return false;
+				
+				if( type(data._value) == "table" ){
+					data._value[propertyName] = jsParseValue(jsExecState,value,{jsValue = object});
+					return true;
+				}
+			},"bool(ptr jsExecState,LONG object,string propertyName,LONG value)");
+			
+		_jsFinalizeCallback = ..raw.tocdecl( 
+			function(jsData){
+				var dataId = ..raw.convert(jsData,{INT id},116).id;
+				_registry.unReg(dataId);
+			},"void(ptr data)");
+		
+		_jsCallAsFunctionCallback  = ..raw.tocdecl( 
+			function(jsExecState,object,args,argCount){
+				var jsData = jsGetData(jsExecState,object);
+				var dataId = ..raw.convert(jsData,{INT id},116).id;
+				var data  = _registry[dataId]; 
+				if(!data) return jsNull();
+	 	
+				var ok,ret = call(data._value,data._owner ,jsParseArg(jsExecState));
+				if( ok )return jsBuildValue( jsExecState,ret );
+				else {
+					..web.kit.onError(ret);
+				}
+			},"LONG(ptr jsExecState,LONG object,LONG args, int argCount)");
+	}
+/*}}*/	
+	 
+/*jsEmptyObject{{*/
+	class jsEmptyObject{
+		ctor( jsExecState,jsEmptyObject,tab,jsFunction  ){
+			this.jsValue = jsEmptyObject ? jsEmptyObject : jsCreateObject( jsExecState );
+			this.jsExecState = jsExecState;
+			this.jsFunction = jsFunction;
+			
+			this@ = _meta;
+			for(k,v in tab){
+				this[k] = v;
+			} 
+		}; 
+	}
+	namespace jsEmptyObject{
+		jsCreateObject = wke.api("wkeJSEmptyObject","LONG(POINTER jsExecState)" );
+		jsGet = wke.api("wkeJSGet","LONG(POINTER jsExecState,LONG object,string prop)" );
+		jsSet = wke.api("wkeJSSet","LONG(POINTER jsExecState,LONG object,string prop,LONG v)" ); 
+		
+		_meta = {
+			_get = function(k){ 
+				var v = jsGet( owner.jsExecState,owner.jsValue,tostring(k)/*js里数值key实际上也是字符串*/);
+				return jsParseValue(owner.jsExecState,v,owner);
+			}; 
+			_set = function(k,v){
+				var v = jsBuildValue(owner.jsExecState,v);
+				jsSet( owner.jsExecState,owner.jsValue,tostring(k),v); 
+			};
+			_keys = function(){ //用于支持 table.keys,web.json
+				var getkeys = ..web.kit.jsParseValue(owner.jsExecState,..web.kit.jsEval(owner.jsExecState,"Object.keys"));
+				var keys = getkeys(owner);
+				var d ={};
+				for(i=1;keys.length;1){
+					d[i] = keys[i-1];
+				}
+				 
+				return d;
+			};
+			_startIndex = 0;
+			_tostring = function(){
+				return owner.toString(); 
+			};
+			_serialize = ..thread._callableSerialize;
+			_call = function(...){
+				if(owner.jsFunction){
+					return owner.jsFunction(...); 
+				}
+			}
+		} 
+	}
+/*}}*/
+	
+/*jsEmptyArray{{*/
+	class jsEmptyArray{
+		ctor( jsExecState,jsEmptyArray,tab ){
+			this.jsValue = jsEmptyArray ? jsEmptyArray : jsCreateArray( jsExecState );
+			this.jsExecState = jsExecState;
+			this@ = _meta;
+			for(i=1;#tab;1){
+				this[ i - 1 ] = tab[i]; 
+			}  
+		}; 
+	}
+	namespace jsEmptyArray{
+		jsCreateArray = wke.api("wkeJSEmptyArray","LONG(POINTER jsExecState)" );
+		jsGet = wke.api("wkeJSGetAt","LONG(POINTER jsExecState,LONG object,int prop)" );
+		jsSet = wke.api("wkeJSSetAt","LONG(POINTER jsExecState,LONG object,int idx,LONG v)" ); 
+		
+		_meta = {
+			_get = function(k){
+				if( type(k) == "number"){
+					var v = jsGet( owner.jsExecState,owner.jsValue,k);
+					return jsParseValue(owner.jsExecState,v);
+				}
+				elseif(k=="length"){
+					return wke.wkeJSGetLength( owner.jsExecState,owner.jsValue);
+				}
+				
+			} 
+			_set = function(k,v){
+				if( type(k) == "number"){
+					var v = jsBuildValue(owner.jsExecState,v);
+					var v = jsSet( owner.jsExecState,owner.jsValue,k,v); 
+				}
+				elseif(k=="length"){
+					if( type(v) != "number" ) error("length必须是数值",2);
+					wke.wkeJSSetLength( owner.jsExecState,owner.jsValue);
+				}
+			}
+			_tostring = function(){
+				return ..string.format("JS Array: %X",tonumber(owner.jsExecState) ); 
+			}
+			_startIndex = 0;
+			_serialize = ..thread._callableSerialize;
+		} 
+	}
+/*}}*/ 
+
+	__function__ = {};
+	__getter__ = {};
+	__setter__ = {};
+	
+	onError = function(err){
+		if( type( global.onError ) == type.function  ){
+			err = global.onError(err);
+		}
+		if( _STUDIO_INVOKED ){
+			global.import("ide.debug");
+			err = ..ide.debug.onError(err)
+		}
+		if(!err) return;
+		if( ..win ? ..win.msgboxErr ){
+			..win.msgboxErr(err)
+		}
+		else {
+			..io.stderr.write(err,'\n');
+		}
+	}
+	 
+	jsBindFunction = function(name,argCount,func){
+		if(argCount===null)argCount=0;
+		if( type(name) != type.string ) error("参数@1必须指定函数名",2); 
+		if( type(func) != type.function ) error("参数@3必须是函数对象",2);
+		
+ 		var fc = ..raw.tofastcall( function(jsExecState){
+				var ok,ret = call(func,__view__.fromJsExecState(jsExecState) ,jsParseArg(jsExecState));
+				if( ok )return jsBuildValue( jsExecState,ret );
+				else {
+					onError(ret);
+				}
+				
+			},"LONG(pointer jsExecState)");
+		__function__[name] = fc;
+		wke.wkeJSBindFunction(name,fc,argCount);
+	}
+	jsBindGetter = function(name,func){
+		if( type(name) != type.string ) error("参数@1必须指定函数名",2); 
+		if( type(func) != type.function ) error("参数@2必须是函数对象",2);
+		
+		var fc = ..raw.tofastcall( function(jsExecState){
+			var ok,ret = call(func,__view__.fromJsExecState(jsExecState) ,jsParseArg(jsExecState));
+			if( ok )return jsBuildValue( jsExecState,ret );
+			else {
+				onError(ret);
+			}
+		},"LONG(pointer jsExecState)");
+		
+		__getter__[name] = fc;
+		wke.wkeJSBindGetter(name,fc,0);
+	}
+	jsBindSetter = function(name,func){
+		if( type(name) != type.string ) error("参数@1必须指定函数名",2); 
+		if( type(func) != type.function ) error("参数@2必须是函数对象",2); 
+		
+		var fc = ..raw.tofastcall( function(jsExecState){
+			var ok,ret = call(func,__view__.fromJsExecState(jsExecState) ,jsParseArg(jsExecState));
+			if(!ok) {
+				onError(ret);
+			}
+		},"LONG(pointer jsExecState)");
+		
+		__setter__[name] = fc;
+		wke.wkeJSBindSetter(name,fc,1);
+	}
+	
+	//预定义JS函数
+	jsBindFunction("alert",1,function(str){
+		var wkeWebView = owner;
+		if( wkeWebView.onAlertBox ){
+			if( wkeWebView.onAlertBox(str) ) return;
+		}
+		var winform = wkeWebView.getForm();
+		if( winform ) winform.msgbox(tostring(str));
+	})
+	
+	jsBindFunction("confirm",1,function(str){
+		var wkeWebView = owner;
+		if( wkeWebView.onConfirmBox ){
+			return( wkeWebView.onConfirmBox(str) ) ;
+		}
+		var winform = wkeWebView.getForm();
+		if( winform ) return winform.msgboxTest(str);
+	})
+	
+	jsBindFunction("prompt",1,function(text,defaultText){
+		var wkeWebView = owner;
+		if( wkeWebView.onPromptBox ){
+			return( wkeWebView.onPromptBox(text,defaultText) ) ;
+		}
+	})
+	
+	jsBindGetter("external",function(){
+	
+		var ex = jsEval(owner.jsExecState,"__aardio_external__");
+		if(! (wke.wkeJSIsUndefined(owner.jsExecState,ex)&0xFF) ) return {jsValue=ex};
+		owner.window.__aardio_external__= owner[["external"]];
+		return owner.window.__aardio_external__;  
+	} )
+	
+	export = function(name,value){
+		if( type(name) == "table" ){
+			for(k,v in name) export(k,v); 
+			return;
+		}
+		
+		jsBindGetter(name,function(){
+			var jname = "__aardio_export(" + name + ")"; 
+			var ex = jsEval(owner.jsExecState,jname);
+			if(! (wke.wkeJSIsUndefined(owner.jsExecState,ex)&0xFF) ) return {jsValue=ex};
+			owner.window[jname] = value;
+			return owner.window[jname];
+		});
+	}
+} 
+
+/**intellisense(web.kit)
+lastView() = 获取JS最后一次回调aardio时使用的浏览器对象
+export(.(JS变量名,aardio对象) = 导出aardio对象为JS全局变量
+jsBindFunction("函数名",参数个数,函数对象) = @.jsBindFunction("JS函数名",__/*参数个数*/,function(){\n    var wkeWebView = owner;\n    var winform = wkeWebView.getForm();\n    winform.close();\n})
+jsBindGetter(.("函数名",函数对象) = 定义JS属性读取器
+jsBindSetter(.("函数名",函数对象) = 定义JS属性设置器
+jsParseValue（.(jsExecState,js值句柄) = 解析JS值对象
+jsUndefined() = JS未定义变量
+jsTypeOf(.(js值句柄) = 返回变量类型
+configure(setting) = @.configure({\n	proxy = {\n		type = "HTTP";\n		hostname = "127.0.0.1";\n		port = 8080;\n		username = "";\n		password ="";\n	};\n	cookieFilePath = "/cookie";\n})
+end intellisense**/
+
+/**intellisense()
+web.kit = 精简版 WebKit 内核浏览器组件\nNPAPI插件加载目录:\n~\plugins\ 以及 %localappdata%\aardio\std\np-plugin\plugins\n支持在注册表路径 HKCU\Software\MozillaPlugins 注册的 NPAPI 插件,\n内核源码: https://github.com/aardio/wke
+end intellisense**/

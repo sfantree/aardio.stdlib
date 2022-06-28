@@ -1,0 +1,111 @@
+﻿import web.rest.jsonLiteClient;
+import inet.adapter;
+
+namespace baidu;
+
+class speech {
+    
+    ctor(http){
+        this = http : ..web.rest.jsonLiteClient()
+        this.apiKey = apiKey;
+        this.secretKey = secretKey;
+
+        this.oauthApi = this.api("https://openapi.baidu.com/oauth/2.0/","GET");
+        
+        for adptInfo in ..inet.adapter.each() {  
+			for( addrInfo in adptInfo.ipAddressList.eachAddress() ){ 
+    			this.cuid = adptInfo.mac;
+    			if(#this.cuid)break;
+			}  
+		}
+		
+		this.aue = 3;//mp3
+    };
+    setAuth = function(apiKey,secretKey){ 
+        if(secretKey){
+        	var result,err = this.oauthApi.token({
+            	grant_type = "client_credentials";
+            	client_id = apiKey;
+            	client_secret =  ..string.trim( secretKey );
+        	});  
+        
+        	if(!result[["access_token"]]) return null,"认证失败";
+        	
+        	this.extraParameters = {
+            	tok = result.access_token;
+            	cuid = this.cuid;
+            	ctp = 1;
+            	lan = "zh";
+            	aue = this.aue;
+        	}   
+
+        	return result;
+        }
+        else {
+            if(..string.startWith(apiKey,"http://",true)){
+                apiKey = this._http.get(apiKey);
+            };
+            
+        	this.extraParameters = {
+            	access_token = apiKey;
+            	cuid = this.cuid;
+            	ctp = 1;
+            	lan = "zh";
+            	aue = this.aue;
+        	} 
+        	
+        	return true;
+        }
+    };
+    text2audio = function(param){ 
+    	param = ..table.mix(param,this.extraParameters);
+    	if( (type(param.per) == type.string) && (null ===tonumber(param.per) ) ){
+    		param.per = voiceId[param.per]
+    	}
+    	
+    	var url = "http://tsn.baidu.com/text2audio?" + ..inet.url.stringifyParameters(param);
+    	if( this.head(url) ){
+    		if( ..string.startWith(this._http.responseContentType,"audio") ){
+    			return url;
+    		}
+    	}
+    	
+    	var ret = this.get(url);
+    	if(type(ret) == type.table ){
+    		return null,ret[["err_msg"]]
+    	}
+    };
+}
+
+namespace speech{
+    
+    voiceId = {
+    	普通女声 = 0;
+    	普通男声 = 1;
+    	度逍遥 = 3;
+    	度丫丫 = 4;   
+    	度米朵 = 103; 
+    	度博文 = 106; 
+    	度小童 = 110; 
+    	度小萌 = 111; 
+    	度小娇 = 5 
+	}
+	
+	voices = {
+    	"普通女声";
+    	"普通男声";
+    	"度逍遥";
+    	"度丫丫";
+    	"度米朵";
+    	"度博文";
+    	"度小童";
+    	"度小萌";
+    	"度小娇";
+	}
+}
+
+/**intellisense()
+baidu.speech = 百度语音合成客户端支持库,\n文档：http://ai.baidu.com/docs#/TTS-API/0bda9a98
+baidu.speech() = 创建百度API语音合成客户端\n[点里打开百度API文档](http://ai.baidu.com/docs) \n!web_restClient.
+baidu.speech.voices = 所有语音库名称组成的数组
+end intellisense**/

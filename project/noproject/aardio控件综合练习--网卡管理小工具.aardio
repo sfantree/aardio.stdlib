@@ -1,0 +1,122 @@
+import win.ui;
+  import inet.adapter;
+  import inet.conn;
+  /*DSG{{*/
+  winForm = ..win.form(text="网卡管理工具";right=305;bottom=521;max=false)
+  winForm.add(
+  button={cls="button";text="修改";left=79;top=447;right=219;bottom=485;z=16};
+  combobox={cls="combobox";left=34;top=39;right=260;bottom=65;edge=1;items={};mode="dropdownlist";z=6};
+  edns={cls="edit";text="8.8.8.8";left=114;top=393;right=254;bottom=411;disabled=1;edge=1;z=14};
+ eip={cls="edit";text="192.168.0.0";left=121;top=148;right=258;bottom=166;disabled=1;edge=1;z=10};
+ emac={cls="static";text="00-00-00-00";left=94;top=290;right=270;bottom=308;z=15};
+ ewangguan={cls="edit";text="192.168.0.1";left=121;top=217;right=258;bottom=235;disabled=1;edge=1;z=12};
+ eyanma={cls="edit";text="255.255.255.0";left=120;top=180;right=257;bottom=198;disabled=1;edge=1;z=11};
+ groupbox={cls="groupbox";text="ip地址设置";left=18;top=94;right=286;bottom=263;edge=1;z=3};
+ groupbox2={cls="groupbox";text="选择网卡名称";left=15;top=15;right=287;bottom=79;edge=1;z=4};
+ groupbox3={cls="groupbox";text="dns设置";left=21;top=333;right=286;bottom=433;edge=1;z=1};
+ groupbox4={cls="groupbox";text="mac地址";left=20;top=269;right=287;bottom=318;edge=1;z=2};
+ radiobutton={cls="radiobutton";text="自动选择";left=38;top=115;right=132;bottom=129;checked=1;z=17};
+ radiobutton2={cls="radiobutton";text="使用下面";left=166;top=113;right=246;bottom=127;z=18};
+ radiobutton3={cls="radiobutton";text="自动选择";left=38;top=357;right=132;bottom=378;checked=1;z=19};
+ radiobutton4={cls="radiobutton";text="使用下面";left=142;top=358;right=222;bottom=372;z=20};
+ sdns={cls="static";text="dns地址：";left=38;top=395;right=100;bottom=416;notify=1;transparent=1;z=13};
+ sip={cls="static";text="ip地址：";left=40;top=150;right=99;bottom=186;notify=1;transparent=1;z=7};
+ static={cls="static";text="static";left=-152;top=485;right=24;bottom=503;transparent=1;z=21};
+ static2={cls="static";text="static2";left=-177;top=-230;right=35;bottom=43;notify=1;transparent=1;z=5};
+ swangguan={cls="static";text="网关地址：";left=37;top=220;right=106;bottom=241;notify=1;transparent=1;z=9};
+ syanma={cls="static";text="子网掩码：";left=36;top=184;right=105;bottom=205;notify=1;transparent=1;z=8}
+ )
+ /*}}*/
+ 
+ winForm.radiobutton4.oncommand = function(id,event){    
+     jing_mo(3)    
+ }
+ 
+ winForm.radiobutton3.oncommand = function(id,event){    
+     jing_mo(4)    
+ }
+ 
+ winForm.radiobutton.oncommand = function(id,event){    
+     jing_mo(2)    
+ }
+ 
+ winForm.radiobutton2.oncommand = function(id,event){    
+     jing_mo(1)
+ }
+ //静默文本,默认静默
+ jing_mo=function(y){ 
+select(y) {
+ 
+case 1{
+ 
+winForm.eip.disabled=false
+ 
+winForm.eyanma.disabled=false
+ 
+winForm.ewangguan.disabled=false
+ 
+}
+ 
+case 2{
+ 
+winForm.eip.disabled=true
+ 
+winForm.eyanma.disabled=true
+ 
+winForm.ewangguan.disabled=true
+     
+ 
+}
+ 
+case 3{
+     
+winForm.edns.disabled=false
+ 
+}
+ 
+else {
+ 
+winForm.edns.disabled=true
+ 
+}
+}        
+}
+ 
+ //默认显示项设置
+ winForm.combobox.add("请选择网卡")
+ winForm.combobox.selectString("请选择") //查找并默认选中
+ 
+ //循环显示网卡列表
+ winForm.combobox.oncommand = function(id,event){
+ 
+     for adptInfo in inet.adapter.each() {
+     //去重
+              if(!winForm.combobox.findEx(adptInfo.description)){
+               winForm.combobox.add(adptInfo.description)    
+              }              
+     }    
+     
+         
+     echo_s(winForm.combobox.selText)
+ 
+ }
+     
+ //匹配选中项并操作信息
+     
+ echo_s=function(a){    
+     for adptInfo in inet.adapter.each() {
+     if(a=adptInfo.description){
+         winForm.eip.text=adptInfo.ipAddressList.ipAddress ; 
+         winForm.emac.text= adptInfo.mac; 
+         winForm.eyanma.text=adptInfo.ipAddressList.ipMask ;
+         winForm.ewangguan.text=adptInfo.gatewayList.ipAddress ;
+         winForm.edns.text =adptInfo.dhcpServer.ipAddress ; 
+  
+ }
+  
+}
+}
+winForm.show()
+win.loopMessage();
+
+// aardio控件综合练习--网卡管理小工具

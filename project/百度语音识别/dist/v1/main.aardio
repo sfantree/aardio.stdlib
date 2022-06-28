@@ -1,0 +1,427 @@
+import win.ui;
+/*DSG{{*/
+mainForm = win.form(text="aardio语音识别";right=479;bottom=359)
+mainForm.add(
+button={cls="button";text="设置";left=256;top=320;right=344;bottom=344;z=1};
+button2={cls="button";text="识别";left=368;top=320;right=456;bottom=344;z=2};
+button3={cls="button";text="选择文件";left=32;top=320;right=120;bottom=344;z=4};
+button4={cls="button";text="清空选择";left=144;top=320;right=232;bottom=344;z=5};
+edit={cls="edit";left=16;top=16;right=464;bottom=304;autohscroll=false;edge=1;multiline=1;z=3}
+)
+/*}}*/
+
+import console;
+import process;
+import fsys;
+import time;
+import fsys.log;
+import fsys.config;
+import fsys.dlg;
+
+
+
+// 运行环境检测
+var init_enviroment = function(){
+    // 0.初始化日志
+/**
+    var log_path = fsys.joinpath( fsys.getSpecial( 0x1c /*_CSIDL_LOCAL_APPDATA*/ , "aardio_asr"), "log", "app$.log" );
+
+    if(! io.exist(fsys.getParentDir(log_path)) ) {
+        fsys.createParentDir((log_path));
+    }
+**/
+
+    var stdfsyslog = fsys.log();
+    mainForm.logObj = stdfsyslog;
+    assert(stdfsyslog != null )
+    
+    
+    var bannerText = /**
+    
+ █████╗  █████╗ ██████╗ ██████╗ ██╗ ██████╗     ██╗   ██╗ ██╗ ██████╗ 
+██╔══██╗██╔══██╗██╔══██╗██╔══██╗██║██╔═══██╗    ██║   ██║███║██╔═████╗
+███████║███████║██████╔╝██║  ██║██║██║   ██║    ██║   ██║╚██║██║██╔██║
+██╔══██║██╔══██║██╔══██╗██║  ██║██║██║   ██║    ╚██╗ ██╔╝ ██║████╔╝██║
+██║  ██║██║  ██║██║  ██║██████╔╝██║╚██████╔╝     ╚████╔╝  ██║╚██████╔╝
+╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚═╝ ╚═════╝       ╚═══╝   ╚═╝ ╚═════╝ 
+                                                                                                 **/
+    fsys.log.printf("%s", bannerText)
+    fsys.log.print(tostring(time.now()), "mainForm", "start runing...")
+    
+	// 1.检查vaddemo.exe是否存在
+	if(not _STUDIO_INVOKED) {
+	    var vaddemo_path = fsys.joinpath(io._exedir, "vad-demo.exe");
+	    assert(io.exist(vaddemo_path));
+	    mainForm.vaddemo_path = vaddemo_path;
+	    fsys.log.print(tostring(time.now()), "mainForm.vaddemo_path:", mainForm.vaddemo_path);
+	    
+	} else {
+	    var vaddemo_path = "G:\Program Files (x86)\aardio\project\百度语音识别\dist\vad-demo.exe";
+	    assert(io.exist(vaddemo_path));
+	    mainForm.vaddemo_path = vaddemo_path;
+	    fsys.log.print(tostring(time.now()), "mainForm.vaddemo_path:", mainForm.vaddemo_path)
+	}
+	
+	// 2.检查ffmpeg.exe是否存在
+	if(not _STUDIO_INVOKED) {
+	    var ffmpeg_path = fsys.joinpath(io._exedir, "ffmpeg.exe");
+	    assert(io.exist(ffmpeg_path));
+	    mainForm.ffmpeg_path = ffmpeg_path;
+	    fsys.log.print(tostring(time.now()), "mainForm.ffmpeg_path:", mainForm.ffmpeg_path)
+	} else {
+		// 一直报错注意检测字符串的不可见字符
+	    var ffmpeg_path = "G:\Program Files (x86)\aardio\project\百度语音识别\dist\ffmpeg.exe";
+	    assert(io.exist(ffmpeg_path));
+	    mainForm.ffmpeg_path = ffmpeg_path;
+	    fsys.log.print(tostring(time.now()), "mainForm.ffmpeg_path:", mainForm.ffmpeg_path)
+	}
+	
+	//console.log(io._exedir);
+	
+	// 3.配置文件
+	//var config_path = fsys.getSpecial( 0x1c /*_CSIDL_LOCAL_APPDATA*/ , "aardio_asr", "config")
+	//mainForm.config = fsys.config(config_path);
+	mainForm.config = fsys.config();
+	mainForm.config.global.last_runtime = tostring(time.now());
+	mainForm.config.saveAll();
+	fsys.log.print(tostring(time.now()), "mainForm.config", "init")
+	//fsys.log.print(tostring(time.now()), "config_path", fsys.config._cfgDir)
+
+	// 4.创建临时目录
+	var tmpDir = fsys.joinpath(fsys.getTempDir(), "aardio_asr");
+	fsys.createDir(tmpDir, true);
+	mainForm.tmpDir = tmpDir;
+	fsys.log.print(tostring(time.now()), "mainForm.tmpDir:", mainForm.tmpDir)
+}
+
+mainForm.button.oncommand = function(id,event){
+    fsys.log.print(tostring(time.now()), "mainForm.button.oncommand", "\dlg\setting.aardio");
+	var settingForm,wb = mainForm.loadForm("\dlg\setting.aardio");
+}
+
+// 显示待转换的文件列表
+mainForm.trFiles = {};
+mainForm.button3.oncommand = function(id,event){
+	mainForm.trFiles = fsys.dlg.openEx('所有文件|*.*||',,,mainForm);
+	if(#(mainForm.trFiles)){
+		mainForm.edit.text = "";
+		for(i=1;#(mainForm.trFiles);1){
+			//mainForm.edit.print(mainForm.trFiles[i]);
+			mainForm.edit.printf("[%d] -> %s", i, mainForm.trFiles[i]);
+		}
+		//mainForm.edit.dump(mainForm.trFiles);
+		fsys.log.print(tostring(time.now()), "mainForm.trFiles:", #(mainForm.trFiles), table.tostring(mainForm.trFiles));
+	}
+}
+
+// 返回dstpath
+mainForm.any2Pcm = function(original){
+    // 坑 复制注意空白字符
+	var FFmpegBin = mainForm.ffmpeg_path;
+	if(not io.exist(FFmpegBin)) {
+        return nil;
+    }
+	fsys.log.print(tostring(time.now()), "mainForm.any2Pcm:", FFmpegBin)
+	var InputFileName = original;
+	if(not io.exist(InputFileName)) {
+        return nil;
+    }
+    var OutputFileName = string.format("%s.pcm", fsys.joinpath(mainForm.tmpDir, fsys.getFileName(InputFileName)));
+    fsys.log.print(tostring(time.now()), "mainForm.any2Pcm:", "OutputFileName", OutputFileName);
+	var parameterString = string.format(' -threads 2 -y -i "%s" -vn -acodec pcm_s16le -f s16le -ac 1 -ar 16000 "%s" ', InputFileName, OutputFileName)
+	fsys.log.print(tostring(time.now()), "mainForm.any2Pcm:", FFmpegBin, parameterString);
+
+	var pid, err = process.executeWait(FFmpegBin, parameterString);
+	//FFmpegBin = "C:\Windows\System32\cmd.exe"
+	//var pid, err = process.executeWait(FFmpegBin);
+	
+	fsys.log.print(tostring(time.now()), "mainForm.any2Pcm:", "pid", tostring(pid));
+
+	if(not pid) {
+	    //console.log("FFmpeg error");
+	    fsys.log.print(tostring(time.now()), "mainForm.any2Pcm:", "err", tostring(err));
+	    return nil;
+	} else {
+	    return OutputFileName;
+	}
+}
+
+mainForm.cutVadSegment = function(original, vadOutputDir){
+    // 坑 vadBin 切割配置 cutOption 中使用 C语言源码结构体成员类型 无符号整数uint导致溢出 切换为64位
+	var vadBin = mainForm.vaddemo_path;
+	var filename = original;
+	//var filename_ansi = string.fromto( filename );
+	
+	var output_filename_prefix = "16k_1.pcm";
+	//var output_filename_prefix_ansi = string.fromto( output_filename_prefix );
+	
+	if(not io.exist(vadOutputDir)) {
+	    fsys.createDir(vadOutputDir, true)
+	}
+	var output_dir = vadOutputDir;
+	//var output_dir_ansi = string.fromto( output_dir );
+	
+	var cutOption = mainForm.config.global.cutOption;
+	var cut_settings = cutOption;
+	//var cut_settings_ansi = string.fromto( cut_settings );
+	
+	//var parameterString2 = string.format(' "%s" "%s" "%s" "%s"', filename_ansi, output_filename_prefix_ansi, output_dir_ansi, cut_settings_ansi);
+	
+	// 坑 传递中文字符串 直接传递 无需转gbk
+	var parameterString2 = string.format(' "%s" "%s" "%s" "%s"', filename, output_filename_prefix, output_dir, cut_settings);
+    
+    fsys.log.print(tostring(time.now()), "mainForm.cutVadSegment:", "(vadBin, parameterString2)", vadBin, parameterString2);
+    
+    var pid2 = process.executeWait(vadBin, parameterString2);
+    //var pid2 = process.executeWait(vadBin);
+    
+    fsys.log.print(tostring(time.now()), "mainForm.cutVadSegment:", "pid2", tostring(pid2));
+    
+    if(not pid2) {
+	    //console.log("FFmpeg error");
+	    return nil;
+	} else {
+	    return vadOutputDir;
+	}
+}
+
+// voiceFilePath pcm文件路径
+mainForm.baiduASR = function(voiceFilePath){
+	//import console; 
+
+	//https://ai.baidu.com/ai-doc/SPEECH/Vk38lxily
+	
+	var API_KEY = "";//'kVcnfD9iW2XVZSMaLMrtLYIz'
+	var SECRET_KEY = "";//'O9o1O213UgG5LFn0bDGNtoRN3VWl2du6'
+	
+	var apiKey = mainForm.config.global.apiKey;
+	var secretKey = mainForm.config.global.secretKey;
+	var cutOption = mainForm.config.global.cutOption;
+	if(#apiKey > 0) {
+	    API_KEY = apiKey;
+	}
+	
+	if(#secretKey > 0) {
+	    SECRET_KEY = secretKey;
+	} 
+	
+	var CUID = '123456PYTHON'
+	var RATE = 16000
+	var DEV_PID = 1537 // 1537 表示识别普通话，使用输入法模型。根据文档填写PID，选择语言及识别模型
+	var ASR_URL = 'http://vop.baidu.com/server_api'
+	var SCOPE = 'audio_voice_assistant_get' 
+	var TOKEN_URL = 'http://openapi.baidu.com/oauth/2.0/token'
+	
+	import web.rest.jsonLiteClient;
+	
+	var http = web.rest.jsonLiteClient(); 
+	var baidu_auth = http.api("http://openapi.baidu.com/oauth/2.0/token");
+	
+	// fetch_token
+	
+	/*
+	params = {'grant_type': 'client_credentials',
+              	'client_id': API_KEY,
+              	'client_secret': SECRET_KEY}
+	*/
+	var jsonData = baidu_auth.post(
+		grant_type = "client_credentials";
+		client_id = API_KEY;
+		client_secret = SECRET_KEY;
+	)
+	//console.log( jsonData[["access_token"]] );
+	var tokenString = jsonData[["access_token"]];
+	//console.dump(tokenString);
+	
+	
+	
+	import crypt.bin;
+	import fsys;
+	//var voiceFilePath = "G:\chromedl\aardio\project\noproject\webrtcvad\output\16k_1.pcm_12990-23729_A.pcm";
+	if(not io.exist(voiceFilePath)) {
+    	console.pause(true);
+	}
+	var voiceFileExt = fsys.getExtensionName(voiceFilePath);
+	//console.dump(voiceFileExt);
+	var voiceFileLength = #(string.load(voiceFilePath));
+	//console.dump(voiceFileLength);
+	var voiceFileBase64 = crypt.bin.encodeBase64( string.load(voiceFilePath) ) 
+	//console.dump(voiceFileBase64);
+	
+	/*
+	https://github.com/Baidu-AIP/speech-demo/blob/master/rest-api-asr/python/asr_json.py
+	params = {'dev_pid': DEV_PID,
+             	#"lm_id" : LM_ID,    #测试自训练平台开启此项
+              	'format': FORMAT,
+              	'rate': RATE,
+              	'token': tokenString,
+              	'cuid': CUID,
+              	'channel': 1,
+              	'speech': speech,
+              	'len': length
+              	}
+	*/
+	var restClient = web.rest.jsonLiteClient(); 
+	var postTable = {
+		dev_pid = DEV_PID;
+		format = voiceFileExt;
+		rate = RATE;
+		token = tokenString;
+		cuid = CUID;
+		channel = 1;
+		speech = voiceFileBase64;
+		len = voiceFileLength;
+	}
+	var postJsonString = web.json.stringify(postTable)
+	
+	// 坑 try 语句块中 不要 return 
+	var returnValue = null;
+	try{
+		var jsonData = restClient.post(ASR_URL, postJsonString) 
+		returnValue = jsonData[["result"]][[1]];
+	}
+	catch(e){
+		returnValue = null;
+	}
+	return returnValue;
+}
+
+mainForm.getNowTimeString = function(){
+	import time;
+	var tm = time.now();
+	tm.format = "%Y%m%d%H%M%S";
+	return tostring(tm);
+}
+
+
+mainForm.mp32txt = function(mp3file){
+    // 转pcm
+    
+    fsys.log.print(tostring(time.now()), "mainform.mp32txt:", "start mp3 to pcm");
+	var OutputFileName = mainForm.any2Pcm(mp3file);
+	fsys.log.print(tostring(time.now()), "mainform.mp32txt:", "finish mp3 to pcm", OutputFileName);
+	
+	//win.delay(50);
+	win.peekPumpMessage();
+	
+	var nowtime = mainForm.getNowTimeString();
+	var vadOutputDir = fsys.joinpath(fsys.getTempDir(), nowtime);
+
+	if(not io.exist(vadOutputDir)) {
+	    fsys.createDir(vadOutputDir, true)
+	}
+	//mainForm.edit.print((vadOutputDir));
+	fsys.log.print(tostring(time.now()), "mainform.mp32txt:", "start cut pcm to pcms");
+	mainForm.cutVadSegment(OutputFileName, vadOutputDir)
+	fsys.log.print(tostring(time.now()), "mainform.mp32txt:", "finish cut pcm to pcms", vadOutputDir);
+	
+	//win.delay(50);
+	win.peekPumpMessage();
+	
+	var pcmFilenames = {};
+	fsys.enum( vadOutputDir, "*.pcm",
+		function(dir,filename,fullpath,findData){ 
+			if(filename){
+				 table.push(pcmFilenames, fullpath);
+	           	//winform.edit.printf('%s\n', filename)
+	        }
+		},
+		false
+	);
+	
+	// 以时间顺序 排序拆分文件
+	table.sort(pcmFilenames, function(filename){
+			var a = string.match(owner,"16k_1.pcm_(\d+)-\d+_\a.pcm");
+		    var b = string.match(filename,"16k_1.pcm_(\d+)-\d+_\a.pcm");
+		    if(a and b) {
+		        return tonumber(a,10) < tonumber(b,10);
+		    } else {
+		        return true;
+		    }
+	});
+	
+	//string.save("", )
+	var OutputResultTxt = string.format("%s_%s.txt", mp3file, mainForm.getNowTimeString());
+	if(not io.exist(OutputResultTxt)) {
+	    string.save(OutputResultTxt, "");
+	}
+	
+/*
+	if(io.exist(OutputResultTxt)) {
+	    //string.save(OutputResultTxt, "");
+	    var tm = time.now();
+        tm.format = "%Y%m%d%H%M%S";
+	    OutputResultTxt = string.format("%s_%s.txt", mp3file, tostring(tm));
+	} else {
+	    OutputResultTxt = string.format("%s.txt", mp3file);
+	}
+*/
+	fsys.log.print(tostring(time.now()), "mainform.mp32txt:", "OutputResultTxt", OutputResultTxt);
+
+	
+	for(i=1; #pcmFilenames;1){
+		//winform.edit.printf('%s\n', pcmFilenames[i])
+		var detectResult = mainForm.baiduASR(pcmFilenames[i]);
+		
+		if(#detectResult) {
+			fsys.log.print(tostring(time.now()), "i, detectResult", tostring(i), detectResult);
+			string.save(OutputResultTxt, tostring(i) + '\r\n', true);
+		    string.save(OutputResultTxt, detectResult + '\r\n', true);
+		}
+		//winform.edit.print(detectResult);
+		//console.dump(i);
+		//console.dump(detectResult);
+		//var writeStr = string.format("%d\n\%s\n", i, detectResult)
+		//file.write( writeStr );
+		
+		//win.delay(50);
+		win.peekPumpMessage();
+	}
+	
+	
+	
+}
+
+
+
+mainForm.onClose = function(hwnd,message,wParam,lParam){
+    fsys.log.print(tostring(time.now()), "mainForm.onClose")
+}
+
+mainForm.wndproc = function(hwnd,message,wParam,lParam){
+	select( message ) { 
+		case 0x205/*_WM_RBUTTONUP*/{
+			//鼠标右键弹起,下面获取坐标
+			var x,y = win.getMessagePos(lParam);
+			fsys.log.print(tostring(time.now()), "mainForm.wndproc", "_WM_RBUTTONUP");
+		}
+		else{
+			
+		}
+	}
+	//无返回值则继续调用默认回调函数
+}
+
+mainForm.button2.oncommand = function(id,event){
+	if(#mainForm.trFiles) {
+	    for(i=1;#mainForm.trFiles;1){
+	    	fsys.log.print(tostring(time.now()), "mainForm.button2.oncommand", mainForm.trFiles[i]);
+	    	mainForm.mp32txt(mainForm.trFiles[i])
+	    	//win.delay(50);
+	    	win.peekPumpMessage();
+	    }
+	    
+	}
+}
+
+mainForm.button4.oncommand = function(id,event){
+	if(#mainForm.trFiles) {
+		mainForm.edit.text = "";
+	    table.clear(mainForm.trFiles);
+	}
+}
+
+init_enviroment();
+
+mainForm.show();
+return win.loopMessage();

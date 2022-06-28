@@ -1,0 +1,22 @@
+import win.ui;
+/*DSG{{*/
+mainForm = win.form(text="开启或禁用默认右键菜单";right=959;bottom=591;bgcolor=16777215)
+mainForm.add()
+/*}}*/
+
+import web.blink.form;
+var wb = web.blink.form(mainForm);
+
+if(_STUDIO_INVOKED){
+	wb.enableContextMenu(
+		copyImage=false;
+		goForward=true;
+		goBack=true;
+		reload=true;
+	)
+}
+
+wb.go("http://www.baidu.com")
+
+mainForm.show();
+return win.loopMessage();

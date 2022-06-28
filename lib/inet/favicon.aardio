@@ -1,0 +1,35 @@
+//favicon 图标
+import inet.whttp;
+namespace inet.favicon;
+
+get = function(url,data){
+	var ico;
+	var http = ..inet.whttp(); 
+	
+	do{
+		var html = http.get(url); 
+		if( html ){ 
+			var _,href = ..string.match(html,"\<link[^>]+rel\s*\=\s*[""']?[^>]*icon[^>]+href\s*\=\s*([""'])(.+?)\1[^>]*\>"); 
+			if( href ){
+				ico = ..inet.url.joinpath(url,href) 
+				if( http.head( ico )  && string.match(http.responseContentType ,"image") )break;
+			}
+		}
+ 	
+		ico = ..inet.url.joinpath(url,"favicon.ico")
+		if( http.head( ico )  && ..string.match(http.responseContentType ,"image") ) break;
+		
+		ico = ..inet.url.joinpath(url,"/favicon.ico")
+		if( http.head( ico )  && ..string.match(http.responseContentType ,"image") ) break;
+		
+		ico = null;
+	}while(0);
+	
+	if( ico ? data ){ ico = http.get(ico);}
+	http.close();
+	return ico;
+}
+
+/**intellisense(inet.favicon)
+get(.("网址") = 返回favicon图标网址\n参数@2为真则返回图标数据,\n失败返回空值
+end intellisense**/

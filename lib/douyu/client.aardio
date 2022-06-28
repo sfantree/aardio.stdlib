@@ -1,0 +1,110 @@
+﻿import wsock.tcp.asynClient;
+import douyu.message;
+
+namespace douyu;
+
+class client{
+	ctor(){
+		this.socket = ..wsock.tcp.asynClient();
+	};
+	writeData = function(s){
+    	var data = {
+        	int len;
+        	struct msg = {
+            	int len;
+            	word type = 689;
+            	byte cryptedField;
+            	byte reservedField;
+            	byte body[] = ..douyu.message.stringify(s);
+            	byte e;
+        	}
+    	}
+	
+    	data.len = ..raw.sizeof(data.msg); 
+    	data.msg.len = data.len;  
+    	return owner.socket.write(data);    
+	}; 
+	readData = function(){
+    	var header = owner.socket.read({
+        	int len;
+        	int len2;
+        	int magic;
+    	})
+    	if(header)return ..douyu.message.parse( owner.socket.read( header.len - 12) );  
+	};   
+	connect = function(roomId,host="openbarrage.douyutv.com",port=8601){
+		
+		var tcpClient = ..wsock.tcp.asynClient();
+		tcpClient.onRead = function(err){
+			var msg = this.readData();
+			if(msg){
+				if( this.onRead ) this.onRead(msg);
+			}
+		}
+
+		tcpClient.onConnect = function(err){  
+			if(err){
+				return;
+			};
+			
+			if(this.socket) {
+				if( this.socket._form ) this.socket._form.close();
+				this.socket.close();
+			}
+			this.socket = tcpClient;//成功连接
+				
+			this.writeData(
+				["type"] = "loginreq";
+				["roomid"] = roomId;
+			)
+			this.writeData(
+				["type"] = "joingroup";
+				["rid"] = roomId;
+				["gid"] = "-9999";
+			) 
+			 
+			this.keepLiveId = tcpClient._form.addtimer( 
+				15000, function(hwnd,msg,id,tick){
+					if( !this.writeData(
+						["type"] = "mrkl";
+						["roomid"] = roomId;
+					) ){
+						this.connect(roomId,host,port);//重新连接
+					}	
+				} 
+			)
+			
+			if(this.onConnect) this.onConnect();	
+		}
+		
+		tcpClient.onClose = function(){
+			if(this.onClose) this.onClose();	
+		}
+		
+		tcpClient.connect(host,port); 
+	}
+	
+}
+ 
+/**intellisense()
+douyu.client = 斗鱼客户端
+douyu.client() = 创建斗鱼客户端\n!stddouyuclient.
+end intellisense**/
+
+/**intellisense(!stddouyuclient)
+socket = TCP客户端面\n!stdtcpaclient.
+writeData(__) = 发送数据,参数可以是表或字符串\n成功返回true
+readData(__) = 接收数据,成功返回表对象
+connect(.(房间ID,IP或域名,端口号) = 创建连接\n成功返回true
+onConnect = @.onConnect = function(err){
+	__/*已连接*/	
+}
+onRead = @.onRead = function(msg){
+	if(msg[["type"]]== "chatmsg"){
+		mplayer.setOption("osd-msg1", msg.nn ++ "：" ++ msg.txt);
+	}	
+}
+onClose = @.onClose = function(err){
+	__/*服务端关闭套接字,这个事件可能在其他事件前面触发*/	
+}	
+end intellisense**/

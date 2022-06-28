@@ -1,0 +1,84 @@
+//共享程序加密串和激活码生成程序
+import fsys;
+import string.xxtea;
+import string.base64;
+import sys.volume;
+import fsys.ini;
+import win.ui;
+/*DSG{{*/
+var winform = win.form(parent=...; right=314;text="共享程序测试";bottom=249 )
+winform.add(
+static1={ bottom=72;nWrap=1;left=23;top=45;transparent=1;right=105;z=1;text="用户特征码";cls="static" };
+edit1={ bottom=79;text="edit";left=141;multiline=1;top=34;z=2;right=304;edge=1;cls="edit" };
+edit2={ bottom=185;text="edit2";left=141;multiline=1;top=93;z=4;right=304;edge=1;cls="edit" };
+button1={ bottom=235;text="验证";left=101;top=196;z=5;right=209;cls="button" };
+static2={ bottom=145;nWrap=1;left=23;top=118;transparent=1;right=105;z=3;text="用户激活码";cls="static" }
+)
+/*}}*/
+
+//io.open()
+ZcmIni = fsys.ini("zcmscq.ini");
+jmstring = "DeemWkjQoN6l27rt0jyvNpfoFRmx3PovChcyCZYtoKlUVAbRyUwNQyiSAXXysDdf";
+
+//取当前驱动器逻辑卷号
+HjVosDir = fsys.getCurDir();
+yhtzmInfo = {};
+yhtzmInfo = sys.volume.getInfo(HjVosDir);
+
+//客户机特征码生成
+//特征码生成过程：1、取共享程序驱动器逻辑卷号 2、进行xxtea加密 3、base64编码并划分为2段
+yhtzms = yhtzmInfo.serial;
+//io.print(yhtzms);
+yhtzms1 = string.xxtea.encrypt(yhtzms ,jmstring);
+yhtzms2 = string.base64.encode(yhtzms1);
+winform.edit1.text = string.slice(yhtzms2,1,#yhtzms2 / 2) + "-" + string.slice(yhtzms2,(#yhtzms2 / 2)+1);
+
+//验证按钮
+//共享程序中激活码验证代码
+winform.button1.oncommand = function(id,event){
+    try{
+        yhjhmtab ={};
+        yhjhmtab = string.split(winform.edit2.text,'-');
+        //激活码1比较
+        yhtzmInfo = {};
+        yhtzmInfo = sys.volume.getInfo(HjVosDir);
+        yhtzms = yhtzmInfo.serial;
+        fwqyhtzmn = (tonumber(yhtzms,16)) % 64;
+        //将加密字符串分解2段后重新组合 得到变形的激活码加密串
+        jmstring1 = string.slice(jmstring,fwqyhtzmn) + string.slice(jmstring,1,fwqyhtzmn-1);
+        yhjhm1 = string.xxtea.decrypt(string.base64.decode(yhjhmtab[1]+yhjhmtab[2]) ,jmstring1);
+        yhjhm1 = string.reverse(yhjhm1);
+        for(i=1;#yhjhm1;1){
+            if(yhjhm1 != yhtzms){
+                //io.print("激活码1第", i ,"错误");
+                //winform.close();结束程序或留下验证错误标志
+                return i+1;
+            }
+        }
+        io.print("激活码1正确");
+        //激活码2比较
+        yhtzmInfo = {};
+        yhtzmInfo = sys.volume.getInfo(HjVosDir);
+        yhjhm2 = string.xxtea.decrypt(string.base64.decode(yhjhmtab[3]+yhjhmtab[4]) ,jmstring1);
+        yhtzms = yhtzmInfo.serial;
+        yhjhm3 = "";
+        fwqyhtzmn1 = (tonumber(yhtzms,16)) % 7;//此处的7可以在7~31之间的奇数质数中变化
+        for(i=1;#yhtzms;1){
+            yhjhm3 = yhjhm3 ++ string.pack((yhjhm2 - jmstring1[(fwqyhtzmn + i * (fwqyhtzmn1+1))%64 + 1]));
+            if(yhjhm3 != yhtzms){
+                //io.print("激活码2第",i,"错误");
+                //winform.close();结束程序或留下验证错误标志
+                return i+110;
+            }
+        }
+        //io.print(yhjhm3,"激活码2正确");
+        win.msgbox("验证正确","aardio");//此处放置验证正确的相应处理程序
+    }
+    catch(e){
+        winform.close();
+    }
+}
+
+winform.show();
+win.loopMessage();
+return winform;

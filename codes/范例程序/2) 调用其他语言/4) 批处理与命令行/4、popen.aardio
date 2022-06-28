@@ -1,0 +1,30 @@
+//管道读写
+
+import process.popen
+
+/*
+打开命令行,隐藏命令行窗口
+如果包含弹出控制台窗口的外部命令，
+请将下面的 process.popen.detached 换为 process.popen
+*/
+var prcs = process.popen.detached("cmd.exe")
+
+//如果调用UTF8编码的程序，请添加下面的编码声明
+//prcs.codepage = 65001
+
+var cmd = /*
+CD C:\
+C:
+dir 
+mkdir test
+rmdir test
+*/
+
+prcs.write(cmd)
+var result = prcs.peekTo(">");
+prcs.print('exit')
+
+//显示结果
+import console;
+console.log( result );
+console.pause("pause");

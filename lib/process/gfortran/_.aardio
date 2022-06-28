@@ -1,0 +1,51 @@
+﻿import process;
+import process.gcc;
+import string.cmdline;
+import console;
+
+namespace process;
+
+class gfortran{
+	ctor(workDir){
+		if(!..process.gcc.check()){
+			return;
+		}
+		
+		this.workDir = workDir : ..io.fullpath("/");
+		this.path = ..io.joinpath(..io.splitpath(..process.gcc.path).dir,"gfortran.exe");
+	};
+	command = function(...){
+		..console.open() 
+		..console.showLoading(" Building");
+		
+		var arguments = ..string.cmdline.arguments(...); 
+		var prcs =  ..process("gfortran.exe" //写完整路径 gfortran 会出错，但 aardio 已经将其添加到进程 path 环境变量
+			,arguments ,{workDir=this.workDir;environment=this.environment} ); 
+		
+		prcs.wait();
+		prcs.free();
+		
+		..console.log("");
+	};
+	buildShared = function(...){
+		//-static-libgcc 参数是为了静态链接 GCC 的库生成独立 DLL ，  -Wl,-S 用于移除调试符号减小体积
+		var args1 = ..string.cmdline.arguments("-shared -fPIC -m32 -O3 -Wl,-S -fcoarray=single -static-libgcc -static-libstdc++ -static");
+		var args2 = ..string.cmdline.arguments(...);
+		return this.command(..table.append(args1,args2));
+	};
+}
+
+/**details(参考文档)
+[aardio 静态类型](chm://libraries/kernel/raw/datatype.html)
+[Fortran C兼容类型](https://gcc.gnu.org/onlinedocs/gfortran/ISO_005fC_005fBINDING.html)
+end details**/
+
+/**intellisense()
+process.gfortran() = 创建 Fortran 编译器，\n可选用参数@1指定工作目录，默认工作目录为应用程序根目录 "/"\n!processGfortran.
+end intellisense**/
+
+/**intellisense(!processGfortran)
+command(__) = 运行 gfortran ,可指定一个或多个启动参数,\n启动参数兼容 process 启动参数\n\n未输出错误信息就是成功
+buildShared("-o fortan->dll fortan->f90__") = 编译 DLL 文件 ,可指定一个或多个启动参数,\n启动参数兼容 process 启动参数\n\n未输出错误信息就是成功
+workDir = 工作目录，也就是 Fortran 源码所在目录，\n默认工作目录为应用程序根目录
+end intellisense**/

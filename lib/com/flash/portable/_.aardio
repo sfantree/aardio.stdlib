@@ -1,0 +1,8 @@
+﻿import com.flash; 
+namespace com.flash.portable;
+
+..com.flash.loadOcx($"~\lib\com\flash\portable\.res\Flash32_11_5_500_80.ocx");
+
+/**intellisense()
+com.flash.portable = 自带 flash 控件
+end intellisense**/

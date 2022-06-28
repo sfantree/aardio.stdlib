@@ -1,0 +1,33 @@
+﻿//ValueTuple 元组
+import dotNet;
+dotNet.import("System.ValueTuple","mscorlib"); //.Net 4.7.1 开始支持( Win10 1709 系统自带)
+
+//如果不是有效的 .Net 类
+if( ! dotNet.getObject(System.ValueTuple) ){
+	//尝试加载自带的 System.ValueTuple，支持 .Net 4.4+，通过赋值替换 mscorlib 引入的名字空间
+	System.ValueTuple = dotNet.import("System.ValueTuple");
+}
+
+namespace System.ValueTuple;
+
+self[["each"]] = function(t){
+	var i,i2 = 0,0;
+	var cur,r = t;
+	return function(){
+		i++;
+		i2++;
+		if(i==8){
+			cur = cur.Rest;
+			if(!cur) return;
+			i = 1;
+		}
+		
+		r = cur["Item"+i];
+		if(r!==null) return i2,r;
+	}
+}
+
+/**intellisense()
+System.ValueTuple = .Net System.ValueTuple 名字空间
+System.ValueTuple.Create(__/*创建 ValueTuple 对象,最多支持 8 个参数*/) = 创建 ValueTuple 对象
+end intellisense**/

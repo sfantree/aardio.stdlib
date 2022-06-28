@@ -1,0 +1,279 @@
+import win.ui;
+import thread;
+import uiToolkit;
+/*DSG{{*/
+mainForm = win.form(text="aardio form";right=759;bottom=469)
+mainForm.add(
+button={cls="button";text="button";left=32;top=24;right=144;bottom=112;z=4};
+custom={cls="custom";text="custom";left=512;top=240;right=752;bottom=448;edge=1;transparent=1;z=5};
+edit={cls="edit";left=14;top=240;right=504;bottom=455;db=1;dl=1;dr=1;dt=1;edge=1;multiline=1;z=1};
+fJG={cls="edit";text="15";left=232;top=64;right=360;bottom=88;db=1;dr=1;edge=1;multiline=1;z=7};
+fZHID={cls="edit";left=232;top=32;right=360;bottom=56;db=1;dr=1;edge=1;multiline=1;z=3};
+faewfvads={cls="static";text="间隔：";left=152;top=64;right=224;bottom=88;align="right";center=1;db=1;dr=1;transparent=1;z=6};
+static18={cls="static";text="用户名";left=152;top=32;right=224;bottom=56;align="right";center=1;db=1;dr=1;transparent=1;z=2}
+)
+/*}}*/
+ 
+io.open()
+mainForm.button.oncommand = function(id,event){
+    //mainForm.msgbox( mainForm.button.text );
+    mainForm.button.disabled = true;
+    mainForm.edit.text = "";
+    thread.invoke( 
+        function(args){
+            import win; 
+            import uiToolkit;
+            import inet.http;
+            import string;
+            import math;
+            import inet.url;
+            import table;
+            import io;
+            import mysql.client;
+            import time;
+            import thread;
+            import access;
+            import process;
+            import winex;
+            import winex.key;
+            import winex.mouse;
+            import koko.tb_send;
+            import koko.sqlKit;
+             
+            if(args.fJG == null){
+                args.fJG = 15;
+            }
+             
+            koko.tb_send.init(args)
+             
+            doSQL = koko.tb_send.doSQL;
+             
+            math.randomize();
+            ut = uiToolkit;
+            p1 = ut.p1;
+             
+            http1 = inet.http("Mozilla/5.0 (Macintosh; Intel Mac OS X 10.11; rv:49.0) Gecko/20100101 Firefox/49.0");
+            http1.setTimeouts(1000 * 5, 1000 * 5, 1000 * 5);
+             
+             
+            initWB = function(){
+                wb, win1 = ut.initWB(,,,,,)
+                 
+            }
+             
+            initWB();
+             
+            wininet := raw.loadDll("Wininet.dll") 
+            //var ret,szCookie = wininet.InternetSetCookieEx("http://www.alimama.com",null,,0x00002000/*_INTERNET_COOKIE_HTTPONLY*/,null);
+             
+             
+            登录 = function(){
+                 
+                //win.delay(1000*5);
+                win1.show();
+                 
+                while(true){
+                    //进入支付宝
+                    //win.delay(1000*5)
+                    var isError = false;
+                     
+                    var rs = {};
+                    koko.tb_send.获取cookie();
+                    var a1 = string.split(koko.tb_send.tb_cookie, '<; >');
+                     
+                    for(k,v in a1){
+                        a2 = string.split(v, '=');
+                        rs[a2[1]] = a2[2];
+                        wininet.InternetSetCookieEx("http://taobao.com",null,a2[1] ++ "=" ++ a2[2],16/*_INTERNET_COOKIE_HTTPONLY*/,null);
+                        //inet.setCookie("http://taobao.com", a2[1] ++ "=" ++ a2[2])
+                         
+                    }
+                    //console.dumpJson(rs)
+                     
+                     
+                     
+                     
+                    try{
+                        win.delay(1000)
+                        console.debug("login 我的淘宝")
+                         
+                        wb.go("https://i.taobao.com/my_taobao.htm");
+                        wb.wait(, 1000);
+                        /*
+console.log("===", wb.document.cookie)
+                        console.log("===",koko.tb_send.tb_cookie)
+*/
+                    }catch(e){
+                        isError = true;
+                        login();
+                    }
+                    if(isError){
+                        p1("我的淘宝进入异常, 等10秒")
+                        sleep(1000 * 10)
+                        continue ;
+                    }
+                     
+                    //wb.go("https://i.taobao.com/my_taobao.htm");
+                    //win.delay(1000*1000)
+                    eles = wb.waitQueryEles({innerText = "^我的支付宝$";tagName = "a"});
+                    eles[1].click();
+                     
+                     
+                    //是否进入支付宝
+                    eles = wb.waitQueryEles({innerText="账户名";className = "<@title pane-title@>"},1000 * 10);
+                    if(eles == null or #eles == 0){
+                        //失败
+                        p1("进入支付宝 失败")
+                        continue ;
+                    }else{
+                         
+                        //交易记录
+                        eles = wb.waitQueryEles({innerText = "^交易管理$"}, 1000 * 10);
+                        if(!eles){
+                            continue ;
+                        }
+                        eles[1].click();
+                        wb.wait(, 1000* 5);
+                         
+                     
+                        break ;
+                    }
+                }
+                 
+                //wb = uiToolkit.initWB(,,,,,)
+                //    
+                 
+            }
+             
+            getDatas = function(){
+                var u1 = //https://consumeprod.alipay.com/record/advanced.htm
+                var d1 = //beginDate=%s&endDate=%s&pageNum=%s
+                var d1_2 = //&beginTime=00%3A00&endTime=24%3A00&dateRange=customDate&status=success&keyword=bizNo&keyValue=&dateType=createDate&minAmount=&maxAmount=&fundFlow=in&tradeType=ALL&categoryId=
+                 
+                 
+                 
+                var beginDateTime = time();
+                beginDateTime.addday(-1)
+                var beginDate = tostring(beginDateTime, "%Y.%m.%d","chs");
+                 
+                var parentEle = wb.waitEle("tradeRecordsIndex");
+                var dataArr = {};
+                for(pageI=1;50;1){
+                    var d2 = string.format(d1, beginDate, tostring(time(), "%Y.%m.%d","chs"), pageI) ++ d1_2;
+                    //console.debug("d2", d2);
+                    var h1;
+                    while(true){
+                        //console.debug("u1", u1);
+                        console.debug("d2", d2);
+                        h1 = http1.post(u1, d2);
+                        if(!h1){
+                            continue ;
+                        }
+                        string.save("c:\h_"++pageI++".txt", h1)
+                        //找列表
+                        h1 = ut.toUTF(h1);
+                        if(! string.indexOf(h1, "商户订单号")){
+                            console.debug("需要重登");
+                            string.save("c:\error_"++pageI++".txt", h1);
+                             
+                            登录();
+                             
+                        }else {
+                            break ;
+                        }
+                         
+                    }
+                    console.debug("发包over" );
+                    var g1 = //<@<td class="name">@>.*?<@class="consume-title"@>*?<@<a@>.*?<@>@>(.*?)<@</a>@>.*?<@流水号:@>(.*?)<@</p>@>.*?<@<td class="other">@>.*?<@ame">@>(.*?)<@</p>@>.*?<@amount-pay">+ @>(.*?)<@</span>@>
+                    var s1 = string.match(h1, g1);
+                    if(s1 == null){
+                        break ;
+                    }
+                    for(备注1, tradeNo, 对方1, amount in string.gmatch(h1, g1)){
+                        var o1 = {};
+                        //ele = wb.queryEles( parent = tr1;className = "^tradeNo";tagName = "td")[1];
+                        //o1.tradeNo = ele.innerText;
+                        //流水号:20161227119443288051
+                         
+                        o1.备注 = string.unescape(string.trim(备注1));
+                        o1.对方 = string.unescape(string.trim(对方1));
+                        o1.tradeNo = tradeNo //string.match(o1.amount, "<@流水号:@>(.*)");
+                         
+                        //ele = wb.queryEles( parent = tr1;className = "^amount";tagName = "td")[1];
+                        //o1.amount = ele.innerText;
+                        o1.amount = amount//string.match(o1.amount, "[+-] (.*)");
+                         
+                        table.push(dataArr, o1);
+                    }
+                     
+                     
+                }
+                 
+                 
+                 
+                return dataArr; 
+                 
+                 
+                 
+                 
+            }
+            写入数据库 = function(d1){
+                var o1 = doSQL("select * from tk_zfb_order where order_sn = '" ++ d1.tradeNo ++"'", "q");
+                if(o1){
+                    //有了
+                }else {
+                    //insert
+                    var s1 = string.format("insert tk_zfb_order(order_sn, amount, comments, target_name) values('%s', %s, '%s', '%s')", d1.tradeNo, d1.amount, d1.备注, d1.对方);
+                    doSQL(s1);
+                }
+                 
+            }
+             
+             
+             
+            main = function(){
+                var ds1 = getDatas();
+                p1("订单数:" ++ #ds1);
+                //同步到数据库里
+                for(k,v in ds1){
+                    console.debug(v.tradeNo ++ " " ++ v.amount ++ " " ++ v.备注  ++ " " ++  v.对方);
+                    写入数据库(v);
+                }
+                 
+                 
+            }
+            登录()
+            while(true){
+                main();
+                p1("等待" ++ args.fJG ++ "秒")
+                win.delay(1000 * args.fJG);
+            }
+             
+             
+        },{
+             
+            fZHID = mainForm.fZHID.text;
+            fJG = tonumber(mainForm.fJG.text);
+        }
+    )
+     
+}
+ 
+ 
+import thread.command;
+var listener = thread.command();
+listener.close = function( ... ){
+    ut.myKill();
+    win.quitMessage();
+     
+     
+} 
+ut = uiToolkit;
+ut.openConfig(mainForm);
+ut.initP1(mainForm);
+ut.autoCloseWebMsgBox();
+mainForm.show();
+if(_CMDLINE and _CMDLINE != ""){
+    mainForm.button.oncommand();
+}
+return win.loopMessage();

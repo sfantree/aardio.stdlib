@@ -1,0 +1,50 @@
+/*
+使用import xcgui; 替换原来的 import win.ui;
+修改标准库的 win.form 指向 xcgui.window, 并保留 win.form的所有功能。
+在窗体设计器上添加自定义控件，类名修改为 "xc" + "炫彩控件类名",
+例如 xcgui.ctrl.list, 类名为 "xclist"
+*/
+import xcgui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469;bgcolor=15245824)
+winform.add(
+closebutton={cls="xcclosebutton";text="r";left=725;top=2;right=749;bottom=28;dr=1;dt=1;font=LOGFONT(name='Marlett');transparent=1;z=1};
+list={cls="xclist";text=" ";left=16;top=42;right=743;bottom=454;db=1;dl=1;dr=1;dt=1;edge=1;z=2};
+static={cls="xctext";text="   ";left=27;top=12;right=693;bottom=31;dl=1;dr=1;dt=1;z=3}
+)
+/*}}*/
+
+winform.list.getScrollView().setLineSize(20,20);
+
+winform.list.addColumn(100);
+winform.list.addColumn(100);
+winform.list.addColumn(100);
+
+winform.list.headerAddString("name","aaa");
+winform.list.headerAddString("name2","bbb");
+winform.list.headerAddString("name3","ccc");
+winform.list.headerAddString("name4","test");
+
+winform.list.addField("name");
+winform.list.addField("name2");
+winform.list.addField("name3");
+
+winform.list.setColumnWidth(0,150);
+winform.list.setColumnWidth(1,150);
+winform.list.setColumnWidth(2,150);
+
+for(i=1;20;1){
+	var i = winform.list.addString( string.format("item-%d",i));
+	winform.list.setString(i,1,string.format("child-%d-1",i ) );
+	winform.list.setString(i,2,string.format("child-%d-2",i ) );
+}
+ 
+//输入winform.list.onSelect 按回车就可以生成下面的代码
+winform.list.on("listSelect",function(item){
+	winform.static.text = "选中了:" + winform.list.getFieldString(item,"name");
+	winform.static.redraw();
+})
+
+winform.show();
+win.loopMessage();
+return winform;

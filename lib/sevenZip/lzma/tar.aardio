@@ -1,0 +1,25 @@
+﻿//tar 内存解压
+import fsys.untar;
+import fsys.stream;
+import sevenZip.lzma;
+	
+namespace sevenZip.lzma;
+
+class tar{
+	ctor( data,extraDir ){
+		if( ! (extraDir?..io.createDir(extraDir) ) ) return null,"错误的存储目录";
+		
+		data = ..sevenZip.lzma.unCompress(data);
+		if(!data) return;
+		
+		var stream = ..fsys.stream(data,#data);
+		var tarFile = ..fsys.untar(stream,extraDir);
+		
+		for _ in tarFile.eachBlock(1){}
+		return true;
+	};
+}
+
+/**intellisense()
+sevenZip.lzma.tar(.(内存压缩数据,解压目录) = 用于内存快速解压小型 *.lzma.tar 压缩包
+end intellisense**/

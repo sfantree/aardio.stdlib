@@ -1,0 +1,44 @@
+//入门示例
+import console;
+import java; 
+
+//可参考 java.jre.v8 的源码
+//java.path.setJreHome("/自定义 JRE 路径,可用首字符的斜杆表示应用程序目录")
+
+//创建 Java 虚拟机（ 自动查找安装的 JRE，找不到会自动下载，生成的 EXE 不必自带 JRE 即可分发） 
+var jvm = java(); //可指定一个或多个 Java 启动参数,也可以将多个参数放到一个字符串或数组参数里
+
+/*
+Java 会在 CLASSPATH 指定的搜索目录下使用 Java 类名(替换'.'为'\')" 去查找类，
+这类似 Windows 到 %PATH% 环境变量下搜索文件。
+
+CLASSPATH 已默认添加 "/java/"以及"/java/*.jar"  
+在首次创建 Java 虚拟机以前，可用下面的函数添加目录到 CLASSPATH,
+*/        
+java.addClassPath("/java123/"); //目录下的 *.jar 也会自动添加(不递归子目录）
+//这其实就是 Java 的
+
+//加载Java类对象
+HelloworldApp = jvm.import("aardio.sample.HelloworldApp");
+
+/*
+也可以如下自内存或文件直接加载类,
+注意下面的路径前面的$操作符可将文件编译到代码中（发布后不再需要原文件）
+而路径前面的波浪线反斜杠（或斜杆）表示程序根目录(开发时一般指工程目录，或独立代码所在目录，发布后指启动EXE文件所在的目录)
+*/
+HelloworldApp = jvm.import("aardio.sample.HelloworldApp",$"\java\aardio\sample\HelloworldApp.class");
+
+//用 Java 类创建 Java 对象
+var helloworld = HelloworldApp();
+
+//直接调用 Java 对象的方法 
+var result = helloworld.test(3); 
+console.log( result );//调用Java对象的方法
+
+//导入 Java 类
+var String = jvm.import( "java.lang.String"); 
+
+//创建 Java 对象
+console.log( String("测试一下")  )
+
+console.pause()

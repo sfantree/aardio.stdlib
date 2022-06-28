@@ -1,0 +1,19 @@
+﻿//v2 运行时
+import dotNet.clr;
+var clr = dotNet.clr("v2.0");
+
+if(clr){
+	clr.createAppDomain();//先创建默认单例应用程序域，避免默认使用 4.x 运行时。
+	import dotNet;
+}
+
+class dotNet.v2{
+	ctor(){ return !!clr;}; 
+}
+
+namespace dotNet.v2;
+
+/**intellisense()
+dotNet.v2 = 导入此库以替代导入 dotNet，则默认加载 .Net 2.0 运行时\n这个库没有自动安装 .Net 运行时的作用
+dotNet.v2() = 加载 .Net 2.0 运行时成功返回 true，\n否则返回 false
+end intellisense**/

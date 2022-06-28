@@ -1,0 +1,18 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=406;bottom=355)
+winform.add(
+button={cls="button";text="生成一个GUID";left=288;top=8;right=400;bottom=32;z=3};
+button2={cls="button";text="复制到剪切板";left=288;top=48;right=400;bottom=72;z=5};
+button3={cls="button";text="Button";left=304;top=144;right=384;bottom=168;z=9};
+combobox={cls="combobox";left=336;top=104;right=392;bottom=128;edge=1;items={};mode="dropdown";z=8};
+edit={cls="edit";left=56;top=8;right=280;bottom=32;edge=1;z=2};
+groupbox={cls="groupbox";text="批量生成";left=288;top=80;right=400;bottom=184;edge=1;z=6};
+listbox={cls="listbox";left=8;top=48;right=280;bottom=320;edge=1;items={};z=4};
+static={cls="static";text="GUID：";left=8;top=8;right=48;bottom=32;center=1;transparent=1;z=1};
+static2={cls="static";text="数量：";left=296;top=104;right=336;bottom=128;center=1;transparent=1;z=7}
+)
+/*}}*/
+
+winform.show();
+win.loopMessage();

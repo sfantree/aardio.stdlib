@@ -1,0 +1,91 @@
+import win.ui;
+/*DSG{{*/
+mainForm = win.form(text="aardio form";right=759;bottom=469)
+mainForm.add(
+btnStart={cls="button";text="启动HTTP服务器";left=412;top=417;right=565;bottom=461;z=2};
+btnStop={cls="button";text="停止";left=577;top=417;right=677;bottom=461;z=3};
+edit={cls="edit";left=45;top=28;right=730;bottom=408;edge=1;multiline=1;z=1}
+)
+/*}}*/
+
+import hpsocket.httpServer;
+var hpHttpServer = hpsocket.httpServer();
+
+mainForm.edit.threadCallable();
+
+//设置所有监听线程的全局变量
+hpHttpServer.threadGlobal = {
+    mainForm = mainForm;
+}
+
+//监听线程开始触发事件前触发下面的函数
+hpHttpServer.onThreadCreated = function(){	import console; }
+
+//监听线程退出前触发此事件
+hpHttpServer.onThreadEnd = function(){}
+
+//HTTP头读取完成触发下面的事件,注意所有事件都运行在监听线程而不是界面线程内
+hpHttpServer.onHeadersComplete = function(hpHttpServer,connId){
+	mainForm.edit.print( hpHttpServer.getRequestUri(connId) )
+	mainForm.edit.print( tostring(hpHttpServer.getAllHeaders(connId)) )
+	
+	//分配内存并绑定一个动态指针到指定的连接
+	hpHttpServer.reallocString(connId,hpHttpServer.getContentLength(connId))
+}
+
+//接收客户端提交的数据
+hpHttpServer.onBody = function(hpHttpServer,connId,pData,len){
+
+	//保存数据到前面创建的动态指针
+	hpHttpServer.appendString(connId,pData,len)
+}
+
+//客户端请求过程完成
+hpHttpServer.onMessageComplete = function(hpHttpServer,connId){
+
+	//获取所有保存的数据
+	mainForm.edit.print( hpHttpServer.getString(connId) );
+	
+	//下面给客户端发送应答数据
+	hpHttpServer.sendResponse(connId,"你好，这是一个简单的HTTP服务器",{
+		["Content-Type"] = "text/html; charset=UTF-8"; //可选指定需要的HTTP头,这个参数也可以省略
+	});
+}
+
+//协议解析失败触发此事件
+hpHttpServer.onParseError = function(hpHttpServer,connId,errorCode,errorDesc){
+	hpHttpServer.reallocString(connId,0);	
+}
+
+//一个连接关闭触发此事件
+hpHttpServer.onClose = function(hpHttpServer,connId,enOperation,errCode){
+	mainForm.edit.print("onClose")
+	hpHttpServer.reallocString(connId,0);
+}
+
+
+mainForm.btnStop.oncommand = function(id,event){
+	hpHttpServer.stop()
+	mainForm.edit.print("已停止服务");
+	mainForm.btnStop.disabled = true;
+	mainForm.btnStart.disabled = false;
+}
+
+import process;
+mainForm.btnStart.oncommand = function(id,event){
+	hpHttpServer.start()
+	if( hpHttpServer.hasStarted() ){
+		mainForm.edit.print("已启动服务：",hpHttpServer.getUrl());
+		mainForm.btnStop.disabled = false;
+		mainForm.btnStart.disabled = true;
+		process.execute(hpHttpServer.getUrl())
+	}
+}
+
+
+mainForm.onClose = function(hwnd,message,wParam,lParam){
+    hpHttpServer.stop();
+}
+ 
+mainForm.show() 
+win.loopMessage();

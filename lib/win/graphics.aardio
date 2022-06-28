@@ -1,0 +1,597 @@
+﻿//graphics 图形库 
+namespace win.graphics;
+import util.metaProperty;
+import com.picture;
+import gdi;
+
+object = class {
+	ctor (handle) {
+		if (this.handle) this.destroy();
+		this.handle = handle;
+	}
+	destroy = function () {
+		if (this.handle) {
+			if (type(this.handle) == type.pointer)
+				::DeleteObject(this.handle);
+		}
+	}
+}
+
+// 画笔
+pen = class {
+	ctor (...) {
+		this = ..win.graphics.object();
+		this.init = function (style = 0x0/*_PS_SOLID*/, width = 1, color = 0) {
+			this.destroy();
+			
+			if (type(style) != type.number)
+				error("(1) style 参数错误", 2);
+			if (type(width) != type.number)
+				error("(2) width 参数错误", 2);
+			if (type(color) != type.number)
+				error("(3) color 参数错误", 2);
+			
+			this.handle = ::CreatePen(style, width, color);
+			
+			// 记录属性
+			this.nStyle = style;
+			this.nWidth = width;
+			this.nColor = color;
+			
+			if (this.canvasHandle)
+				::SelectObject(this.canvasHandle, this.handle);
+		}
+		this.init(...);
+	}
+	
+	@_metaProperty;
+}
+pen._metaProperty = ..util.metaProperty(
+	style = {
+		_get = function () {
+			return owner.nStyle;
+		}
+		_set = function (v) {
+			owner.init(v, owner.width, owner.color);
+		}
+	}
+	width = {
+		_get = function () {
+			return owner.nWidth;
+		}
+		_set = function (v) {
+			owner.init(owner.style, v, owner.color);
+		}
+	}
+	color = {
+		_get = function () {
+			return owner.nColor;
+		}
+		_set = function (v) {
+			owner.init(owner.style, owner.width, v);
+		}
+	}
+);
+
+// 刷子
+brush = class {
+	ctor (...) {
+		this = ..win.graphics.object();
+		this.init = function (color = 0, style) {
+			this.destroy();
+			
+			if (type(color) != type.number)
+				error("(1) color 参数错误", 2);
+			
+			if (!style)
+				this.handle = ::CreateSolidBrush(color);
+			else
+				this.handle = ::CreateHatchBrush(style, color);
+			
+			// 记录属性
+			this.nColor = color;
+			this.nStyle = style;
+			
+			if (this.canvasHandle)
+				::SelectObject(this.canvasHandle, this.handle);
+		}
+		this.init(...);
+	}
+	
+	@_metaProperty;
+}
+brush._metaProperty = ..util.metaProperty(
+	color = {
+		_get = function () {
+			return owner.nColor;
+		}
+		_set = function (v) {
+			owner.init(v, owner.style);
+		}
+	}
+	style = {
+		_get = function () {
+			return owner.nStyle;
+		}
+		_set = function (v) {
+			owner.init(owner.color, v);
+		}
+	}
+);
+
+// 图像
+image = class {
+	ctor (data, width, height) {
+		if (type(data) != type.string && type(data) != type.table && type(data) != type.pointer)
+			error("(1) 参数错误", 2);
+		if (type(data) == type.string) {
+			var img = ..com.picture.load(data);
+			this = ..win.graphics.object(topointer(img.handle));
+			this._img = img;
+		} else {
+			var hdc = type(data) == type.table ? data.handle : data;
+			this = ..win.graphics.object(::CreateCompatibleBitmap(hdc, width, height));
+		}
+	}
+	
+	@_metaProperty;
+}
+image._metaProperty = ..util.metaProperty(
+	width = {
+		_get = function () {
+			var bmi = ..gdi.BITMAP();
+			::GetObject(owner.handle, 28, bmi);
+			return bmi.bmWidth;
+		}
+	}
+	
+	height = {
+		_get = function () {
+			var bmi = ..gdi.BITMAP();
+			::GetObject(owner.handle, 28, bmi);
+			return bmi.bmHeight;
+		}
+	}
+)
+
+// 字体
+font = class {
+	ctor (...) {
+		this = ..win.graphics.object();
+		
+		this.init = function (size = 12, face = "宋体", weight = 0, italic = false, underline = false, width = 0) {
+			this.destroy();
+			
+			this.handle = ::CreateFont(size, width, 0, 0, weight, italic, underline, 0, 0, 0, 0, 0, 0, face);
+			
+			// 记录属性
+			this.nSize = size;
+			this.dwFace = face;
+			this.nWeight = weight;
+			this.bItalic = italic;
+			this.bUnderline = underline;
+			this.nWidth = width;
+			
+			if (this.canvasHandle)
+				::SelectObject(this.canvasHandle, this.handle);
+		}
+		
+		this.init(...);
+	}
+	
+	@_metaProperty;
+}
+font._metaProperty = ..util.metaProperty(
+	size = {
+		_get = function () {
+			return owner.nSize;
+		}
+		_set = function (v) {
+			owner.init(v, owner.face, owner.weight, owner.italic, owner.underline, owner.width);
+		}
+	}
+	face = {
+		_get = function () {
+			return owner.dwFace;
+		}
+		_set = function (v) {
+			owner.init(owner.size, v, owner.weight, owner.italic, owner.underline, owner.width);
+		}
+	}
+	weight = {
+		_get = function () {
+			return owner.nWeight;
+		}
+		_set = function (v) {
+			owner.init(owner.size, owner.face, v, owner.italic, owner.underline, owner.width);
+		}
+	}
+	bold = {
+		_get = function () {
+			return owner.weight == 800;
+		}
+		_set = function (v) {
+			owner.weight = v ? 800 : 0;
+		}
+	}
+	italic = {
+		_get = function () {
+			return owner.bItalic;
+		}
+		_set = function (v) {
+			owner.init(owner.size, owner.face, owner.weight, v, owner.underline, owner.width);
+		}
+	}
+	underline = {
+		_get = function () {
+			return owner.bUnderline;
+		}
+		_set = function (v) {
+			owner.init(owner.size, owner.face, owner.weight, owner.italic, v, owner.width);
+		}
+	}
+	width = {
+		_get = function () {
+			return owner.nWidth;
+		}
+		_set = function (v) {
+			owner.init(owner.size, owner.face, owner.weight, owner.italic, owner.underline, v);
+		}
+	}
+	color = {
+		_get = function () {
+			if (owner.canvasHandle)
+				return ::GetTextColor(owner.canvasHandle);
+		}
+		_set = function (v) {
+			if (owner.canvasHandle)
+				::SetTextColor(owner.canvasHandle, v);
+		}
+	}
+);
+
+canvas = class {
+	init = function () { // 一般不需要手动调用，初始化 objects
+		this.oPen = ..win.graphics.pen();
+		this.oBrush = ..win.graphics.brush();
+		this.oFont = ..win.graphics.font();
+		
+		// 为 objects 传入 canvas 的 handle
+		this.oPen.canvasHandle = this.handle;
+		this.oBrush.canvasHandle = this.handle;
+		this.oFont.canvasHandle = this.handle;
+		
+		this.bkMode = 0x1/*_TRANSPARENT*/;
+		this.stretchBltMode = 0x4/*_HALFTONE*/;
+	}
+	create = function (hdc = 0) {
+		if (type(hdc) != type.pointer && type(hdc) != type.number)
+			error("(1) hdc 参数错误", 2);
+		this.destroy();
+		if (type(hdc) == type.number)
+			hdc = topointer(hdc);
+		this.handle = ::CreateCompatibleDC(hdc);
+		this.created = true;
+		
+		this.init();
+	}
+	fromHDC = function (hdc) {
+		if (type(hdc) != type.pointer)
+			error("(1) hdc 参数错误", 2);
+		this.hwnd = null;
+		this.handle = hdc;
+		this.created = false;
+		
+		this.init();
+	}
+	fromWindow = function (w) {
+		var hwnd = w[["hwnd"]] : w;
+		if (hwnd == null)
+			error("(1) w 参数错误");
+		
+		this.handle = ::GetDC(hwnd);
+		this.hwnd = hwnd;
+		this.created = false;
+		
+		this.init();
+	}
+	destroy = function () {
+		if (this.handle) {
+			if (type(this.handle) == type.pointer) {
+				if (this.created) {
+					::DeleteDC(this.handle);
+				} else {
+					if (this.hwnd)
+						::ReleaseDC(this.hwnd, this.handle);
+				}
+				
+				// 删除创建的对象
+				this.oPen.destroy();
+				this.oBrush.destroy();
+				this.oFont.destroy();
+			}
+		}
+	}
+	
+	abortPath = function () {
+		::AbortPath(this.handle);
+	}
+	beginPath = function () {
+		::BeginPath(this.handle);
+	}
+	bitBlt = function (dest, destX = 0, destY = 0, destWidth, destHeight, sourceX = 0, sourceY = 0, mode = 0xCC0020/*_SRCCOPY*/) {
+		::BitBlt(dest[["handle"]] : dest, destX, destY, destWidth, destHeight, this.handle, sourceX, sourceY, mode);
+	}
+	copyTo = function (dest, destX = 0, destY = 0, destWidth, destHeight, sourceX = 0, sourceY = 0, sourceWidth, sourceHeight, transparentColor, mode = 0xCC0020/*_SRCCOPY*/) {
+		dest = dest[["handle"]] : dest;
+		if (sourceWidth == null)
+			sourceWidth = destWidth;
+		if (sourceHeight = null)
+			sourceHeight = destHeight;
+		if (transparentColor == null) {
+			if (sourceWidth == destWidth && sourceHeight == destHeight)
+				this.bitBlt(dest, destX, destY, destWidth, destHeight, sourceX, sourceY);
+			else
+				::StretchBlt(dest, destX, destY, destWidth, destHeight, this.handle, sourceX, sourceY, sourceWidth, sourceHeight, mode);
+		} else {
+			::TransparentBlt(dest, destX, destY, destWidth, destHeight, this.handle, sourceX, sourceY, sourceWidth, sourceHeight ,transparentColor);
+		}
+	}
+	endPath = function () {
+		::EndPath(this.handle);
+	}
+	cancelDC = function () {
+		::CancelDC(this.handle);
+	}
+	moveTo = function (x, y) {
+		var pt = ::POINT();
+		var re, pt = ::MoveToEx(this.handle, x, y, pt);
+		return pt;
+	}
+	lineTo = function (x, y) {
+		::LineTo(this.handle, x, y);
+	}
+	drawEdge = function (rect, edge = 0x1/*_BDR_RAISEDOUTER*/, flag = 0x1/*_BF_LEFT*/ | 0x2/*_BF_TOP*/ | 0x4/*_BF_RIGHT*/ | 0x8/*_BF_BOTTOM*/) {
+		::DrawEdge(this.handle, rect, edge, flag);
+	}
+	drawFocusRect = function (rect) {
+		::DrawFocusRect(this.handle, rect);
+	}
+	drawFrameControl = function (rect, un1 = 0x1/*_DFC_CAPTION*/, un2 = 0x1/*_DFCS_CAPTIONMIN*/) {
+		::DrawFrameControl(this.handle, rect, un1, un2);
+	}
+	ellipse = function (rect) {
+		::Ellipse(this.handle, rect.left, rect.top, rect.right, rect.bottom);
+	}
+	angleArc = function (x, y, radius, startAngle, sweepAngle) {
+		::AngleArc(this.handle, x, y, radius, startAngle, sweepAngle);
+	}
+	arc = function (rect, xStart, yStart, xEnd, yEnd, penTo = false) {
+		if (penTo)
+			::ArcTo(this.handle, rect.left, rect.top, rect.right, rect.bottom, xStart, yStart, xEnd, yEnd);
+		else
+			::Arc(this.handle, rect.left, rect.top, rect.right, rect.bottom, xStart, yStart, xEnd, yEnd);
+	}
+	fillPath = function () {
+		::FillPath(this.handle);
+	}
+	fillRect = function (rect) {
+		::FillRect(this.handle, rect, this.brush.handle);
+	}
+	frameRect = function (rect) {
+		::FrameRect(this.handle, rect, this.brush.handle);
+	}
+	textOut = function (x, y, text) {
+		text = ..string.toUnicode(text);
+		::TextOut(this.handle, x, y, text, #text/2);
+	}
+	selectClipPath = function (mode = 0x1/*_RGN_AND*/) {
+		::SelectClipPath(this.handle, mode);
+	}
+	beginPaint = function (hwnd) {
+		this.ps = ::PAINTSTRUCT();
+		if (hwnd) {
+			if (type(hwnd) == type.number) {
+				this.hwnd = hwnd;
+				this.handle, this.ps = ::BeginPaint(this.hwnd, this.ps);
+				this.created = false;
+				
+				this.init();
+			}
+		} else {
+			var ret;
+			ret, this.ps = ::BeginPaint(this.hwnd, this.ps);
+		}
+		return ret : this.handle;
+	}
+	endPaint = function () {
+		this.oPen.destroy();
+		this.oBrush.destroy();
+		this.oFont.destroy();
+		::EndPaint(this.hwnd, this.ps);
+	}
+	gradientFill = function (rect, color1, color2, direction = 0/*_GRADIENT_FILL_RECT_H*/) {
+		var tv = {};
+		tv[1] = ::TRIVERTEX();
+		tv[2] = ::TRIVERTEX();
+		
+		tv[1].x = rect.left;
+		tv[1].y = rect.top;
+		tv[1].Red,tv[1].Green,tv[1].Blue = ..gdi.getRgb(color1);
+		tv[1].Red <<= 8;
+		tv[1].Green <<= 8;
+		tv[1].Blue <<= 8;
+		tv[1].Alpha = 0;
+		tv[2].x = rect.right;
+		tv[2].y = rect.bottom;
+		tv[2].Red,tv[2].Green,tv[2].Blue = ..gdi.getRgb(color2);
+		tv[2].Red <<= 8;
+		tv[2].Green <<= 8;
+		tv[2].Blue <<= 8;
+		tv[2].Alpha = 0;
+		
+		var gr = ::GRADIENT_RECT();
+		gr.UpperLeft = 0;
+		gr.LowerRight = 1;
+		
+		::GdiGradientFill(this.handle, ..raw.toarray(tv,"struct"), 2, gr, 1, direction);
+	}
+	printWindow = function (w) {
+		var hwnd = w[["hwnd"]] : w;
+		::PrintWindow(hwnd, this.handle, 0);
+	}
+	getPixel = function (x, y) {
+		return ::GetPixel(this.handle, x, y);
+	}
+	setPixel = function (x, y, color) {
+		return ::SetPixel(this.handle, x, y, color);
+	}
+	roundRect = function (rect, r1 = 0, r2 = 0) {
+		if (type(rect) != type.table)
+			error("(1) rect 参数错误", 2);
+		::RoundRect(this.handle, rect.left, rect.top, rect.right, rect.bottom, r1, r2);
+	}
+	drawText = function (str, rect, format = 0x0/*_DT_LEFT*/ | 0x0/*_DT_TOP*/) {
+		str = ..string.toUnicode(str);
+		::DrawText(this.handle, str, #str/2, rect, format);
+	}
+	
+	@_metaProperty;
+}
+canvas._metaProperty = ..util.metaProperty(
+	pen = {
+		_get = function () {
+			return owner.oPen;
+		}
+		_set = function (v) {
+			assert(type(v) == type.table, "pen 属性类型错误");
+			::SelectObject(owner.handle, v.handle);
+			owner.oPen = v;
+		}
+	}
+	brush = {
+		_get = function () {
+			return owner.oBrush;
+		}
+		_set = function (v) {
+			assert(type(v) == type.table, "brush 属性类型错误");
+			::SelectObject(owner.handle, v.handle);
+			owner.oBrush = v;
+		}
+	}
+	font = {
+		_get = function () {
+			return owner.oFont;
+		}
+		_set = function (v) {
+			assert(type(v) == type.table, "font 属性类型错误");
+			::SelectObject(owner.handle, v.handle);
+			owner.oFont = v;
+		}
+	}
+	
+	bkColor = {
+		_get = function () {
+			return ::GetBkColor(owner.handle);
+		}
+		_set = function (v) {
+			::SetBkColor(owner.handle, v);
+		}
+	}
+	bkMode = {
+		_get = function () {
+			return ::GetBkMode(owner.handle);
+		}
+		_set = function (v) {
+			::SetBkMode(owner.handle, v);
+		}
+	}
+	stretchBltMode = {
+		_get = function () {
+			return ::GetStretchBltMode(owner.handle);
+		}
+		_set = function (v) {
+			::SetStretchBltMode(owner.handle, v);
+		}
+	}
+	image = {
+		_get = function () {
+			var hBitmap = ::GetCurrentObject(owner.handle, 0x7/*_OBJ_BITMAP*/);
+			return ..win.graphics.object(hBitmap);
+		}
+		_set = function (v) {
+			::SelectObject(owner.handle, v[["handle"]] : v);
+		}
+	}
+);
+
+/**intellisense()
+win.graphics = GDI图形库\n作者lujjjh
+
+win.graphics.pen(.(样式,宽度,颜色) = 创建画笔\n画笔样式是以 _PS_ 开头的常量，默认为 0x0/*_PS_SOLID*/\n宽度默认为 1\n颜色默认为黑色
+!win_graphics_pen.style = 画笔样式，是以 _PS_ 开头的常量
+!win_graphics_pen.width = 画笔宽度
+!win_graphics_pen.color = 画笔颜色
+win.graphics.pen() = !win_graphics_pen.
+
+win.graphics.brush(.(颜色,样式) = 创建刷子\n刷子颜色默认为黑色\n刷子样式是以 _BS_ 开头的常量，默认为 0x0/*_BS_SOLID*/
+!win_graphics_brush.color = 画笔颜色
+!win_graphics_brush.style = 画笔样式，是以 _BS_ 开头的常量
+win.graphics.brush() = !win_graphics_brush.
+
+win.graphics.font(.(字号,字体,粗体值,是否斜体,是否有下划线,字体宽度) = 创建字体\n字号默认为 12\n字体默认为宋体\n粗体值为 _FW_ 开头的常量，默认为 0x0/*_FW_DONTCARE*/\n是否斜体与是否下划线默认均为 false\n字体宽度默认为 0
+!win_graphics_font.size = 字号
+!win_graphics_font.face = 字体
+!win_graphics_font.weight = 粗体值，是以 _FW_ 开头的常量
+!win_graphics_font.bold = 是否粗体，是设置 weight 属性为 0x2BC/*_FW_BOLD*/ 的快捷属性，因此修改其值会影响到 weight 的值
+!win_graphics_font.italic = 是否斜体
+!win_graphics_font.underline = 是否有下划线
+!win_graphics_font.width = 字体宽度
+!win_graphics_font.color = 字体颜色
+win.graphics.font() = !win_graphics_font.
+
+win.graphics.image(__/*图片路径或图片数据*/) = 创建图像
+win.graphics.image(.(设备场景,宽度,高度) = 从设备场景创建指定大小的空白图像，创建完毕后可以被选入指定的设备场景中
+!win_graphics_image.width = 图片宽度(只读)
+!win_graphics_image.height = 图片高度(只读)
+win.graphics.image() = !win_graphics_image.
+
+win.graphics.canvas() = 初始化画布
+!win_graphics_canvas.create() = 创建内存画布
+!win_graphics_canvas.fromHDC(__/*设备场景句柄*/) = 从设备场景创建画布
+!win_graphics_canvas.fromWindow(__/*窗口或窗口句柄*/) = 从窗口创建画布
+!win_graphics_canvas.destroy() = 释放画布，不需要使用该画布时应当调用此方法
+!win_graphics_canvas.abortPath() = 放弃当前路径
+!win_graphics_canvas.beginPath() = 开始路径
+!win_graphics_canvas.bitBlt(.(目标画布,目标横坐标,目标纵坐标,目标宽,目标高,自身横坐标,自身纵坐标,拷贝方式) = 将自身拷贝到目标画布中\n目标画布可以是 win.graohics.canvas 类，也可以是设备场景句柄\n拷贝方式详见：http://msdn.microsoft.com/en-us/library/dd183370%28v=vs.85%29.aspx
+!win_graphics_canvas.endPath() = 结束路径
+!win_graphics_canvas.moveTo(.(横坐标,纵坐标) = 将画笔移动到指定坐标
+!win_graphics_canvas.lineTo(.(横坐标,纵坐标) = 使用当前画笔画直线（从当前坐标开始）到指定结束坐标
+!win_graphics_canvas.fillPath() = 使用当前刷子填充路径
+!win_graphics_canvas.fillRect(::RECT(__/*被填充的区域*/)) = 使用当前刷子填充指定区域
+!win_graphics_canvas.frameRect(::RECT(__/*区域*/)) = 使用当前画笔在指定区域外画边框
+!win_graphics_canvas.textOut(.(横坐标,纵坐标,文字) = 使用当前字体在指定坐标输出文字
+!win_graphics_canvas.beginPaint() = 开始接替系统绘制，一般使用在 WM_PAINT 消息中
+!win_graphics_canvas.endPaint() = 调用 beginPaint 方法后，必须调用此方法来结束接替系统绘制
+!win_graphics_canvas.gradientFill(.(渐变区域,开始渐变色,结束渐变色,渐变方向) = 渐变填充指定区域\n渐变区域应当传入 ::RECT 结构体\n渐变方向是以 _GRADIENT_FILL_RECT_ 开头的常量
+!win_graphics_canvas.printWindow(__/*窗口或窗口句柄*/) = 后台截图，并绘制到此画布
+!win_graphics_canvas.getPixel(.(横坐标,纵坐标) = 获取指定坐标颜色
+!win_graphics_canvas.setPixel(.(横坐标,纵坐标,颜色) = 设置指定坐标颜色
+!win_graphics_canvas.roundRect(.(区域,圆角宽度1,圆角宽度2) = 使用当前画笔画圆角矩形
+!win_graphics_canvas.drawText(.(文本,区域,标志) = 使用当前字体在指定区域内输出文字\n标志是以 _DT_ 开头的常量，默认为 0
+
+!win_graphics_canvas.pen = 当前画笔
+!win_graphics_canvas.brush = 当前刷子
+!win_graphics_canvas.font = 当前字体
+!win_graphics_canvas.bkColor = 当前文本背景色
+!win_graphics_canvas.bkMode = 当前文本背景模式，_TRANSPARENT 等常量
+!win_graphics_canvas.image = 当前图像
+!win_graphics_canvas.pen = !win_graphics_pen.
+!win_graphics_canvas.brush = !win_graphics_brush.
+!win_graphics_canvas.font = !win_graphics_font.
+!win_graphics_canvas.image = !win_graphics_image.
+win.graphics.canvas() = !win_graphics_canvas.
+
+_GRADIENT_FILL_RECT_H=@0x0/*_GRADIENT_FILL_RECT_H*/
+_GRADIENT_FILL_RECT_V=@0x1/*_GRADIENT_FILL_RECT_V*/
+end intellisense**/

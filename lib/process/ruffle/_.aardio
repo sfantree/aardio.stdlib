@@ -1,0 +1,88 @@
+﻿import process.apiHook;
+import process.job.limitKill;
+
+namespace process;
+
+class ruffle{
+	ctor( winform ){
+		if(!winform._parentForm) error("参数@1 请指定子窗口控件对象",2); 
+		
+		if( winform.isForm ? winform.onEraseBkgnd === null ) winform.onEraseBkgnd  = lambda() 0;  
+		else winform.modifyStyle(0x20/*_WS_EX_TRANSPARENT*/,0x2000000/*_WS_CLIPCHILDREN*/); 
+		
+		winform.text = "";
+		this._form = winform;
+	};
+	go = function(swfPath){
+		 
+		var x,y,cx,cy = this._form.getPos();
+		var args = {"--width","0","--height","0"};
+		for k,v in ..table.eachName(this.flashVars){
+			..table.push(args, "-P"+k+"="+tostring(v));
+		}
+		 
+		if(this.proxy){
+			..table.push(args, "--proxy",this.proxy);	
+		}
+		
+		..table.push(args,..io.exist(swfPath) || swfPath);	
+		
+		var err;
+		this.apiHook,err  = ..process.apiHook(exePath,args,{
+			suspended = true;//启动后暂停 
+			workDir = ..io.fullpath(this.workDir || "/")
+		});
+		if(!this.apiHook) error(err,2);
+		this.process = this.apiHook.process;
+ 		::User32.AttachThreadInput( this.process.tid,..thread.getId(),true);
+ 		
+ 		//安装 HOOK
+		this.hookCreateWindowEx = this.apiHook.install("User32.dll"
+			,"CreateWindowExW","CreateWindowExHook.dll","_CreateWindowExHook@48");
+			
+		this.hookSetWindowPos = this.apiHook.install("User32.dll"
+			,"SetWindowPos","CreateWindowExHook.dll","_hookSetWindowPos@28");
+		
+		//调用外部进程中的 API 函数
+		var hookSet = this.process.remoteApi("void(addr pc,addr ps,addr hwndHost)"
+			,"CreateWindowExHook.dll","hookSet","cdecl");
+			
+		hookSet(
+			this.hookCreateWindowEx.addrTrampoline,//这是原来的 CreateWindowEx 函数指针地址 
+			this.hookSetWindowPos.addrTrampoline,//这是原来的 SetWindowPos 函数指针地址 
+			this._form.hwnd
+		);	
+
+	    this.process.resume();
+		this.process.assignToJobObject(..process.job.limitKill); 
+		
+		if(this.hwndFlash) ..win.close(this.hwndFlash);
+		this.hwndFlash = this.process.waitMainWindow("Window Class"); 
+		this.hwndEventTarget = this.process.waitMainWindow("Winit Thread Event Target");
+		
+		if(this.hwndFlash){   
+			this._form.orphanWindow(,this.hwndFlash); 
+			this._form.show();
+		}
+	};
+}
+
+namespace ruffle{ 
+	
+    exePath = ..io.appData("aardio/ruffle1/ruffle.dll",$"~\lib\process\ruffle\.res\ruffle.dll") // https://ruffle.rs/#downloads
+	..io.appData("aardio/ruffle1/CreateWindowExHook.dll",$"~\lib\process\ruffle\.res\CreateWindowExHook.dll")
+}  
+
+/**intellisense()
+process.ruffle = 开源 Flash 控件 Ruffle
+process.ruffle( = 创建 Ruffle 控件\n建议在显示窗口以后再创建此对象
+process.ruffle(.(ctrl) = 创建 Ruffle 控件\n参数@1 可用控件对象指定宿主窗口
+process.ruffle() = !processRuffle.
+end intellisense**/
+
+/**intellisense(!processRuffle)
+go(__) = 打开 swf 动画,\n参数 @1 指定 swf 文件地址或网址。\n\n改用标准库中的 web.view + 扩展库 web.ruffle 效果更好一些,\n参考 web.ruffle 范例。\n也可以用扩展库 web.kit.flash 播放 Flash。
+flashVars = 可选使用此属性指定 flashVars 参数,\n参数值应当是一个表，表中键名应为字符串
+proxy = 代理服务器地址
+end intellisense**/
+

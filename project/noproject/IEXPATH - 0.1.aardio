@@ -1,0 +1,119 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="IEXPATH - 0.1";right=364;bottom=427)
+winform.add(
+checkbox={cls="checkbox";text="Checkbox";left=72;top=384;right=200;bottom=400;z=20};
+checkbox2={cls="checkbox";text="Checkbox";left=72;top=400;right=200;bottom=416;z=21};
+edit={cls="edit";left=112;top=32;right=344;bottom=48;edge=1;z=9};
+edit2={cls="edit";left=112;top=56;right=344;bottom=72;edge=1;z=10};
+edit3={cls="edit";left=112;top=80;right=344;bottom=96;edge=1;z=11};
+edit4={cls="edit";left=112;top=104;right=344;bottom=120;edge=1;z=12};
+edit5={cls="edit";left=112;top=128;right=344;bottom=144;edge=1;z=13};
+edit6={cls="edit";left=112;top=152;right=344;bottom=168;edge=1;z=14};
+edit7={cls="edit";left=112;top=176;right=344;bottom=192;edge=1;z=15};
+groupbox={cls="groupbox";left=8;top=8;right=360;bottom=214;edge=1;z=1};
+listbox={cls="listbox";left=8;top=240;right=360;bottom=376;edge=1;items={};z=18};
+picturebox={cls="picturebox";left=8;top=384;right=43;bottom=416;dr=1;dt=1;notify=1;transparent=1;z=19};
+plus={cls="plus";text="by popy32";left=272;top=400;right=360;bottom=424;align="left";color=8388608;db=1;dl=1;dr=1;font=LOGFONT(h=-16;underline=1);notify=1;textPadding={left=5};z=16};
+static={cls="static";text="ID";left=32;top=32;right=88;bottom=48;align="right";transparent=1;z=2};
+static2={cls="static";text="Name";left=32;top=56;right=88;bottom=72;align="right";transparent=1;z=3};
+static3={cls="static";text="Tag";left=32;top=80;right=88;bottom=96;align="right";transparent=1;z=4};
+static4={cls="static";text="Class";left=32;top=104;right=88;bottom=120;align="right";transparent=1;z=5};
+static5={cls="static";text="HTML";left=32;top=128;right=88;bottom=144;align="right";transparent=1;z=6};
+static6={cls="static";text="Value";left=32;top=152;right=88;bottom=168;align="right";transparent=1;z=7};
+static7={cls="static";text="OuterHTML";left=24;top=176;right=88;bottom=192;align="right";transparent=1;z=8};
+static8={cls="static";text="XPath（选择后双击复制）";left=8;top=224;right=160;bottom=240;transparent=1;z=17}
+)
+/*}}*/
+
+import com.picture;
+
+import win.image;
+
+var IconCount = win.image.extractIcon("D:\Program Files\MacroCreator\Resources.dll", 1);
+//console.log("IconCount", IconCount);
+
+//内存图像 - 创建自"工具->转义字符串生成器"
+gifCur = 'GIF\56\57a \0 \0\x91\0\0\xc0\xc0\xc0\0\0\xff\0\0\0\xff\xff\xff\33\xff\11XMP DataXMP<?xpacket begin=\34\xef\xbb\xbf\34 id=\34W\53M\48MpCehiHzreSzNTczkc\57d\34?> <x:xmpmeta xmlns:x=\34adobe:ns:meta\47\34 x:xmptk=\34Adobe XMP Core \53\46\48\45c\48\54\48 \54\49\46\49\51\52\55\55\55\44 \50\48\49\48\47\48\50\47\49\50\45\49\55:\51\50:\48\48		\34> <rdf:RDF xmlns:rdf=\34http:\47\47www\46w\51\46org\47\49\57\57\57\47\48\50\47\50\50\45rdf\45syntax\45ns\35\34> <rdf:Description rdf:about=\34\34 xmlns:xmp=\34http:\47\47ns\46adobe\46com\47xap\47\49\46\48\47\34 xmlns:xmpMM=\34http:\47\47ns\46adobe\46com\47xap\47\49\46\48\47mm\47\34 xmlns:stRef=\34http:\47\47ns\46adobe\46com\47xap\47\49\46\48\47sType\47ResourceRef\35\34 xmp:CreatorTool=\34Adobe Photoshop CS\53 Windows\34 xmpMM:InstanceID=\34xmp\46iid:\57\50E\56\53\49\55\48\57D\50\57\49\49DFA\52F\52ED\48\52\51\56\52\57\56EB\54\34 xmpMM:DocumentID=\34xmp\46did:\57\50E\56\53\49\55\49\57D\50\57\49\49DFA\52F\52ED\48\52\51\56\52\57\56EB\54\34> <xmpMM:DerivedFrom stRef:instanceID=\34xmp\46iid:\57\50E\56\53\49\54E\57D\50\57\49\49DFA\52F\52ED\48\52\51\56\52\57\56EB\54\34 stRef:documentID=\34xmp\46did:\57\50E\56\53\49\54F\57D\50\57\49\49DFA\52F\52ED\48\52\51\56\52\57\56EB\54\34\47> <\47rdf:Description> <\47rdf:RDF> <\47x:xmpmeta> <?xpacket end=\34r\34?>\1\xff\xfe\xfd\xfc\xfb\xfa\xf9\xf8\xf7\xf6\xf5\xf4\xf3\xf2\xf1\xf0\xef\xee\xed\xec\xeb\xea\xe9\xe8\xe7\xe6\xe5\xe4\xe3\xe2\xe1\xe0\xdf\xde\xdd\xdc\xdb\xda\xd9\xd8\xd7\xd6\xd5\xd4\xd3\xd2\xd1\xd0\xcf\xce\xcd\xcc\xcb\xca\xc9\xc8\xc7\xc6\xc5\xc4\xc3\xc2\xc1\xc0\xbf\xbe\xbd\xbc\xbb\xba\xb9\xb8\xb7\xb6\xb5\xb4\xb3\xb2\xb1\xb0\xaf\xae\xad\xac\xab\xaa\xa9\xa8\xa7\xa6\xa5\xa4\xa3\xa2\xa1\xa0\x9f\x9e\x9d\x9c\x9b\x9a\x99\x98\x97\x96\x95\x94\x93\x92\x91\x90\x8f\x8e\x8d\x8c\x8b\x8a\x89\x88\x87\x86\x85\x84\x83\x82\x81\x80\x7f\x7e}|{zyxwvutsrqponmlkjihgfedcba`_^]\\[ZYXWVUTSRQPONMLKJIHGFEDCBA@?>=<;:\57\56\55\54\53\52\51\50\49\48\47\46\45\44\43\42\41\40\39\38%\36\35\34\33 \31\30\29\28\27\26\25\24\23\22\21\20\19\18\17\16\15\14\13\12\11\10\9\8
+\7\6\5\4\3\2\1\0\0\33\xf9\4\0\0\0\0\0\44\0\0\0\0 \0 \0\0\2\x8d\x94\x8f\xa9\x9b\xe0 \x82\x9c\xb4V\xf1 \54\xd0z\xbf\x85Y\xf4\x95\18\xf6\48\xea\xba\12\xee\11\xc7\xf2\xec\26\xf4\x8d\xbfv\xce\xcb{\15\28\xfc\x82\xbc\33\45\xd1\51\xc6v\x82Z\19\xa7\xd4\57\15\53\xe8\xd3\xb7\xcc\30\xaf\48\46R:\x8br\xabZ\xdfX\x88\x7eR\xd3h\51\xb6\9\x97\xc6\xcf\xc2s\11\xae\8\xdb\xd9\xd7y{\xb9\23W\xa7\xc6\xe6\x86U\6f\x88\xf8E\xa6\x88\xf8\xd7\xe8\xa8\xf5E\xa7S\xe9D\22\xd5ui\xb9\x96\xa3I\36\25\xba\53Z\xc4Y:\xc8\xa2\xbaP\0\0;'
+gifBlank ='GIF\56\57a \0 \0\x91\0\0\xc0\xc0\xc0\0\0\xff\0\0\0\xff\xff\xff\33\xff\11XMP DataXMP<?xpacket begin=\34\xef\xbb\xbf\34 id=\34W\53M\48MpCehiHzreSzNTczkc\57d\34?> <x:xmpmeta xmlns:x=\34adobe:ns:meta\47\34 x:xmptk=\34Adobe XMP Core \53\46\48\45c\48\54\48 \54\49\46\49\51\52\55\55\55\44 \50\48\49\48\47\48\50\47\49\50\45\49\55:\51\50:\48\48		\34> <rdf:RDF xmlns:rdf=\34http:\47\47www\46w\51\46org\47\49\57\57\57\47\48\50\47\50\50\45rdf\45syntax\45ns\35\34> <rdf:Description rdf:about=\34\34 xmlns:xmp=\34http:\47\47ns\46adobe\46com\47xap\47\49\46\48\47\34 xmlns:xmpMM=\34http:\47\47ns\46adobe\46com\47xap\47\49\46\48\47mm\47\34 xmlns:stRef=\34http:\47\47ns\46adobe\46com\47xap\47\49\46\48\47sType\47ResourceRef\35\34 xmp:CreatorTool=\34Adobe Photoshop CS\53 Windows\34 xmpMM:InstanceID=\34xmp\46iid:\57CCE\48\56\52\57\57D\50\57\49\49DF\56\57BEE\49D\56\49\48\48D\51EA\55\34 xmpMM:DocumentID=\34xmp\46did:\57CCE\48\56\52A\57D\50\57\49\49DF\56\57BEE\49D\56\49\48\48D\51EA\55\34> <xmpMM:DerivedFrom stRef:instanceID=\34xmp\46iid:\57CCE\48\56\52\55\57D\50\57\49\49DF\56\57BEE\49D\56\49\48\48D\51EA\55\34 stRef:documentID=\34xmp\46did:\57CCE\48\56\52\56\57D\50\57\49\49DF\56\57BEE\49D\56\49\48\48D\51EA\55\34\47> <\47rdf:Description> <\47rdf:RDF> <\47x:xmpmeta> <?xpacket end=\34r\34?>\1\xff\xfe\xfd\xfc\xfb\xfa\xf9\xf8\xf7\xf6\xf5\xf4\xf3\xf2\xf1\xf0\xef\xee\xed\xec\xeb\xea\xe9\xe8\xe7\xe6\xe5\xe4\xe3\xe2\xe1\xe0\xdf\xde\xdd\xdc\xdb\xda\xd9\xd8\xd7\xd6\xd5\xd4\xd3\xd2\xd1\xd0\xcf\xce\xcd\xcc\xcb\xca\xc9\xc8\xc7\xc6\xc5\xc4\xc3\xc2\xc1\xc0\xbf\xbe\xbd\xbc\xbb\xba\xb9\xb8\xb7\xb6\xb5\xb4\xb3\xb2\xb1\xb0\xaf\xae\xad\xac\xab\xaa\xa9\xa8\xa7\xa6\xa5\xa4\xa3\xa2\xa1\xa0\x9f\x9e\x9d\x9c\x9b\x9a\x99\x98\x97\x96\x95\x94\x93\x92\x91\x90\x8f\x8e\x8d\x8c\x8b\x8a\x89\x88\x87\x86\x85\x84\x83\x82\x81\x80\x7f\x7e}|{zyxwvutsrqponmlkjihgfedcba`_^]\\[ZYXWVUTSRQPONMLKJIHGFEDCBA@?>=<;:\57\56\55\54\53\52\51\50\49\48\47\46\45\44\43\42\41\40\39\38%\36\35\34\33 \31\30\29\28\27\26\25\24\23\22\21\20\19\18\17\16\15\14\13\12\11\10\9\8\7\6\5\4\3\2\1\0\0\33
+\xf9\4\0\0\0\0\0\44\0\0\0\0 \0 \0\0\2\\\x94\x8f\xa9\x9b\xe0 \x82\x9c\xb4V\xf1 \54\xd0z\xbf\x85Y\xf4\x95\18\xf6\48\xea\xba\12\xee\11\xc7\xf2\xec\26\xf4\x8d\xbfv\xce\xcb{\15\28\xfc\x82\xbc\33\17g<\xd2\x92J\x9f\xa0\x99cBu\xcf\xe9\xb2jufgRkw\xfa\x85\x86\x9bce\xf9x\38\xa6\x83k`\xbb\xf7\46b\xb7Tz\x8c\x85_\21\0\0;'
+spyCur = '\x00\x00\x02\x00\x01\x00\x20\x20\x02\x00\x10\x00\x10\x000\x01\x00\x00\x16\x00\x00\x00(\x00\x00\x00\x20\x00\x00\x00@\x00\x00\x00\x01\x00\x01\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xFF\xFF\xFF\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x20\x00\x00\x00\x20\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFC\x1F\xFF\xFF\xF3g\xFF\xFF\xEC\x1B\xFF\xFF\xDF}\xFF\xFF\x9C\x1E\xFF\xFF\x9F~\xFF\xFFV5\x7F\xFFU\xD5\x7F\xFF\x01@\x7F\xFFU\xD5\x7F\xFFV5\x7F\xFF\xBF~\xFF\xFF\xBC\x1E\xFF\xFF\xDF}\xFF\xFF\xEC\x1B\xFF\xFF\xF3g\xFF\xFF\xFC\x1F\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF'
+var hCursor = com.picture.load(spyCur).CopyHandle();
+
+import process;
+winform.plus.oncommand = function(id,event){
+	process.openUrl("https://github.com/sfantree")
+}
+
+winform.wndproc = function(hwnd,message,wParam,lParam){
+	select( message ) { 
+		case 0x205/*_WM_RBUTTONUP*/{
+			//鼠标右键弹起,下面获取坐标
+			var x,y = win.getMessagePos(lParam);
+			
+		}
+		else{
+			
+		}
+	}
+	//无返回值则继续调用默认回调函数
+}
+
+import console;
+import win;
+import winex;
+console.open();
+genCode = function(){
+	winform.spying = null; 
+	var x, y = win.getCursorPos();
+	var hwnd = winex.fromPoint(x, y);
+	
+	var classname = win.getClass(hwnd);
+	
+	console.log("hwnd", hwnd, "classname", classname);
+	winform.spying = true; 
+}
+
+
+_VERSION = "1.0";
+winform.text = "IEXPath - " ++ _VERSION ;
+
+import win.cur;  
+winform.picturebox.image = gifCur;
+var timeSpyId;
+winform.picturebox.wndproc = function (hwnd,message,wParam,lParam){
+	select (message){
+		case 0x201/*_WM_LBUTTONDOWN*/{
+		
+			if(timeSpyId)
+				return; 
+			
+			winform.picturebox.image = gifBlank;  
+			winform.picturebox.capture = true;
+			win.cur.beginCur(hCursor);//持续设定鼠标指针
+			 
+			winform.spying = true;  
+			
+			timeSpyId = winform.setInterval(
+				function(hwnd,msg,id,tick){//定时执行代码
+					genCode()
+					winform.spying = true;
+				},500/*毫秒*/
+			);
+		}
+		case 0x202/*_WM_LBUTTONUP*/{ 
+			if( timeSpyId ){ 
+				winform.clearInterval(timeSpyId)
+				winform.picturebox.image = gifCur; 
+				winform.picturebox.capture = false
+				win.cur.endCur(); //恢复正常鼠标指针 
+				genCode() ;
+				winform.spying = false;
+				timeSpyId = null;
+			}
+		}  
+	}
+}
+winform.show();
+win.loopMessage();

@@ -1,0 +1,25 @@
+import win.ui;
+/*DSG{{*/
+var mainForm = win.form(text="ankineko2";right=959;bottom=591)
+mainForm.add(
+btnRtf2xml={cls="button";text="转换为xml";left=84;top=182;right=215;bottom=226;z=2};
+button2={cls="button";text="Button";left=742;top=97;right=883;bottom=137;z=3};
+edit={cls="edit";text="Edit";left=68;top=98;right=688;bottom=142;edge=1;multiline=1;z=1}
+)
+/*}}*/
+
+mainForm.btnRtf2xml.oncommand = function(id,event){
+	//var child, wb = mainForm.loadForm("\res\setting.aardio");
+    //child.show();
+    
+    var rtf2XmlExe = io.fullpath("Rtf2Xml.exe");
+    var cmdline = rtf2XmlExe + " " + "demo1.rtf";
+    import  process
+    process(cmdline);
+    import  console;
+    console.log(cmdline)
+	
+}
+
+mainForm.show();
+return win.loopMessage();

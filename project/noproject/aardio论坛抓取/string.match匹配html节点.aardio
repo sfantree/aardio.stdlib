@@ -1,0 +1,27 @@
+io.open();//打开控制台
+
+/*
+https://bbs.aardio.com/forum.php?mod=viewthread&tid=11382&extra=page%3D7
+*/
+
+var str = /*
+<DIV id=question-tab class=hc_h>
+<UL>
+<LI class=task>问题</LI></UL></DIV></DIV>
+<DIV id=question class=hc_c>
+<P>驱动器的PF值大于多少？</P>
+<UL>
+<LI><LABEL for=as_1><INPUT id=as_1 value=1 type=radio name=answer[]>0.6</LABEL></LI>
+<LI><LABEL for=as_2><INPUT id=as_2 value=2 type=radio name=answer[]>0.7</LABEL></LI>
+<LI><LABEL for=as_3><INPUT id=as_3 value=3 type=radio name=answer[]>0.8</LABEL></LI>
+<LI><LABEL for=as_4><INPUT id=as_4 value=4 type=radio name=answer[]>0.9</LABEL></LI></UL>
+*/
+var t = string.gmatch(str,"\<P\>(.+?)\<");
+var l = string.gmatch(str,"]\>(.+?)\</LABEL");
+io.print(t(1),l(1),l(2),l(3),l(4));
+
+var m = string.gmatch(str,"\<INPUT(.+?)\>");
+io.print(m(1),m(2),m(3),m(4));
+
+execute("pause") //按任意键继续
+io.close();//关闭控制台

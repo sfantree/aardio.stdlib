@@ -1,0 +1,21 @@
+import console; 
+
+var urlString = "http://bbs.aardio.com/forum.php?mod=viewthread&tid=7626&extra=page%3D1";
+
+import inet.url;
+
+var obj = inet.url.split(urlString);
+var obj2 = inet.url.splitParameters(obj.extraInfo)
+
+
+
+var getTidFromUrl = function(url){
+	var obj = inet.url.split(urlString);
+	var obj2 = inet.url.splitParameters(obj.extraInfo)
+	return (obj2)[["tid"]];
+}
+console.dump(getTidFromUrl(urlString));
+
+console.dump(obj2);
+
+console.pause(true);

@@ -1,0 +1,49 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469;parent=...)
+winform.add()
+/*}}*/
+
+import web.form;
+var wb = web.form( winform,5/*_UIFLAG_DIALOG*/,,,true);
+wb.noScriptErr = true;
+
+wb.html = /** 
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />  
+    <title>FastCGI安装配置说明</title>
+</head>
+<body style="white-space:pre;font-size:	11pt;word-wrap: break-word;word-break: normal;">
+
+<pre>
+web.kit 扩展库基于 WebKit，体积非常小，支持包含 XP 在内的所有操作系统。
+可在网页 Javascript 内直接调用 aardio 函数，也可在 aardio 内直接调用 JS 函数。
+
+这个范例使用了 React 的兼容实现 NervJS, 演示了 React Hooks 的用法。
+React Hooks 简洁优雅, 大幅降低了前端开发的门槛和学习成本。
+只要熟悉 useState, useEffect, useCallback, useContext 等几个非常简单的 Hooks 的用法，
+你就可以运用自如，强烈推荐大家学习和使用。 
+
+请先安装 Node.js 以及 VS Code开发环境。
+然后使用此向导新建工程，在工程视图的「网页源码」目录点右键,
+然后在弹出菜单中点击「使用外部编辑器打开」, aardio 会自动调用 VS Code 打开目录。
+然后在 VS Code 的终端中输入命令 npm install 安装依赖, 
+输入命令 npm run build 编译并生成 JS 代码。
+
+注意工程在发布后不再需要网页源码, 可以直接生成独立的 EXE 文件。
+</pre>
+
+</body>
+</html>
+**/
+
+winform.getTemplatePath = function(){
+	return io.fullpath("/template/web/webkit/") 
+}
+
+winform.show(true);
+win.loopMessage();
+return winform;

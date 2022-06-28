@@ -1,0 +1,95 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add(
+button={cls="button";text="push";left=8;top=8;right=112;bottom=48;z=2};
+button2={cls="button";text="添加任务";left=8;top=56;right=112;bottom=96;z=3};
+button3={cls="button";text="involk";left=8;top=104;right=112;bottom=144;z=4};
+button4={cls="button";text="pop";left=136;top=8;right=240;bottom=48;z=5};
+edit={cls="edit";left=16;top=280;right=736;bottom=448;edge=1;multiline=1;z=1}
+)
+/*}}*/
+
+import thread.works;
+import thread.command;
+
+thread_command_main = thread.command();
+
+thread_command_main.logd = function( ... ){
+	winform.edit.print(...);
+}
+
+thread.set("threadCommandHwnd", thread_command_main.hwnd);
+
+thread_command_main.logd(thread.getId(), 'thread.get("threadCommandHwnd")', thread.get("threadCommandHwnd") );
+
+threadFunc = function(sleeptime, listener) {
+		import math;
+		import win;
+		import thread;
+		import thread.command;
+		
+		//var threadCommandHwnd = thread.get("threadCommandHwnd");
+		//var thread_command = thread.command(threadCommandHwnd);
+		
+		
+		//listener.logd((thread.getId()) , "start run");
+		
+		win.delay(sleeptime);
+		
+		//listener.logd((thread.getId()) , "stop run");
+		
+		return (sleeptime);
+}
+
+
+
+
+
+WorksQueue = thread.works( 1,
+    threadFunc
+);
+
+/*
+import win.timer;
+var timer = win.timer(winform, 500);
+
+timer.onTimer = function(){ 
+ 	while( var sleeptime = WorksQueue.pop() ) { 
+ 	
+ 	}
+}
+
+timer.enable();
+*/
+
+winform.button.oncommand = function(id,event){
+	import math;
+	var arg = math.random(1000, 2000);
+	WorksQueue.push(arg);
+	thread_command_main.logd(thread.getId(), "push ", arg);
+	
+}
+
+winform.button2.oncommand = function(id,event){
+	import math;
+	thread_command_main.logd(thread.getId(), "WorksQueue.busy()", WorksQueue.busy() );
+	//WorksQueue.resume()
+}
+
+winform.button3.oncommand = function(id,event){
+	thread_command_main.logd(thread.getId(), "winform.button3.oncommand"  );
+	thread.invoke( 
+		threadFunc, 2000, thread_command_main
+	)
+}
+
+winform.button4.oncommand = function(id,event){
+	import math;
+	//var arg = math.random(2000, 5000);
+	var ret = WorksQueue.pop();
+	thread_command_main.logd(thread.getId(), "pop ", ret);
+}
+
+winform.show();
+win.loopMessage();

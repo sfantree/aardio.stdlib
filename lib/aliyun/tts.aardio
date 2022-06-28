@@ -1,0 +1,159 @@
+﻿//tts 语音合成
+import crypt.hmac;
+import crypt.bin; 
+import inet.url; 
+import win.guid;
+import web.rest.jsonClient;  
+namespace aliyun.tts;
+	
+class client{
+	ctor(appkey,accessKeyId,accessKeySecret){
+		this = ..web.rest.jsonClient(); 
+		this.appkey = appkey
+		this.accessKeyId = accessKeyId;
+		this.accessKeySecret = accessKeySecret;
+		this.ttsUrl = "https://nls-gateway.cn-shanghai.aliyuncs.com/stream/v1/tts";
+		this.tokenUrl = "https://nls-meta.cn-shanghai.aliyuncs.com/"; 
+		
+		this.getAccessToken = function(param){ 
+			if(!param){
+				param = {
+					Format = "JSON";
+					AccessKeyId = this.accessKeyId;
+					Action = "CreateToken";
+					Version = "2019-02-28";
+					
+					RegionId = "cn-shanghai";
+					Timestamp = ..time.iso8601();
+					SignatureMethod = "HMAC-SHA1";
+					SignatureVersion = "1.0";
+					SignatureNonce =..win.guid.create();
+				};
+			} 
+			
+			param.Signature = getSignature(this.accessKeySecret,param);
+			var tokenUrl = ..inet.url.appendExtraInfo(this.tokenUrl,..inet.url.stringifyParameters(param));
+			var res = this.get(tokenUrl); 
+			
+			this.accessToken = {
+				id = res[["Token"]][["Id"]];
+				expireTime = res[["Token"]][["ExpireTime"]] 
+			};
+			return this.accessToken;
+		} 
+		
+		if(#this.accessKeySecret){ 
+			this.accessToken =  this.getAccessToken(); 
+		}
+		else {
+			this.accessToken = { id = this.accessKeyId };
+		} 
+	};
+
+	getSpeechUrl  = function(param){
+		if(!this.accessToken){
+			error("未指定令牌",2);
+		}
+		
+		if(#this.accessKeySecret){
+			if(this.accessToken.expireTime and this.accessToken.expireTime<=(tonumber(..time()))){
+				this.accessToken =  accessToken.getAccessToken();	
+			}	
+		}
+		
+		param.token = this.accessToken.id;
+		param.appkey = this.appkey;
+		return ..inet.url.appendExtraInfo(this.ttsUrl,..inet.url.stringifyParameters(param));  
+	}
+	
+}
+
+client.getSignature = function(accessKeySecret,param){	
+    var data = ..string.join({
+		"GET";..inet.url.encode("/");
+		..inet.url.encode(..inet.url.stringifyParameters(param));
+	},"&");
+    var signature = ..crypt.hmac.sha1(accessKeySecret++"&", data).getValue();
+        signature = ..crypt.bin.encodeBase64(signature);
+    return signature;
+}
+
+voices =  {
+    {"小云";"Xiaoyun";"标准女声";"通用场景";"支持中文及中英文混合场景";{"8K";"16K"}};
+    {"小刚";"Xiaogang";"标准男声";"通用场景";"支持中文及中英文混合场景";{"8K";"16K"}};
+    {"小梦";"Xiaomeng";"标准女声";"通用场景";"支持中文及中英文混合场景";{"8K";"16K"}};
+    {"小威";"Xiaowei";"标准男声";"通用场景";"支持中文及中英文混合场景";{"8K";"16K"}};
+    {"若兮";"Ruoxi";"温柔女声";"通用场景";"支持中文及中英文混合场景";{"8K";"16K";"24K"}};
+    {"思琪";"Siqi";"温柔女声";"通用场景";"支持中文及中英文混合场景";{"8K";"16K";"24K"}};
+    {"思佳";"Sijia";"标准女声";"通用场景";"支持中文及中英文混合场景";{"8K";"16K";"24K"}};
+    {"思诚";"Sicheng";"标准男声";"通用场景";"支持中文及中英文混合场景";{"8K";"16K";"24K"}};
+    {"艾琪";"Aiqi";"温柔女声";"通用场景";"支持中文及中英文混合场景";{"8K";"16K";"24K"}};
+    {"艾佳";"Aijia";"标准女声";"通用场景";"支持中文及中英文混合场景";{"8K";"16K";"24K"}};
+    {"艾诚";"Aicheng";"标准男声";"通用场景";"支持中文及中英文混合场景";{"8K";"16K";"24K"}};
+    {"艾达";"Aida";"标准男声";"通用场景";"支持中文及中英文混合场景";{"8K";"16K";"24K"}};
+    {"宁儿";"Ninger";"标准女声";"通用场景";"仅支持纯中文场景";{"8K";"16K";"24K"}};
+    {"瑞琳";"Ruilin";"标准女声";"通用场景";"仅支持纯中文场景";{"8K";"16K";"24K"}};
+    {"阿美";"Amei";"甜美女声";"客服场景";"支持中文及中英文混合场景";{"8K";"16K"}};
+    {"小雪";"Xiaoxue";"温柔女声";"客服场景";"支持中文及中英文混合场景";{"8K";"16K"}};
+    {"思悦";"Siyue";"温柔女声";"客服场景";"支持中文及中英文混合场景";{"8K";"16K";"24K"}};
+    {"艾雅";"Aiya";"严厉女声";"客服场景";"支持中文及中英文混合场景";{"8K";"16K";"24K"}};
+    {"艾夏";"Aixia";"亲和女声";"客服场景";"支持中文及中英文混合场景";{"8K";"16K";"24K"}};
+    {"艾美";"Aimei";"甜美女声";"客服场景";"支持中文及中英文混合场景";{"8K";"16K";"24K"}};
+    {"艾雨";"Aiyu";"自然女声";"客服场景";"支持中文及中英文混合场景";{"8K";"16K";"24K"}};
+    {"艾悦";"Aiyue";"温柔女声";"客服场景";"支持中文及中英文混合场景";{"8K";"16K";"24K"}};
+    {"艾婧";"Aijing";"严厉女声";"客服场景";"支持中文及中英文混合场景";{"8K";"16K";"24K"}};
+    {"小美";"Xiaomei";"甜美女声";"客服场景";"支持中文及中英文混合场景";{"8K";"16K";"24K"}};
+    {"艾娜";"Aina";"浙普女声";"客服场景";"仅支持纯中文场景";{"8K";"16K";"24K"}};
+    {"伊娜";"Yina";"浙普女声";"客服场景";"仅支持纯中文场景";{"8K";"16K";"24K"}};
+    {"思婧";"Sijing";"严厉女声";"客服场景";"仅支持纯中文场景";{"8K";"16K";"24K"}};
+    {"思彤";"Sitong";"儿童音";"童声场景";"仅支持纯中文场景";{"8K";"16K";"24K"}};
+    {"小北";"Xiaobei";"萝莉女声";"童声场景";"仅支持纯中文场景";{"8K";"16K";"24K"}};
+    {"艾彤";"Aitong";"儿童音";"童声场景";"仅支持纯中文场景";{"8K";"16K";"24K"}};
+    {"艾薇";"Aiwei";"萝莉女声";"童声场景";"仅支持纯中文场景";{"8K";"16K";"24K"}};
+    {"艾宝";"Aibao";"萝莉女声";"童声场景";"仅支持纯中文场景";{"8K";"16K";"24K"}};
+    {"Halen";"Halen";"英音女声";"英文场景";"仅支持英文场景";{"8K";"16K"}};
+    {"Harry";"Harry";"英音男声";"英文场景";"仅支持英文场景";{"8K";"16K"}};
+    {"Eric";"Eric";"英音男声";"英文场景";"仅支持英文场景";{"8K";"16K";"24K"}};
+    {"Emily";"Emily";"英音女声";"英文场景";"仅支持英文场景";{"8K";"16K";"24K"}};
+    {"Luna";"Luna";"英音女声";"英文场景";"仅支持英文场景";{"8K";"16K";"24K"}};
+    {"Luca";"Luca";"英音男声";"英文场景";"仅支持英文场景";{"8K";"16K";"24K"}};
+    {"Wendy";"Wendy";"英音女声";"英文场景";"仅支持英文场景";{"8K";"16K";"24K"}};
+    {"William";"William";"英音男声";"英文场景";"仅支持英文场景";{"8K";"16K";"24K"}};
+    {"Olivia";"Olivia";"英音女声";"英文场景";"仅支持英文场景";{"8K";"16K";"24K"}};
+    {"姗姗";"Shanshan";"粤语女声";"方言场景";"支持标准粤文（简体）及粤英文混合场景";{"8K";"16K";"24K"}}
+} 
+
+getVoiceTypes = function(voices){
+    if(!voices) voices = self.voices;
+    
+    var voiceTypes = {}
+    for(k,v in voices){ 
+    	if(!voiceTypes[v[3]]){
+    		..table.push(voiceTypes,v[3]) 
+    		voiceTypes[v[3]] = {v}
+    	}
+    	else {
+    		..table.push(voiceTypes[v[3]] ,v) 
+    	}
+    	   
+    }
+    return voiceTypes; 
+};
+ 
+getVoiceByName = function(name,voices){
+    if(!voices) voices = self.voices;
+    for(k,v in voices){
+    	if(v[1]===name){   return v;   }	 
+    } 
+}
+
+/**intellisense()
+aliyun.tts = 阿里云语音合成\n https://github.com/nlysh007/aliyun-tts-aardio
+aliyun.tts.client() = !aliyunTtsClient.
+aliyun.tts.client(.(appkey,token) = 阿里云语音合成客户端 
+aliyun.tts.client(.(appkey,accessKeyId,accessKeySecret) = 阿里云语音合成客户端 
+aliyun.tts.getVoiceTypes() = 返回嗓音类型数组
+aliyun.tts.getVoiceByName(.(name,voices) = 根据@name参数指定的名称在返回嗓音信息\n@voices参数可省略
+aliyun.tts.voices = 可用嗓音列表
+!aliyunTtsClient.getSpeechUrl(.(param) = 获取TTS语言地址
+end intellisense**/

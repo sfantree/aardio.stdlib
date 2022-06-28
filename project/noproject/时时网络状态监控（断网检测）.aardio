@@ -1,0 +1,34 @@
+//断网检测
+import fonts.fontAwesome;
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="检测网络状态";right=759;bottom=469;bgcolor=16777215;max=false)
+winform.add(
+plusNetworkStatus={cls="plus";text="网络已连接";left=66;top=57;right=242;bottom=98;align="left";color=32768;disabled=1;font=LOGFONT(h=-19);iconStyle={align="left";font=LOGFONT(h=-27;name='FontAwesome');padding={left=9}};iconText='\uF012';textPadding={left=49};z=1}
+)
+/*}}*/
+
+import wsock.networkChange;
+wsock.networkChange.wait(winform).onNetworkChanged = function(){
+	
+	//网络状态变更触发此回调
+	winform.plusNetworkStatus.checked = wsock.tcp.client.test();
+
+
+}
+
+
+
+winform.plusNetworkStatus.skin({
+	text="网络已断开"; 
+	checked = {
+		text = "网络已连接";
+	}
+});
+
+
+
+
+winform.onNetworkChanged();
+winform.show();
+win.loopMessage();

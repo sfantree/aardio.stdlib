@@ -1,0 +1,5 @@
+import fsys.res;
+var res = fsys.res.open("~\lib\ahk\.res\AutoHotkey.dll")
+res.update("LIB","JSON.AHK",$"~\lib\ahk\.res\JSON.AHK");
+res.update("LIB","AARDIO.AHK",$"~\lib\ahk\.res\AARDIO.AHK");
+res.close(false)

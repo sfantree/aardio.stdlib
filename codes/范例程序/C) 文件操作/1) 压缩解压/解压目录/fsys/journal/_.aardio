@@ -1,0 +1,191 @@
+import sys.volume;
+import fsys.file;
+namespace fsys;
+
+class journal{
+	ctor( drivePath ){
+ 		drivePath = drivePath ? ..string.match(drivePath,"(\a+\:)")
+ 		if(!drivePath) error("请指定分区名参数",2);
+ 		this.drivePath = drivePath;
+ 		
+		var info =  ..sys.volume.getInfo(drivePath)
+		if( info.fsys != "NTFS" )
+			return null,"非NTFS分区!" 
+	
+		// 调用该函数需要管理员权限
+		var volume =  ..fsys.file( "\\.\" + drivePath,"r+",3,3,1/*_FILE_ATTRIBUTE_READONLY*/); 
+		if(!volume){ return  null,"获取驱动盘句柄失败"; }
+		 
+		var cujd = CREATE_USN_JOURNAL_DATA(); 
+		var re, cbBytesReturned = volume.deviceIoControl(0x900E7/*_FSCTL_CREATE_USN_JOURNAL*/,cujd,{});  
+		if(!re){
+			return null,"初始化USN日志文件失败";
+		}
+		
+		var journalData = USN_JOURNAL_DATA();
+		var re,cbBytesReturned = volume.deviceIoControl(0x900F4/*_FSCTL_QUERY_USN_JOURNAL*/,{},journalData);     	
+        if(!re){
+			return null,"获取USN日志文件信息失败";
+		} 
+	}; 
+	getUsnData = function(){
+		var bufferSize = 4096;
+		var usnSize = ..raw.sizeof ("long");
+		var buffer = ..raw.malloc(4096);  
+		var usnRecord;
+		var usnRecord2 = USN_RECORD();
+		var usnRecord3 = USN_RECORD_V3();
+		var med = MFT_ENUM_DATA();  
+		med.HighUsn = journalData.NextUsn; 
+ 		
+ 		var fromUnicode = ..string.fromUnicode;
+ 		var raw_convert = ..raw.convert;
+ 		var raw_tostring = ..raw.tostring;
+ 		
+ 		var offsetFilename; 
+ 	 	var re,usnDataSize = volume.deviceIoControl(0x900B3/*_FSCTL_ENUM_USN_DATA*/,med,buffer)
+		
+		var fileData = { };
+		var FileReferenceNumber,fileNameLen,recordLen,dataSize,offset;
+		while (re) { 
+    		dataSize = usnDataSize - usnSize;  
+    		offset = usnSize; 
+    		while ( dataSize > 0 ){ 
+		 		raw_convert( buffer,usnRecord2,offset ); 
+		 		usnRecord = usnRecord2;
+		 		if( usnRecord.MajorVersion == 3 ) {
+		 			raw_convert(buffer,usnRecord3,offset );
+		 			usnRecord =  usnRecord3;
+		 		}
+		 		
+        		fileNameLen = usnRecord.FileNameLength; 
+        		offsetFilename = offset+ usnRecord.FileNameOffset; 
+        	 	strFileName = fromUnicode( raw_tostring(buffer,offsetFilename+1 ,offsetFilename + fileNameLen )  ) ;
+			 
+			 	var FileReferenceNumber = usnRecord.FileReferenceNumber  
+				if(!fileData[FileReferenceNumber])
+					fileData[FileReferenceNumber] = { name = strFileName; parent = usnRecord.ParentFileReferenceNumber }
+       			 
+       			recordLen = usnRecord.RecordLength;
+       			dataSize -= recordLen; 
+       			offset += recordLen; 
+    		} 
+    		med.StartFileReferenceNumber = ..raw.convert( buffer,{BYBE frn[8]}).frn ;
+    		re,usnDataSize = volume.deviceIoControl(0x900B3/*_FSCTL_ENUM_USN_DATA*/,med,buffer)
+		} 
+		return fileData;
+	};
+	getFullPath = function(usnData,frn){
+		var path = {}
+		var parent = frn;
+		while(parent){
+			node = usnData[parent]
+			if( !node ) break;
+			..table.push(path,node.name);
+			parent = node.parent;
+		}
+		..table.push(path,this.drivePath);
+		..table.reverse(path)
+		return ..string.join(path,"\");
+	}
+	delete = function(){
+		if( journalData ){
+			var dujd = DELETE_USN_JOURNAL_DATA(); 
+			dujd.UsnJournalID = journalData.UsnJournalID;  
+			dujd.DeleteFlags = 1/*_USN_DELETE_FLAG_DELETE*/; 
+			var re,cbBytesReturned =  volume.deviceIoControl(0x900F8/*_FSCTL_DELETE_USN_JOURNAL*/,cujd,{});
+			if(!re){
+				return null,"删除USN日志文件失败";
+			}
+			journalData = null;
+		}
+	}; 
+}
+
+namespace journal{  
+
+	class USN_RECORD  { 
+		INT RecordLength;
+		WORD MajorVersion;
+		WORD MinorVersion;
+		BYTE FileReferenceNumber[8];
+		BYTE ParentFileReferenceNumber[8];
+		BYTE Usn[8];
+		long TimeStamp;
+		INT Reason;
+		INT SourceInfo;
+		INT SecurityId;
+		INT FileAttributes;
+		WORD FileNameLength;
+		WORD FileNameOffset;
+		WORD FileName[1];
+	}
+	
+	class USN_RECORD_V3 { 
+  		INT RecordLength;
+  		WORD MajorVersion;
+  		WORD MinorVersion;
+  		BYTE FileReferenceNumber[16];
+  		BYTE ParentFileReferenceNumber[16];
+  		long Usn;
+  		long TimeStamp;
+  		INT Reason;
+  		INT SourceInfo;
+  		INT SecurityId;
+  		INT FileAttributes;
+  		WORD FileNameLength;
+  		WORD FileNameOffset;
+  		WORD FileName[1]; 
+	}
+	
+	class MFT_ENUM_DATA {
+		BYTE StartFileReferenceNumber[8];
+		BYTE LowUsn[8];
+		BYTE HighUsn[8];
+	}
+	
+	class USN_JOURNAL_DATA {
+		BYTE UsnJournalID[8];
+		BYTE FirstUsn[8];
+		BYTE NextUsn[8];
+		BYTE LowestValidUsn[8];
+		BYTE MaxUsn[8];
+		BYTE MaximumSize[8];
+		BYTE AllocationDelta[8];
+	}
+	
+	class CREATE_USN_JOURNAL_DATA{ 
+    	BYTE MaximumSize[8];
+    	BYTE AllocationDelta[8]; 
+	}  
+	
+	class DELETE_USN_JOURNAL_DATA{ 
+    	BYTE UsnJournalID[8];
+    	INT DeleteFlags; 
+	}   
+}
+
+ /**intellisense()
+ fsys.journal(.("C:") = 创建NTFS分区USN日志对象
+ fsys.journal() = !fsys_journal.
+!fsys_journal.delete() = 删除USN日志
+!fsys_journal.getUsnData() = 获取USN日志数据,此函数耗时较长,\n一般可能需要数分钟
+!fsys_journal.getFullPath(.(usnData,fileReferenceNumber) = 返回完整路径
+
+_FILE_DEVICE_FILE_SYSTEM=@9/*_FILE_DEVICE_FILE_SYSTEM*/
+_METHOD_BUFFERED=@0/*_METHOD_BUFFERED*/
+_METHOD_IN_DIRECT=@1/*_METHOD_IN_DIRECT*/
+_METHOD_OUT_DIRECT=@2/*_METHOD_OUT_DIRECT*/
+_METHOD_NEITHER=@3/*_METHOD_NEITHER*/
+_FILE_ANY_ACCESS=@0/*_FILE_ANY_ACCESS*/
+_FILE_SPECIAL_ACCESS=@0/*_FILE_SPECIAL_ACCESS*/
+_FILE_READ_ACCESS=@1/*_FILE_READ_ACCESS*/
+_FILE_WRITE_ACCESS=@2/*_FILE_WRITE_ACCESS*/
+_FSCTL_ENUM_USN_DATA=@0x900B3/*_FSCTL_ENUM_USN_DATA*/
+_FSCTL_QUERY_USN_JOURNAL=@0x900F4/*_FSCTL_QUERY_USN_JOURNAL*/
+_FSCTL_CREATE_USN_JOURNAL=@0x900E7/*_FSCTL_CREATE_USN_JOURNAL*/
+_FSCTL_DELETE_USN_JOURNAL=@0x900F8/*_FSCTL_DELETE_USN_JOURNAL*/
+_USN_DELETE_FLAG_DELETE=@1/*_USN_DELETE_FLAG_DELETE*/
+_USN_DELETE_FLAG_NOTIFY=@2/*_USN_DELETE_FLAG_NOTIFY*/
+_USN_DELETE_VALID_FLAGS=@3/*_USN_DELETE_VALID_FLAGS*/
+end intellisense**/

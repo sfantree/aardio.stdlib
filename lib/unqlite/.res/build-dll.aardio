@@ -1,0 +1,46 @@
+io.open()
+import tcc; 
+vm = tcc( );
+
+vm.addLib( 
+	"user32",
+	"kernel32",
+	"gdi32"
+) 
+
+var errorMsg;
+vm.onError = function(msg){
+	errorMsg = msg;
+	io.print( msg )
+}
+
+ 
+vm.addFile("/unqlite.c")
+vm.output( "/unqlite.dll", "" ) //编译C源码，生成DLL
+
+if( errorMsg ){
+	io.print("编译出错,请升级您的TCC扩展库到0.9.26.02 以上版本")
+}
+else {
+	io.print("已生成 unqlite.dll")
+}
+vm.close()
+execute("pause")
+
+//当前版本 1.1.9
+//https://github.com/symisc/unqlite/
+
+/*
+//在unqlite.c unqlite.h 中找到 __declspec(dllexport) 的定义修改如下（要改两个文件）
+#if defined (__TINYC__ )
+#include <_mingw.h>
+#define SX_APIIMPORT	__declspec(dllimport)
+#define SX_APIEXPORT	__declspec(dllexport)
+#elif  defined (_MSC_VER) || defined (__MINGW32__) ||  defined (__GNUC__) && defined (__declspec)
+#define SX_APIIMPORT	__declspec(dllimport)
+#define SX_APIEXPORT	__declspec(dllexport)
+#else
+#define	SX_APIIMPORT
+#define	SX_APIEXPORT
+#endif
+*/

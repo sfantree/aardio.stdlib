@@ -1,0 +1,116 @@
+import win.ui;
+import win.guid;
+import com.flash;
+import com.activeX;
+
+namespace win;
+
+class flashBox {
+
+    ctor( tParam ){
+     
+         if( tParam ? tParam.hwnd ){ 
+         	 this._form = tParam; 
+             if( !this._form.isForm  ) 
+             	error("参数请指定win.form创建的窗体对象",2); 
+              
+             this._form.orphanWindow(true);	
+             this._form.modifyStyleEx(,0x80000/*_WS_EX_LAYERED*/);	
+             this.hFlashBox = FlashBoxCreate(this._form.hwnd,_HINSTANSE);   
+         }
+         else{
+            tParam = ..table.assign(  { 
+                    mode="popup";bottom=399;right=599;
+                    exmode = "none";mode = "popup";border = "none" },tParam ); 
+            
+            if( ( type( tParam.parent) == "table" )   ){
+                this.parent = tParam.parent;
+                tParam.parent = tParam.parent.hwnd; 
+            } 
+            
+            if( type( tParam.parent ) != "number" )
+                tParam.parent = ..win.getDesktop(); 
+                        
+            tParam.createWindowEx = function(...){
+                this.hFlashBox = FlashBoxCreateWindow(...);
+                if( this.hFlashBox ) return _dll.FlashBoxGetHwnd(this.hFlashBox);
+            }
+             
+            this._form =  ..win._form( tParam )
+            if(!this._form) return null;
+            
+            this._form.parent  = this.parent; this.parent = null;
+        }
+        
+        if(!this.hFlashBox) return;
+        this.hwnd  = this._form.hwnd; 
+        var hr,pObject = FlashBoxQueryInterface(this.hFlashBox,..win.guid.fromString("{00020400-0000-0000-C000-000000000046}") );
+        if(  (hr)>=0/*_SUCCEEDED*/ ){
+            this._object = ..com.QueryObject( pObject )  
+            ..com.Release(pObject)
+        }
+        else {
+            error("获取COM接口失败",2) 
+        }
+
+        this._form.isDialogMessage = function(hwnd,msg){ }; 
+        this._form._onDestroy = function(){ 
+            //必须按以下顺序释放资源
+            collectgarbage("collect") 
+            if( ..com.IsObject(this._object) ){
+                ..com.ReleaseConnection(this._object); 
+                ..com.Release(this._object) 
+            }
+            if( this.hFlashBox ) {
+                _dll.FlashBoxDestroy(this.hFlashBox );
+                this.hFlashBox  = null;
+            };
+        } 
+         
+        var sink, cookie =  ..com.Connect(this._object, this );
+    }; 
+    show = function(x){
+        this._form.show(x);
+    }
+    @_metaProperty;
+}
+
+import com.flash; 
+
+namespace flashBox {
+    xml = ..com.flash.xml;
+    _metaProperty = ..com.flash._metaProperty;
+    
+    _dll = ..raw.loadDll($"~\lib\win\flashBox\.dll\AAUTransparentFlashBox.dll","AAUTransparentFlashBox.dll","cdecl");
+    
+    FlashBoxCreate = _dll.api("FlashBoxCreate", "pointer(addr hwnd,ptr hlnstance)" );
+    FlashBoxCreateWindow = _dll.api("FlashBoxCreateWindow", "pointer(
+        INT exStyle,ustring className,ustring windowName,INT style,int x,int y,int width,int height,addr hwndParent,addr hMenu,pointer hlnstance,ptr lpParam)" ) 		 
+    FlashBoxQueryInterface = _dll.api("FlashBoxQueryInterface","int(pointer hflash,struct iid,pointer &ppObject)" );
+}
+
+/*
+浏览器不支持 Flash 是必要的，
+但阻止桌面软件嵌入 Flash 控件的软件作品正常运行是不必要的。
+通过自动更新推送这种主动摧毁大量软件产品的行为，未经用户确认和许可是不合适的。
+以下代码用于清除破坏基于 Flash 的软件作品正常运行的时间炸弹、锁区代码。
+*/
+begin
+
+	var ocxPathAardio = ..io.appData("aardio\std\flash.ocx")
+	if(..io.exist(ocxPathAardio)){ 
+		..com.activeX.regsvr32(ocxPathAardio)	
+	}
+end;
+
+/**intellisense()
+win.flashBox = 透明Flash窗口支持库
+win.flashBox._flashDll = !dllModule.
+win.flashBox(.(窗体构造参数) = 创建并返回flash控件窗口,\n参数可以是一个winform窗体对象,\n也可以是兼容win.form构造参数
+win.flashBox() = !com_flash.
+end intellisense**/
+
+/*
+AAUTransparentFlashBox.dll:感谢 Makarov Igor 的文章和源码
+http://www.codeproject.com/Articles/14673/Transparent-Flash-Control-in-Plain-C
+*/

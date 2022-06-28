@@ -1,0 +1,72 @@
+//WebDriver 自动化
+
+import chrome.driver;
+import console;
+//创建chromeDriver对象,协议文档 https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol
+// https://www.w3.org/TR/webdriver/#processing-capabilities
+
+var driver = chrome.driver(); 
+
+
+// chrome关闭恶心的Content-Security-Policy
+// https://github.com/PhilGrayson/chrome-csp-disable
+
+
+import crypt.bin;
+
+var crxPath = "G:\chromedl\chrome-csp-disable-master\chrome-csp-disable-master2auto.crx";
+var crxBufferBase64 = crypt.bin.encodeBase64(string.loadBuffer(crxPath));
+
+/*
+setOptions参考javascript
+https://www.browserstack.com/guide/test-chrome-extensions-in-selenium
+extensions的value不是路径，而是扩展文件二进制的base64编码
+https://github.com/SeleniumHQ/selenium/issues/6676
+
+*/
+driver.setOptions(
+     excludeSwitches ={"enable-logging"} ,
+     extensions = {crxBufferBase64},     
+)
+ 
+//创建会话，打开chrome浏览器，Chrome新版会强制显示控制台
+var browser = driver.startBrowser();
+
+var cap = driver.getCapabilities();
+console.dump(cap);
+
+//打开网页
+browser.go("https://www.kernel.org/category/site-news.html")
+
+sleep(4000);
+
+//browser.doScript("alert('haha');");
+
+// 彩云小译脚本作者
+// https://cuitor.cn/article/12
+var caiyunJs = string.load("G:\Users\lin\PycharmProjects\nowcode\caiyun2kindle\caiyun.js");
+import console;
+console.log(caiyunJs);
+browser.doScript(caiyunJs);
+
+sleep(2000);
+
+var ele = browser.querySelector("body").querySelector(".cyxy-favorite-btn"); 
+
+//driver.find_elements_by_xpath("//img[@class='cyxy-favorite-btn']")[0]
+ele.click()
+
+sleep(1000);
+
+var scrollerJs = /***
+function scroller(){
+var position=0;
+while(position<document.body.scrollHeight){
+position+=100;
+scroll(0,position);}
+}
+scroller();
+***/
+browser.doScript(scrollerJs);
+
+sleep(2000);

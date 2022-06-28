@@ -1,0 +1,81 @@
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form(text="迅雷云加速SDK测试程序";right=574;bottom=187;border="dialog frame";max=false;min=false)
+winform.add(
+btnCancel={cls="button";text="取消";left=386;top=137;right=520;bottom=176;z=6};
+btnDown={cls="button";text="下载";left=238;top=137;right=372;bottom=176;z=1};
+editUrl={cls="edit";left=158;top=18;right=548;bottom=43;edge=1;z=4};
+lbStatus={cls="static";text="0 KB/S";left=48;top=106;right=545;bottom=130;transparent=1;z=3};
+progress={cls="progress";left=32;top=67;right=553;bottom=97;edge=1;max=100;min=0;z=2};
+static={cls="static";text="请输入下载网址:";left=-132;top=19;right=151;bottom=46;align="right";transparent=1;z=5}
+)
+/*}}*/
+
+import inet.whttp
+import thunder.downEngine;
+winform.btnDown.oncommand = function(id,event){
+
+    //检查输入参数
+    var url = winform.editUrl.text;
+    if( ! inet.url.is(url,0x0/*_URLIS_URL*/) ){
+        winform.msgboxErr("输入了错误的网址")
+        winform.editUrl.setFocus(0,-1);
+        return;
+    }
+    
+    //获取下载文件名
+    var http = inet.whttp();
+    http.head(url);
+    var filename = http.readHeaderContent()[["disposition"]][["filename"]] : "未知";
+    http.close();
+	
+    //创建下载任务
+    winform.downTask = thunder.downEngine( 
+    	taskUrl = winform.editUrl.text;  
+        filename = filename;
+        savePath = "/";	 
+    ) 
+    
+    if( !winform.downTask ) error("创建下载任务失败",2)
+
+    //开始下载
+    winform.downTask.start();
+    winform.btnDown.disabled = true;
+    winform.btnCancel.disabled = false;
+    
+    winform.statusTimerId = winform.addtimer( 
+        1000,
+        function(hwnd,msg,id,tick){
+        	if( !winform.downTask ) return 0;
+        	
+            var info = winform.downTask.queryTaskInfo() 
+            if( info.stat = 4/*_XL_TSC_COMPLETE*/ ||  info.stat = 1/*_XL_TSC_ERROR*/ ){
+                winform.btnDown.disabled = false;
+                winform.btnCancel.disabled = true;
+                winform.statusTimerId = null;
+                return  0;
+            }
+            winform.progress.pos = 100 * info.percent;
+            
+            winform.lbStatus.text = info.filename + " 大小:" + info.totalSize.format() 
+                + " 已下载:" + info.totalDownload.format() + " 下载速度:" + ..math.size64(info.speed).format() + "/S";
+        } 
+    )
+}
+
+winform.btnCancel.oncommand = function(id,event){ 
+	if(winform.statusTimerId) winform.killtimer(winform.statusTimerId)
+    if(winform.downTask) {
+    	winform.downTask.delete()
+    	winform.downTask.delTempFile()
+    }
+   
+    winform.statusTimerId = null;
+    winform.btnDown.disabled = false; 
+    winform.btnCancel.disabled = true;
+    winform.lbStatus.text = "已停止";
+    winform.progress.pos = 0;
+}
+
+winform.show() 
+win.loopMessage();

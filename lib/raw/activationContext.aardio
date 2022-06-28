@@ -1,0 +1,75 @@
+﻿//activationContext 清单加载
+namespace raw;
+
+class activationContext{
+	ctor(){
+		__ref__[this] = this;
+	};
+	
+  	INT cbSize;
+  	INT flags;
+  	ustring source;
+  	WORD processorArchitecture;
+  	WORD langId;
+  	ustring assemblyDirectory;
+  	ptr resourceName;
+  	ustring applicationName;
+  	ptr hModule;  
+  	activate = function(proc,...){
+  		if( !this.handle ){
+  			this.cbSize = ..raw.sizeof(this);
+  			if( type(this.resourceName) == type.number ) this.resourceName = topointer(this.resourceName);
+  			if( !this.flags ) this.flags = 0;
+  			if( this.resourceName )  this.flags = this.flags | 8;
+  			if( this.assemblyDirectory ) this.flags = this.flags | 4;
+  			if( this.assemblyDirectory ) this.assemblyDirectory = ..io.localpath(this.assemblyDirectory) : this.assemblyDirectory;
+  			this.source = ..io.localpath(this.source) : this.source;
+  			
+  			this.handle = ::Kernel32.CreateActCtx(this);
+  		}
+  		if(this.handle == -1 ) return;
+  		
+  		if(!this.cookie){
+  			var cookie ={long value}
+    		if( ::Kernel32.ActivateActCtx(this.handle, cookie) ) this.cookie = cookie.value;
+    	};
+    	if(!this.cookie) return;
+    	
+    	if(proc){
+    	 	proc(...);
+    		this.deactivate();
+    	}
+    	else {
+    		return this.cookie;
+    	}
+  	};
+  	deactivate = function(cookie){
+  		if( this.cookie ){
+  			::Kernel32.DeactivateActCtx(this.handle, cookie || this.cookie );
+  			if(cookie === null || cookie === this.cookie){
+  				this.cookie  = null;
+  			} 
+  		}
+  	};
+}
+
+namespace activationContext{ 
+    __ref__ = {}; 
+}
+
+/**intellisense()
+raw.activationContext = 用于支持 Windows side-by-side 清单加载技术\n请参考 com.actCtx 扩展库调用 COM 接口实现了类似功能,\n调用 com.actCtx.createDefaultManifest 可为 COM 组件生成默认清单
+raw.activationContext() = 创建激活上下文,请在主线程使用，\n创建的上下文只有在进程序退出时才会释放（提前释放会出现异常），\n不要在同一线程反复创建相同的上下文,\n也即创建ACTCTX 结构体,请参考微软MSDN中关于ACTCTX的说明\n!stdrawactc.
+end intellisense**/
+
+/**intellisense(!stdrawactc)
+source = 清单文件路径或者DLL等执行文件路径\n如果指定执行文件路径,使用 resourceName 指定清单文件资源名或资源ID\n resourceName 的值默认为1
+resourceName = 清单资源名或资源ID,值默认为1
+assemblyDirectory = DLL搜寻目录
+applicationName = 应用程序名
+hModule = 指定一个已加载DLL的句柄取代对source赋值\n可使用 resourceName 指定清单文件资源名或资源ID
+processorArchitecture = 处理器类型
+langId = 语言ID
+activate() = 激活清单上下文\n如果参数中指定一个函数对象，则激活上下文，然后调用该函数,最后取消激活\n否则返回激活 cookie
+deactivate() = 取消激活清单上下文，\n可选在参数中指定激活 cookie
+end intellisense**/

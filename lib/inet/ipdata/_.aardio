@@ -1,0 +1,160 @@
+import wsock;
+import inet.downBox;
+
+namespace inet; 
+
+class ipdata{
+	ctor( path ){
+		this.path = path;
+		if(!this.path){
+			this.path = ..io.appData("aardio\std\inet\ipdata\qqwry.dat");
+			if(!..io.exist(this.path)){
+				self.update()
+			}
+		}
+		
+		var ipData = ..io.open(this.path,"rb");
+		var index = ipData.read({INT beginIndex;INT endIndex})
+		var indexCount = (index.endIndex - index.beginIndex)/7 + 1
+		..table.add_gc(this,"close"); 
+	}; 
+	close = function(){
+		if(ipData){
+			ipData.close();
+			ipData = null;
+		}
+	}; 
+	string2ip = function (str){
+		return  ..wsock.htonl(..wsock.inet_addr(str))     
+	};
+	find = function(ip,left,right){
+		if(right-left==1){ 
+			return left;
+		}
+		else {
+			var middle = ..math.floor((left + right)/2)
+			var offset = index.beginIndex + middle*7
+			ipData.seek("set",offset)
+			var newIp = ipData.read({INT buf}).buf
+
+			if(ip<=newIp){
+				return this.find(ip,left,middle); 
+			}
+			else {
+				return this.find( ip,middle,right );
+			}
+		}       
+	};
+	getLong3 = function (offset = 0){
+		if(offset){ 
+			ipData.seek("set",offset)
+		}   
+		var str = ipData.read({WORD n;BYTE m})  
+		return (str.m << 16) + str.n; 
+	}; 
+	getString = function(offset = 0){
+		if(offset!=0){  
+			ipData.seek("set",offset)
+			}
+			
+			var bytes ={}
+			while( 
+				var ch;
+				ch = ipData.read(1); 
+				ch ? ch[1] 
+			) { 
+					
+				if( ch[1] >= 0x80 ){
+					var n = ipData.read(1);
+					if( ! (n&&n[1]) ) break;
+					..table.push(bytes,ch);
+					..table.push(bytes,n);
+				}
+				else {
+					..table.push(bytes,ch);
+				}
+				
+			} 
+			
+			return ..string.fromto( ..string.join(bytes),0,65001); 
+	};
+	getAreaAddr = function(offset=0){
+		if(offset){ 
+			ipData.seek("set",offset)
+		}
+		
+		var byte = ipData.read({BYTE byte}).byte
+		if(byte==0x01||byte==0x02){
+			var p = this.getLong3()
+			if(p)
+				return this.getString( p ); 
+			else 
+				return ""; 
+		}
+		else {
+			ipData.seek("cur",-1);
+			return this.getString( offset )
+		}
+
+	};   
+	getAddr = function (offset,ip=0){
+		ipData.seek("set",offset + 4)
+
+		var countryAddr = "" 
+		var areaAddr = "" 
+		
+		var byte = ipData.read({BYTE b}).b
+		
+		if(byte==0x01){
+			var countryOffset = this.getLong3()
+			ipData.seek("set",countryOffset)
+			var byte2 = ipData.read({BYTE b}).b
+			if(byte2==0x02){
+				countryAddr = this.getString( this.getLong3() )
+				ipData.seek("set",countryOffset + 4)
+				}
+				else {
+				countryAddr = this.getString( countryOffset )
+				}
+				areaAddr = this.getAreaAddr()
+		}
+		elseif(byte==0x02){
+			countryAddr = this.getString( this.getLong3() )
+			areaAddr = this.getAreaAddr( offset + 8 )
+		}
+		else {
+			countryAddr = this.getString( offset + 4 )
+			areaAddr = this.getAreaAddr()
+		}
+		
+		return  countryAddr + "/" + areaAddr;
+	};
+	query = function (ip){
+		var ip = this.string2ip(ip)
+		var aindex = this.find(ip,0,indexCount - 1)
+		var ioffset = (index.beginIndex) + aindex * 7
+		var aoffset = this.getLong3( ioffset + 4)
+		var addr = this.getAddr( aoffset )
+		return..string.match(addr,"(.+?)/*\s*\w+\.\a+") or addr;  
+	} 
+}
+
+ipdata.update = function(){
+	var path = ..io.appData("aardio\std\inet\ipdata\qqwry.dat");
+	var downBox = ..inet.downBox(,"正在下载最新 IP 数据库",1)
+	return downBox.download("https://cdn.jsdelivr.net/gh/out0fmemory/qqwry.dat/qqwry_lastest.dat",path);
+}
+
+/*
+作者：蝈蝈
+http://bbs.aardio.com/forum.php?mod=viewthread&tid=3848
+*/ 
+
+/**intellisense()
+inet.ipdata = 纯直 IP 数据库
+inet.ipdata.update() = 更新 IP 数据库\n注意应当在关闭 IP  数据库文件时更新
+inet.ipdata() = 创建IP数据库连接\n!inet_ipdata.
+!inet_ipdata.query( = 查询IP归属性
+!inet_ipdata.query(.("IP地址") = 返回IP归属地
+!inet_ipdata.close() = 关闭数据库连接
+end intellisense**/

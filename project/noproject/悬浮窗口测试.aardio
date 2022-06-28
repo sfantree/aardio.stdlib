@@ -1,0 +1,25 @@
+import win.ui;
+import win.ui.menu;
+
+//从bmp图像生成不规则窗口
+winform = win.form(parent=...; exmode="none"; bottom=159;right=159;text="悬浮窗口测试";border="none";mode="popup"; image = "\11.bmp" );
+//未设置left,top参数的话，left = -1，top = -1,故bottom与right要比原图大小相应-1
+winform.transparent(,color= gdi.RGB(0, 0, 0));
+//将指定颜色设为透明色
+win.setTopmost( winform.hwnd );              //设置为最前
+
+winform.popmenu = win.ui.popmenu(winform);//创建弹出菜单
+winform.popmenu.add('退出',function(id){ winform.close();io.close() })
+winform.wndproc = function(hwnd,message,wparam,lparam){
+select(message) {//判断消息类型
+  case 0x201/*_WM_LBUTTONDOWN 鼠标按下*/{
+   winform.hitCaption()
+  }
+  case 0x204/*_WM_RBUTTONDOWN*/{   
+   winform.popmenu.popup(::LOWORD(lparam), ::HIWORD(lparam));//弹出菜单
+  }
+}
+//无返回值则继续调用默认回调函数
+}//endproc
+winform.show(true)
+win.loopMessage();

@@ -1,0 +1,74 @@
+//免注册嵌入VB控件
+//讲解此范例的教程： https://mp.weixin.qq.com/s/Gp8aM_YruBE5KZF-jC-p3A
+import fonts.fontAwesome;
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="免注册嵌入 VB 控件";right=700;bottom=304)
+winform.add(
+btnOpenVbp={cls="plus";text="查看VB控件源码";left=491;top=256;right=651;bottom=286;align="left";bgcolor=-5197169;db=1;dr=1;font=LOGFONT(h=-13);iconStyle={align="left";font=LOGFONT(h=-13;name='FontAwesome');padding={left=20}};iconText='\uF121';notify=1;textPadding={left=39};z=3};
+edit={cls="edit";left=356;top=20;right=665;bottom=243;db=1;dl=1;dr=1;dt=1;edge=1;hscroll=1;multiline=1;vscroll=1;z=2};
+static={cls="static";text="Static";left=21;top=20;right=330;bottom=243;dl=1;dt=1;transparent=1;z=1};
+static2={cls="static";text="放大窗口试试，aardio 支持自适应缩放以及高分屏自动缩放";left=20;top=269;right=377;bottom=293;db=1;dr=1;transparent=1;z=4}
+)
+/*}}*/
+
+import com.lite; 
+//不想生成独立EXE文件可改为  com.lite("\.vb6\Vb6Control.ocx")
+var dll = com.lite.appData("aardio\vb6\Vb6Control.ocx",$"\.vb6\Vb6Control.ocx")
+
+/*
+创建VB控件,返回的 vbCtrl 是控件容器,vbCtrl._object 才是 COM 控件,
+dll.createEmbedEx() 函数会自动将 vbCtrl 转换为可代理访问 vbCtrl._object 的代理对象
+*/ 
+var vbCtrl = dll.createEmbedEx(winform.static );//可选在参数@2中指定GUID,不指定也可以自己找到
+winform.edit.print( dll.firstCoClassId() ); //可用这个函数查询VB6控件的CLSID
+
+//控件容器也是默认的 COM 事件监听器,如下直接指定响应 COM 事件的函数
+vbCtrl.OnImageClick = function(value){
+	winform.edit.print("VB控件里点击了图像,事件参数:"+value)
+	
+	//VB里这个事件的参数声明为 ByRef,所以添加返回值可以修改参数
+	return 100
+}
+
+//修改VB控件的属性
+vbCtrl.Picture = com.picture.loadObject( "~\codes\范例程序\D) 图形图像\.gdip.jpg" )
+/*
+VB6 字符串虽存为 Unicode 编码，但却被设计为编写 ANSI 编码的程序，
+VB的IDE，源码也都是 ANSI 编码，因此 Unicode 字符传入 VB 会变成乱码。
+再例如文件路径里有简体中文，在繁体系统上就会导致 VB 组件异常或崩溃，
+所以前面我们用 aardio 加载图像，文本或文件路径尽量不要在 VB 中处理。
+*/
+
+//修改VB控件的参数化属性,加上 set 前缀以函数形式调用
+vbCtrl.setTestProperty(2,123)
+
+/*
+带多个参数的属性加上get前缀并以函数形式调用，例如：
+*/
+var testProperty = vbCtrl.getTestProperty(2);
+winform.edit.print("VB 控件 TestProperty(2) 属性:",testProperty);
+
+//调用 VB 函数
+var c = vbCtrl.Add(2,3);
+winform.edit.print("调用 VB 控件函数返回值:",c);
+winform.edit.print("请点击图像试试");
+
+winform.btnOpenVbp.skin({
+	background={
+		default=0x668FB2B0;
+		disabled=0xFFCCCCCC;
+		hover=0xFF928BB3
+	};
+	color={
+		default=0xFF000000;
+		disabled=0xFF6D6D6D
+	}
+})
+winform.btnOpenVbp.oncommand = function(id,event){
+	import process;
+	process.exploreSelect("\.vb6\ocx.vbp")
+}
+
+winform.show();
+win.loopMessage();

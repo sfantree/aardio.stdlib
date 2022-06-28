@@ -1,0 +1,84 @@
+//gdiRender 绘图模块
+import gdi;
+namespace web.blink;
+
+class gdiRender{
+	ctor( wkeView,hwnd ){
+		if( ! wkeView[["hWebView"]] ) error("参数@1必须是web.blink.view视图对象",2);
+		this.wkeView = wkeView;
+		wkeView.print = function(hdc,scale){
+			return this.print(hdc,scale);
+		}
+	};
+	delete = function(){ };
+	resize = function(w,h){
+        this.width = w;
+        this.height = h;
+	};
+	draw = function(hwnd){ 
+		
+		var w,h = this.width,this.height; 
+		if(! ( w && h ) ) return;
+		
+		var hViewDc = this.wkeView.getDc();
+		if(! hViewDc ) return;  
+		
+        var hdc = ::GetDC(hwnd);
+        if( hdc ){
+        	::BitBlt(hdc, 0, 0, w, h, hViewDc, 0, 0, 0xCC0020/*_SRCCOPY*/  );
+        	::ReleaseDC(hwnd,hdc);
+        }
+    };
+    print = function(hdc,scale){  
+		var scrollWidth = wkeView.eval("document.body.scrollWidth"); 
+        var scrollHeight  = wkeView.eval("document.body.scrollHeight"); 
+        var dcWidth = ::Gdi32.GetDeviceCaps(hdc,0x8/*_HORZRES*/);
+    	var dcHeight = ::Gdi32.GetDeviceCaps(hdc,0xA/*_VERTRES*/);
+    	var outWidth,outHeight = scrollWidth,scrollHeight;
+    	if( !scale ) scale = 1;
+
+        if( scale > 0 ){
+        	outWidth = scrollWidth * scale;
+        	outHeight = scrollHeight * scale;
+        	  
+    		if( (outWidth < dcWidth) && (outHeight < dcHeight ) ){
+    		}
+    		else{
+    			if ( outWidth / scrollWidth < outHeight / scrollHeight ) {
+					outHeight = outWidth * scrollHeight / scrollWidth;
+				}
+				else {
+					outWidth = outHeight * scrollWidth / scrollHeight;
+				}
+			}
+        }
+        else{
+        	scale = ..math.abs(scale);
+        	if ( dcWidth / scrollWidth < dcHeight / scrollHeight ) {
+				outHeight = (dcWidth * scrollHeight / scrollWidth) * scale;
+				outWidth = (dcWidth) * scale;
+			}
+			else {
+				outWidth = (dcHeight * scrollWidth / scrollHeight) * scale;
+				outHeight = (dcHeight) * scale;
+			}
+        }
+    	 
+		var wkeView = this.wkeView;
+		var prePaintUpdated = wkeView.onPaintUpdated;
+		wkeView.onPaintUpdated = function(hViewDc,x,y,cx,cy){
+			if(scrollWidth == cx && cy == scrollHeight ){
+				::SetStretchBltMode(hdc,0x4/*_STRETCH_HALFTONE*/);   
+	   			::SetBrushOrgEx(hdc,0,0,{});
+				 ::StretchBlt( hdc,0 ,0, outWidth,outHeight,hViewDc,0,0,scrollWidth,scrollHeight,0xCC0020/*_SRCCOPY*/); 
+				sizeChanged = true;
+			}
+		}
+		
+		wkeView.resize(scrollWidth,scrollHeight);
+		..win.wait( lambda() sizeChanged,wkeView._form.hwnd,3000);
+		wkeView.onPaintUpdated = prePaintUpdated;
+		
+        wkeView.resize(this.width,this.height);
+    };
+}

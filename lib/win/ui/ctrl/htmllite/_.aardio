@@ -1,0 +1,143 @@
+import win.ui.ctrl.metaProperty;
+
+namespace win.ui.ctrl {
+	class htmllite {
+		ctor (parent, tParam) {
+			
+			if( tParam ){
+    			tParam.cls = "htmllite";  ;
+    			tParam.exstyle |=  0x10000/*_WS_EX_CONTROLPARENT*/ | 0x20/*_HH_OWNERDRAW*/
+    			 
+    			if(!#tParam.text) tParam.text = "<p></p>";
+    			
+   			}  
+		}
+		@_metaProperty;
+	};
+}
+
+
+namespace win.ui.ctrl.htmllite {
+
+	var notifyName = {
+		[ 0x3E8/*_HTMLLITE_CODE_LEFTCLICK*/ ] = "onMouseClick"; 
+		[ 0x3EB/*_HTMLLITE_CODE_RIGHTCLICK*/] = "onMouseRightClick";
+		[ 0x3E9/*_HTMLLITE_CODE_TABCYCLE*/ ] =  "onTabCycle";
+		[ 0x3EC/*_HTMLLITE_CODE_MOUSEOVER*/ ] = "onMouseEnter";
+		[ 0x3ED/*_HTMLLITE_CODE_MOUSEHOVER*/ ] =  "onMouseHover";
+		[ 0x3EE/*_HTMLLITE_CODE_MOUSEEXIT*/ ] = "onMouseLeave";
+	} 
+	
+	_metaProperty = ..win.ui.ctrl.metaProperty(
+		_prenotify = function(id,code,ptr,nmdr){
+			var func = owner[ notifyName[code] ]; 
+			if( func ){
+				var nmHtmlLite = NMHTMLLITE();
+				..raw.convert(ptr,nmHtmlLite );
+				return func( nmHtmlLite.linkid,nmHtmlLite.linkrc,nmHtmlLite);
+			}
+		};
+		text = {
+			_get = function(){ 
+				return ..win.getText( owner[["hwnd"]] );
+			}
+			_set = function(v){ 
+				var v,e = ..string.loadcode(v);
+				if(!v) error(e,2); 
+				
+				..win.setText( owner[["hwnd"]],v !== null ? tostring(v) : "" );   
+			}
+		};
+		
+	);;
+	
+	var dll = ..raw.loadDll($"~\lib\win\ui\ctrl\htmllite\.dll\htmllite.dll")
+
+	RegisterHtmlLiteClass = dll.api("_FRegisterHtmlLiteClass@4","void(int p1)" )
+	UnregisterHtmlLiteClass = dll.api("_FUnregisterHtmlLiteClass@4","void(int p1)" ) 
+
+	RegisterHtmlLiteClass(0)
+	
+	class NMHTMLLITE { 
+	
+  		INT hwndFrom;      
+  		INT idFrom; 
+  		INT code; 
+ 		
+  		INT linkid; //linkid属性 
+  		struct linkrc = ::RECT();//LINK的坐标 
+	} 
+}
+
+ /**intellisense()
+!htmllitectrl.cls = 设计时类名
+!htmllitectrl.className = 运行时类名
+!htmllitectrl.hwnd = 控件句柄
+!htmllitectrl.id = 控件ID
+!htmllitectrl.text = 可使用此属性指定控件 HTML 代码，支持 aardio 模板语法,\n读取属性时返回纯文本（不是返回 HTML 代码）
+!htmllitectrl._parentForm = 控件所在的父窗口(指win.form对象)\n!winform.
+!htmllitectrl.getParent() = 返回父窗口\n!htmllitectrl.
+!htmllitectrl.setParent(__/*控件对象*/) = 改变父窗口 
+!htmllitectrl.addCtrl = @.addCtrl(\n	button={ cls="button";text="button";left=33;top=32;right=126;bottom=81;autoResize=false }  \n)
+!htmllitectrl.translateAccelerator = @.translateAccelerator = function(msg){ \n	__/*返回是否快捷键*/\n} 
+!htmllitectrl.adjust = @.adjust = function( cx,cy,wParam ) {	 \n	__ \n};  
+!htmllitectrl.adjust() = 调整窗口 - 自定义事件函数
+!htmllitectrl._embedObject = 嵌入OLE控件对象\n!embedObject.
+!htmllitectrl.createEmbed(.("类名",容器对象) = 嵌入OLE控件,\n容器对象哦可选参数,返回容器对象,
+!htmllitectrl.createEmbed() = !embedObject.
+!htmllitectrl.hide = 控件是否隐藏
+!htmllitectrl.disabled = 是否禁用
+!htmllitectrl.left = 左侧坐标
+!htmllitectrl.right = 右侧坐标
+!htmllitectrl.top = 顶部坐标
+!htmllitectrl.bottom = 底部坐标
+!htmllitectrl.width = 宽度
+!htmllitectrl.height = 高度
+!htmllitectrl.redraw() = 刷新
+!htmllitectrl.setRedraw(false) = 禁止重绘
+!htmllitectrl.setRedraw(true) = 恢复重绘
+!htmllitectrl.redrawTransparent() = 刷新\n透明背景时请使用此函数替代redraw()
+!htmllitectrl.show(true__) = 显示控件
+!htmllitectrl.getRect() = 控件区块位置(::RECT结构体)
+!htmllitectrl.getRect(true) = 控件屏幕区块位置(::RECT结构体)  
+!htmllitectrl.setRect(rc) = 设置控件区块位置(::RECT结构体)  
+!htmllitectrl.setRect(rc,true) = 设置控件屏幕区块位置(::RECT结构体)
+!htmllitectrl.getClientRect() =  控件客户区块位置(::RECT结构体)\n!rect.
+!htmllitectrl.getFont() = 控件字体(::LOGFONT结构体)\n!logfont.
+!htmllitectrl.setFont(__/*指定字体*/) = 指定LOGFONT字体对象,或逻辑字体句柄 
+!htmllitectrl.setFont(混入字体属性) = @.setFont(point=10;name="宋体");
+!htmllitectrl.clientRect =  获取控件客户区块位置(::RECT结构体)
+!htmllitectrl.theme = 外观主题,例如\nwinform.button.theme = "Explorer"\nwinform.button.theme = false
+!htmllitectrl.modifyStyle(.(remove,add) = 如果指定第三个参数，则使用此参数调用::SetWidnowPos 
+!htmllitectrl.modifyStyleEx(.(remove,add) = 如果指定第三个参数，则使用此参数调用::SetWidnowPos
+!htmllitectrl.capture = 是否捕获全局鼠标消息
+!htmllitectrl.close() = 关闭控件窗口
+!htmllitectrl.invalidate(__/*可选使用::RECT()对象指定客户区*/) = 使窗口绘图区无效
+!htmllitectrl.invalidate(__/*可选使用::RECT()对象指定客户区*/,0) = 使窗口绘图区无效\n不刷新背景
+!htmllitectrl.update() = 重绘invalidate函数指定的区块
+!htmllitectrl.setFocus() = 设置焦点 
+!htmllitectrl.setPos(.(x坐标,y坐标,宽,高,插入位置,参数) = 调整窗口位置或排序,所有参数可选\n同时指定x,y坐标则移动位置\n同时指定宽高则改变大小\n指定插入位置(句柄或_HWND前缀常量)则调整Z序
+!htmllitectrl.getPos() = 返回相对坐标,宽,高\nx,y,cx,cy=win.getPos(hwnd)
+!htmllitectrl.messageOnly() = 将窗口转换为message-only window\n该窗口不可见,仅用于消息分发
+
+!htmllitectrl.onMouseClick = @.onMouseClick = function(linkid,linkrc,nmHtmlLite){ 
+	__
+}
+!htmllitectrl.onMouseRightClick = @.onMouseRightClick = function(linkid,linkrc,nmHtmlLite){ 
+	__
+}
+!htmllitectrl.onTabCycle = @.onTabCycle = function(linkid,linkrc,nmHtmlLite){ 
+	__
+}
+!htmllitectrl.onMouseEnter = @.onMouseEnter = function(linkid,linkrc,nmHtmlLite){ 
+	__
+}
+!htmllitectrl.onMouseHover = @.onMouseHover = function(linkid,linkrc,nmHtmlLite){ 
+	__
+}
+!htmllitectrl.onMouseLeave = @.onMouseLeave = function(linkid,linkrc,nmHtmlLite){ 
+	__
+}
+win.ui.ctrl.htmllite() = htmllite控件\n!htmllitectrl.
+win.ui.ctrl.htmllite = htmllite控件支持库
+end intellisense**/

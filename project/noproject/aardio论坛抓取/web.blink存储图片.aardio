@@ -1,0 +1,31 @@
+import win.ui;
+/*DSG{{*/
+mainForm = win.form(text="miniblink - 获取img元素的数据";right=1108;bottom=716)
+mainForm.add(
+picturebox={cls="plus";left=1030;top=616;right=1272;bottom=679;edge=1;foreRepeat="stretch";transparent=1;z=1}
+)
+/*}}*/
+
+import web.blink.form;
+var mb = web.blink.form(mainForm);
+mainForm.show();
+
+mb.go("http://jingang.yto56.com.cn/mdm_2/logout.action#");
+mb.wait();
+
+var img = mb.getEle("vildateImg");
+var canvas = mb.document.createElement("canvas");
+canvas.width = img.width;
+canvas.height = img.height;
+
+var ctx = canvas.getContext("2d");
+ctx.drawImage(img,0,0,canvas.width,canvas.height);
+var base64 = canvas.toDataURL("image/png");
+base64 = string.replace(base64,"^data\:image\/(\w+);base64,", "");
+
+import crypt.bin;
+var bmp = crypt.bin.decodeBase64(base64);
+mainForm.picturebox.orphanWindow();
+mainForm.picturebox.background = bmp;
+
+win.loopMessage();

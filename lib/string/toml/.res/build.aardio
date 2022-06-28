@@ -1,0 +1,18 @@
+import fsys;
+import process.rust;
+import process.vswhere;
+import console;
+ 
+var vswhere = process.vswhere("-latest -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64");
+if(!#vswhere){
+	console.log("运行 Rust 编译器必须先安装 VC++ 2017 或 2019");
+	console.pause();
+	
+	process.execute("https://visualstudio.microsoft.com/downloads/")
+	return;
+}
+
+console.open()
+process.rust.workdir = "/"
+process.rust.build()
+console.pause();

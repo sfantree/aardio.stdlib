@@ -1,0 +1,198 @@
+﻿import dotNet.v4;
+import chrome.driver;
+
+namespace dotNet;
+
+if(dotNet.v4()){
+	
+	dotNet.reference({
+		["WebDriver.Support"] = $"~\lib\dotNet\seleniumBasic\.res\WebDriver.Support.dll";
+		["WebDriver"] = $"~\lib\dotNet\seleniumBasic\.res\WebDriver.dll";
+		["SeleniumBasic"] = $"~\lib\dotNet\seleniumBasic\.res\SeleniumBasic.dll";
+	});
+	/*
+	SeleniumBasic.IWebDriver 构造函数内 Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) 
+	改为 AppDomain.CurrentDomain.SetupInformation.ApplicationBase 可避免内存加载程序集报错。
+	*/
+	
+	seleniumBasic = ..dotNet.import("SeleniumBasic");
+
+ 	seleniumBasic[["CreateDefaultChromeService"]] = function(enableLogging){ 
+ 		var driver = ..chrome.driver();
+ 		if(driver.driverPath){
+ 			var driverPath = ..io.splitpath(driver.driverPath); 
+ 			if(driverPath.file==="msedgedriver.exe"){
+ 				var service = seleniumBasic.EdgeDriverService();
+ 				service.CreateDefaultService(driverPath.dir,driverPath.file);
+ 				if(!enableLogging) service.HideCommandPromptWindow = true;
+ 				
+ 				var options = seleniumBasic.EdgeOptions(); 
+ 				//options.BinaryLocation = driver.chromePath;
+ 				return service,options;
+ 			}
+ 			var service = seleniumBasic.ChromeDriverService();
+ 			service.CreateDefaultService(driverPath.dir,driverPath.file);
+ 			if(!enableLogging) service.HideCommandPromptWindow = true;
+ 			
+ 			var options = seleniumBasic.ChromeOptions();
+ 			if(!enableLogging) options.AddExcludedArgument("enable-logging");
+ 			options.BinaryLocation = driver.chromePath;
+ 			return service,options;
+ 		} 
+ 	} 
+ 	
+ 	seleniumBasic[["CreateDefaultWebDriver"]] = function(service,options){
+ 		if(!service){
+ 			service,options = seleniumBasic.CreateDefaultChromeService();
+ 			if(!service) return;
+ 		}
+ 		var wd = seleniumBasic.IWebDriver();
+ 		
+ 		if(tostring(service)==="SeleniumBasic.EdgeDriverService"){
+ 			wd.New_EdgeDriver(service,options);
+ 		}
+ 		elseif(tostring(service)==="SeleniumBasic.ChromeDriverService"){
+ 			wd.New_ChromeDriver(service,options);
+ 		}
+ 		elseif(tostring(service)==="SeleniumBasic.FirefoxDriverService"){
+ 			wd.New_FirefoxDriver(service,options);
+ 		}
+		elseif(tostring(service)==="SeleniumBasic.InternetExplorerDriverService"){
+ 			wd.New_InternetExplorerDriver(service,options);
+ 		}
+ 		
+ 		wd[["CreateWaiter"]] = function(timeout){
+ 			var waiter = seleniumBasic.WebDriverWait()
+			waiter.Create(wd,timeout);
+			return waiter;
+ 		}
+ 		
+ 		return wd; 
+ 	}
+}
+else {
+	seleniumBasic = {};
+	seleniumBasic[["CreateDefaultChromeService"]] = function(){}
+	return;
+}
+
+/**details(说明)
+只是调用 ChromeDriver 在 aardio 里用 chrome.driver 更简单一些。
+aardio 实际不需要任何第三方组件即可调用 ChromeDriver，这是因为 aardio 可以
+自动将任意 Web 接口转换为 aardio 对象，所以实现 WebDriver 协议只需要极少的代码。
+
+dotNet.seleniumBasic 基于开源的 SeleniumBasic，
+但不再需要注册 COM 控件，不再需要带一堆 DLL，可以生成绿色独立的 EXE 文件。
+支持自动检测并配置运行环境，如果没有 .Net 4.x 则自动安装，如果没有 Chrome 则自动安装,
+自动匹配 Chrome 版本下载合适的 ChromeDriver 版本，自动配置所有路径参数。
+
+https://github.com/florentbr/SeleniumBasic
+https://www.cnblogs.com/ryueifu-VBA/p/13661378.html 
+
+可以用 ILSpy 查看 SeleniumBasic.dll 的源代码
+ILSpy 下载： https://github.com/icsharpcode/ILSpy 
+SeleniumBasic.dll 使用 aardio 中的程序集合并工具生成。
+在 aardio 扩展库管理器中双击 dotNet.merge 可以打开此工具源代码。
+end details**/
+
+/**intellisense()
+dotNet.seleniumBasic = SeleniumBasic 浏览器自动化工具,\n不需要注册 COM 控件，不需要带一堆 DLL，可以生成绿色独立的 EXE 文件。\n自动检测并配置运行环境，如果没有 .Net 4.x 则自动安装，如果没有 Chrome 则自动安装,\n自动匹配 Chrome 版本下载合适的 ChromeDriver 版本，自动配置所有路径参数\n\n导入此扩展库自动导入全局名字空间 SeleniumBasic
+end intellisense**/
+
+/**intellisense(dotNet.seleniumBasic)
+CreateDefaultChromeService() = 创建并返回默认 \nSeleniumBasic.ChromeDriverService,SeleniumBasic.ChromeOptions\n注意函数会返回2个值\n\n如果返回2个值表示已经成功找到或自动安装 Chrome 与 ChromeDriver,\nChrome 与 ChromeDriver 路径这些已经指定,不用再修改,\n不指定参数@1为 true,默认排除 enable-logging 参数并隐藏控制台,\n失败返回 null
+IWebDriver() = 创建 WebDriver 客户端\n!dotNetSeleniumBasicIWebDriver.
+CreateDefaultWebDriver( = 建议直接用这个函数创建 WebDriver 客户端\n代码量少，自动兼容系统安装的 Chrome 或 Edge Chromium\n没有安装会自动安装
+CreateDefaultWebDriver(.(chromeService,ChromeOption) = 不需要指定参数,\n调用 dotNet.seleniumBasic.CreateDefaultChromeService 的返回值也可作为此函数参数
+CreateDefaultWebDriver() = !dotNetSeleniumBasicIWebDriver.
+end intellisense**/
+
+/**intellisense(SeleniumBasic)
+CreateDefaultChromeService() = 创建并返回默认 \nSeleniumBasic.ChromeDriverService,SeleniumBasic.ChromeOptions\n注意函数会返回2个值\n\n如果返回2个值表示已经成功找到或自动安装 Chrome 与 ChromeDriver,\nChrome 与 ChromeDriver 路径这些已经指定,不用再修改,\n不指定参数@1为 true,默认排除 enable-logging 参数并隐藏控制台,\n失败返回 null
+IWebDriver() = 创建 WebDriver 客户端\n!dotNetSeleniumBasicIWebDriver.
+CreateDefaultWebDriver( = 建议直接用这个函数创建 WebDriver 客户端\n代码量少，自动兼容系统安装的 Chrome 或 Edge Chromium\n没有安装会自动安装
+CreateDefaultWebDriver(.(chromeService,ChromeOption) = 不需要指定参数,\n调用 dotNet.seleniumBasic.CreateDefaultChromeService 的返回值也可作为此函数参数
+CreateDefaultWebDriver() = !dotNetSeleniumBasicIWebDriver.
+end intellisense**/
+
+/**intellisense(!dotNetSeleniumBasicIWebDriver)
+New_ChromeDriver() = 启动 ChromeDriver 客户端
+New_ChromeDriver(.(chromeService,ChromeOption) = 请使用 dotNet.seleniumBasic.CreateDefaultChromeService 函数\n的返回值作为参数即可
+CreateWaiter(__) = 创建等待工具,\n参数 @1 指定超时，以秒为单位，参数不省略\n!dotNetSeleniumBasicWaiter.
+FindElementByClassName(__) = 根据参数 @1 指定的类名查找节点
+FindElementByCssSelector(__) = 根据参数@1指定的CSS选择器查找节点
+FindElementById(__) = 根据参数@1指定的ID查找节点
+FindElementByLinkText(__) = 根据参数@1指定的链接文本查找节点
+FindElementByName(__) = 根据参数@1指定的 name 属性查找节点
+FindElementByPartialLinkText(__) = 根据参数@1指定的部分链接文本查找节点
+FindElementByTagName(__) = 根据参数@1指定的标签名查找节点
+FindElementByXPath(__) = 根据参数@1指定的XPath查找节点
+FindElementsByClassName(__) = 根据参数@1指定的类名查找多个节点
+FindElementsByCssSelector(__) = 根据参数@1指定的CSS选择器查找多个节点
+FindElementsById(id) = 根据参数@1指定的ID查找多个节点
+FindElementsByLinkText(linkText) = 根据参数@1指定的链接文本查找多个节点
+FindElementsByName(Name) = 根据参数@1指定的 name 属性查找多个节点
+FindElementsByPartialLinkText(partialLinkText) = 根据参数@1指定的部分链接文本查找多个节点
+FindElementsByTagName(tagName) = 根据参数@1指定的标签名查找多个节点
+FindElementsByXPath(xpath) = 根据参数@1指定的XPath查找多个节点
+FindElementByClassName() = !dotNetSeleniumBasicEle.
+FindElementByCssSelector() = !dotNetSeleniumBasicEle.
+FindElementById() = !dotNetSeleniumBasicEle.
+FindElementByLinkText() = !dotNetSeleniumBasicEle.
+FindElementByName() = !dotNetSeleniumBasicEle.
+FindElementByPartialLinkText() = !dotNetSeleniumBasicEle.
+FindElementByTagName() = !dotNetSeleniumBasicEle.
+FindElementByXPath() = !dotNetSeleniumBasicEle.
+end intellisense**/
+
+/**intellisense(!dotNetSeleniumBasicEle)
+Displayed = 是否显示
+Enabled = 是否可用
+IsMultiple = 是否为支持多选的下拉框
+Location As Position ：返回元素的位置
+Selected = 是否处于勾选状态
+Size = 返回元素的尺寸
+tagName = 返回元素的标签名称
+Text = 返回元素的内部文本（InnerText）
+Clear() = 清空
+Click() = 点击
+SendKeys(__) = 发送参数 @1 指定的字符串
+Submit() = 提交
+SelectByIndex(__) = 根据参数@1指定的索引选择节点
+SelectByText(.(Text,partialMatch) = 根据参数@1指定的文本选择节点,\n可选用参数@2指定是否使用部分匹配
+SelectByValue(__) = 根据参数@1指定的 value 值选择节点
+DeselectAll() = 取消选择所有节点
+DeselectByIndex(index) = 根据参数@1指定的索引取消选择节点
+DeselectByText(Text) = 根据参数@1指定的文本取消选择节点
+DeselectByValue(Value) = 根据参数@1指定的 value 值取消选择节点
+FindElementByClassName(__) = 根据参数@1指定的类名查找节点
+FindElementByCssSelector(__) = 根据参数@1指定的CSS选择器查找节点
+FindElementById(__) = 根据参数@1指定的ID查找节点
+FindElementByLinkText(__) = 根据参数@1指定的链接文本查找节点
+FindElementByName(__) = 根据参数@1指定的 name 属性查找节点
+FindElementByPartialLinkText(__) = 根据参数@1指定的部分链接文本查找节点
+FindElementByTagName(__) = 根据参数@1指定的标签名查找节点
+FindElementByXPath(__) = 根据参数@1指定的XPath查找节点
+FindElementsByClassName(__) = 根据参数@1指定的类名查找多个节点
+FindElementsByCssSelector(__) = 根据参数@1指定的CSS选择器查找多个节点
+FindElementsById(id) = 根据参数@1指定的ID查找多个节点
+FindElementsByLinkText(linkText) = 根据参数@1指定的链接文本查找多个节点
+FindElementsByName(Name) = 根据参数@1指定的 name 属性查找多个节点
+FindElementsByPartialLinkText(partialLinkText) = 根据参数@1指定的部分链接文本查找多个节点
+FindElementsByTagName(tagName) = 根据参数@1指定的标签名查找多个节点
+FindElementsByXPath(xpath) = 根据参数@1指定的XPath查找多个节点
+FindElementByClassName() = !dotNetSeleniumBasicEle.
+FindElementByCssSelector() = !dotNetSeleniumBasicEle.
+FindElementById() = !dotNetSeleniumBasicEle.
+FindElementByLinkText() = !dotNetSeleniumBasicEle.
+FindElementByName() = !dotNetSeleniumBasicEle.
+FindElementByPartialLinkText() = !dotNetSeleniumBasicEle.
+FindElementByTagName() = !dotNetSeleniumBasicEle.
+FindElementByXPath() = !dotNetSeleniumBasicEle.
+end intellisense**/
+
+/**intellisense(!dotNetSeleniumBasicWaiter)
+Until( = 等待并返回符合条件的节点
+Until(.(attributeName,attributeValue) = 等待指定节点\n@attributeName 参数指定要等待的属性名,\n@attributeValue 参数指定要等待的属性值,\n参数都是字符串，不可省略
+Until() = !dotNetSeleniumBasicEle.
+end intellisense**/

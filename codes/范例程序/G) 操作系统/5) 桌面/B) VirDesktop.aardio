@@ -1,0 +1,23 @@
+//虚拟桌面
+assert(_WIN10_LATER,"虚拟桌面不支持 Win10 以前的系统");
+
+import console; 
+import dotNet.desktop;
+
+//列出所有虚拟桌面
+for name,index,current in dotNet.desktop.each(){
+	console.log(name,index,current?"当前桌面":"")
+}
+
+//切换到下一个桌面 
+dotNet.desktop.current().Right.MakeVisible();
+
+//切换到指定桌面
+dotNet.desktop.get(1).MakeVisible()
+
+/*
+注意 dotNet.desktop 在鼠标键盘钩子( key.hook,key.hotkey )回调函数中同步调用会报错,
+必须使用 winform.setTimeout 函数在退出钩子回调后异步调用 dotNet.desktop。
+*/
+
+console.pause(true);

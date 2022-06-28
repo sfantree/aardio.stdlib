@@ -1,0 +1,55 @@
+//JDK/JRE/JVM
+import java;
+import console;
+
+//创建 Java 虚拟机接口
+var jvm = java(); 
+
+//JVM: 用于创建 Java 虚拟机
+console.log("JVM 包含 jvm.dll 用于创建 Java 虚拟机接口，");
+console.log("aardio 基于 JVM 创建虚拟机，例如:");
+console.log("var jvm = java()");
+console.log("JVM目录",java.path.jvmHome() ); 
+console.log("JVM 接口版本是否 1.8?",jvm.version == 0x10008/*_JNI_VERSION_1_8*/); 
+//_JNI_VERSION_1_8 即 JAVA 8( 开发版本号即为 1.8 ),Java 以后目前都是 _JNI_VERSION_10
+console.more();
+ 
+//JRE: 用于运行 Java 程序
+console.log("JRE 包含 java.exe,javaw.exe 用于运行 Java 程序，");
+console.log("aardio 基于 JRE 执行 java.openProcess() 或 java.popenProcess() 函数");
+console.log("JRE目录",java.path.jreHome() );
+console.log("JRE 版本：",java.runtimeVersion());
+console.more();
+
+//用于调用 javac.exe 编译 Java 源代码
+console.log("JDK 包含编译器： javac.exe，用于 Java 开发");
+console.log("JDK目录",java.path.jdkHome() );
+console.log("JDK 版本：",java.compilerVersion()); 
+console.more(,true);
+
+var str = /*
+JRE,JDK,JVM 也可能出现在同一目录，
+JVM 则一般在 JRE 目录下，但允许使用不同目录。
+实际上 JDK包含了JRE，JRE包含了JVM
+
+在使用其他 Java 函数与功能以前，
+aardio 允许调用 java.path.setJreHome() 自定义 JRE 目录。
+并允许调用 java.path.setJdkHome() 自定义 JDK 目录。
+自定义的目录也是第一优先查找 JVM 的目录。
+
+aardio 会尝试各种可能找到系统已安装的 JDK或JRE（JVM）。
+这个搜索过程略有些复杂，请参考 java.path 库函数文档里的说明。
+或者查看 java.path 的源码会更清楚一些。
+
+aardio 提供了2个预装JDK,JRE的库:
+java.jre.v8 以及 java.jdk.v8，如果系统缺少JRE或JDK，
+在必要时会自动调用这2个库安装。可以看一下这2个库的源码，
+代码很少只有几句，可以了解怎样定制所需的Java 运行时。
+
+因为 aardio 可以自动下载并部署 JRE,JDK，
+所以 aardio + Java 混合编程可以生成较少的 EXE 文件，
+发布时可以不用自带 JRE 或 JDK，现在网速都很快，分分钟能装好 Java 运行时。
+每个小软件都去打包一个巨大的、重复的 Java 环境是不必要的。
+*/
+console.log(str);
+console.pause();

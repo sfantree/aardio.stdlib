@@ -1,0 +1,204 @@
+﻿//highlighter 高亮光圈
+import win.ui;
+import win.ui.ctrl.plus;
+import mouse.hook;
+
+namespace mouse;
+
+class highlighter{
+	ctor(winform,highlightColor,highlightSize,highlightPadding){
+		if(!highlightSize) highlightSize = 64;
+		if(!highlightPadding) highlightPadding = highlightSize / 5;
+		if(highlightSize>1000 || highlightPadding > 1000){
+			error("光圈或边距太大",2);
+		}
+		
+		var ctrls = winform.add({{
+			cls="plus";
+			notify = false;
+			clipBk = false;
+			autoResize = false;
+			transparent = true;
+			disabled = true;
+			hide = 1;
+			left = 0;
+			top = 0;
+			width = highlightSize;
+			height = highlightSize;
+			paddingLeft = highlightPadding;
+			paddingRight = highlightPadding;
+			paddingTop = highlightPadding;
+			paddingBottom = highlightPadding;
+		}})
+ 
+		this = ctrls[1];
+		this.highlightColor = highlightColor === null ? 0x90668800 : highlightColor;
+		this.foregroundColor = this.highlightColor;
+		this.highlightPadding = highlightPadding; 
+		this.animationDuration = 600;
+		this.animationInterval = 30; 
+		
+		this.orphanWindow(true);
+		..win.setTopmost(this.hwnd,true);
+		
+		this.$show = this.show;
+		this.show = function(...){
+			var ptCurPos = ::POINT();
+			::User32.GetCursorPos(ptCurPos);
+
+			var _,_,cx,cy = this.getPos();
+    	    this.setPos(ptCurPos.x-cx/2,ptCurPos.y-cy/2);
+    	    return this.$show(...);
+		}
+
+    	this.setInterval( 
+			function(){
+				..win.setPos(this.hwnd,,,,,0/*_HWND_TOP*/,0x10/*_SWP_NOACTIVATE*/|2/*_SWP_NOMOVE*/|8/*_SWP_NOREDRAW*/|0x200/*_SWP_NOREPOSITION*/|0x200/*_SWP_NOOWNERZORDER*/|1/*_SWP_NOSIZE*/|0x400/*_SWP_NOSENDCHANGING*/);
+			},1100 
+		)
+		 
+		this.hook  = ..mouse.hook();
+	 	var moveCount = 0;
+	 	
+		this.hook.proc = function(msg,x,y,mouseData,injected,flags){
+			if( injected ) return; //模拟鼠标不处理
+  		
+    		select(msg) {
+    			case 0x200/*_WM_MOUSEMOVE*/{ 
+    			    moveCount++;
+    			    if(moveCount<3) return;
+    			    
+    			    moveCount = 0;
+    			    
+    			    var _,_,cx,cy = this.getPos();
+    	    		this.setPos(x-cx/2,y-cy/2,,,,0x61D/*_SWP_NOREDRAW|_SWP_NOOWNERZORDER|_SWP_NOREPOSITION|_SWP_NOACTIVATE|_SWP_NOZORDER|_SWP_NOSIZ|_SWP_NOSENDCHANGING*/); 
+    			}
+    			case 0x202/*_WM_LBUTTONUP*/{
+    			    this.mouseButton = null;
+    			     
+    				var timestamp = 0; 
+    				var duration = this.animationDuration;
+    				var interval = this.animationInterval;
+    				
+    				if(this.timerId){
+    					this.clearInterval(this.timerId);
+    					this.foreground = highlightColor;
+    					this.timerId = null;
+    				}
+    				
+    				var padding = this.highlightPadding;
+    				var foreColor = this.highlightColor;
+    				var foreRgb = foreColor & 0xFFFFFF;
+    				
+    				this.timerId = this.setInterval( 
+						function(){
+							var trans = easeOutQuad( timestamp, 0, 255, duration) 
+							timestamp = timestamp + interval;
+							this.foreground = foreRgb | (((255-trans)/2) << 24); 
+							 
+							this.paddingRight = (padding/255 * trans)
+							this.paddingLeft = (padding/255 * trans)
+							this.paddingTop = (padding/255 * trans)
+							this.paddingBottom = (padding/255 * trans)
+ 
+							if( trans > 250 ){
+								this.paddingLeft,this.paddingTop,this.paddingRight,this.paddingBottom = this.highlightPadding,this.highlightPadding,this.highlightPadding,this.highlightPadding;
+								this.foreground = this.highlightColor;
+								this.timerId = null;
+								return false;
+							}
+						},interval 
+					)
+    			}
+    			case 0x201/*_WM_LBUTTONDOWN*/{
+    			    this.mouseButton = 1;
+    				this.redraw();
+    			}
+    			case 0x204/*_WM_RBUTTONDOWN*/{
+    			    this.mouseButton = 2;
+    				this.redraw();	
+    			}
+    			case 0x205/*_WM_RBUTTONUP*/{
+    			    this.mouseButton = null;
+    				this.redraw();
+    			}
+    			case 0x207/*_WM_MBUTTONDOWN*/{
+    			    this.mouseButton = 3;
+    				this.redraw();	
+    			}
+    			case 0x208/*_WM_MBUTTONUP*/{
+    			    this.mouseButton = null;
+    				this.redraw();	
+    			}
+    		}   
+    		
+		}  
+	};
+	onDestroy = function(){
+	    if(this.hook){
+	    	this.hook.close();
+	    	this.hook = null;
+	    }
+	};
+	onDrawContent = function(graphics,rc,txtColor,rcContent,foreColor){
+		if( foreColor!==null ){
+	
+			graphics.pixelOffsetMode = 2/*_PixelOffsetModeHighQuality*/;
+			rcContent.inflate(-1,-1);
+			
+			if( this.mouseButton == 1 ){
+				graphics.setClipRect(rc.left,rc.top,rc.width()/2,rc.height(),0/*_CombineModeReplace*/);
+			}
+			elseif( this.mouseButton == 2 ){
+				graphics.setClipRect(rc.left + rc.width()/2,rc.top,rc.width()/2,rc.height(),0/*_CombineModeReplace*/); 
+			}
+			elseif( this.mouseButton == 3 ){
+				graphics.scale(0.8,0.8,0/*_MatrixOrderPrepend*/);
+			}
+			
+			var brush = ..gdip.solidBrush(foreColor); 
+			graphics.fillEllipse(brush,rcContent.left,rcContent.top, rcContent.width(), rcContent.height() );  
+			brush.delete(); 
+			 
+			return true;
+		}
+	};
+	changeConfig = function(highlightColor,highlightSize,highlightPadding){
+		if(highlightSize>1000 || highlightPadding > 1000){
+			error("光圈或边距太大",2);
+		}
+		
+		this.highlightColor = highlightColor;
+		this.foregroundColor = highlightColor;
+		
+		var x,y,cx,cy = this.getPos();
+		x += (cx - highlightSize)/2;
+		y += (cy - highlightSize)/2;
+		
+		this.highlightPadding = highlightPadding;
+		this.setPos(x,y,highlightSize,highlightSize,0/*_HWND_TOP*/,0x10/*_SWP_NOACTIVATE*/|8/*_SWP_NOREDRAW*/|0x200/*_SWP_NOREPOSITION*/|0x200/*_SWP_NOOWNERZORDER*/|0x400/*_SWP_NOSENDCHANGING*/);
+		this.predraw();
+		
+	} 
+}
+
+namespace highlighter{
+    
+  	easeOutQuad = function(timestamp,beginning,change,duration){
+		var x = timestamp/duration;  
+		return beginning+change*(-x*x + 2*x); 
+	} 	
+}
+
+/**intellisense()
+mouse.highlighter = 用于创建鼠标高亮光圈
+mouse.highlighter( = 创建鼠标高亮光圈
+mouse.highlighter(.(winform,color,size,padding) = 参数 @winform 指定父窗口，不可省略,\n@color 以 ARGB 格式颜色数值指定光圈颜色，透明度为 0 仅显示单击动画，\n@size 指定光圈大小，\n@padding 指定单击鼠标动画放大缩小边距
+mouse.highlighter() = !stdMouseHilighter.
+!stdMouseHilighter.changeConfig(.(color,size,padding) = 修改光圈设置,\n@color 以 ARGB 格式颜色数值指定光圈颜色,\n@size 指定光圈大小,\n@padding 指定单击鼠标动画放大缩小边距
+!stdMouseHilighter.show() = 显示高亮光圈
+!stdMouseHilighter.animationDuration = 单击鼠标时光圈动画持续时间，以毫秒为单位
+!stdMouseHilighter.animationInterval = 单击鼠标时光圈动画时间间隔，以毫秒为单位
+!stdMouseHilighter.hwnd = 窗口句柄
+!stdMouseHilighter.close() = 关闭窗口
+end intellisense**/

@@ -1,0 +1,115 @@
+import fsys;
+import fsys.file;
+import win.guid;
+
+namespace fsys.junction;
+
+create = function(pathJunction,pathReal){
+	var existJunction = ..io.exist(pathJunction);
+	pathJunction = ..fsys.createDir(pathJunction);
+	if(!pathJunction) return false,"创建链接目录失败";
+	
+	pathReal = ..io.exist(pathReal)
+	if( !(pathReal && ..fsys.isDir(pathReal) ) )
+		return false,"源路径必须是目录";
+
+	if( createJunction( ..fsys.path.addBackslash(pathJunction) 
+		,"\??\" + ..fsys.path.addBackslash(pathReal) ) ) {
+		return true;
+	}	
+	if(!existJunction)..fsys.delete(pathJunction);
+}
+
+remove = function(pathJunction){
+	pathJunction = ..io.exist(pathJunction);
+	if(pathJunction  && deleteJunction(pathJunction) ){
+		return true;
+	}
+}
+
+delete = function(pathJunction){
+	pathJunction = ..io.exist(pathJunction);
+	if(pathJunction  && (0==deleteJunction(pathJunction)) ){
+		return ..fsys.delete(pathJunction);
+	}
+}
+
+createJunction =  function(szJunction,szTarget) {   
+  var dirObject = ..fsys.file( szJunction
+  		,0x40000000/*_GENERIC_WRITE*/,0,3/*_OPEN_EXISTING*/
+  		,0x200000/*_FILE_FLAG_OPEN_REPARSE_POINT*/ | 0x2000000/*_FILE_FLAG_BACKUP_SEMANTICS*/
+  	)
+
+  if(!dirObject) return;
+  var reparseBuffer = {
+  	INT ReparseTag;
+  	INT ReparseDataLength;
+  	WORD Reserved;
+  	WORD ReparseTargetLength;
+  	WORD ReparseTargetMaximumLength;
+  	WORD Reserved1;
+  	WORD ReparseTarget[0x106/*_MAX_PATH*/];
+  } 
+
+  reparseBuffer.ReparseTag = 0xa0000003/*_IO_REPARSE_TAG_MOUNT_POINT*/;
+  reparseBuffer.ReparseTarget = ..string.toUnicode(szTarget);
+  reparseBuffer.ReparseTargetMaximumLength =  #reparseBuffer.ReparseTarget;//dll 50
+  reparseBuffer.ReparseTargetLength = #reparseBuffer.ReparseTarget-2;//dll:48 ,me 52
+  reparseBuffer.ReparseDataLength = reparseBuffer.ReparseTargetLength + 12;//dll 60,me 62
+
+  var ret = dirObject.deviceIoControl(0x000900a4/*FSCTL_SET_REPARSE_POINT*/, 
+  	reparseBuffer,,reparseBuffer.ReparseDataLength + 8 ) ;
+  dirObject.close();
+  return ret;
+}
+
+deleteJunction = function(szJunction) { 
+	var rgdb =  {
+    	INT ReparseTag = 0xa0000003/*_IO_REPARSE_TAG_MOUNT_POINT*/;
+    	WORD ReparseDataLength;
+    	WORD Reserved;
+    	struct ReparseGuid = ..win.guid(); 
+	}
+
+	var dirObject = ..fsys.file(szJunction,0x40000000/*_GENERIC_WRITE*/,0,3/*_OPEN_EXISTING*/
+		,0x200000/*_FILE_FLAG_OPEN_REPARSE_POINT*/ | 0x2000000/*_FILE_FLAG_BACKUP_SEMANTICS*/)
+	if(!dirObject) return;
+	
+	var ret = dirObject.deviceIoControl(0x000900ac/*FSCTL_DELETE_REPARSE_POINT*/,rgdb) ;
+	dirObject.close();
+
+	return ret;
+}  
+
+setprivilege('SeRestoreName',true);
+
+/*
+硬链接的作用主要是为文件增加别名。
+硬链接仅支持文件，winodws限制必须在同一分区内：
+可以理解为所有的文件名本来就是一个硬链接,创建硬链接就是增加了一个地位相等的指向实际存储地址的指针(或者别名)。
+删除其中任何一个，另外一个都完整的存在,除非删除所有的硬链接（包含原始文件名）。
+编辑其中任何一个，会同步改变所有硬链接到同一存储位置的文件。
+
+软链接的作用则主要是实现目录重定向。
+软链接与硬链接相同的是，改变软链接的文件内容(或编辑、清空目录内容）会同步影响到连接的源目录。
+与硬链接不同的是，如果删除源文件或目录，那么软链接就是无效的了,这时候在windows资源管理器中双击软链接
+会报错:"软链接引用了不存在的位置"。所以软链接仅仅是一个目录的快捷方式。
+
+但是软链接与*.lnk这种快捷方式的文件是有区别的，
+软链接在文件系统中虽然不是独立的文件、也不占用空间，但是可以自文件系统使用和访问、具有一个正常目录的功能。
+但普通的文件快捷方式 (*.lnk) 仅仅是用来响应鼠标双击这种交互式操作。
+
+早期windows下软链接仅支持目录，可以跨分区,但必须在同一文件系统下 - 这种目录软链接被称为JUNCTION链接。
+在win7增加了mklink.exe，可以创建<SYMLINKD> 类型的符号软链接 - 可以创建文件或目录的软链接。
+ 
+<JUNCTION>与<SYMLINKD>类型软链接的区别如下：
+1、dir命令列出文件时，显示的类型分别为<JUNCTION>,<SYMLINKD>
+2、在资源管理器的文件属性中<JUNCTION>类型显示为目录,<SYMLINKD>类型显示为快捷方式，文件图标都带小箭头。
+3、<SYMLINKD>类型软链接仅vista以后系统支持,创建<SYMLINKD>类型软链接需要进程拥有管理权限，<JUNCTION>不需要。
+*/
+
+/**intellisense(fsys.junction)
+create(.("软链接目录","指向的真实目录路径") = 创建JUNCTION类型目录软链接\n支持跨分区,仅支持NTFS分区\n注意编辑、清空映射目录内容同时影响源目录内容
+remove(.("软链接目录") = 解除JUNCTION类型目录软链接，该函数并不会删除实际的目录。
+delete(.("软链接目录") = 解除JUNCTION类型目录软链接，删除映射目录。\n不会清空映射所指向的源目录,保留源目录内容
+end intellisense**/

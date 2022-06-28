@@ -1,0 +1,156 @@
+//tuple 元组
+import util.metaProperty;
+namespace py2;
+	
+class tuple {
+
+	ctor( object ){ 
+	
+		var tt = type(object) 
+		select(tt) {
+			case type.table{ 
+			
+				if(object[["pyObject"]] ){
+					if(object.checkTuple()){
+						this[["pyObject"]] = object[["pyObject"]];
+						..py2.IncRef(this.pyObject);	
+					}
+					else {
+						var tuple =  ..py2.builtin.tuple(object);
+						if(tuple.checkTuple()){
+							this[["pyObject"]] = tuple.stealPtr()
+						}
+						else {
+							return null;
+						}
+					}
+				}
+			  	else{
+					var len = #object;
+					this.pyObject = pyTuple_New(len); 
+					
+					for(i=1;len;1){
+						if( type(object[i]) == "pointer" ){
+							..py2.IncRef(object[i]);
+							pyTuple_SetItem(this.pyObject,i-1,object[i] );  
+						}
+						else{
+							pyTuple_SetItem(this.pyObject,i-1,..py2.object(object[i]).stealPtr() );  
+						}
+					};
+				}
+			}
+			case type.pointer{
+				this.pyObject = object;
+			}
+			case type.number{ 
+				this.pyObject = pyTuple_New(object);
+			} 
+			case type.null{
+				this.pyObject = pyTuple_New(0);
+			}
+			else { 	
+				error("py.tuple 构造参数不支持此数据类型:" + tt ,2) 
+			} 
+		}
+		
+		..table.add_gc(this,"release");
+	}
+	@_metaProperty
+}
+
+namespace tuple {
+
+	_metaProperty = ..util.metaProperty(   
+	
+		_topointer = function(){
+			if(!owner.pyObject) error("Python Tuple已销毁",2);
+			return owner.pyObject;
+		}  
+		parseValue = function(){
+			var result = {}; 
+			var len = pyTuple_Size(owner.pyObject);
+			
+			for(i=0;len-1;1){
+				var item = pyTuple_GetItem(owner.pyObject,i);
+				if(item){
+					item = ..py2.object(  item,true );
+					result[i+1] = item.parseValue();
+					item.stealPtr();//因为item是借用，所以把盗用的引用偷回来不让他释放一次
+				}
+			}
+			return result; 
+		}
+		getItem = function(k){
+			return owner[k]
+		}; 
+		setItem = function(k,v){
+			owner[k] = v;
+		};  
+		__get = function(k,ownerCall){ 
+			if( type(k) != type.number ) {
+				return owner.getAttr(k); 
+			}
+			
+			var item = pyTuple_GetItem(owner.pyObject,k);
+			if(item){
+				..py2.IncRef(item);//特例 borrow reference
+				return ..py2.object(  item,true ) ;
+			} 
+		} 
+		__set = function(k,v){
+			if( type(k) != type.number ) {
+				return;
+			}
+			
+			if(v!==null) {
+				if( type(v) == "pointer" ){
+					..py2.IncRef(v);
+					pyTuple_SetItem(this.pyObject,k,v );  
+				}
+				else{
+					pyTuple_SetItem(owner.pyObject,k,..py2.object(v).stealPtr() ); 
+				} 
+			} 
+		}
+		len = function(){
+			return pyTuple_Size(owner.pyObject);
+		} 
+		_type = "py2.tuple";
+	);
+	..table.mix(_metaProperty,..py2.object._metaProperty); 
+	
+	pyTuple_New = ::Python2.api("PyTuple_New","pyObject(INT len)")  
+	pyTuple_GetItem = ::Python2.api("PyTuple_GetItem","pyObject(PyObject dp,INT key)")  
+	pyTuple_SetItem = ::Python2.api("PyTuple_SetItem","pyObject(PyObject dp,INT key,pyObject item)") 
+	pyTuple_Size = ::Python2.api("PyTuple_Size","INT(PyObject dp)") 
+	
+	buildValueByNumber =  ..py2._buildValueByNumber;
+	buildValueByString =  ..py2._buildValueByString;
+}
+
+
+/**intellisense()
+py2.tuple( = 元数组是只读的序列数组,数组元素不可变更\n此对象继承自pyObject(py2.object)\n一般不需要手动创建此对象,aardio会在传参数时自动转换
+py2.tuple(.(长度) = 创建新的元数组
+py2.tuple(.(pyObject指针) = 创建新的元数组,\n不会添加引用计数,但对象销毁时负责释放引用计数
+py2.tuple(.(pyObject对象) = 如果传入 Python 对象是一个 tuple,\n返回绑定相同对象的 py2.tuple 对象,添加引用计数,对象销毁时负责释放引用计数\n否则将传入对象作为 python 内置函数 tuple 的参数并返回 py2.tuple 对象\n失败返回 null
+py2.tuple(.(aardio数组) = 创建新的元数组,\n如果数组成员中包含pointer类型指针,必须是pyObject指针,保持引用计数不变
+!py2Tuple.stealPtr() =  接管此对象的指针并盗用一次引用计数\n原对象的内部指针被清空,并不再负责释放引用计数\n steal references
+!py2Tuple.parseValue() = 转换为aardio数组
+!py2Tuple.type() = 返回类型名字
+!py2Tuple.has("__/*属性名*/") = 是否存在指定的属性
+!py2Tuple.getAttr("__/*属性名*/") = 读属性成员,也可以用成员操作符获取\n属性值为 py2.object 对象
+!py2Tuple.setAttr("__/*属性名*/",) = 写属性成员的值,也可以用成员操作符赋值
+!py2Tuple.getAttr() = !p3yObject.
+!py2Tuple.getItem(__/*索引*/) = 返回指定项,类似在python中使用下标操作符取值
+!py2Tuple.setItem(__/*索引*/，) = 修改指定项,类似在python中使用下标操作符赋值
+!py2Tuple.getItem() = !p3yObject.
+!py2Tuple.toString() = 转换为 aardio 字符串\n也可以直接将对象作为参数传入 tostring 函数转换为字符串
+!py2Tuple.toTuple() = 转换为 Python 元组\n!py2Tuple.
+!py2Tuple.toList() = 转换为 Python 列表\n!py2List.
+!py2Tuple.checkList() = 检测是否列表
+!py2Tuple.each() = @for( item in ??.each() ){\n	__/*创建迭代器用于遍历所有的项,返回一个值*/\n}\n!p3yObject.
+!py2Tuple.? = !py2Object.
+py2.tuple() = !py2Tuple.
+end intellisense**/

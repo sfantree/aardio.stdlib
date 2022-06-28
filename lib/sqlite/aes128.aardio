@@ -1,0 +1,5 @@
+//aes128 -> base
+//http://sourceforge.net/projects/wxcode/files/Components/wxSQLite3/
+if( ___sqlite_dll__ ) error("不能导入不同版本的sqlite支持库",2)
+___sqlite_dll__ = raw.loadDll($"~/lib/sqlite/.res/sqlite3-aes128.dll","sqlite3-aes128.dll","cdecl")
+import sqlite.base;

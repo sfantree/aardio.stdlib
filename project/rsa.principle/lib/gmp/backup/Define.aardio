@@ -1,0 +1,43 @@
+
+namespace gmp.Define;
+
+class mpz_t {
+	int mp_alloc;
+	int mp_size;
+	pointer mp_d;
+};
+	
+	
+// https://github.com/sethtroisi/libgmp/blob/master/gmp-h.in
+
+_dll = ..raw.loadDll("G:\chromedl\libgmp-6.1.2-2-mingw32-dll-10\bin\libgmp-10.dll", "libgmp", "cdecl");
+mpz_init = _dll.api("__gmpz_init","void(struct&)" ,"cdcel");
+mpz_clear = _dll.api("__gmpz_clear","void(struct&)" ,"cdcel");
+mpz_set_si= _dll.api("__gmpz_set_si","void(struct&, int)","cdcel");
+mpz_set_str= _dll.api("__gmpz_set_str","int(struct&, string , int)","cdcel");
+mpz_init_set= _dll.api("__gmpz_init_set","void(struct&, struct)","cdcel");
+mpz_set_d = _dll.api("__gmpz_set_d","void(struct&, double)","cdcel");
+
+mpz_get_str =  _dll.api("__gmpz_get_str","int(string, int, struct)","cdcel");
+mpz_get_si = _dll.api("__gmpz_get_si","long(struct)","cdcel");
+mpz_get_d = _dll.api("__gmpz_get_d","double(struct)","cdcel");
+
+
+mpz_sizeinbase = _dll.api("__gmpz_sizeinbase","INT(struct, int)","cdcel");
+
+mpz_add = _dll.api("__gmpz_add","void(struct&, struct, struct)" ,"cdcel");
+mpz_sub = _dll.api("__gmpz_sub","void(struct&, struct, struct)","cdcel");
+mpz_mul = _dll.api("__gmpz_mul","void(struct&, struct, struct)","cdcel");
+
+// 除法 向下取整
+mpz_fdiv_q = _dll.api("__gmpz_fdiv_q","void(struct&, struct, struct)","cdcel");
+mpz_fdiv_r = _dll.api("__gmpz_fdiv_r","void(struct&, struct, struct)","cdcel");
+
+// 逆元
+mpz_invert = _dll.api("__gmpz_invert","void(struct&, struct, struct)","cdcel");
+
+// 幂取余
+mpz_powm = _dll.api("__gmpz_powm","void(struct&, struct, struct, struct)","cdcel");
+
+// 比较大小
+mpz_cmp = _dll.api("__gmpz_cmp","int(struct, struct)","cdcel");

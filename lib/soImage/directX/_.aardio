@@ -1,0 +1,239 @@
+﻿import win;
+import com.interface.IDirect3D9;
+namespace com.interface{
+	class IDirect3DDevice9{ 
+		ctor () {
+			this = ..com.interface.IUnknown();
+		};  
+    	pointer TestCooperativeLevel;
+    	pointer GetAvailableTextureMem;
+    	pointer EvictManagedResources;
+    	pointer GetDirect3D;
+    	pointer GetDeviceCaps;
+    	pointer GetDisplayMode;
+    	pointer GetCreationParameters;
+    	pointer SetCursorProperties;
+    	pointer SetCursorPosition;
+    	pointer ShowCursor;
+    	pointer CreateAdditionalSwapChain;
+    	pointer GetSwapChain;
+    	pointer GetNumberOfSwapChains;
+    	pointer Reset;
+    	pointer Present;
+    	pointer GetBackBuffer;
+    	pointer GetRasterStatus;
+    	pointer SetDialogBoxMode;
+    	pointer SetGammaRamp;
+    	pointer GetGammaRamp;
+    	pointer CreateTexture;
+    	pointer CreateVolumeTexture;
+    	pointer CreateCubeTexture;
+    	pointer CreateVertexBuffer;
+    	pointer CreateIndexBuffer;
+    	pointer CreateRenderTarget;
+    	pointer CreateDepthStencilSurface;
+    	pointer UpdateSurface;
+    	pointer UpdateTexture;
+    	pointer GetRenderTargetData;
+    	pointer GetFrontBufferData = "int(INT iSwapChain,pointer pDestSurface)";
+    	pointer StretchRect;
+    	pointer ColorFill;
+    	pointer CreateOffscreenPlainSurface = "int(INT Width,INT Height,int Format,int Pool,pointer &ppSurface,pointer pSharedHandle)"; 
+	}
+	  
+	namespace IDirect3DDevice9{
+		IID = "{d0223b96-bf7a-43fd-92bd-a43b0d82b9eb}";
+	}
+}
+
+namespace soImage;
+
+class directX{
+	ctor( version = 32 ){
+		var d3d = ..com.interface.IDirect3D9.Create(version);  
+		var ddMode = _D3DDISPLAYMODE()
+		d3d.GetAdapterDisplayMode(0,ddMode) ;
+		
+		var d3dpp = _D3DPRESENT_PARAMETERS();  
+		d3dpp.Windowed = 1;
+		d3dpp.SwapEffect = 1/*_D3DSWAPEFFECT_DISCARD*/; 
+		d3dpp.Flags=1/*D3DPRESENTFLAG_LOCKABLE_BACKBUFFER*/; 
+		d3dpp.BackBufferFormat=ddMode.Format; 
+		d3dpp.BackBufferHeight=ddMode.Height; 
+		d3dpp.BackBufferWidth=ddMode.Width;   
+		d3dpp.hDeviceWindow = ..win.getDesktop() 
+		var re, d3dpp, pDevice = d3d.CreateDevice(
+			0/*_D3DADAPTER_DEFAULT*/,
+			1/*_D3DDEVTYPE_HAL*/,
+			d3dpp.hDeviceWindow,
+			0x20/*_D3DCREATE_SOFTWARE_VERTEXPROCESSING*/ |  0x00000002 /*_D3DCREATE_FPU_PRESERVE*/,
+			d3dpp
+		);
+		
+		var device = ..com.interface(pDevice,..com.interface.IDirect3DDevice9 );
+		..com.Release(pDevice)
+		
+		var hr,surface = device.CreateOffscreenPlainSurface(ddMode.Width, ddMode.Height,21/*D3DFMT_A8R8G8B8*/,3/*D3DPOOL_SYSTEMMEM*/ ) //注意第四个参数不能是D3DPOOL_DEFAULT
+		if( (hr)<0/*_FAILED*/ ){  
+ 			return null,..lasterr(hr) ;
+		}   
+		
+		..table.add_gc(this,"close");
+	};
+	capture = function(path,rect){ 
+		if( !rect ) rect = {};
+		else{
+			if( rect.right >  ddMode.Width ) rect.right = ddMode.Width;
+			if( rect.bottom >  ddMode.Height ) rect.bottom = ddMode.Height;
+			if( rect.left < 0 ) rect.left = 0;
+			if( rect.top < 0 ) rect.top = 0;
+		}
+		
+		var ext  = ..string.match(path,"\.(\w+)$");
+		if(!ext) error("文件后缀名错误",2)
+		xiff = D3DXIMAGE_FILEFORMAT[ext] : 0 
+		var hr = device.GetFrontBufferData(0, surface)
+		if( (hr)<0/*_FAILED*/){ 
+			return null,..lasterr(hr) 
+		}
+		hr = D3DXSaveSurfaceToFile(..io.fullpath(path),xiff, surface, null, rect); 
+		if( (hr)<0/*_FAILED*/){ 
+			return null,..lasterr(hr) 
+		}
+		return true;
+	}
+	captureWindow = function(path,hwnd=0){ 
+		var rect = ..win.getRect(hwnd,true) 
+		return this.capture(path,rect);;
+	}
+	captureToString = function(ext,rect){ 
+		if( !rect ) rect = {}; 
+		else{
+			if( rect.right >  ddMode.Width ) rect.right = ddMode.Width;
+			if( rect.bottom >  ddMode.Height ) rect.bottom = ddMode.Height;
+			if( rect.left < 0 ) rect.left = 0;
+			if( rect.top < 0 ) rect.top = 0;
+		}
+		
+		xiff = ext ? D3DXIMAGE_FILEFORMAT[ext] : 0 
+		var hr = device.GetFrontBufferData(0, surface)
+		if( (hr)<0/*_FAILED*/){ 
+			return null,..lasterr(hr) 
+		}
+		var hr,destBuf = D3DXSaveSurfaceToFileInMemory( ,xiff, surface, null, rect); 
+		if( (hr)<0/*_FAILED*/){ 
+			return null,..lasterr(hr) 
+		}
+		var d3dxBuf = ..raw.interface( destBuf,D3DXBUFFER )
+		var str = ..raw.tostring( d3dxBuf.GetBufferPointer(),1,d3dxBuf.GetBufferSize() );
+		d3dxBuf.Release();
+		
+		return str;
+	}
+	captureWindowToString = function(ext,hwnd=0){  
+		var rect = ..win.getRect(hwnd,true) 
+		return this.captureToString(ext,rect);
+	}
+	captureToImage = function(soImageFile,rect){
+		if(!soImageFile){
+			if(type(..soImage)!=type.class ) error("请在导入soImage.directX之前导入soImage扩展库",2);
+			soImageFile = ..soImage();
+		}
+			
+		if( !rect ) rect = {}; 
+		else{
+			if( rect.right >  ddMode.Width ) rect.right = ddMode.Width;
+			if( rect.bottom >  ddMode.Height ) rect.bottom = ddMode.Height;
+			if( rect.left < 0 ) rect.left = 0;
+			if( rect.top < 0 ) rect.top = 0;
+		}
+		
+		xiff = D3DXIMAGE_FILEFORMAT["jpg"]
+		var hr = device.GetFrontBufferData(0, surface)
+		if( (hr)<0/*_FAILED*/){ 
+			return null,..lasterr(hr) 
+		}
+		var hr,destBuf = D3DXSaveSurfaceToFileInMemory( ,xiff, surface, null, rect); 
+		if( (hr)<0/*_FAILED*/){ 
+			return null,..lasterr(hr) 
+		}
+		var d3dxBuf = ..raw.interface( destBuf,D3DXBUFFER )
+		soImageFile.setBytes(d3dxBuf.GetBufferPointer(),"*.jpg",d3dxBuf.GetBufferSize() ); 
+		d3dxBuf.Release();
+		
+		return soImageFile;
+	}
+	captureWindowToImage = function(soImageFile,hwnd=0){  
+		var rect = ..win.getRect(hwnd,true) 
+		return this.captureToImage(soImageFile,rect);
+	}
+	close = function(){
+		 ..com.Release(surface)
+		 d3d,device = null;
+		 collectgarbage("collect");
+	} 
+}
+
+namespace directX { 
+	::D3dx9 := ..raw.loadDll("~/lib/soImage/directX/.res/d3dx9_43.dll");
+	D3DXSaveSurfaceToFile = ::D3dx9.api("D3DXSaveSurfaceToFile","int(ustring pDestFile,int DestFormat,pointer pSrcSurfac,pointer pSrcPalette,struct rc)")
+	D3DXSaveSurfaceToFileInMemory = ::D3dx9.api("D3DXSaveSurfaceToFileInMemory","int(pointer& ppDestBuf,int DestFormat,pointer pSrcSurfac,pointer pSrcPalette,struct rc)")
+ 
+ 	class D3DXBUFFER {
+ 		pointer QueryInterface = "int(struct iid,pointer &ptr, )" ;
+    	pointer AddRef = "int()" ;
+    	pointer Release ="int()" ;
+    	pointer GetBufferPointer = "pointer()";
+    	pointer GetBufferSize = "INT()"
+ 	}
+ 	
+    D3DXIMAGE_FILEFORMAT = {
+      bmp = 0;
+      jpg = 1;
+      tga = 2;
+      png = 3;
+      dds = 4;
+      ppm = 5;
+      dib = 6;
+      hdr = 7;
+      pfm = 8;	
+    }
+    
+	class _D3DPRESENT_PARAMETERS {
+		INT BackBufferWidth;
+		INT BackBufferHeight;
+		int BackBufferFormat;
+		INT BackBufferCount;
+		int MultiSampleType;
+		INT MultiSampleQuality;
+		INT SwapEffect;
+		int hDeviceWindow;
+		int Windowed;
+		int EnableAutoDepthStencil;
+		int AutoDepthStencilFormat;
+		INT Flags;
+		INT FullScreen_RefreshRateInHz;
+		INT PresentationInterval;
+	}
+	
+	class _D3DDISPLAYMODE {
+    	INT Width;
+    	INT Height;
+    	INT RefreshRate;
+    	int Format;
+	}   
+}
+ 
+/**intellisense()
+soImage.directX = directX抓屏支持库
+soImage.directX() = 创建directX对象\n!soImageDirectX.
+!soImageDirectX.capture(.("/x->bmp",区域) = 抓屏,\n支持存为bmp,jpg,png,tga,dib等格式,后缀名必须小写,\n可选在第二个参数中使用::RECT结构体指定抓屏区域
+!soImageDirectX.captureWindow(.("/x->bmp",窗口句柄) = 抓屏,\n支持存为bmp,jpg,png,tga,dib等格式,后缀名必须小写
+!soImageDirectX.captureToString(.("jpg",区域) = 抓屏返回图片内存,\n参数1指定小写后缀名,参数2为可选参数
+!soImageDirectX.captureWindowToString(.("jpg",窗口句柄) = 抓屏返回图片内存,\n参数1指定小写后缀名
+!soImageDirectX.captureToImage(.(img,区域) = 抓屏,\n参数@1为soImage对象,如果不指定则自动创建图像,\n参数2为可选参数\n\n调用此函数之前必须首先导入soImage扩展库
+!soImageDirectX.captureWindowToImage(.(img,窗口句柄) = 抓屏,\n参数@1为soImage对象,如果不指定则自动创建图像,\n参数2为可选参数\n\n调用此函数之前必须首先导入soImage扩展库
+!soImageDirectX.close() = 关闭directX对象
+!soImageDirectX.captureToImage() = !soImage.
+end intellisense**/
+

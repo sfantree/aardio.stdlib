@@ -1,0 +1,70 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add(
+button={cls="button";text="获取多选选中";left=40;top=392;right=136;bottom=432;z=2};
+button2={cls="button";text="删除多选选中";left=528;top=392;right=624;bottom=432;z=4};
+edit={cls="edit";left=208;top=392;right=432;bottom=432;border=1;edge=1;multiline=1;z=3};
+listview={cls="listview";left=32;top=32;right=640;bottom=360;edge=1;fullRow=1;z=1}
+)
+/*}}*/
+
+winform.listview.insertColumn("序号", 50);
+winform.listview.insertColumn("姓名", -1);
+
+winform.listview.addItem({ "1"; "popy1"});
+winform.listview.addItem({ "2"; "popy2"});
+winform.listview.addItem({ "3"; "popy3"});
+winform.listview.addItem({ "4"; "popy4"});
+winform.listview.addItem({ "5"; "popy5"});
+winform.listview.addItem({ "6"; "popy6"});
+winform.listview.addItem({ "7"; "popy7"});
+winform.listview.addItem({ "8"; "popy8"});
+
+
+
+winform.button.oncommand = function(id,event){
+	var r = 0;
+	var n = 1;
+	var t = {}
+	var s = 0;
+	while(true){
+		//winform.edit.dump(r, n, t)
+	    r, n = winform.listview.getSelection(s);
+	    if(r == 0) {
+	        break;
+	    }
+	    //winform.listview.delItem(r);
+	    //table.push(t, r);
+	    s = n;
+	}
+	winform.edit.dump(t)
+}
+
+winform.button2.oncommand = function(id,event){
+	//var r = 0;
+	//var n = 1;
+	//var t = {}
+	//var s = 0;
+	while(true){
+		//winform.edit.dump(r, n, t)
+	    r, n = winform.listview.getSelection(0);
+	    if(r == 0) {
+	        break;
+	    }
+	    winform.listview.delItem(r);
+	    //table.push(t, r);
+	    //s = n;
+	}
+	
+	// 刷新序号
+	for(i=1;winform.listview.count;1){
+		winform.listview.setItemText(tostring(i), i, 1);
+	
+	}
+	
+	//winform.edit.dump(t)
+}
+
+winform.show();
+win.loopMessage();

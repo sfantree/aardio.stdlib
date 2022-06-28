@@ -1,0 +1,198 @@
+﻿//ddcci 控制显示器
+import sys.monitor;
+
+namespace sys;
+
+class ddcci{
+	ctor(hpm,description){
+		this.$hpm = hpm;
+		this.description = description;
+		
+		this.capabilities = {};
+		var r,size = GetCapabilitiesStringLength(this.$hpm,0)
+		if(r && size){
+			var buf = ..raw.buffer(size);
+			if( CapabilitiesRequestAndCapabilitiesReply(this.$hpm,buf,size) ){
+				var str = ..string.match(buf,"\((.+)\)")
+				for name,value in ..string.gmatch(str,"(\w+)(%())") { 
+					value = ..string.match(value,"\((.+)\)")
+					this.capabilities[name] = value;
+				}
+				
+				var vcp = this.capabilities.vcp;
+				if(vcp){
+					var nvcp = {}
+					for name,value in ..string.gmatch(vcp,"(\x+)(<([^\)]+)>?)") { 
+						if(value){
+							 value =  ..string.map(value,"\x+",lambda(v) tonumber(v,16));
+						}
+						else value = {};
+						nvcp[tonumber(name,16)]= value;
+					}
+					
+					this.capabilities.vcpTable = nvcp;
+				}
+			}
+		}
+		
+		..table.gc(this,"destroy");
+	};
+	hasFeature = function(vcpCode){
+		return this.capabilities[["vcpTable"]][[vcpCode]];
+	};
+	getFeature = function(vcpCode){
+		var ok,t,curr,max = GetVCPFeatureAndVCPFeatureReply(this.$hpm, vcpCode, 0,0,0);
+		if(ok) return curr,max,t ;
+	};
+	setFeature = function(vcpCode,value){
+		return SetVCPFeature(this.$hpm,vcpCode,value);
+	};
+	getBrightness = function(){
+		var r,min,cur,max = GetMonitorBrightness(this.$hpm,0,0,0)
+		if(r) return cur,min,max;
+	};
+	setBrightness = function(value){
+		return SetMonitorBrightness(this.$hpm,value)
+	};
+	getContrast = function(){
+		var r,min,cur,max = GetMonitorContrast(this.$hpm,0,0,0)
+		if(r) return cur,min,max;
+	};
+	setContrast = function(value){
+		return SetMonitorContrast(this.$hpm,value)
+	};
+	getColorTemperature  = function(){
+		var r,cur = GetMonitorColorTemperature(this.$hpm,0)
+		if(r) return cur;
+	};
+	setColorTemperature  = function(value){
+		return SetMonitorColorTemperature(this.$hpm,value)
+	};
+	reset = function(){
+		return RestoreMonitorFactoryDefaults(this.$hpm);//return this.setFeature(4,1);
+	};	
+	resetColor = function(){
+		return RestoreMonitorFactoryColorDefaults(this.$hpm);
+	};
+	getInputSource = function(){
+		return (this.getFeature(0x60));
+	}; 
+	setInputSource = function(v){
+		return this.setFeature(0x60,v);
+	}; 
+	getPowerMode = function(){
+		return (this.getFeature(0xD6)); 
+	}; 
+	setPowerMode = function(v){
+		return this.setFeature(0xD6,v);
+	}; 
+	save = function(){
+		return this.SaveCurrentMonitorSettings(this.$hpm);
+	};
+	destroy = function(){
+		if(this.$hpm){
+			return DestroyPhysicalMonitor(this.$hpm);
+			this.$hpm = null;
+		}
+	};
+	@{_topointer = lambda()this.$hp;}
+}
+
+namespace ddcci{
+	::Dxva2 := ..raw.loadDll("Dxva2.dll")
+	DestroyPhysicalMonitor = ::Dxva2.api("DestroyPhysicalMonitor","bool(addr hpm)");
+	
+	GetCapabilitiesStringLength = ::Dxva2.api("GetCapabilitiesStringLength","bool(addr hpm,INT& len)");
+	CapabilitiesRequestAndCapabilitiesReply = ::Dxva2.api("CapabilitiesRequestAndCapabilitiesReply","bool(addr hpm,ptr str,INT len)");
+	GetMonitorCapabilities = ::Dxva2.api("GetMonitorCapabilities","bool(addr hpm,INT& cap,INT& temp)");
+	GetMonitorBrightness = ::Dxva2.api("GetMonitorBrightness","bool(addr hpm,INT& min,INT& cur,INT& max)");
+	SetMonitorBrightness = ::Dxva2.api("SetMonitorBrightness","bool(addr hpm,INT cur)");
+	GetMonitorContrast = ::Dxva2.api("GetMonitorContrast","bool(addr hpm,INT& min,INT& cur,INT& max)");
+	SetMonitorContrast = ::Dxva2.api("SetMonitorContrast","bool(addr hpm,INT cur)");
+	GetMonitorColorTemperature = ::Dxva2.api("GetMonitorColorTemperature","bool(addr hpm,INT& value)"); 
+	SetMonitorColorTemperature = ::Dxva2.api("SetMonitorColorTemperature","bool(addr hpm,INT value)"); 
+	RestoreMonitorFactoryColorDefaults = ::Dxva2.api("RestoreMonitorFactoryColorDefaults","bool(addr hpm)"); 
+	RestoreMonitorFactoryDefaults = ::Dxva2.api("RestoreMonitorFactoryDefaults","bool(addr hpm)");  
+	SaveCurrentMonitorSettings = ::Dxva2.api("SaveCurrentMonitorSettings","bool(addr hpm)");
+	GetVCPFeatureAndVCPFeatureReply = ::Dxva2.api("GetVCPFeatureAndVCPFeatureReply","bool(addr hpm,BYTE vcpCode,INT&type,INT& current,INT &max)"); 
+	SetVCPFeature = ::Dxva2.api("SetVCPFeature","bool(addr hpm,BYTE vcpCode,INT newValue)"); 
+	GetNumberOfPhysicalMonitorsFromHMONITOR = ::Dxva2.api("GetNumberOfPhysicalMonitorsFromHMONITOR","bool(ptr hm,INT& value)"); 
+	GetPhysicalMonitorsFromHMONITOR = ::Dxva2.api("GetPhysicalMonitorsFromHMONITOR","bool(ptr hm,INT len,struct &items)"); 
+	
+	getPhysicalMonitors = function(hMonitor){
+		
+		if(!hMonitor){
+			var ret = {}
+			for( hMonitor,monitorInfo in ..sys.monitor.eachInfo() ){
+				var items = getPhysicalMonitors(hMonitor)
+				if(#items) ..table.append(ret,items);
+			}
+			
+			return ret; 
+		}
+		
+		var r,length = GetNumberOfPhysicalMonitorsFromHMONITOR(hMonitor,0)
+		if(!r && size ){ return {} }
+		
+		var r,physicalMonitor = GetPhysicalMonitorsFromHMONITOR(hMonitor,length,{struct items[] = {
+			{
+				addr index;
+				WORD description[128/*PHYSICAL_MONITOR_DESCRIPTION_SIZE*/];
+			};
+			length = length;
+		}})
+		
+		var ret = {}
+		for i,item in ..table.eachIndex(physicalMonitor.items){ 
+			ret[i] = ..sys.ddcci(item.index,item.description)
+		}
+		
+		return ret; 
+	}
+	
+	each = function(hMonitor){
+		var items = getPhysicalMonitors(hMonitor);
+		
+		var i,item;
+		return function(){
+			i,item = ..table.next(items,i);
+			return item;
+		}
+	}
+}
+
+/**intellisense()
+sys.ddcci = DDC/CI（Display Data Channel Command Interface）\n用于控制显示器，不是所有显示器都支持 DDC/CI
+sys.ddcci( = 创建显示器控制对象
+sys.ddcci(.(hpm,description) = 创建显示器控制对象，\n@hpm 为物理显示器句柄,\n@description 为显示器描述，可选参数
+sys.ddcci() = !stdSysDdcci.
+end intellisense**/
+
+/**intellisense(sys.ddcci)
+getPhysicalMonitors( = 返回所有物理显示器句柄数组
+getPhysicalMonitors(.() = 返回所有物理显示器句柄数组
+getPhysicalMonitors(.(hMonitor) = 返回 @hMonitor 指定句柄的显示器指向的物理显示器句柄数组,\n注意参数 @hMonitor 指定显示器句柄，并非物理显示器句柄
+each() = @for ddcci in sys.ddcci.each() {\n	__/*遍历所有物理显示器，\nddcci 为控制该显示器的 sys.ddcci 对象*/\n}\n!stdSysDdcci.
+end intellisense**/
+
+/**intellisense(!stdSysDdcci)
+description = 显示器描述
+hasFeature(.(vcpCode) = 是否支持 @vcpCode 指定的控制代码\n支持则返回包含可设置值的数组,数组可能为空,\n否则返回 null
+getFeature(.(vcpCode) = 读取设置值\n@vcpCode 为控制代码
+setFeature(.(vcpCode,value) = 写入设置值\n@vcpCode 为控制代码,@value 为新的设置值
+getBrightness(.() = 获取亮度，返回3个值：\n当前亮度，最小值，最大值
+setBrightness(.(value) = 设置亮度
+getContrast() = 获取对比度，返回3个值：\n当前亮度，最小值，最大值
+setContrast(.(value) = 设置对比度
+getColorTemperature() = 获取色温
+setColorTemperature(.(value) = 设置色温
+getInputSource() = 获取输入源
+setInputSource(.(inputSource) = 修改输入源,\n@inputSource 用数值指定输入源
+getPowerMode() = 获取电源状态
+setPowerMode(.(mode) = 修改电源状态,\n@mode 为1表示打开屏幕，\n@mode 为 5 或 4 表示关闭屏幕
+capabilities = 返回描述显示器支持功能的表对象
+reset() = 重置设置
+resetColor() = 重置颜色设置
+save() = 保存设置
+destroy() = 释放对象，\n如果没有调用此函数，则回收对象时自动调用。
+end intellisense**/

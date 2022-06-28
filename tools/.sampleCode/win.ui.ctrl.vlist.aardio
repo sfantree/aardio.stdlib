@@ -1,0 +1,39 @@
+﻿import win.ui;
+import win.ui.ctrl.vlist;
+/*DSG{{*/
+mainForm = ..win.form(text="vlist - sqlite adapter";right=600;bottom=367)
+mainForm.add(
+vlist={cls="vlist";left=48;top=40;right=552;bottom=328;edge=1;transparent=1;z=1}
+)
+/*}}*/
+
+mainForm.vlist.insertColumn("网址", 200);
+mainForm.vlist.insertColumn("评论", 200);
+
+//启用双缓冲,避免拖动滚动条时闪烁
+mainForm.vlist.setExtended(0x10000/*_LVS_EX_DOUBLEBUFFER*/);
+ 
+import sqlite; 
+var db = sqlite("/test.db");
+
+//创建测试数据
+if (!db.existsTable("homepage2")) {
+	db.exec("CREATE TABLE homepage2 (url char(30), comment char(20))");
+	
+	db.beginTrans()
+	for (i = 1; 1000) {
+		db.exec("INSERT INTO homepage2(url, comment) VALUES(@url,@comment)", {
+			url = "http://www.aau.cn";
+			comment = "字符串包含'单引号' " ++ i;
+		});
+	}
+	db.commitTrans()
+}
+
+//绑定数据源
+mainForm.vlist.createSqliteAdapter(db,"SELECT * FROM homepage2").close = function(){ 
+    db.close();
+}; 
+
+mainForm.show();
+win.loopMessage(); 

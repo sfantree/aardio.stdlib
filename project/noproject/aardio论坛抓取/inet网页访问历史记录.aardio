@@ -1,0 +1,27 @@
+import console; 
+import inet.http;
+
+var http = inet.http()
+http.get("http://www.aardio.com");
+http.get("https://www.baidu.com");
+http.get("https://www.qq.com");
+http.get("https://www.taobao.com");
+http.get("https://www.taobao.com");
+
+
+
+for cacheEntry in inet.eachCache(){
+	//遍历所有缓存
+	//console.dump( cacheEntry )
+}
+
+for cookieEntry in inet.eachCookie(){
+	//遍历所有缓存
+	//console.dump( cookieEntry )
+}
+
+
+
+
+console.log( txt )
+console.pause(true);

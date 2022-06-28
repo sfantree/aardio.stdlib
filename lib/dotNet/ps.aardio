@@ -1,0 +1,177 @@
+﻿//ps PowerShell组件
+import dotNet; 
+import web.json;
+
+namespace dotNet;
+
+class ps{
+	ctor(command,params,useLocalScope,...){
+		var runner,err = getRunner();
+		if( !runner ){ return null,err:"当前系统未安装.Net Framework 2.0 以上版本";}
+		
+		if(onWrite) runner.OnWrite = onWrite;
+        if(onWriteProgress) runner.OnWriteProgress = onWriteProgress;
+        if(onReadLine) runner.OnReadLine = onReadLine;
+        if(onReadLineAsSecureString) runner.OnReadLineAsSecureString = onReadLineAsSecureString;
+        
+		if(type(params)==type.string){
+			params = {params;useLocalScope;...}
+			useLocalScope = false;
+		}
+		
+		var paramNames = {};
+		var paramValues = {};
+		for k,v in ..table.eachName(params){
+			..table.push(paramNames,k);
+			..table.push(paramValues,v);
+		}
+		
+		for(i=1;#params;1){
+			..table.push(paramNames,(params[i]));
+		}
+         
+		var ret = runner.InvokeScript(command,!!useLocalScope
+			,#paramNames?paramNames:null,#paramValues?..dotNet.createArrayList(paramValues):null);//useLocalScope参数必须是布尔类型，以匹配C#函数签名
+		if(ret){
+			ret = ..string.trim(ret);
+			if(..string.match(ret,"^ERROR\:\s+")){
+				return null ,ret;
+			}
+			 
+			return ret; 
+		}
+	};
+}
+
+namespace ps {
+	
+	export = function(obj){
+		var runner = getRunner();
+		if( runner ) return runner.Export(obj);
+	}
+
+    var powerShellRunner;
+    command = function( command,params,useLocalScope,... ) {
+		var runner,err = getRunner();
+		if( !runner ){ return null,err:"当前系统未安装.Net Framework 2.0 以上版本";}
+		
+		if(onWrite) runner.OnWrite = onWrite;
+        if(onWriteProgress) runner.OnWriteProgress = onWriteProgress; //回调参数说明 https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.progressrecord?view=powershellsdk-1.1.0
+        if(onReadLine) runner.OnReadLine = onReadLine;
+        if(onReadLineAsSecureString) runner.OnReadLineAsSecureString = onReadLineAsSecureString;
+            
+		if(type(params)==type.string){
+			params = {params;useLocalScope;...}
+			useLocalScope = false;
+		}
+		
+		var paramNames = {};
+		var paramValues = {};
+		for k,v in ..table.eachName(params){
+			..table.push(paramNames,k);
+			..table.push(paramValues,v);
+		}
+		
+		for(i=1;#params;1){
+			..table.push(paramNames,tostring(params[i]));
+		}
+		
+		var ret,err;
+		try{
+			ret = runner.InvokeCommand(command,false,!!useLocalScope 
+				,#paramNames?paramNames:null,#paramValues?..dotNet.createArrayList(paramValues):null);//参数必须是非空数组，以匹配C#函数签名
+	 		
+	 		if(ret) ret = ..string.trim(ret);
+	 	}
+	 	catch(e){
+	 		err = e;
+	 	}
+	 	
+		if(ret){
+			if(..string.match(ret,"^ERROR\:\s+")){
+				return null ,ret;
+			}
+			
+			return ret; 
+		}
+		
+		return null,err;
+	};
+	
+	var psJsonWeb = /*
+	if ($PSVersionTable.PSVersion.Major -lt 3){
+		Add-Type -assembly system.web.extensions
+		function ConvertTo-Json([object] $item){ 
+    		$jss=New-Object system.web.script.serialization.javascriptSerializer
+    		return $jss.Serialize($item)
+		}
+	};
+	*/
+
+	var psJsonNet = /* 
+	function ConvertTo-Json([object] $item){ 
+    	return [Newtonsoft.Json.JsonConvert]::SerializeObject($item)
+	} 
+	*/
+
+	json = function(ps,...){
+		var ret,err = ..dotNet.ps(..string.concat(..dotNet.json ? psJsonNet : psJsonWeb,ps),...);
+		if(ret && !err){
+			return ..web.json.tryParse(ret) : ret;
+		}
+		return ret,err;
+	}
+	
+	getRunner = function(){
+		if( powerShellRunner ){
+			return powerShellRunner;
+		} 
+		
+		var compile = ..dotNet.createCompiler("C#");
+		compile.Reference("System.Core")
+		compile.Reference("System.Management.Automation");
+		compile.Parameters.CompilerOptions = "/optimize";
+		
+		/* 
+		https://github.com/MicrosoftDocs/PowerShell-Docs/tree/staging/reference/docs-conceptual/developer/hosting
+		1、不需要带上体积较大的特定版本System.Management.Automation.dll，改用自动获取系统dll。
+		2、支持的 PowerShell 最低版本为 Win7 自带 PowerShell 2.0，Win10/Win11 自带 PowerShell 5.1 支持直接回调 aardio 参数对象。
+		3、支持动态添加参数等。
+		*/
+		compile.Source = { 
+			$"~\lib\dotNet\.res\Aardio.PS\Aardio.PS.DynObject.cs",
+			$"~\lib\dotNet\.res\Aardio.PS\Aardio.PS.cs"
+		};
+		
+		var assembly = compile.Compile()  
+		var err = compile.getLastError();
+	
+		if(#err){
+			return null,err;
+		}
+		
+		if(!assembly){
+			return null,"系统未安装 PowerShell"
+		}
+		
+		powerShellRunner = assembly.createInstance("Aardio.PS");
+		return powerShellRunner;	
+	}
+}
+
+/**intellisense()
+dotNet.ps(  = 支持 Windows PowerShell 2.0 以上。\nWin7 自带 PowerShell 2.0，可回调 dotNet.ps.export 导出的 aardio 参数对象。\nWin10/Win11 自带 PowerShell 5.1，已支持直接回调 aardio 参数对象。
+dotNet.ps(.(script,parameters,useLocalScope) = 执行PowerShell脚本，返回输出字符串。\n@script 参数指定PowerShell脚本或脚本路径，\n可选用@parameters参数指定一个表，包含调用参数名值对，\n@parameters参数既可以包含名值对，也可以包含仅指定参数名的数组，\n表里的参数名不需要加 $或 - 前缀，PowerShell里要加$前缀，\n参数值可以使用任何 .Net 支持的数据类型，\n如果 @parameters 是字符串，则后面可以添加任意个数字符串参数，\n@useLocalScope 为可选参数，@parameters 为字符串时无 @useLocalScope 参数\nPowerShell 脚本用 param 接收命名参数,\n用 args 接收匿名参数
+dotNet.ps.command(.(command,parameters,useLocalScope) = 执行 PowerShell 命令，\n成功返回输出字符串,失败返回null,错误信息。\n可选用@parameters参数指定一个表，包含调用参数名值对，\n@parameters参数既可以包含名值对，也可以包含仅指定参数名的数组，\n表里的参数名不需要加 $或 - 前缀，\n参数值可以使用任何 .Net 支持的数据类型，\n如果 @parameters 是字符串，则后面可以添加任意个数字符串参数，\n@useLocalScope 为可选参数，@parameters 为字符串时无 @useLocalScope 参数			
+dotNet.ps.onWrite = @.onWrite = function(str){
+	__/*PowerShell 输出文本回调此函数，\n参数 @str 为待输出的字符串*/
+}
+
+dotNet.ps.onWriteProgress = @.onWriteProgress = function(sourceId,record){
+	__/*PowerShell 进度条回调此函数，\n参数 record.Activity 为任务标题，\n参数 record.StatusDescription 为进度描述，\n参数 record.PercentComplete 为进度百分比，\nPowerShell 回调出错不会抛出异常，\n如果有需要在函数内部自行 try catch 捕获代码错误*/
+	winform.plus.text = record.StatusDescription;
+	winform.plus.progressPercentage = record.PercentComplete; 
+}
+dotNet.ps.export(__) = 将参数 @1 指定的 aardio 表对象转换为 PowerShell 参数对象\n在 PowerShell 中可使用  InvokeMember 调用成员函数，参数@1为成员函数名，\n也可以使用下标读写对象属性值。\n\nWin10/Win11 自带 PowerShell 5.1 已经直接支持回调 aardio 对象，\n如果不需要兼容旧版 PowerShell 则不需要使用此函数
+dotNet.ps.json(ps) = @.json(`ConvertTo-Json __/*执行 PowerShell 脚本，\nConvertTo-Json 兼容到 PowerShell 2.0，\n如果导入 dotNet.json 则用 dotNet.json 实现 ConvertTo-Json，\n返回文本作为 JSON 自动解析为 aardio 对象*/`)
+end intellisense**/

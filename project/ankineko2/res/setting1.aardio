@@ -1,0 +1,17 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add(
+btnApply={cls="button";text="应用";left=518;top=409;right=687;bottom=443;z=3};
+btnCancel={cls="button";text="取消";left=311;top=409;right=457;bottom=442;z=2};
+btnConfirm={cls="button";text="确定";left=83;top=409;right=229;bottom=440;z=1}
+)
+/*}}*/
+
+winform.btnConfirm.oncommand = function(id,event){
+	winform.msgbox("haha");
+}
+
+winform.show();
+win.loopMessage();
+return winform;

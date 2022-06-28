@@ -1,0 +1,63 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="miniblink浏览器简单示例";right=1123;bottom=570;bgcolor=16777215;border="none")
+winform.add()
+/*}}*/
+
+import web.blink.form; //导入miniblink支持库
+var mb= web.blink.form(winform); //创建miniblink浏览器窗口
+
+//定义网页脚本可调用的本地函数，也可以直接写mb.external = winform
+mb.external = {
+
+    hitCaption = function(){
+        winform.hitCaption();
+    };
+    close = function(){
+        winform.close();
+    };
+    aardioCall = function(str){ 
+        winform.msgbox(str);
+    };
+}
+
+//如果 多个浏览器对象共用external，可以写个类或类库，如下： 
+ class mbExternal{
+ 	ctor(view){
+ 		this.view = view;
+ 		this.form = this.view.getForm();
+ 	};
+ 	
+    hitCaption = function(){
+        this.form.hitCaption();
+    };
+    close = function(){
+        this.form.close();
+    };
+    aardioCall = function(str){ 
+        this.form.msgbox(str);
+    };
+ }
+ 
+mb.html = /**
+<style type="text/css">
+</style>
+<body style="margin:27px;"> 
+	<div onmousedown='javascript:  
+    	external.hitCaption();
+    	return false;' style="-webkit-user-select: none;cursor:default;padding:15px;margin:0px;">拖动窗口</div>
+	<div style="padding:15px;">
+		<a href='javascript:external.close();'>关闭窗口</a><br>
+		
+		<br><a href='javascript:
+    		external.aardioCall("你好,我是miniblink");
+		'>调用aardio函数external.aardioCall()</a> 
+	</div>
+**/ 
+
+//添加标题栏按钮,阴影边框等
+import win.ui.simpleWindow3;
+win.ui.simpleWindow3(winform,,,,27,0xCC000000,0xFF3498DC);
+
+winform.show() 
+win.loopMessage();

@@ -1,0 +1,12 @@
+import ide;
+import fsys;
+
+var publisDir = ide.getPublisDir();
+if(!#publisDir)return; 
+
+var tesseractPubDir =  fsys.joinpath(publisDir,"\lib\tesseract" ); 
+if( ! io.exist(tesseractPubDir) ){ 
+	..fsys.createDir(tesseractPubDir);
+	var libPath,libDir = io.libpath("tesseract") 
+	..fsys.copy( fsys.joinpath(libDir,"\.res") ,tesseractPubDir,0x10/*_FOF_NOCONFIRMATION*/  | 0x200/*_FOF_NOCONFIRMMKDIR*/); 
+}

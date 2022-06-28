@@ -1,0 +1,68 @@
+import win.ui;
+import console;
+/*DSG{{*/
+mainForm = win.form(text="aardio form";right=326;bottom=350)
+mainForm.add(
+ID={cls="edit";text="edit";left=18;top=40;right=87;bottom=62;edge=1;z=2};
+button={cls="button";text="提交";left=251;top=10;right=314;bottom=41;z=13};
+分类10={cls="edit";text="edit";left=151;top=301;right=220;bottom=323;edge=1;z=12};
+分类6={cls="edit";text="edit";left=150;top=170;right=219;bottom=192;edge=1;z=8};
+分类7={cls="edit";text="edit";left=150;top=203;right=219;bottom=225;edge=1;z=9};
+分类8={cls="edit";text="edit";left=150;top=236;right=219;bottom=258;edge=1;z=10};
+分类9={cls="edit";text="edit";left=152;top=270;right=221;bottom=292;edge=1;z=11};
+工程1={cls="edit";text="edit";left=149;top=6;right=218;bottom=28;edge=1;z=3};
+工程2={cls="edit";text="edit";left=150;top=39;right=219;bottom=61;edge=1;z=4};
+工程3={cls="edit";text="edit";left=150;top=72;right=219;bottom=94;edge=1;z=5};
+工程4={cls="edit";text="edit";left=150;top=107;right=219;bottom=126;edge=1;z=6};
+工程5={cls="edit";text="edit";left=150;top=137;right=219;bottom=159;edge=1;z=7};
+序号={cls="edit";text="edit";left=18;top=7;right=87;bottom=29;edge=1;z=1}
+)
+/*}}*/
+
+import sqlite;
+var sqlConnection = sqlite("/test2.db");
+sqlConnection.exec("create table if not exists mytest (
+                        序号,
+                        ID,
+                        工程1,
+                        工程2,
+                        工程3,
+                        工程4,
+                        工程5,
+                        分类6,
+                        分类7,
+                        分类8,
+                        分类9,
+                        分类10,
+                        primary key (序号,ID)
+                        );"
+)
+
+
+mainForm.getInsertSQL = function(){
+        var t = {};
+        for(name,ctrl in mainForm.eachControl("edit") ){
+                t[name] = ctrl.text;
+        }
+        var columns,values;
+        for k, v in t {
+                columns = string.concat(columns,k,",");
+                values  = string.concat(values,v,",");
+               
+        }
+        columns = string.trim(columns,",");
+        values = string.trim(values,",");
+        return columns,values;
+}
+
+
+mainForm.button.oncommand = function(id,event){
+        var  columns,values = mainForm.getInsertSQL();
+        console.log(columns,values)
+        sqlConnection.exec("insert into mytest ("++columns++") values ("++values++")")
+}
+
+mainForm.enableDpiScaling();
+mainForm.show();
+
+return win.loopMessage();

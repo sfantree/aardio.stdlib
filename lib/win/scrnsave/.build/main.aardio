@@ -1,0 +1,28 @@
+import fsys;
+import win;
+import ide;
+ 
+if( ide.setPublishName ){
+	var path = ide.getPublishPath();
+	
+	var tpath = io.splitpath(path); 
+	if( string.cmp(tpath.ext,".scr") ){
+		
+		if(! ..string.find( string.load(ide.getProjectMainFile()),"\=\s*win.scrnsave\s*\(.+\)") ){
+			return;
+		}
+		
+		if(!win.msgboxTest('此程序引用了扩展库 win.scrnsave ，
+\n此扩展库用于创建屏幕保护程序,发布文件后缀名应为 "scr" 而非 "exe"，是否需要自动修正发布文件名与工程设置?
+\n\n如果不更改后缀名，请从代码中移除用于生成 *.scr 文件的扩展库 win.scrnsave ，否则此提示仍然会再次出现。',"aardio",..win.getActive())){
+			return;
+		}
+		
+		var newname = tpath.name + ".scr";
+		var newpath = fsys.path.replaceFile(path,newname); 
+		
+		fsys.delete(newpath);
+		fsys.rename(path, newpath );
+		ide.setPublishName(newname);
+	}
+}

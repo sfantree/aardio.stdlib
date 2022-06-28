@@ -1,0 +1,53 @@
+import console; 
+
+
+
+/*
+RGB = function(r,g,b,a){  
+	return ..raw.convert( {BYTE r = r;  BYTE g = g;  BYTE b = b;  BYTE a = a;  },
+	{INT color} ).color;
+}
+*/
+
+{
+	var v1 = {BYTE r = 0;  INT g = 0;  BYTE b = 0;  BYTE a = 1;};	
+	var v2 = raw.buffer(raw.sizeof(v1));
+	raw.convert(v1, v2);
+	console.log(string.hex(v2));
+}
+
+{
+	var v1 = {int r = 1};	
+	var v2 = raw.buffer(raw.sizeof(v1));
+	raw.convert(v1, v2);
+	console.log(string.hex(v2));
+}
+
+{
+    /***
+    
+raw.struct =   创建原始结构体
+				默认的 aardio 静态结构体在与静态接口交互时分配临时的指针
+				但原始结构体可以绑定结构体到固定不变的内存指针
+				读写结构体字段时直接自内存读写
+raw.struct(.(结构体类) = 创建返回原始结构体的类对象,
+			创建原始结构体时自动分配内存缓冲区并绑定该指针,
+			参数可以是定义了静态类型的结构体基类，也可以是原型结构体,
+			如果参数是原型结构体,返回类的构造函数默认混入参数和原型并返回新的结构体,
+			结构体可使用get_,set_前缀的函数名自定义属性读写器
+raw.struct(.(结构体类,内存指针) = 创建返回原始结构体实例,并绑定参数@2指定的内存指针,\n参数@1可以是定义了静态类型的结构体基类，也可以是原型结构体,\n结构体可使用get_,set_前缀的函数名自定义属性读写器
+    
+    ***/
+	var v1 = {int r[8]};	
+	var v2 = raw.buffer(raw.sizeof(v1));
+	
+	var v3 = {int p[8]};
+	raw.struct(v3, v1);
+	
+	
+	
+	raw.convert(v1, v2);
+	console.log(string.hex(v2));
+}
+
+console.pause(true);

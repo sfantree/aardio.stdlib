@@ -1,0 +1,47 @@
+//png 图像
+namespace win.clip;
+
+namespace png{
+
+	CF_PNG = ::User32.RegisterClipboardFormat("PNG"); 
+ 
+	read = function(){
+		var buf;
+		if(!::User32.OpenClipboard(0))
+			return;	
+			
+		var hClip =  ::User32.GetClipboardDataP(CF_PNG);
+		if(hClip){
+			var p = ::GlobalLock(hClip)
+			if(p){ 
+				buf = ..raw.buffer(::GlobalSize(hClip),p);
+				::GlobalUnlock(hClip)
+			}
+		} 
+		::User32.CloseClipboard();
+		return buf;
+	};
+	write = function(buf,rep){ 
+		if(buf){
+			if(!::User32.OpenClipboard(0))
+				return;	
+					
+			if(rep===null || rep) ::User32.EmptyClipboard();
+				
+			var clipbuffer = ::GlobalAlloc(0x2000/*_GMEM_DDESHARE*/, #buf);
+    		var p =  ::GlobalLock(clipbuffer); 
+    		::CopyMemory(p,buf,#buf); 
+			::GlobalUnlock(clipbuffer); 
+			
+			var hdl =  ::User32.SetClipboardDataP(CF_PNG,clipbuffer);
+			::User32.CloseClipboard();
+			return hdl;
+		} 
+	};  
+}
+
+/**intellisense()
+win.clip.png = 剪贴板读写 PNG 
+win.clip.png.write(.(剪贴板数据,是否清空剪贴板) = 写入 PNG 数据，参数@1为 buffer 或 string  对象，\n可选使用参数@2指定在复制前是否清空剪贴板,默认清空,\n成功返回剪贴板数据句柄
+win.clip.png.read() = 读取并解析剪贴板 PNG 数据\n成功返回 buffer 对象
+end intellisense**/

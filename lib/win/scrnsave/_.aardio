@@ -1,0 +1,159 @@
+import win.reg;
+
+namespace win;
+
+class scrnsave { 
+
+	ctor( mainForm ){ 
+		var cmd,parent = getScrnsaveCommand();  
+		this.command = s;
+		this.parentWindow = parent; 
+	} 
+	
+	run = function(){
+		if(  (cmd == "s") or (!cmd) ){  
+			mainForm.fullscreen(true);  
+			if( this.onFullScreen ) this.onFullScreen();
+			mainForm.show(); 
+			
+			return ..win.loopMessage(); 
+		}
+		elseif( cmd == "p" ){
+			if(!mainForm) mainForm =  ..win.form( bgcolor=0;bottom=399;border="none";exmode="none";right=599;mode="child" );
+			..win.setParent( mainForm.hwnd,parent );
+			mainForm.modifyStyle(0x80000000/*_WS_POPUP*/ | 0x40C40000/*_WS_CAPTION | _WS_BORDER | _WS_DLGFRAME | _WS_CHILD | _WS_SIZEBOX */
+				,0x40000000/*_WS_CHILD*/);
+			mainForm.modifyStyleEx(0x40000/*_WS_EX_APPWINDOW*/ | 0x80/*_WS_EX_TOOLWINDOW*/);
+			
+			var rc = ..win.getClientRect(parent)
+			mainForm.setPos( rc.left,rc.top,rc.right-rc.left,rc.bottom-rc.top); 
+			if( this.onPreview ) this.onPreview(parent,rc.left,rc.top,rc.right-rc.left,rc.bottom-rc.top);
+			mainForm.show(); 
+			
+			return ..win.loopMessage(); 
+		}
+		elseif( cmd == "c" ){
+			if( this.onShowConfigDlg ) return this.onShowConfigDlg(parent);
+			else{ ..win.msgbox("此屏幕保护程序没有可设置的选项","屏幕保护程序" ); }
+		}
+		elseif( cmd == "a" ){
+			if( this.onChangePassword ) return this.onChangePassword(parent);
+			else{ ..win.msgbox("此屏幕保护程序不可设置密码","屏幕保护程序" ); }
+		}
+	};
+}
+
+namespace scrnsave {
+
+	getScrnsaveCommand = function(){
+	
+		if( !_CMDLINE ) return;
+		if( ..string.startWith(_CMDLINE,"/s" ) ) return "s";
+		var cmd,parent = ..string.match(_CMDLINE,"\/(\w)\D*(\d+)");
+		parent = tonumber(parent);
+		return cmd,parent; 
+	}
+	
+	isRunning = function(){
+		var pvParam = {bool value}
+		::User32.SystemParametersInfo(0x72/*_SPI_GETSCREENSAVERRUNNING*/,0,pvParam,0);
+		return pvParam.value; 
+	}
+	
+	control = function(){
+		::Shell32.Control_RunDLL(0,_HINSTANSE,"desk.cpl,ScreenSaver,@ScreenSaver",1/*_SW_NORMAL*/)
+	}
+	
+	getConfig = function(){
+		
+		var reg = ..win.reg("HKEY_CURRENT_USER\Control Panel\Desktop");
+		var active = reg.queryValue("ScreenSaveActive");
+		var secure = reg.queryValue("ScreenSaverIsSecure");
+		var timeout = reg.queryValue("ScreenSaveTimeOut");
+		var path = reg.queryValue("SCRNSAVE.EXE");
+		reg.close();
+		
+		return {
+			active = active == "1";
+			secure = secure == "1";
+			timeout = timeout ? tonumber(timeout) : 60;
+			path = path;
+			update = function(){
+				setConfig(owner);
+			}
+		}; 
+	}
+	
+	setConfig = function(cfg){
+		var reg = ..win.reg("HKEY_CURRENT_USER\Control Panel\Desktop");
+		if(cfg.path){
+			if(!..string.endWith(cfg.path,".scr",true)){
+				error(`屏幕保护程序文件名后缀必须为 "scr"`,2)
+			}
+			
+			reg.setSzValue("SCRNSAVE.EXE",..io.fullpath(cfg.path));
+		}
+		elseif(cfg.path==="") {
+			reg.delValue("SCRNSAVE.EXE");
+		}
+		
+		if(cfg.active!==null){
+			reg.setSzValue("ScreenSaveActive",cfg.active?"1":"0")
+			::User32.SystemParametersInfo(0x11/*_SPI_SETSCREENSAVEACTIVE*/,!!cfg.active,null,3)
+		}
+		
+		if(cfg.secure!==null){
+			reg.setSzValue("ScreenSaverIsSecure",cfg.secure?"1":"0")
+			::User32.SystemParametersInfo(0x77/*_SPI_SETSCREENSAVESECURE*/,!!cfg.secure,0,0)
+		}
+	
+		if(cfg.timeout!==null){
+			reg.setSzValue("ScreenSaveTimeOut",tostring(cfg.timeout))
+			::User32.SystemParametersInfo(0xF/*_SPI_SETSCREENSAVETIMEOUT*/,cfg.timeout,null,3)
+		}
+		
+		reg.close();	
+	}
+}
+
+/**intellisense()
+win.scrnsave = 屏幕保护程序,\n现代显示器已不再需要屏幕保护程序,\n但仍然可以使用此机制在空闲时运行程序
+win.scrnsave(.(主窗体) = 主窗体应无边框,背景可设置为黑色,样式设为popup\n生成的EXE文件必须修改后缀名为"scr"
+win.scrnsave() = !win_scrnsave.
+!win_scrnsave.command = "s"为全屏运行屏幕保护\n"p"为预览\n"c"为设置选项
+!win_scrnsave.parentWindow = 父窗口句柄,\n全屏运行屏幕保护该值为空
+!win_scrnsave.onShowConfigDlg = @.onShowConfigDlg = function(parent){
+	win.msgbox("此屏幕保护程序没有可设置的选项","屏幕保护程序");
+	__/*显示屏幕保护设置触发此函数,\nparent 为父窗口句柄*/
+}
+!win_scrnsave.onChangePassword = @.onChangePassword = function(parent){
+	__/*设置密码触发此函数,\nparent 为父窗口句柄*/	
+}
+!win_scrnsave.onPreview = @.onPreview = function(parent){
+	__/*预览模式触发此函数,\nparent 为父窗口句柄*/		
+}
+!win_scrnsave.onFullScreen = @.onFullScreen = function(parent){
+	__/*全屏运行屏幕保护程序触发此函数*/		
+	mainForm.onMouseDown  = function(wParam,lParam){
+		mainForm.close();	
+	}
+
+	mainForm.onActivateApp = function(activated,threadId){
+		if(!activated) mainForm.close(); 
+	}	
+}
+
+win.scrnsave.isRunning() = 屏幕保护是否正在运行
+win.scrnsave.getConfig() = 返回系统屏幕保护设置\n!win_scrnsave_config.
+!win_scrnsave_config.path = 屏幕保护程序路径,文件名后缀必须为 scr
+!win_scrnsave_config.active = 是否启用
+!win_scrnsave_config.secure = 退出屏幕保护时是否显示登录界面
+!win_scrnsave_config.timeout = 运行屏幕保护前的最少空闲时间,\n以秒为单位
+!win_scrnsave_config.update() = 使用此配置对象更新系统屏幕保护设置
+win.scrnsave.setConfig(cfg) = @.setConfig(
+	path = path,
+	active = active,
+	timeout = timeout,
+	secure = secure,__/*修改屏幕保护程序配置,\n参数中的所有字段不指定则不修改并保持系统原来的配置值,\npath 为屏保程序路径,设为空字符串删除配置中的路径,\nactive 指定是否启用屏保,\ntimeout 指定启动屏保前的空闲超时,以秒为单位,\nsecure 指定退出屏保是否显示登录界面,用户未设置登录密码时忽略此值*/
+)
+end intellisense**/

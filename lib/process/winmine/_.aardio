@@ -1,0 +1,12 @@
+﻿import process;
+
+class process.winmine{
+	ctor(...){
+		var path = ..io.appData("aardio\winmine.exe",$"~\lib\process\winmine\.res\winmine.exe")
+		return ..process(path,...);
+	};
+}
+
+/**intellisense()
+process.winmine() = XP版扫雷游戏\n!process.
+end intellisense**/

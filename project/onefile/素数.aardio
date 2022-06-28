@@ -1,0 +1,81 @@
+import win.ui;
+/*DSG{{*/
+mainForm = win.form(text="aardio form";right=973;bottom=619)
+mainForm.add()
+/*}}*/
+
+import console;
+
+// 试除法求素数
+// 时间复杂度 O(n ^ 1/2 )
+is_prime = function(n) {
+	var i = 2;
+	while(i <= n / i) {
+	    if(n % i == 0) {
+		    return false;
+		}
+	    
+	    i = i + 1;
+	}
+	return true;
+}	
+
+// 试除法获取所有因子
+// 时间复杂度 O(logn) ~ O(n ^ 1/2 )
+divide = function(n) {
+	var result = {};
+	var i = 2;
+	while(i <= n / i){
+	    if(n % i == 0) { // i 定是质数
+	        var s = 0;
+	        while((n % i == 0)) {
+	            n = n / i;
+	            s = s + 1;
+	        }
+	        ..table.push(result, {i;s});
+	    }
+	    i = i + 1;
+	}
+	
+	if(n > 1) {
+	    ..table.push(result, {n;1});
+	}
+	return result;
+}
+
+
+// 埃氏筛选法
+// 筛选小于等于n的质数
+get_prime = function(n){
+	
+	var primes = {};
+	var st = {};
+	
+	var i = 2;
+	while(i <= n) { // for(i = 2; i <= n; i ++)
+	    if(st[[i]] != true) {
+	        ..table.push(primes, i);
+	    }
+	    var j = 1;
+	    while(primes[j] <= n/i){
+	        st[primes[j] * i] = true;
+	        if(i % primes[j] == 0) {
+	            break;
+	        }
+	        j = j+ 1;
+	    }
+	    i = i + 1;
+	}
+	return primes;
+}
+
+//mainForm.show();
+console.log(is_prime(2));
+console.log(is_prime(8));
+console.log(is_prime(37));
+console.log(is_prime(77));
+console.dump(divide(65));
+console.dump(get_prime(3));
+
+
+return win.loopMessage(); 

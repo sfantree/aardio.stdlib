@@ -1,0 +1,119 @@
+import console;
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add(
+button={cls="button";text="导入用户";left=8;top=272;right=112;bottom=304;z=2};
+button3={cls="button";text="刷新";left=152;top=272;right=256;bottom=304;z=3};
+checkbox={cls="checkbox";text="启用代理";left=8;top=320;right=80;bottom=344;z=4};
+edit={cls="edit";left=96;top=320;right=256;bottom=344;edge=1;z=5};
+listview={cls="listview";left=8;top=8;right=352;bottom=264;edge=1;gridLines=1;z=1}
+)
+/*}}*/
+
+import fsys;
+import fsys.dlg;
+
+winform.listview.insertColumn("用户名", 120);
+winform.listview.insertColumn("姓名", 150);
+winform.listview.insertColumn("登陆状态", -1);
+
+UserList = {};
+
+// 导入数据
+winform.button.oncommand = function(id,event){
+	var TxtPath = fsys.dlg.open("*.txt|*.txt||","请选择txt文件",,winform.hwnd);
+ 	if(#TxtPath){
+ 		for line in io.lines(TxtPath) {
+		//io.lines()返回的迭代器函数每次读取文件中的一行
+    		var t = string.split(line, " ");
+    		//console.dump(t);
+    		if( t[1] and t[2] ) {
+    		    UserList[ t[1] ] = t[2];
+    		}
+		}
+	}
+	RefreshListView();
+}
+
+import web.json;
+import inet.http;
+
+// 获取在线状态
+GetLoginUser = function(Bearer){
+	var Url = "http://10.30.111.50:9002/eoms-html/prod-api/flow/fault/getCurrentUser";
+	// 设置http代理
+	
+	//var Proxy = "127.0.0.1:1086";
+	var Proxy = winform.edit.text;
+	
+	var Proxy = "127.0.0.1:1086";
+	
+	inet.clearCookie();
+	var Http;
+	
+	if(winform.checkbox.checked) {
+	    Http = inet.http(,);
+	} else {
+	    Http = inet.http(,Proxy);
+	}
+	Http = inet.http(,Proxy)
+	
+	inet.setCookie("http://10.30.111.50:9002", Bearer, "Admin-Token" );
+    inet.setCookie("http://10.30.111.50:9002", "43200", "Admin-Expires-In" );
+    
+    Http.addHeaders = "Authorization: Bearer " + Bearer;
+    
+    //var Html, Err, ErrCode = Http.get( "https://httpbin.org/anything" );
+    var Html, Err, ErrCode = Http.get( Url );
+    Http.close();
+    
+    if( not Html) {
+        return false;
+    }
+    
+    var JsonRoot = web.json.tryParse(Html);
+    //console.dump(JsonRoot);
+    if(not JsonRoot) {
+        return false;
+    }
+    
+    if(JsonRoot[["code"]] != "200") {
+        return false;
+    }
+    
+    return true, JsonRoot[["data"]]["currentUser"][["nickName"]];
+}
+
+RefreshListView = function(){
+	winform.listview.clear();
+	for username, token in UserList  { 
+	    var valid, nickname = GetLoginUser(token);
+	    if(valid == true) {
+	        winform.listview.addItem( {username, nickname, "valid"} );
+	    } else {
+	        winform.listview.addItem( {username, "", "invalid"} );
+	    }
+	};
+}
+
+winform.button3.oncommand = function(id,event){
+	RefreshListView();
+}
+
+winform.checkbox.oncommand = function(id,event){
+	if(winform.checkbox.checked) {
+	    winform.edit.disabled = false;
+	} else {
+	    winform.edit.disabled = true;
+	}
+}
+
+winform.edit.oncommand = function(id,event){
+	
+}
+
+RefreshListView();
+
+winform.show();
+win.loopMessage();

@@ -1,0 +1,56 @@
+﻿import crypt;
+import web.rest.jsonLiteClient;
+
+namespace youdao;
+class fanyi{
+	ctor(){
+		this.http = ..web.rest.jsonLiteClient(userAgent);
+		this.http.addHeaders = {["X-Requested-With"] = "XMLHttpRequest"}
+		this.http.referer = "http://fanyi.youdao.com/";
+		this.api = this.http.api("http://fanyi.youdao.com/{...}?smartresult=dict&smartresult=rule")
+		this.signKeyApi = this.http.api(
+			"http://shared.ydstatic.com/fanyi/newweb/v1.0.20/scripts/newweb/fanyi.min.js",
+			"GET",`"fanyideskweb"\+e\+i\+(%"")`
+		)
+	}; 
+	translate = function(context,from,to){
+		var signKey = this.signKeyApi.get(); 
+		if(signKey){
+			return this.api.translate_o( getRequestParam(context,from,to,signKey)) 
+		}
+		else {
+			return this.api.translate( getRequestParam(context),from,to)
+		}  
+	}; 
+}
+
+namespace fanyi{
+   userAgent = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36";
+   getRequestParam = function(context,from,to,signKey){
+		var ts = tostring( tonumber( ..time() ) * 1000 ) 
+		var salt = ts ++ ..math.random(0,9) 
+		var bv = ..crypt.md5(userAgent,false);
+		var sign = signKey ? ..crypt.md5("fanyideskweb" ++ context ++ salt ++ signKey,false)
+		
+		return {
+			i = context;
+			salt = salt; 
+			sign = sign; 
+			ts = ts; 
+			bv = bv; 
+			from = from : 'AUTO'; 
+			to = to : 'AUTO'; 
+			smartresult = 'dict';
+			client = 'fanyideskweb';
+			doctype = 'json'; 
+			version = '2.1'; 
+			keyfrom = 'fanyi.web';
+			action = 'FY_BY_REALTIME';
+		}
+	}  
+}
+
+/**intellisense()
+youdao.fanyi() = 有道翻译接口\n!youdao_fanyi.
+!youdao_fanyi.translate(.(context,from,to) = 翻译\ncontext为要context的字符串,\nform为源语言,to为目标语言，from,to参数都可省略\n返回格式参考网络资源，也可使用console.dumpJson查看
+end intellisense**/

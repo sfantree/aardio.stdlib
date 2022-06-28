@@ -1,0 +1,499 @@
+import fsys;
+import util.metaProperty
+
+namespace py2;
+
+version = "2.7.10"; 
+::Python2 = ..raw.loadDll( "~\lib\py2\.res\DLLs\python27.dll","python2.7.2.dll","cdecl")
+_msvcr100 = ..raw.loadDll( "msvcr100.dll",,"cdecl")
+
+import ..py2.object;
+import ..py2.module;
+import ..py2.dict;
+import ..py2.list;
+import ..py2.tuple;
+
+setPath = ::Python2.api("PySys_SetPath","void(str)");
+
+getPath = function(){
+	return ..string.fromto( ::Python2.Py_GetPathP(),0,65001,-1);
+}
+
+appendPath = function(path,...){
+	path = ..io.exist(path)
+	if( path ){
+		path = ..fsys.path.removeBackslash(path);//原始字符串尾部不能添加斜杠,也并没有被解析为转义符,只能去掉
+		execf("sys.path.append(r'%s')",path) 
+	}
+	if(!...) return;
+	appendPath(...);
+}
+
+PySys_SetArgv = ::Python2.api("PySys_SetArgv","void(int argc,struct argv)")
+setArgv = function(...){
+	var argv = ...;
+	if( type(argv) == type.string) argv = {...};
+	for(k,v in argv){ 
+		argv[k] = ..string.fromto(v);
+	}
+	
+	PySys_SetArgv(#argv,{string v[]=argv})
+}
+
+run = function(...){
+	var argv = {..io._exepath;...};  
+	::Python2.Py_Main(#argv,{string v[]=argv});
+}
+
+getPythonHome = function(){
+	return ..string.fromto(::Python2.Py_GetProgramNameP(),0,65001,-1);  
+}
+
+setPythonHome = function(path){
+	path = ..string.fromto(..fsys.path.removeBackslash( ..io.fullpath(path)  ) )
+	return ::Python2.Py_SetPythonHome( path );	
+}
+
+getProgramName = function(){
+	return ..string.fromto(::Python2.Py_GetProgramNameP(),0,65001,-1); 		
+}
+
+setProgramName = function(path){
+	path = ..string.fromto(..fsys.path.removeBackslash( ..io.fullpath(path)  ) )
+	return ::Python2.Py_SetProgramName( path );
+}
+
+PyRun_SimpleString = ::Python2.api("PyRun_SimpleString","int(string Str)")
+PyRun_SimpleStringFlags = ::Python2.api("PyRun_SimpleStringFlags","int(string z, struct f)")
+PyRun_SimpleFileExFlags = ::Python2.api("PyRun_SimpleFileExFlags","int(pyObject dummy,string filename,int closeIt, struct f)")
+
+Py_CompileStringFlags = ::Python2.api("Py_CompileStringFlags","pyCodeObject(string str,string p,int start,struct f)")
+class codeObject{
+	ctor( object ){
+		if(type(object)==type.pointer)
+			this._object = object
+		else 
+			return null;
+	}; 
+	eval = function(g,l){
+		if(!g)g=..py2.dict();
+		if(!l)l=..py2.dict();
+		return ..py2.object( PyEval_EvalCode(this._object,g,l),true )
+	} 
+	exec = function(name){
+		return ..py2.module( PyImport_ExecCodeModule(name,this._object) );
+	}
+} 
+namespace codeObject{
+	PyEval_EvalCode = ::Python2.api("PyEval_EvalCode","pyObject(PyCodeObject *, pyObject *, pyObject *)") 
+	PyImport_ExecCodeModule = ::Python2.api("PyImport_ExecCodeModule","pyObject(string name, PyCodeObject *)")  
+}
+
+compile = function(str,f,s){
+	return codeObject( Py_CompileStringFlags( str,str,s || 258/*_Py_eval_input*/, { int cf_flags = f  } ) )
+}
+
+compileFile = function(str,f){
+	return compile(str,f,257/*_Py_file_input*/);
+}
+
+compileEval = function(str,f){
+	return compile(str,f,258/*_Py_eval_input*/);
+}
+
+compileSingle = function(str,f){
+	return compile(str,f,256/*_Py_single_input*/);
+}
+
+class PyCompilerFlags{ 
+    int cf_flags; 
+} 
+
+execfile = function(filename,flag=0,...){
+	filename = ..io.exist(filename)
+	if(!filename) error("未找到文件",2);
+ 
+	..fsys.setCurDir( ..fsys.getParentDir(filename) );
+	
+	if( ... && type(...) == type.string ){
+		setArgv( ..io._exepath,filename,...) 
+	} 
+	
+	var file = _msvcr100._wfopenW(filename,"r+b");
+	if( !file ) error("打开文件失败",2);
+	return PyRun_SimpleFileExFlags(topointer(file),filename,1,{int cf_flags=flag})!=-1;
+}
+
+execUtf8 = function(str){
+	if( (str[1]=='/'# || str[1]=='\\'#) ){
+		str = ..string.load(str);
+	}
+	if(!#str) error("参数错误",2)
+	
+	str = '#-*-coding:utf-8-*-\n' + str;
+	if( flag!==null ){ 
+		return PyRun_SimpleStringFlags(str,{int cf_flags=flag})!=-1;
+	}
+	else {
+		return PyRun_SimpleString(str)!=-1;
+	} 	
+}
+
+execRaw = function(str,flag){ 
+	if( (str[1]=='/'# || str[1]=='\\'#) ){
+		str = ..string.load(str);
+	}
+	if(!#str) error("参数错误",2)
+	
+	if( flag!==null ){ 
+		return PyRun_SimpleStringFlags(str,{int cf_flags=flag})!=-1;
+	}
+	else {
+		return PyRun_SimpleString(str)!=-1;
+	} 
+}
+
+exec = function(str,flag){
+	if( (str[1]=='/'# || str[1]=='\\'#) ){
+		str = ..string.load(str);
+	}
+	if(!#str) error("参数错误",2)
+	
+	str = ..string.fromto(str);
+	
+	if( flag!==null ){ 
+		return PyRun_SimpleStringFlags(str,{int cf_flags=flag})!=-1;
+	}
+	else {
+		return PyRun_SimpleString(str)!=-1;
+	} 
+}
+
+execf = function(str,...){
+	var str = ..string.format(str,...);
+	str = ..string.fromto(str);
+	
+	return PyRun_SimpleString(str)!=-1;
+}
+
+self.eval = function(s){
+	return main.getDict().eval(s);
+}
+
+PyImport_ImportModule = ::Python2.api("PyImport_ImportModule","pyObject(str)"); 
+self.import = function(name){
+	var m =  PyImport_ImportModule(name);
+	return m ? module( m );
+}
+
+DecRef  = ::Python2.api("Py_DecRef","void(POINTER o)");
+IncRef  = ::Python2.api("Py_IncRef","void(POINTER o)");
+PyThreadState_Get = ::Python2.api("PyThreadState_Get","pointer()")
+PyEval_ReleaseThread = ::Python2.api("PyEval_ReleaseThread","pointer(pointer tstate)")
+
+lock = function(proc,...){
+	var state = Python2.PyGILState_EnsureP(); 
+	var ret = proc(...)
+	::Python2.PyGILState_Release(state);
+	return ret;
+}
+releaseThread = function(tstate){
+	if(!tstate) tstate = PyThreadState_Get();
+	PyEval_ReleaseThread( tstate );
+} 
+
+PyImport_AddModule = ::Python2.api("PyImport_AddModule","pyObject(str)");
+addModule = function(moduleName){
+	var m = PyImport_AddModule(moduleName); 
+	if( m ){
+		IncRef(m);//特例返回的是borrow reference  
+		return module( m );
+	} 
+}
+
+if( ! ::Python2.Py_IsInitialized() ) begin
+	var appPath = ..fsys.path.removeBackslash( ..io.fullpath("\")  );
+	var pyHome = ..fsys.path.removeBackslash( ..io.fullpath("\py")  );
+	..fsys.setCurDir( appPath )
+	
+	setPythonHome( pyHome ); 
+	setProgramName( appPath );  /* optional but recommended */
+	
+	var zipPath = ..io.exist("~\lib\py2\.res\Lib.zip") 
+	if( !zipPath ){
+		error("没有找到python标准库",2)
+	}
+	 
+	zipPath = ..string.fromto(zipPath);
+	::CopyMemory( ::Python2.Py_GetPathP(),zipPath,#zipPath + 1);//没初始化以前不能调用setPath() 只能这样搞
+	::Python2.Py_Initialize();
+	
+	//初始化GIL
+	::Python2.PyEval_InitThreads(); 
+	
+	setArgv( ..io._exepath,_CMDLINE );
+	setPythonHome( pyHome ); 
+	setProgramName( appPath ); 
+	exec("import sys"); 
+	appendPath( pyHome,
+		appPath,
+		..io.fullpath("~\lib\py2\.res\"),
+		..io.fullpath("~\lib\py2\.res\Lib.zip") 
+		);//需要放在import sys之后
+		
+	appendPath( "~\lib\py2\.res\DLLs" );
+	mainThread = true;
+	
+	//只能在主线程析构,在初始化后立即调用以保证在最后析构
+	..table.gc( 
+		self,function(){ 
+			if(::Python2.Py_IsInitialized()){
+				if(mainThread){
+					PyGILState_Ensure(); //这个其实多次调用只是返回null,所以无论如何调用一次保证取到GIL锁
+					::Python2.Py_Finalize();
+				}
+			}
+		} 
+	)
+
+end else begin
+    
+
+end;
+
+
+lock(
+	function(){
+		main = self.addModule("__main__"); 
+		json = self.import("json");	
+		
+		var pyObjPtr = ::Python2.PyEval_GetBuiltinsP(); 
+		IncRef(pyObjPtr); //Borrowed reference 
+		builtin = dict(pyObjPtr);
+		int = builtin.int;	
+		float = builtin.float;
+		set = builtin.set;
+		str = builtin.str;	
+		
+		if(mainThread){
+			import ..py2.export;
+		} 	
+	}
+);
+
+globals = function(){
+	var pyObjPtr = ::Python2.PyEval_GetGlobalsP();
+	if(!pyObjPtr) return;
+	
+	IncRef(pyObjPtr); //Borrowed reference 
+	return dict( pyObjPtr );
+}
+
+locals = function(){
+	var pyObjPtr = ::Python2.PyEval_GetLocalsP();
+	if(!pyObjPtr) return;
+		
+	IncRef(pyObjPtr); //Borrowed reference 
+	return dict(pyObjPtr);
+} 
+
+builtins = function(){
+	return builtin;
+}
+
+sysObject = function(name){
+	if(!name) error("请使用参数@1指定对象名字",2)
+	var p = ::Python2.PySys_GetObjectP( name ); 
+	if(p){ 
+		IncRef(p); //Borrowed reference 
+		return object(p,true);
+	}	
+}
+
+toString = function(pyObject){
+	if(!pyObject) return;
+	
+	var str;
+	var pyStr = ::Python2.PyObject_StrP(pyObject);	
+	if(pyStr){ 
+		var out = {ptr s}
+		var r = ::Python2.PyArg_Parse(pyStr,"s",out);
+		if( r && out.s ) { str = ..raw.str(out.s); }  
+		DecRef(pyStr);
+	}
+	
+	return str;	
+}
+
+occurred =  ::Python2.PyErr_OccurredB;
+
+lasterr = function(){
+	if( ::Python2.PyErr_OccurredB() ){
+		var t,p,tb = {ptr v},{ptr v},{ptr v}
+		::Python2.PyErr_Fetch(t,p,tb);
+		::Python2.PyErr_NormalizeException(t,p,tb);
+		
+		var name,value;
+		if(t.v){
+			var pyName = ::Python2.PyObject_GetAttrStringP(t.v,"__name__");
+			if(pyName){
+				name = toString(pyName)
+				DecRef(pyName);
+			}
+			
+			DecRef(t.v);			
+		}
+
+		if(p.v){
+			value = toString(p.v);
+			DecRef(p.v);	
+		} 
+		
+		if(tb.v){
+			DecRef(tb.v);	
+		}
+		
+		if(!name) name = "Error";
+		name = "Python " + name + ": ";
+		if(value) value = name ++ value;
+		return value,name; 
+	} 
+}
+
+/*python引用计数规则{{*//*
+1、new reference(owned reference) 增加计数的引用
+2、borrow reference 不增加计数直接借用
+
+引用计数的规则与COM规则类似,
+传入参数基本是borrow reference,
+函数返回对象指针基本是new reference,
+
+但是返回值也有下面这几个函数是例外，
+返回引用计数是borrow reference（借用,就是不增加引用计数）
+
+	all PyArg_Xxx functions
+	PyCell_GET (but not PyCell_Get)
+	PyDict_GetItem
+	PyDict_GetItemString
+	PyDict_Next
+	PyErr_Occurred
+	PyEval_GetBuiltins
+	PyEval_GetFrame
+	PyEval_GetGlobals
+	PyEval_GetLocals
+	PyFile_Name
+	PyFunction_GetClosure
+	PyFunction_GetCode
+	PyFunction_GetDefaults
+	PyFunction_GetGlobals
+	PyFunction_GetModule
+	PyImport_AddModule
+	PyImport_GetModuleDict
+	PyList_GetItem, PyList_GETITEM
+	PyMethod_Class, PyMethod_GET_CLASS
+	PyMethod_Function, PyMethod_GET_FUNCTION
+	PyMethod_Self, PyMethod_GET_SELF
+	PyModule_GetDict
+	PyObject_Init
+	PyObject_InitVar
+	PySequence_Fast_GET_ITEM
+	PySys_GetObject
+	PyThreadState_GetDict
+	PyTuple_GetItem, PyTuple_GET_ITEM
+	PyWeakref_GetObject, PyWeakref_GET_OBJECT
+	Py_InitModule
+	Py_InitModule3
+	Py_InitModule4
+
+	也就是对于这几个函数的返回值要自行调用 py3.IncRef() 增加引用计数
+	这些都是数组、字典中操作频繁的函数，而 PyImport_AddModule() 一般是用不到返回值的 
+
+另外传入参数也有几个引用计数不是borrow reference，
+而是steal reference（盗用，也是不增加引用计数，注意指针应当被盗走由
+接收输入参数的对象负责释配对释放一次计数）
+
+	PyTuple_SetItem() 
+	PyList_SetItem()  
+	PyModule_AddObject
+	https://docs.python.org/2/c-api/
+*//*}}*/
+
+/**intellisense(py2)
+version = 返回python内核版本\n字符串值
+getPythonHome() = 返回python目录
+setPythonHome("__") = 改变python应用程序目录
+getProgramName() =  返回程序名
+setProgramName("__") = 修改程序名
+getPath() = 返回默认搜索路径\n以分号隔开
+setPath() = 设置默认搜索路径\n以分号隔开
+appendPath( = 添加默认搜索路径
+appendPath(.("搜索路径") = 支持多个参数
+run(.(->->->) = 直接输入启动参数启动python解释器\n类似调用python.exe
+setArgv(.("启动参数") = 设置sys.argv启动参数,\n参数可以是任意个字符串参数，\n也可传入一个字符串数组
+eval(.("python表达式") = 在 __main__ 模块中计算表达式的值
+eval() = !pyObject.
+execf( = 首先调用 string.format 格式化代码\n然后执行格式化后的代码
+execf(.("Python代码",->->->) = 首先调用 string.format 格式化参数并生成代码,\n然后执行格式化后的代码。\n\n详细用法请参考\n[格式化字符串](chm://libraries/kernel/string/format.html)
+exec( = 运行 Python 代码,\n代码会先转换为 ANSI 编码，改用 execRaw 函数不转换，\n参数也可以指定内嵌资源文件路径\n注意需要引用的 Python 模块应当放在 /py 目录下,\naardio 以斜杠或反斜杆开始则表示应用程序根目录下的路径,\n应用程序根目录开发时为 aardio 工程目录,发布后为 EXE 文件所在目录
+exec(.("Python代码",flags) = 在默认的__main__名字空间运行 Python 代码,成功返回true,\n参数@1如果以斜杠或反斜杆开始则表示资源文件路径,\n可选使用参数 @2 设置 PyCompilerFlags 参数,\n参数@2不必指定,用法参考 Python 文档
+execRaw( = 运行 Python 代码,代码不会先转换为 ANSI 编码,\n参数也可以指定内嵌资源文件路径\n注意需要引用的 Python 模块应当放在 /py 目录下,\naardio 以斜杠或反斜杆开始则表示应用程序根目录下的路径,\n应用程序根目录开发时为 aardio 工程目录,发布后为 EXE 文件所在目录
+execRaw(.("Python代码",flags) = 在默认的__main__名字空间运行 Python 代码,成功返回true,\n参数@1如果以斜杠或反斜杆开始则表示资源文件路径,\n可选使用参数 @2 设置 PyCompilerFlags 参数,\n参数@2不必指定,用法参考 Python 文档
+execUtf8( = 运行 Python 代码,\n在代码前自动添加'#-*-coding:utf-8-*-'与换行,\n参数也可以指定内嵌资源文件路径\n注意需要引用的 Python 模块应当放在 /py 目录下,\naardio 以斜杠或反斜杆开始则表示应用程序根目录下的路径,\n应用程序根目录开发时为 aardio 工程目录,发布后为 EXE 文件所在目录
+execUtf8(.("Python代码",flags) = 在默认的__main__名字空间运行 Python 代码,成功返回true,\n参数@1如果以斜杠或反斜杆开始则表示资源文件路径,\n可选使用参数 @2 设置 PyCompilerFlags 参数,\n参数@2不必指定,用法参考 Python 文档
+execfile( = 运行 *.py 文件\n注意需要引用的 Python 模块应当放在 /py 目录下,\naardio 以斜杠或反斜杆开始则表示应用程序根目录下的路径,\n应用程序根目录开发时为 aardio 工程目录,发布后为 EXE 文件所在目录
+execfile(.("Python文件路径",flags,->->->) = 运行 *.py 文件,成功返回true,\n参数@1如果以斜杠或反斜杆开始则表示应用程序根目录下的路径,\n应用程序根目录开发时为 aardio 工程目录,发布后为 EXE 文件所在目录,\n可选用 参数@2 设置 PyCompilerFlags 参数,\n可选增加任意个启动参数,即 sys.argv 参数
+getDict(__/*模块指针*/) = 相当于Python模块对象的__dict__ 属性，得到模块名称空间下的字典对象
+builtin = builtin 模块提供 Python 内置函数\n!py2Dict.
+DecRef(.(指针) = 减少引用计数
+IncRef(.(指针) = 增加引用计数
+import("__/*模块名*/") =  导入模块，相当于Python内建函数__import__()\n返回模块指针 
+import() = !py2Module.
+addModule("__main____") =  如果不存在指定名字的模块就创建新模块\n返回模块对象
+addModule() = !py2Module.
+main = Python的__main__模块\n!py2Module.
+json = Python的json模块\n!py2Module.
+int(__) = 调用 Python 的 int 函数,\n参数可指定 aardio 或 Python 中可转为整型数值的对象,\n创建 Python 整型数并返回 py.object 对象,\n返回的 Python 对象支持 +,-,*,/,%,<,>,<=,>=,== 等运算符,\naardio 数值默认会转换为 Python 中的浮点数,\n如果参数需要用到整型数,可使用此函数创建整型数,\n也可以在 Python 代码中调用 int 函数转换
+str(__) = 调用 Python 的 str 函数,\n参数可指定 aardio 或 Python 中可转为字符串的对象,\n创建 Python 整型数并返回 py.object 对象,\npy.object 对象都提供 toString 函数可转为 aardio 字符串,\n也可以在 aardio 中使作为 tostring 函数的参数转为普通字符串
+float(__) = 调用 Python 的 float 函数,\n参数可指定 aardio 或 Python 中可转为浮点数的对象,\n创建 Python 浮点数并返回 py.object 对象,\n返回的 Python 对象支持 +,-,*,/,%,<,>,<=,>=,== 等运算符
+set(__) = 调用 Python 的 set 函数,\n参数可指定 aardio 或 Python 中可转为集合的对象,\n创建 Python 集合并返回 py.object 对象
+int() = !pyObject.
+str() = !pyObject.
+float() = !pyObject.
+set() = !pyObject.
+globals() = 全局名字空间\n!py2Dict.
+locals() = 局部名字空间\n!py2Dict.
+sysObject(.("名字") = 获取sys对象
+sysObject() = !pyObject.
+mainThread =  当前是否 Python 主线程\nPython 有全局锁所以无法实现真正的多线程,\n为避免不必要的麻烦,建议尽量在单线程里使用 Python
+releaseThread() = 释放GIL线程锁\n调用此函数以后,所有调用python的代码必须在py.lock中运行\n否则将导致进程异常退出,请小心使用,\npython没有真正多线程,尽可能不要使用此函数以带来不必要的麻烦
+lock( 回调函数,->->-> ) = @.lock(\n	function(){\n		__/*释放GIL以后所有调用python代码必须写到这里*/	\n	}\n)	
+export.? = {
+		__/*这里定义的成员函数可在 Python 中调用*/
+}
+export(__) = 参数应指定 aardio 对象,\ntable、cdata、class、function 类型参数转换为 Python 代理对象,\n支持导出 aardio 迭代器,注意迭代器返回 tuple 元组,\n其他类型参数直接返回不作转换。\n\npy2.export 创建的代理对象会绑定原始的 aardio 对象,\n在 Python 中调用代理对象时都会转发调用到 aardio 对象，\n对返回代理对象的所有调用也会同样经过 py2.export 处理。\n\n未经 py2.export 处理的 aardio 对象传入 Python 时,\n只会复制可能复制的值为纯 Python 对象,且不再关联原始对象
+export = 注意只能在 Python 启动线程中使用此功能,\n注意不应在多个线程中调用 py2.export,\nexport 作为名字空间使用时,\nexport 名字空间的 aardio 成员对象,\n可在 Python 中使用 import 语句导入\n\nexport 作为类构造函数使用时,\n可导出 aardio 对象为 Python 代理对象,\n调用 Python 代理对象会转发到 aardio
+export() = !py2Object.
+occurred() = Python 是否发生异常
+lasterr() = 如果 Python 已发生异常,\n返回错误信息,以及异常类名称,\n调用此函数会清除异常
+toString(__) = 参数指定 py.object 对象或 pyObject 原生指针,\n调用 Python 内置函数 str 转换为字符串对象,\n最后转换并返回为 aardio 字符串\n失败返回null\n\n此函数不会检查参数类型是否正确,\n参数如果不是 py.object 对象或 pyObject 指针则会导致异常或崩溃
+end intellisense**/
+
+/**intellisense()
+py2 = Python v2.7.10 扩展库,\n已自带绿色便携运行时,不用额外安装VC运行库,\n兼容 Win XP,以及之后的系统,\nPython 不同版本通常并不完全兼容,不建议随意更换运行时,\n添加 Python 模块时也应使用相同版本运行时下安装的版本\n\n如果需要在 Python 中使用 print 函数输出到控制台\n请在导入库以前打开控制台
+py2.compile("__") = 编译字符串或py文件\n返回代码对象\n可选增加第二个参数\n可选增加第二个PyCompilerFlags参数
+py2.compile() = !py2CodeObject.
+!py2CodeObject.eval() = 运行python代码并返回值\n可选增加两个参数,指定全局名字空间,局部名字空间\n名字空间必须是py.dict()字典对象\n!pyObject.
+!py2CodeObject.exec("__/*模块名*/") = 运行python代码并返回模块对象\n!py2Module.
+end intellisense**/
+
+/**intellisense()
+_Py_single_input=@256/*_Py_single_input*/
+_Py_file_input=@257/*_Py_file_input*/
+_Py_eval_input=@258/*_Py_eval_input*/
+end intellisense**/
+
+/**intellisense(::)
+::Python2 = py2 扩展库加载的 Python2.DLL 模块
+::Python2.? = 可输入 Python2.7 API 函数名并直接调用
+::Python2.api("Py__/*输入函数名字*/","void()" ) = 声明加载的 Python2.7 API函数
+end intellisense**/

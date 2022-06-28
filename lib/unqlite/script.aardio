@@ -1,0 +1,275 @@
+//script Jx9引擎
+namespace unqlite;
+
+class script{
+	ctor( unqlite,zJx9 ){
+		var rc,vm;
+		if( !#zJx9 ) return null,"脚本代码不能为空";
+		
+		if( #zJx9 <  0x410/*_MAX_PATH_U8*/ ){
+			var path =  ..io.exist(zJx9) 
+			if( path ){
+				rc,vm = unqlite_compile_file(unqlite.db,path ); 
+				zJx9 = null;
+			}
+			else {
+				zJx9 = ..string.load(zJx9) : zJx9;
+			} 
+		}
+		
+		if( #zJx9 ){
+			rc,vm = unqlite_compile(unqlite.db,zJx9,#zJx9);
+		}
+		
+		if( rc != 0 ){
+			if( rc == -70/*_UNQLITE_COMPILE_ERR*/ )
+				return null,unqlite.configString( 1/*_UNQLITE_CONFIG_JX9_ERR_LOG*/ ),rc;
+				
+			return null,"Compile Error",rc;
+		}
+		this.vm = vm;
+		unqlite_vm_config_ptr_ptr( vm,2/*_UNQLITE_VM_CONFIG_IMPORT_PATH*/,..io.fullpath("/") );
+		
+		this.__c_functions = {};
+		..table.add_gc(this,"release");
+	};
+	deleteFunction = function(name){
+		if( type(name) != type.string ) error("参数@1必须指定函数名",2);
+		if( this.__c_functions[name] ){
+			var rc = unqlite_delete_function(vm,name);
+			if( rc == 0 )this.__c_functions[name] = null;
+			return rc;
+		}
+	};
+	createFunction = function(name,callback){
+		if( type(name) != type.string ) error("参数@1必须指定函数名",2);
+		if( type(callback) != type.function ) error("参数@2必须指定函数对象",2);
+		var func_c = ..raw.tocdecl( 
+    		function(pCtx,argc,argv){
+    			var ret;
+    			if(argc){
+    				var args = ..raw.convert( argv,..raw.toarray( argc,"pointer" ) ).array;
+    				for(k,v in args){
+    					args[k] = getUnqliteValue(v);
+    				} 
+    		 		ret = callback( pCtx,..table.unpack(args,1,argc ) ); 
+    			}
+    			else {
+    				ret = callback( pCtx );
+    			}
+    			
+    			var t = type(ret);
+    			if( t == type.string ){
+    		 		unqlite_result_string(pCtx,ret,#ret);
+    			}
+    			elseif( t == type.table ){
+    				ret = json_stringify( ret );
+    		 		unqlite_result_string(pCtx,ret,#ret);
+    			} 
+    			elseif( t == type.number ){
+    		 		unqlite_result_double(pCtx,ret );
+    			}
+    			elseif( t == type.boolean ){
+    		 		unqlite_result_bool(pCtx,ret );
+    			}
+    			elseif( t == type.null ){
+    		 		unqlite_result_null(pCtx);
+    			}
+    			elseif( t == type.pointer ){
+    		 		unqlite_result_resource(pCtx);
+    			} 
+    		 	
+    		},"int(pointer pCtx,int argc,pointer argv"
+    	)
+		var rc = unqlite_create_function( vm,name,func_c);
+		if( rc ==0 ) this.__c_functions[name] = func_c;
+		return rc;
+	}
+	context = function(pCtx){
+		return context(pCtx);
+	}
+	extractVariable = function(name){
+		if( type(name) != type.string ) error("参数@1必须指定变量名",2);
+		return getUnqliteValue( unqlite_vm_extract_variable(vm,name) );
+	}
+	configOutput = function(proc){
+		if(type(proc) != type.function ) return -1; 
+		this.output_callback_c = ..raw.tocdecl(function(p,size){
+			if( p && size ) proc( ..raw.tostring(p,1,size) )
+		},"int(pointer p,INT size,pointer)");
+		return unqlite_vm_config_ptr_ptr( vm,1/*UNQLITE_VM_CONFIG_OUTPUT*/,this.output_callback_c);
+	} 
+	configImportPath = function(path){
+		if(path){ 
+			return unqlite_vm_config_ptr_ptr( vm,2/*_UNQLITE_VM_CONFIG_IMPORT_PATH*/,..io.fullpath(path) );
+		} 
+	} 
+	exec = function(){
+		return unqlite_vm_exec(vm)
+	}
+	reset = function(){
+		return unqlite_vm_reset(vm)
+	}
+	configErrLog = function(){
+		return unqlite.configString( 1 /*UNQLITE_CONFIG_JX9_ERR_LOG*/);
+	};
+	release = function(){
+		if(vm){
+			unqlite_vm_release(vm);
+			vm = null;
+		}
+	} 
+} 
+
+var dll = assert(_dll,"请先导入unqlite支持库")
+namespace script {  
+
+ 	class context{
+ 		ctor( pCtx ){
+ 		
+ 		};
+ 		print = function(s,...){
+ 			if(...) s = ..string.format(s,...)
+ 			return unqlite_context_output(pCtx,s,#s);
+ 		} 
+ 		throwError = function(s,code){
+ 			return unqlite_context_throw_error(context,code or -13/*_SXERR_UNKNOWN*/,s);
+ 		}
+ 		functionName = function(){
+ 			return unqlite_function_name(pCtx);
+ 		}
+ 		rand = function(){
+ 			return unqlite_context_random_num(pCtx);  
+ 		}
+ 		randStr = function(len){
+ 			if( !len or len < 3 ) len = 3;
+ 			var rc,s = unqlite_context_random_string(pCtx,len,len);
+ 			if( rc == 0 ) return s;
+ 		} 
+ 	}
+ 	
+ 	namespace context{ 
+		unqlite_context_output= dll.api("unqlite_context_output","int(POINTER pCtx, string zString, int nLen)"); 
+		unqlite_context_throw_error= dll.api("unqlite_context_throw_error","int(POINTER pCtx, int iErr, string zErr)"); 
+		unqlite_context_random_num= dll.api("unqlite_context_random_num","INT(POINTER pCtx)");
+		unqlite_context_random_string= dll.api("unqlite_context_random_string","int(POINTER pCtx, byte &zBuf, int nBuflen)"); 
+		unqlite_function_name= dll.api("unqlite_function_name","string(POINTER pCtx)"); 
+ 	}
+
+	unqlite_compile= dll.api("unqlite_compile","int(POINTER pDb,string zJx9,int nByte,pointer &ppOut)");
+	unqlite_compile_file= dll.api("unqlite_compile_file","int(POINTER pDb,string zPath,POINTER &ppOut)"); 
+	unqlite_vm_config_ptr_ptr = dll.api("unqlite_vm_config","int(POINTER pVm,int iOp,pointer func,pointer pUserData)");
+	
+	unqlite_vm_exec= dll.api("unqlite_vm_exec","int(POINTER pVm)");
+	unqlite_vm_reset= dll.api("unqlite_vm_reset","int(POINTER pVm)");
+	unqlite_vm_release= dll.api("unqlite_vm_release","int(POINTER pVm)");
+	unqlite_vm_dump= dll.api("unqlite_vm_dump","int(POINTER pVm, pointer dump, pointer pUserData)");
+	unqlite_vm_extract_variable= dll.api("unqlite_vm_extract_variable","pinter(POINTER pVm, string zVarname)"); 
+	
+	unqlite_vm_release_value= dll.api("unqlite_vm_release_value","int(POINTER pVm,POINTER pValue)");
+ 	unqlite_vm_new_array= dll.api("unqlite_vm_new_scalar","pointer(POINTER pVm)");
+ 	
+ 	/* In-process extending pointer */
+	unqlite_create_function= dll.api("unqlite_create_function","int(POINTER pVm,string zName,pointer func,pointer pUserData)");
+	unqlite_delete_function= dll.api("unqlite_delete_function","int(POINTER pVm, string zName)");
+ 
+	/* Dynamically Typed Value Object Management pointer */
+	unqlite_value_int= dll.api("unqlite_value_int","int(POINTER pVal, int iValue)");
+	unqlite_value_int64= dll.api("unqlite_value_int64","int(POINTER pVal, long  iValue)");
+	unqlite_value_bool= dll.api("unqlite_value_bool","int(POINTER pVal, int iBool)");
+	unqlite_value_null= dll.api("unqlite_value_null","int(POINTER pVal)");
+	unqlite_value_double= dll.api("unqlite_value_double","int(POINTER pVal, double Value)");
+	unqlite_value_string= dll.api("unqlite_value_string","int(POINTER pVal, string zString, int nLen)");
+	//unqlite_value_string_format= dll.api("unqlite_value_string_format","int(POINTER pVal, string zFormat,...)");
+	unqlite_value_reset_string_cursor= dll.api("unqlite_value_reset_string_cursor","int(POINTER pVal)");
+	unqlite_value_resource= dll.api("unqlite_value_resource","int(POINTER pVal, pointer pUserData)");
+	unqlite_value_release= dll.api("unqlite_value_release","int(POINTER pVal)");
+	
+	/* Foreign Function Parameter pointer */
+	unqlite_value_to_int= dll.api("unqlite_value_to_int","int(POINTER pValue)");
+	unqlite_value_to_bool= dll.api("unqlite_value_to_bool","int(POINTER pValue)");
+	unqlite_value_to_int64= dll.api("unqlite_value_to_int64","long (POINTER pValue)");
+	unqlite_value_to_double= dll.api("unqlite_value_to_double","double(POINTER pValue)");
+	unqlite_value_to_string= dll.api("unqlite_value_to_string","pointer(POINTER pValue, int &pLen)");
+	unqlite_value_to_resource= dll.api("unqlite_value_to_resource","pointer(POINTER pValue)");
+	unqlite_value_compare= dll.api("unqlite_value_compare","int(POINTER pLeft, POINTER pRight, int bStrict)");
+	
+	/* Setting The Result Of A Foreign pointer */
+	unqlite_result_int= dll.api("unqlite_result_int","int(POINTER pCtx, int iValue)");
+	unqlite_result_int64= dll.api("unqlite_result_int64","int(POINTER pCtx, long  iValue)");
+	unqlite_result_bool= dll.api("unqlite_result_bool","int(POINTER pCtx, int iBool)");
+	unqlite_result_double= dll.api("unqlite_result_double","int(POINTER pCtx, double Value)");
+	unqlite_result_null= dll.api("unqlite_result_null","int(POINTER pCtx)");
+	unqlite_result_string= dll.api("unqlite_result_string","int(POINTER pCtx, string zString, int nLen)"); 
+	unqlite_result_value= dll.api("unqlite_result_value","int(POINTER pCtx, POINTER pValue)");
+	unqlite_result_resource= dll.api("unqlite_result_resource","int(POINTER pCtx, pointer pUserData)");
+	
+	/* Dynamically Typed Value Object Query pointer */
+	unqlite_value_is_int= dll.api("unqlite_value_is_int","int(POINTER pVal)");
+	unqlite_value_is_float= dll.api("unqlite_value_is_float","int(POINTER pVal)");
+	unqlite_value_is_bool= dll.api("unqlite_value_is_bool","int(POINTER pVal)");
+	unqlite_value_is_string= dll.api("unqlite_value_is_string","int(POINTER pVal)");
+	unqlite_value_is_null= dll.api("unqlite_value_is_null","int(POINTER pVal)");
+	unqlite_value_is_numeric= dll.api("unqlite_value_is_numeric","int(POINTER pVal)");
+	unqlite_value_is_callable= dll.api("unqlite_value_is_callable","int(POINTER pVal)");
+	unqlite_value_is_scalar= dll.api("unqlite_value_is_scalar","int(POINTER pVal)");
+	unqlite_value_is_json_array= dll.api("unqlite_value_is_json_array","int(POINTER pVal)");
+	unqlite_value_is_json_object= dll.api("unqlite_value_is_json_object","int(POINTER pVal)");
+	unqlite_value_is_resource= dll.api("unqlite_value_is_resource","int(POINTER pVal)");
+	unqlite_value_is_empty= dll.api("unqlite_value_is_empty","int(POINTER pVal)");
+	
+	json_stringify = ..web.json.stringify;
+	json_parse = ..web.json.parse; 
+	
+	getUnqliteValue = function( v ){
+		if( !v ) return;
+		if( unqlite_value_is_string(v) ){
+    		var p,len = unqlite_value_to_string(v,0)
+    		return ..raw.tostring(p,1,len);
+    	}
+    	elseif( unqlite_value_is_int(v) ){ 
+    		return  unqlite_value_to_int(v);
+    	}
+    	elseif( unqlite_value_is_bool(v) ){ 
+    		return  unqlite_value_to_bool(v);
+    	}
+    	elseif( unqlite_value_is_numeric(v) ){ 
+    		return  unqlite_value_to_double(v);
+    	} 
+    	elseif( unqlite_value_is_json_object(v) || unqlite_value_is_json_array(v) ){
+    		var p,len = unqlite_value_to_string(v,0)
+    		return  json_parse( ..raw.tostring(p,1,len) );
+    	} 
+    	elseif( unqlite_value_is_resource(v) ){
+    		return  unqlite_value_to_resource(v);
+    	}
+    	elseif( unqlite_value_is_empty(v) ){
+    		return  null;
+    	}
+	}
+} 
+
+/**intellisense(!unqlite_jx9)
+configImportPath(.("搜索路径") = 设置include,import搜索路径\n默认为应用程序目录
+configOutput(回调函数) = @.configOutput( function( output ){\n	io.print( "脚本输出", output )\n} )
+exec() = 执行脚本
+reset() = 重置
+configErrLog() = 返回错误信息
+release() = 关闭虚拟机
+createFunction(函数名,回调函数) = @.createFunction("__/*指定函数名*/",function(pCtx,...){\n	var ctx = ??.context(pCtx);\n	\n} )
+deleteFunction(.("函数名") = 删除自定义函数
+extractVariable(.("变量名") = 获取变量的值
+context(pCtx) = 用于自定义函数中创建context对象
+context() = !unqlite_jx9context.
+end intellisense**/
+
+/**intellisense() 
+!unqlite_jx9context.print(.("信息", ->->-> ) = 用于输出信息,\n等价于在Jx9脚本中调用print函数
+!unqlite_jx9context.throwError(.("错误信息",错误代码 ) = 抛出Jx9脚本异常,\n参数2以 _SXERR_ 前缀常量指定错误代码
+!unqlite_jx9context.functionName() = 返回当前函数名
+!unqlite_jx9context.rand() = 返回随机数
+!unqlite_jx9context.randStr(.(长度) = 返回随机字符串
+!unqlite_jx9context.
+end intellisense**/
+
+ 

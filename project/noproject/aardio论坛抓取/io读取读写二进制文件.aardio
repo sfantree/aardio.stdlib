@@ -1,0 +1,21 @@
+import console; 
+
+
+// rb一定要用括号 否则rb为空
+var file = io.open("C:\Windows\System32\cmd.exe", "rb")   //二进制模式打开
+if( file == 0xFFFFFFFF )  {
+    ..io.print("error:",..win.lasterr())
+}
+file.seek("set", 12)   //移动指针准备读取0x0C - 0x0F
+var s = file.read(4)        //读入4个字节，这个数据是整型
+// io.open()
+console.log(s)          //输出结果是问号，用tonumber()也不行
+
+io.close()
+file.close()
+
+
+//var num = console.getNumber( "请输入数值:" )
+
+//console.log("您输入的是" ,num );
+console.pause(true);

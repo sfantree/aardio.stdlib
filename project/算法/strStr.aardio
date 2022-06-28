@@ -1,0 +1,34 @@
+import console;
+
+class Solution {
+	ctor( ){
+	
+	};
+	strStr = function(haystack, needle){
+		var haylen = #(haystack);
+		var needlen = #(needle);
+		if(haylen < needlen) {
+		    return -1; 
+		}
+		if(needlen == 0) {
+		    return 0;
+		}
+		for(i=1;(haylen - needlen + 1);1){
+			for(j=1;needlen;1){
+				if(needle[j] != haystack[i + j - 1]) {
+				    break;
+				}
+			}
+			if(j == needlen + 1) {
+			    return i;
+			}
+		}
+		return -1;
+	}
+}
+
+var solution = Solution();
+console.log(solution.strStr("abcabcabcd", "abcd"));
+
+
+console.pause();

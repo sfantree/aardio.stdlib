@@ -1,0 +1,84 @@
+//ping 工具
+/*
+本源码根据 donque2010 原帖修改 
+http://bbs.aardio.com/forum.php?mod=viewthread&tid=11164 
+*/
+
+import wsock; 
+namespace icmp; 
+class ping {
+
+	ctor() {
+		var icmpFile = IcmpCreateFile();
+		var echoReply = icmp_echo_reply();
+		var echoReplySize = ..raw.sizeof( echoReply );
+		this.echoReply = echoReply;
+		
+		..table.add_gc(this,"close");
+	};
+	perform = function(ip){
+		if(!ip) ip = this.ip;
+		if( #ip ? (    ..string.match(ip,"\a\d*$") ) ){
+			ip = ..wsock.getIp(ip);  
+		}
+		if(!#ip) {
+			echoReply.status = 11000 + 18;
+			return null;
+		}
+		
+		this.ip = ip;
+		return IcmpSendEcho(icmpFile,..wsock.inet_addr(ip)
+			,this.requestData,#this.requestData,0,echoReply,echoReplySize,this.timeout);
+	};
+	close = function(){
+		if(icmpFile){
+			IcmpCloseHandle(icmpFile);
+			icmpFile = null;
+		};
+	}
+	timeout = 1000; 
+	requestData = ..raw.malloc(32);
+}
+
+namespace ping {
+
+	var ipHlpApi = ..raw.loadDll("IPHlpApi.dll") 
+	IcmpCreateFile = ipHlpApi.api("IcmpCreateFile","pointer()")
+	IcmpCloseHandle = ipHlpApi.api("IcmpCloseHandle","int(POINTER IcmpHandle)")
+	IcmpSendEcho= ipHlpApi.api("IcmpSendEcho","INT(POINTER IcmpHandle, int DestinationAddress,pointer RequestData,WORD RequestSize,int RequestOptions,struct& ReplyBuffer,INT ReplySize,INT Timeout)");
+	  
+	class icmp_echo_reply {
+	
+		struct address = ..wsock.in_addr();
+		INT status;
+		INT roundTripTime;
+		WORD dataSize;
+		WORD reserved;
+		pointer data;
+		struct options =  {
+			BYTE ttl;
+			BYTE tos;
+			BYTE flags;
+			BYTE optionSize;
+			pointer optionData;
+		};
+		byte data[200];
+	} 
+}
+
+/**intellisense()
+icmp.ping = PING工具
+icmp.ping() = 创建PING对象\n!icmp_ping.
+!icmp_ping.timeout = 超时,默认为1000毫秒
+!icmp_ping.requestData = 发送数据,默认为32字节数据
+!icmp_ping.perform(.("目标IP地址") = 执行PING
+!icmp_ping.close() = 关闭对象
+!icmp_ping.ip = IP地址
+!icmp_ping.echoReply.status = 状态码
+!icmp_ping.echoReply.roundTripTime = 往返时间RTT,单位毫秒
+!icmp_ping.echoReply.dataSize = 回复数据大小
+!icmp_ping.echoReply.data = 回复数据指针
+!icmp_ping.echoReply.options.ttl = 生存时间
+!icmp_ping.echoReply.options.tos = 服务类型
+end intellisense**/
+

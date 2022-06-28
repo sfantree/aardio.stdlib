@@ -1,0 +1,31 @@
+ import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio工程56";right=761;bottom=609;border="none")
+winform.add()
+/*}}*/
+
+import web.sciter; 
+import web.sciter.inspector;
+import web.sciter.behavior.windowCommand;
+import web.sciter.behavior.tabs;
+
+var wbSciter = web.sciter( winform );
+if(_STUDIO_INVOKED){
+	import web.sciter.debug;
+	wbSciter.attachEventHandler( web.sciter.debug );	
+}
+
+wbSciter.external = {
+    func = function(str){ 
+        return "Hello, "+str+"!"; 
+    }
+}
+
+wbSciter.go("\layout\ui.html");
+
+//添加阴影边框
+import win.ui.shadow;
+win.ui.shadow( winform );
+
+winform.show() 
+win.loopMessage();

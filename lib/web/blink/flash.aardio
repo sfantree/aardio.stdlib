@@ -1,0 +1,409 @@
+﻿//flash 动画组件
+import inet.url;
+import string.html;
+import web.npPlugin.flash;
+import web.blink.form;
+import web.blink.layeredWindow;
+import util.metaProperty;
+
+namespace web.blink;
+
+class flash{
+	ctor(form,param){
+		
+		if( param[["transparent"]] ){
+			param[["transparent"]] = null;
+			param["bgcolor"] = "Transparent";
+			param["wMode"] = "Transparent";
+			
+			this.wke = ..web.blink.layeredWindow(form); 
+			this.$htmlDoc = ..string.html(`
+				<body style="margin:0;overflow:hidden;background:transparent;">&nbsp;
+				<embed  width="100%" height="100%" name="plugin" allowScriptAccess="always" allowNetworking="all" type="application/x-shockwave-flash"></embed>
+				</body>`
+			);
+		}
+		else {
+			this.wke = ..web.blink.form(form);
+			this.$htmlDoc = ..string.html(`
+				<body style="margin:0;overflow:hidden;">
+				<embed width="100%" height="100%" name="plugin" allowScriptAccess="always" allowNetworking="all" type="application/x-shockwave-flash"></embed>
+				</body>`
+			);
+		}
+		
+		this.swfObject = this.$htmlDoc.queryEles( tagName = "embed")[1]; 
+		this.body = this.$htmlDoc.queryEles( tagName = "body")[1]; 
+		if(param) ..table.assign(this.swfObject,param);
+	
+		this.render = function(){
+			if(this.swfObject.src){
+				if(this.location){
+					var tUrl = ..inet.url.split(this.location);
+					var tSrc = ..inet.url.split(this.swfObject.src);
+					if((tSrc.host!=tUrl.host) || (tSrc.scheme!=tUrl.scheme)){
+						this.location = this.swfObject.src;
+						this.wke.go(this.swfObject.src);
+						this.wke._form.wait(
+							function(){
+								if(this.wke.plugin && this.wke.plugin.src==this.swfObject.src){
+									return true;
+								}
+							}
+						)
+					}
+				}
+				else {
+					this.location = this.swfObject.src;
+					this.wke.go(this.swfObject.src);
+					this.wke._form.wait(
+						function(){
+							if(this.wke.plugin && this.wke.plugin.src==this.swfObject.src){
+								return true;
+							}
+						}
+					)
+				}
+			}
+			
+			this.location = this.swfObject.src;
+			this.wke.document.body.outerHTML = tostring(this.$htmlDoc);
+  			this.wke._form.wait(
+				function(){
+					if(this.wke.plugin && this.wke.plugin.src==this.swfObject.src){
+						return true;
+					}
+				}
+			)
+		}
+	};
+	@_metaProperty;	
+}
+
+namespace flash{
+	
+	_metaProperty = ..util.metaProperty(
+		get = function(k,ownerCall){
+			if(ownerCall) {return owner.wke.plugin[k]}
+		};
+		movie = {
+			_get = function(){
+				return owner.swfObject.src;
+			}
+			_set = function(v){
+				if(!v){
+					owner.swfObject.src = null;
+					owner.render();
+					return;
+				}
+			
+				if( ..io.exist(v) ){
+					v = ..io.fullpath(v);
+				}
+				
+				owner.swfObject.src = v; 
+				owner.render();
+			}
+		};
+		show = function(){
+			return owner._form.show();
+		};
+		putMovie = function( url ){
+			owner.movie = url;
+		};
+		loadMovie = function(layer,url){
+			if( owner[["localfile"]] ) owner[["localfile"]].free();
+			var localfile = ..fsys.localfile(url,".swf");
+			owner[["localfile"]] = localfile;
+			if(!localfile) return;
+			 
+			//owner.swfObject.EmbedMovie = !!localfile.temp();
+			var ret = owner.wke.plugin.LoadMovie(layer,localfile.path() ); 
+			return ret; 
+		};
+		play = function(){
+			owner.wke.plugin.Play()
+		};
+		stop = function(){
+			owner.wke.plugin.Stop()
+		};
+		xcall = function(name,...){
+			return owner.wke.plugin[name](...);
+		};
+		external = {
+			_set = function(v){  
+				owner[["external"]] = v;  
+               ..web.blink.export(v)
+			} 	
+		};
+		hwndControl = {
+			_get = function(){
+				return  ..win.getLeaf( owner._form.hwnd )
+			} 	
+		};
+		menu = {
+			_get = function(){
+				return owner.swfObject.menu;
+			}
+			_set = function(v){
+				owner.swfObject.menu = v;
+			}
+		};
+		readyState  = {
+			_get = function(){
+				if(!(owner.swfObject.src && owner.wke.plugin) ) return 1; 
+				if(owner.wke.plugin.PercentLoaded() != 100 ) return 0;
+				if(owner.wke.plugin.IsPlaying()) return 3;
+				if(owner.wke.plugin.CurrentFrame() == owner.wke.plugin.TotalFrames() - 1 ) return 4;
+				return 2;
+			}
+		};
+		wait = function(endof){
+			var wke = owner.wke;
+			var swfObject = owner.swfObject;
+			wke._form.wait( 
+				function(){
+					if(wke.plugin && wke.plugin.src==swfObject.src) return true;
+				}
+			) 
+				
+			var ret = wke._form.wait( 
+					function(){
+						if( wke.plugin.PercentLoaded() == 100  ) return true;
+					}
+				) 
+				
+			if( !endof ) return ret;
+			return wke._form.wait( 
+				function(){
+					if( ! wke.plugin.IsPlaying() && (wke.plugin.CurrentFrame() == wke.plugin.TotalFrames() - 1 ) )
+						return true;
+				}
+			);
+		};  
+		playing  = {
+			_get = function(){
+				return owner.wke.plugin.IsPlaying();
+			}
+		};  
+		loop = {
+			_get = function(){
+				return owner.swfObject.Loop;
+			}
+			_set = function(v){
+				owner.swfObject.Loop = v;
+			}
+		}; 
+		sAlign  = {
+			_get = function(){
+				return owner.swfObject.SAlign;
+			}
+			_set = function(v){
+				owner.swfObject.SAlign = v;
+			}
+		};
+		allowScriptAccess  = {
+			_get = function(){
+				return owner.swfObject.allowScriptAccess;
+			}
+			_set = function(v){
+				owner.swfObject.allowScriptAccess = v;
+			}
+		};
+		allowNetworking   = {
+			_get = function(){
+				return owner.swfObject.allowNetworking ;
+			}
+			_set = function(v){
+				owner.swfObject.allowNetworking  = v;
+			}
+		};
+		disableLocalSecurity = function(){ 
+			try{
+				var f = owner.wke.plugin.DisableLocalSecurity;
+				if(f) f();
+			} 
+		}
+		enforceLocalSecurity = function(){
+			try{
+				var f = owner.wke.plugin.EnforceLocalSecurity;
+				if(f) f();
+			}
+		}
+		quality  = {
+			_get = function(){
+				return owner.swfObject.quality;
+			}
+			_set = function(v){
+				owner.swfObject.quality = v;
+			}
+		}; 
+		scale  = {
+			_get = function(){
+				return owner.swfObject.scale;
+			}
+			_set = function(v){
+				owner.swfObject.scale = v;
+			}
+		};
+		totalFrames  = {
+			_get = function(){
+				return owner.wke.plugin.TotalFrames();
+			}
+		};
+		currentFrame = function(){
+			return owner.wke.plugin.CurrentFrame();
+		};
+		embedMovie  = {
+			_get = function(){
+				return owner.swfObject.embedMovie;
+			}
+			_set = function(v){
+				owner.swfObject.embedMovie = v;
+			}
+		};
+		wMode  = {
+			_get = function(){
+				return owner.swfObject.wmode;
+			}
+			_set = function(v){
+				owner.swfObject.wmode = v;
+			}
+		};
+		parameters  = {
+			_get = function(){
+				return owner.swfObject.flashVars;
+			}
+			_set = function(v){
+				if( type(v) == type.table ) {
+					if( owner[["beforeStringifyParameters"]] ){
+						v = owner.beforeStringifyParameters(v);
+					}
+					v = ..inet.url.stringifyParameters(v,true);
+				}
+				owner.swfObject.flashVars = v;
+			}
+		};
+		bgcolor  = {
+			_get = function(){
+				return owner.swfObject.bgcolor;
+			}
+			_set = function(v){
+				owner.swfObject.bgcolor = v;
+			}
+		};
+		transparent = {
+			_set = function(v){
+				owner["bgcolor"] = "Transparent";
+				owner["wMode"] = "Transparent";
+			}
+		}; 
+		allowFullScreen  = {
+			_get = function(){
+				return owner.swfObject.allowFullScreen;
+			}
+			_set = function(v){
+				owner.swfObject.allowFullScreen = v;
+			}
+		};
+		back = function(){
+			return owner.wke.plugin.Back();
+		};
+		forward = function(){
+			return owner.wke.plugin.Forward();
+		};
+		gotoFrame = function(n){
+			return owner.wke.plugin.GotoFrame(n);
+		};
+		percentLoaded = function(){
+			return owner.wke.plugin.PercentLoaded();
+		};
+		pan = function(x,y,mode=1){
+			return owner.wke.plugin.Pan(x,y,mode);
+		};
+		rewind = function(){
+			return owner.wke.plugin.Rewind();
+		};
+		setVariable = function(name,value){
+			return owner.wke.plugin.SetVariable(name,value);
+		};
+		getVariable = function(name){
+			return owner.wke.plugin.GetVariable(name);
+		};
+		version  = {
+			_get = function(){
+				return owner.wke.plugin.GetVariable("$version");
+			} 
+		};
+	)
+	_metaProperty.flashVars = _metaProperty.parameters;
+	
+	transparent = function(winform,param){
+		return ..web.blink.flash(winform,..table.assign({ transparent = true },param));
+	}
+	
+}
+
+/**intellisense()
+web.blink.flash = 用 web.blink.form 加载 Flash
+web.blink.flash(.(winform,param) = 嵌入 FLASH 控件,\n参数@1为窗体或控件对象\n可选在参数@2中使用一个表对象设定Flash控件的属性值
+web.blink.flash.transparent(.(winform,param) = 不支持此函数，建议改用 web.kit.flash.transparent\n\n嵌入透明 FLASH 控件,\n参数@1为窗体或控件对象\n可选在参数@2中使用一个表对象设定Flash控件的属性值
+web.blink.flash()= !miniblink_flash.
+web.blink.flash.transparent()= !miniblink_flash.
+!miniblink_flash.wke = 浏览器对象\n!web_kit_view.
+!miniblink_flash.body =  网页 body 元素 HTML 代码节点,\n修改此元素属性后需要调用 render 函数才会生效\n!ele.
+!miniblink_flash.swfObject = 网页 Flash 控件 HTML 代码节点,\n修改此元素属性后需要调用 render 函数才会生效\n!ele.
+!miniblink_flash.render() = 更新属性并重新创建 Flash 控件,\n修改 Flash 控件属性后需要调用此函数才会生效,\n修改 movie 属性自动调用此函数
+!miniblink_flash.hwndControl = Flash控件窗口句柄
+!miniblink_flash.menu = 右键是否显示Flash控制菜单
+!miniblink_flash._object = 控件对象
+!miniblink_flash._host = 容器对象
+!miniblink_flash._host.adjust() = 调整控件窗口大小
+!miniblink_flash._form = 窗体对象\n!winform.
+!miniblink_flash.show() = 显示Flash所在窗口
+!miniblink_flash.play() = 播放
+!miniblink_flash.stop() = 暂停
+!miniblink_flash.rewind() = 返回到影片的第一帧
+!miniblink_flash.bgcolor = 背景色\n用"#RRGGBB"格式的文本表示
+!miniblink_flash.version = flash控件版本
+!miniblink_flash.back() = 影片后退一帧并停止播放
+!miniblink_flash.forward() = 影片后退一帧并停止播放
+!miniblink_flash.gotoFrame(.(索引) = 将影片跳转到指定的帧并停止播放.\n必须首先调用percentLoaded()函数保证影片完全加载
+!miniblink_flash.percentLoaded() = 返回影片加载的百分比
+!miniblink_flash.putMovie(.("/res/ui->swf") = 加载Flash文件,\n参数可以是网址,文件名,支持内嵌资源目录文件名\n参数也可以是Flash文件的内存数据\n加载内存或资源文件时,直接调用write函数写入内存
+!miniblink_flash.loadMovie(.(layer,url) = 将由url指定的影片载入到由layer指定的层上\n如果url指定了一个资源文件路径,使用临时文件加载,并设置embedMovie属性为 true
+!miniblink_flash.embedMovie = 该值如果为true则允许在加载后删除swf文件
+!miniblink_flash.pan(.(x,y,mode) = 将一个放大过的影片平移由x和y指定的距离,x和y均为相对值,\nmode默认值为1,按百分比计算,如果设为0则以像素计算
+!miniblink_flash.setVariable(.("变量名",值) = 设置FLASH变量
+!miniblink_flash.getVariable("__/*变量名*/") = 获取FLASH变量
+!miniblink_flash.parameters = 设置初始化参数,也就是AS里的loaderInfo.parameters,\n参数格式与URL参数相同,设置一个表参数可自动转换为字符串,\n读取属性时返回字符串
+!miniblink_flash.flashVars = 等价于parameters属性,参考该属性说明
+!miniblink_flash.movie = 设置swf文件网址,\n参数必须是网址,\n本地文件建议使用 wsock.tcp.simpleHttpServer.startUrl 转换为网址
+!miniblink_flash.getPersistStream() = 返回数据流对象\n!IPersistStreamInit.
+!miniblink_flash.writeStream(__) = 写入数据流\n参数应是fsys.strem等兼容IStream接口的对象
+!miniblink_flash.write(__) = 直接通过写入内存数据重新加载swf文件
+!miniblink_flash.wait() = 等待影片加载完成
+!miniblink_flash.wait(true) = 等待影片播放完成
+!miniblink_flash.loop = 是否循环播放
+!miniblink_flash.disableLocalSecurity() = 禁用本地安全,\n请不要在播放动画以后调用此函数,\n播放的swf是程序自带的可信任文件时应当禁用本地安全\n当指定控件的external接口时也会自动调用此函数
+!miniblink_flash.enforceLocalSecurity() = 启用本地安全,\n请不要在播放动画以后调用此函数,\n如果播放的swf是程序自带的可信任文件应当启用本地安全
+!miniblink_flash.allowNetworking = 是否允许网络交互,可选值:\n"all","internal","none"
+!miniblink_flash.allowFullScreen = 布尔值,是否允许全屏
+!miniblink_flash.allowScriptAccess = 是否允许调用外部脚本,可选值:\n"always","sameDomain","never"
+!miniblink_flash.playing = 影片是否正在播放
+!miniblink_flash.sAlign = 使用字符串表示对齐:\n"L":即左对齐\n"T":即顶对齐\n"R":即右对齐\n"B":即底对齐\n上面的值可组合使用,但LTRB的先后顺序不能变,如:左和底的对齐必须写为"LB"
+!miniblink_flash.readyState = 返回影片的当前状态,readyState值有:\n0:正在载入\n1:未初始化\n2:已载入\n3:正在交互\n4:完成例子
+!miniblink_flash.quality = 获取设置影片质量,可选使用以下字符串表示值:\n"Low":偏重于播放速度而不管显示效果.\n"High":偏重于画面而不管播放速度\n"AutoLow":先着重于播放速度,但只要有可能就改善显示效果.\n"AutoHigh":一开始是播放速度和显示效果并重,但如有必要就牺牲画质确保速度.
+!miniblink_flash.scale = 缩放模式:\n"NoScale":显示原始大小不缩放,\n"ShowAll":显示全部影片区域,保持影片长宽比例不变.\n"NoBorder":显示部分影片区域,保持影片长宽比例不变.\n"ExactFit":显示全部影片区域,强制将影片的长宽等于控件的长宽.
+!miniblink_flash.totalFrames = 返回影片总帧数
+!miniblink_flash.currentFrame() = 当前帧索引,注意第一帧索引为0
+!miniblink_flash.wMode = 控件的窗口模式,可选值"Window","Opaque","Transparent"
+!miniblink_flash.transparent = 是否启用透明模式,只写属性,\n应当写在初始化参数中
+!miniblink_flash.xcall(.("FLASH函数名",其他参数) = 调用FLASH中使用ExternalInterface.addCallback()导出的函数
+!miniblink_flash.external = @.external = {
+	函数名 = function(参数){
+		__/*在FLASH中可使用 ExternalInterface.call() 调用这里的函数*/
+		return "返回值";
+	} 
+}
+end intellisense**/

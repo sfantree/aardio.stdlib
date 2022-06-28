@@ -1,0 +1,10 @@
+﻿//portable 嵌入组件
+namespace web.blink{}
+
+import web.blink;
+import web.blink.form;
+namespace web.blink.portable;
+
+/**intellisense()
+web.blink.portable = 此支持库已废弃，请勿使用
+end intellisense**/

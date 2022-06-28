@@ -1,0 +1,13 @@
+import ide;
+import fsys;
+
+var publisDir = ide.getPublisDir();
+if(!#publisDir)return; 
+
+var dllPath =  fsys.joinpath(publisDir,"\lib\com\ffmpegOcx\.res\" ); 
+if( ! io.exist(dllPath) ){  
+	..fsys.createDir(dllPath);
+	..fsys.copy( "~\lib\com\ffmpegOcx\.res\*.*",dllPath,0x10/*_FOF_NOCONFIRMATION*/  | 0x200/*_FOF_NOCONFIRMMKDIR*/); 
+}
+
+

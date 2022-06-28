@@ -1,0 +1,27 @@
+// @Author  : popy32
+// @Contact : 74o5o27o8#qq.com
+// @File    : RemoteDesktopServer.aardio
+// @Comment : 
+
+
+
+import  process.ffmpeg;
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469;border="thin")
+winform.add(
+edit={cls="edit";text="Edit";left=24;top=16;right=728;bottom=424;edge=1;multiline=1;z=1}
+)
+/*}}*/
+
+// //this = ..process.popen(path,{path,"-authtoken="+(authtoken:""),"-log=stdout","-loglevel="+(logLevel:"INFO")});
+//f  = process.ffmpeg({"-f", "dshow" , "-c:v" , "vp8", "-i",  'video="Integrated Camera"',  io.fullpath("/out.mp4")  });
+
+f  = process.ffmpeg( {} );
+if(f) {
+    f.logResponse(winform.edit);
+}
+
+
+winform.show();
+win.loopMessage();

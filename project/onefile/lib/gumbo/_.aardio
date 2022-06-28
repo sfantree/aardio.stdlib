@@ -1,0 +1,112 @@
+import util.metaProperty;
+
+namespace gumbo {
+    class GumboOutput {
+            ctor(a, b, c, d) {
+               this.HTMLengine = a;
+               this.GumboNode = b;
+               this.nodes = c;
+               this.IsG_U = d;
+               ..table.add_gc(this, "clear");
+            };
+            find = function(i, HmCSS){
+                var data = ..raw.buffer(1024 * 100);
+                var GumboN = GetNode(this.nodes, i);
+                var htmlnodes = Find(this.HTMLengine, GumboN, HmCSS, data);
+                var oGumboOutput1 = GumboOutput(this.HTMLengine, GumboN, htmlnodes, this.IsG_U);
+                return oGumboOutput1;
+            };
+            Text = function(i) {
+                var text_ = ..raw.buffer(1024);
+                var GumboN = GetNode(this.nodes, i);
+                GetNodeText(this.HTMLengine, GumboN, this.IsG_U, text_);
+                return ..raw.str(text_);
+            };
+            clear = function() {
+               if(this.nodes) {
+                   GetNodeFree(nodes);
+                   this.nodes = null;
+               }
+            }
+    }
+}
+
+class gumbo {
+    ctor() {
+        this.HTMLengine = CreateHtml();
+        ..table.add_gc(this,"free");
+    }
+    load = function(html){
+        if(not this.HTMLengine) {
+            return;
+        }
+        this.GumboOutput = LoadHtml(this.HTMLengine, html);
+        //this.GumboNode = GetRootNode(this.HTMLengine, this.GumboOutput);
+    }
+    SelectNodes = function(HmCSS, IsG_U = true){
+        var data = ..raw.buffer(1024 * 100);
+        var htmlnodes = Find(this.GHTMLengine, this.GGumboNode, HmCSS, data);
+        var oGumboOut = GumboOut();
+        oGumboOut.HTMLengine = this.HTMLengine;
+        oGumboOut.GumboNode = this.GumboNode;
+        oGumboOut.htmlnodes = htmlnodes;
+        oGumboOut.IsG_U = IsG_U;
+        //GumboOut.new (HTMLengine, GumboNode, htmlnodes, IsG_U)
+        return (oGumboOut)
+    }
+    free = function(){
+        if( this.HTMLengine ){
+            sd_markdown_free( this.HTMLengine );
+            this.HTMLengine = null;
+        }
+    }
+}
+
+namespace gumbo {
+    var dll = ..raw.loadDll("G:\Program Files (x86)\aardio\project\onefile\lib\gumbo\.res\HtmlAgilityPack.dll", "HtmlAgilityPack.dll","cdcel");
+    
+    //var dll = ..raw.loadDll("~/lib/gumbo/.res/HtmlAgilityPack.dll", "HtmlAgilityPack.dll","cdecl");
+    
+    /**
+    HTMLengine* CreateHtml(void)
+    void engineFree(HTMLengine* e, GumboOutput *engine);
+    GumboOutput* LoadHtml(HTMLengine* html,const tchar_t* HTML,size_t len);
+    GumboNode* GetRootNode(HTMLengine* html, GumboOutput *engine);
+    GumboNode* Find(HTMLengine *html, GumboNode* gum, char* path, void* JsonCode);
+    void engineFree(HTMLengine* e, GumboOutput *engine);
+    void engineClose(HTMLengine* e)
+    **/
+    
+    CreateHtml = dll.api("CreateHtml","pointer(void)" );
+    Find = dll.api("Find","pointer(pointer, pointer, pointer, pointer)" );
+    //Find1 = dll.api("sd_markdown_free","void(POINTER md)" );
+    //GetAttr
+    //GetNode = 
+    //GetNodeFree = 
+    //GetNodeHtml = 
+    //GetNodeSize = 
+    //GetNodeText = 
+    GetRootNode = dll.api("GetRootNode","pointer(pointer, pointer, pointer)" );
+    LoadHtml = dll.api("LoadHtml","void(pointer, string)" );
+    engineClose = dll.api("engineClose","void(pointer)" );
+    engineFree = dll.api("engineFree","void(pointer, pointer)" );
+}
+
+if (owner == null) {
+    import console;
+    console.log("单元测试开始");
+    
+    var htmlText = string.load("G:\Program Files (x86)\aardio\project\onefile\lib\gumbo\.res\demo.html");
+    var xpathText = ".content > div";
+    
+    
+    var ogumbo = gumbo();
+    ogumbo.load(htmlText);
+    console.dump("ogumbo", ogumbo);
+    
+    //GumboOutput ＝ HtmlAgilityPack.SelectNodes (编辑框1.内容, 真)
+    
+    console.log("单元测试结束");
+    console.pause();
+}
+

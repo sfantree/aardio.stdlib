@@ -1,0 +1,250 @@
+import console;
+ 
+console.setTitle("yt699测试1");
+
+import console; 
+import process;
+var dll = raw.loadDll("/e1.dll");
+// var dll = raw.loadDll($"G:\elang\learn_jingyim\新建文件夹\interfacetest.dll");
+//console.log(1);
+/*
+.版本 2
+
+.子程序 Decode, , 公开, '增强算法--解密部分
+.参数 InbufPtr, 整数型
+.参数 InbufLen, 整数型
+.参数 OutbufPtr, 整数型, 参考
+.参数 OutbufLen, 整数型
+.参数 KeyPtr, 整数型
+.参数 KeyLen, 整数型
+
+*/
+Decode = dll.api("Decode", "void(pointer InbufPtr, INT InbufLen, pointer OutbufPtr, INT OutbufLen, pointer KeyPtr, INT KeyLen");
+
+/*
+.版本 2
+
+.子程序 FindPort, 整数型, 公开
+.参数 start, 整数型
+.参数 OutPathPtr, 整数型, 参考
+.参数 OutPathLen, 整数型, 参考
+
+*/
+FindPort_ = dll.api("FindPort", "int(int start, pointer OutPathPtr, INT OutPathLen");
+
+function FindPort(start){
+	var KeypathBuffer = raw.realloc(512);
+	var retval = FindPort_(start, (KeypathBuffer), 512);
+	
+	var retstring = null;
+	if(retval != 0) {
+	    retstring = null;
+	} else {
+	    retstring = raw.tostring(KeypathBuffer);
+	}
+	//释放内存
+	KeypathBuffer = raw.realloc(0,KeypathBuffer);
+	
+	return retval, retstring
+}
+
+
+
+
+
+
+
+
+
+/*
+.版本 2
+
+.子程序 Cal, 整数型, 公开
+.参数 InBufPtr, 整数型, 参考
+.参数 InBufPtr, 整数型
+.参数 OutbufPtr, 整数型, 参考
+.参数 OutbufLen, 整数型
+.参数 PathPtr, 整数型
+.参数 PathLen, 整数型
+.版本 2
+.局部变量 Path_t, 字节集
+
+Path_t ＝ 指针到字节集 (PathPtr, PathLen)
+Path ＝ 到文本 (Path_t)
+
+
+*/
+Cal = dll.api("Cal", "void(pointer InBufPtr,INT InBufLen, pointer OutbufPtr,INT OutbufLen, pointer PathPtr,INT PathLen");
+
+/*
+.版本 2
+
+.子程序 EncString, 整数型, 公开
+.参数 InStringPtr, 整数型
+.参数 InStringLen, 整数型
+.参数 outstringPtr, 整数型, 参考
+.参数 outstringLen, 整数型
+.参数 PathPtr, 整数型
+.参数 PathLen, 整数型
+
+*/
+
+EncString = dll.api("Cal", "void(pointer InStringPtr,INT InStringLen, pointer outstringPtr,INT outstringLen, pointer PathPtr,INT PathLen");
+
+/*
+.版本 2
+
+.子程序 ReSet, 整数型, 公开
+.参数 PathPtr, 整数型
+.参数 PathLen, 整数型
+
+*/
+ReSet = dll.api("ReSet", "void(pointer PathPtr,INT PathLen)");
+
+
+/*
+.版本 2
+
+.子程序 GetID, 整数型, 公开
+.参数 ID_1, 整数型, 参考
+.参数 ID_2, 整数型, 参考
+.参数 PathPtr, 整数型
+.参数 PathLen, 整数型
+
+*/
+
+GetID_ = dll.api("GetID", "int(pointer ID_1Ptr, pointer ID_2Ptr, pointer PathPtr,INT PathLen)");
+
+function GetID(Path){
+	var ID_1Ptr = raw.realloc(4);
+	
+	var ID_2Ptr = raw.realloc(4);
+	
+	var retval = GetID_(ID_1Ptr, ID_2Ptr, topointer(Path), #(Path));
+	
+	var ID_1 = 0;
+	var ID_2 = 0;
+	
+	// cdata -> type.pointer
+	var pID_1 = raw.toPointer((ID_1Ptr));  
+	var pID_2 = raw.toPointer((ID_2Ptr));
+	
+	// type.pointer -> type.number
+	var ID_1 =  raw.convert(pID_1, {int id1;}).id1;
+	var ID_2 =  raw.convert(pID_2, {int id2;}).id2;
+	
+	//释放内存
+	ID_1Ptr = raw.realloc(0, ID_1Ptr);
+	ID_2Ptr = raw.realloc(0, ID_2Ptr);
+	
+	return retval, ID_1, ID_2
+}
+
+
+function GetID_test(Keypath){
+	if(#Keypath == 0) {
+		console.log("Keypath error");
+    	return;
+	}
+
+	var retval, ID_1, ID_2 = GetID(Keypath);
+	if(retval != 0) {
+	    console.log("返回ID1错误");
+	    return;
+	} else {
+	    var IdStr = string.format("%X%X", ID_1, ID_2)
+	    console.log("已成功返回锁的ID号：", IdStr); 
+	}
+}
+
+
+//GetID_test(Keypath);
+
+
+
+/*
+.版本 2
+
+.子程序 NT_GetIDVersion, 整数型, 公开
+.参数 Version, 整数型
+.参数 PathPtr, 整数型
+.参数 PathLen, 整数型
+
+*/
+NT_GetIDVersion = dll.api("NT_GetIDVersion", "void(int Version, pointer PathPtr, INT PathLen)");
+
+/*
+.版本 2
+
+.子程序 SetCal_2, 整数型, 公开
+.参数 KeyPtr, 整数型
+.参数 KeyLen, 整数型
+.参数 PathPtr, 整数型
+.参数 PathLen, 整数型
+
+*/
+SetCal_2 = dll.api("SetCal_2", "void(pointer KeyPtr, INT KeyLen, pointer PathPtr, INT PathLen)");
+
+/*
+.版本 2
+
+.子程序 NT_GetVersionEx, 整数型, 公开
+.参数 VersionPtr, 整数型
+.参数 PathPtr, 整数型
+.参数 PathLen, 整数型
+
+in : PathPtr PathLen
+out : VersionPtr
+*/
+NT_GetVersionEx = dll.api("NT_GetVersionEx", "void(pointer VersionPtr, pointer PathPtr, INT PathLen)");
+
+
+/*
+.版本 2
+
+.子程序 SetHidOnly, 整数型, 公开
+.参数 IsHidOnly, 逻辑型
+.参数 PathPtr, 整数型
+.参数 PathLen, 整数型
+
+
+in : IsHidOnly PathPtr PathLen
+out : 
+*/
+
+SetHidOnly = dll.api("SetHidOnly", "void(bool IsHidOnly, pointer PathPtr, INT PathLen)");
+
+
+
+/* main start */
+
+
+
+function main(){
+	var retval, Keypath = ( FindPort(0) );
+	if(retval != 0) {
+    	console.log("没有找到加密锁,请插入加密锁后再进行操作。");
+    	return;
+	} else {
+    	console.log("找到加密锁", "Keypath:", Keypath);
+    	
+	}
+	//Keypath = "1"
+	if(#Keypath == 0) {
+		console.log("Keypath error");
+    	return;
+	}
+
+	var retval, ID_1, ID_2 = GetID(Keypath);
+	if(retval != 0) {
+	    console.log("返回ID1错误");
+	    return;
+	} else {
+	    var IdStr = string.format("%X%X", ID_1, ID_2)
+	    console.log("已成功返回锁的ID号：", IdStr); 
+	}
+}
+
+main();
+
+console.pause(true);

@@ -1,0 +1,234 @@
+import win.ui;
+/*DSG{{*/
+mainForm = win.form(text="haha";right=863;bottom=463;parent=...)
+mainForm.add(
+btnDnsFlush={cls="plus";text="清空 DNS 缓存";left=472;top=280;right=858;bottom=322;align="left";color=3947580;dl=1;dt=1;font=LOGFONT(h=-16);iconStyle={align="left";font=LOGFONT(h=-27;name='FontAwesome');padding={left=18}};iconText='\uF021';notify=1;textPadding={left=50};z=13};
+btnUpdateSystemTime={cls="plus";text="同步系统时间(修正 Xray 连接报错)";left=472;top=224;right=858;bottom=266;align="left";color=3947580;dl=1;dt=1;font=LOGFONT(h=-16);iconStyle={align="left";font=LOGFONT(h=-27;name='FontAwesome');padding={left=18}};iconText='\uF017';notify=1;textPadding={left=50};z=14};
+button={cls="button";text="点我抓取";left=319;top=298;right=437;bottom=330;db=1;dr=1;z=1};
+button2={cls="button";text="获取当前窗口句柄";left=39;top=292;right=157;bottom=324;db=1;dr=1;z=3};
+button3={cls="button";text="获取窗口位置";left=470;top=116;right=561;bottom=136;z=7};
+button4={cls="button";text="桌面居中窗口";left=575;top=114;right=666;bottom=134;z=8};
+button5={cls="button";text="读取剪切板文字";left=470;top=142;right=573;bottom=173;font=LOGFONT(h=-13;name='宋体');z=9};
+button6={cls="button";text="关闭窗口";left=595;top=140;right=659;bottom=172;db=1;dr=1;z=10};
+button7={cls="button";text="鼠标位置";left=473;top=182;right=539;bottom=210;db=1;dr=1;z=11};
+button8={cls="button";text="列出目录";left=552;top=182;right=618;bottom=210;db=1;dr=1;z=12};
+button9={cls="button";text="Button";left=192;top=296;right=296;bottom=328;z=15};
+combobox={cls="combobox";left=496;top=71;right=639;bottom=94;edge=1;items={};mode="dropdown";z=6};
+edit={cls="edit";text="edit";left=12;top=12;right=460;bottom=276;db=1;dl=1;dr=1;dt=1;edge=1;multiline=1;z=2};
+radiobutton={cls="radiobutton";text="Radiobutton";left=494;top=18;right=586;bottom=32;z=4};
+radiobutton2={cls="radiobutton";text="Radiobutton";left=493;top=43;right=588;bottom=57;z=5}
+)
+/*}}*/
+
+import console;
+import fonts.fontAwesome;
+import win.ui;
+
+import win.dlg.message;
+win.dlg.message.install();
+
+mainForm.button.oncommand = function(id,event){
+    mainForm.button.disabled = true;
+    var source = win.invoke(
+    	function(){
+    		import myTools;
+    		var url  = "https://www.baidu.com" ; 
+    		return myTools.getHtml(url);//调用用户库函数抓取网页源码
+    	} 
+    )
+    mainForm.edit.text = source; //使用文本框显示网页源码
+    mainForm.button.disabledText = null;
+}
+
+mainForm.button2.oncommand = function(id,event){
+    mainForm.edit.text = "";
+	mainForm.edit.text += tostring(mainForm.hwnd);
+	//mainForm.edit.text += "\\r";
+	mainForm.edit.text += tostring(mainForm.hwnd);
+	//mainForm.button.disabled = true;
+}
+
+mainForm.combobox.oncommand = function(id,event){
+
+}
+
+mainForm.button3.oncommand = function(id,event){
+		//mainForm.edit.text = "";
+	//mainForm.edit.text += win.getPos(mainForm.hwnd);
+	//import console;
+	//..io.open()
+	import win;
+	//console.log(win.getPos(mainForm.hwnd));
+	
+	var l, t, w, h;
+	l, t, w, h = win.getPos(mainForm.hwnd);
+	mainForm.edit.text = "";
+	mainForm.edit.text += string.format("%d, %d, %d, %d" , l, t, w, h);
+	mainForm.edit.text += "\r\n";
+	l, t, w, h = win.getPos(mainForm.hwnd, true);
+	mainForm.edit.text += string.format("%d, %d, %d, %d"  , l, t, w, h);
+	mainForm.edit.text += "\r\n";
+	
+}
+
+mainForm.button4.oncommand = function(id,event){
+	import win;
+	win.center(mainForm.hwnd, 0);
+}
+
+mainForm.button5.oncommand = function(id,event){
+	import win.clip;
+	mainForm.edit.text = "";
+	mainForm.edit.text = win.clip.read();
+}
+
+mainForm.button6.oncommand = function(id,event){
+	win.quitMessage();
+}
+
+mainForm.button7.oncommand = function(id,event){
+	var x,y = win.getCursorPos();
+	import win.clip;
+	mainForm.edit.text = "";
+	mainForm.edit.text += string.format("%d, %d",x,y);
+}
+
+mainForm.button8.oncommand = function(id,event){
+	import fsys;
+	var files,folders,alldirs = fsys.list("c:\", );
+	
+	
+}
+
+mainForm.btnUpdateSystemTime.skin(
+	background = { 
+		hover = "/res/images/btn-hover.png";
+		focus = "/res/images/btn-focus.jpg";
+		active = "/res/images/btn-active.png";
+		disabled = "/res/images/btn-disabled.png"; 
+	}
+)
+
+mainForm.btnUpdateSystemTime.oncommand = function(id,event){
+	if(_STUDIO_INVOKED){
+		//mainForm.msgboxErr("请在发布后运行此功能");
+		//return;
+	}
+	
+	mainForm.btnUpdateSystemTime.disabledText = {'\uF254';'\uF251';'\uF252';'\uF253';'\uF250'}
+	if( win.delay(3000) ){
+		mainForm.btnUpdateSystemTime.disabledText = null;
+		mainForm.btnUpdateSystemTime.text = '时间已同步'
+		mainForm.setTimeout( 
+			function(){
+				mainForm.btnUpdateSystemTime.text = '同步系统时间（ 修正 Xray 连接报错 ）'
+			},2000) 
+	}
+	else {
+		mainForm.btnUpdateSystemTime.disabledText = null;
+	} 
+}
+
+
+mainForm.btnDnsFlush.skin(
+	background = { 
+		hover = "/res/images/btn-hover.png";
+		focus = "/res/images/btn-focus.jpg";
+		active = "/res/images/btn-active.png";
+		disabled = "/res/images/btn-disabled.png"; 
+	}
+)
+mainForm.btnDnsFlush.oncommand = function(id,event){
+	mainForm.btnDnsFlush.disabledText = {'\uF254';'\uF251';'\uF252';'\uF253';'\uF250'}
+
+	import process.popen;
+	var prcs = process.popen(,"ipconfig /flushdns");
+	var str = prcs.read(-1)
+	
+	var dnsapi = ..raw.loadDll("dnsapi.dll");
+	dnsapi.DnsFlushResolverCacheB();
+		
+	mainForm.msgInfo(str);
+	mainForm.btnDnsFlush.disabledText = null;
+}
+
+import config ;
+config();
+var cfg = config.cfg.Config;
+
+
+
+import drawHelper;
+
+mainForm.button9.oncommand = function(id,event){
+	var child = mainForm.loadForm("\dlg\base.aardio", );
+}
+
+/*托盘事件{{*/
+import win.util.tray;
+import mouse;
+tray = win.util.tray(mainForm)
+//tray.pop("欢迎使用托盘图标","aardio")
+tray.message = 0xACCF/*_WM_TRAYMESSAGE*/
+tray.tip = "REDBUFF" //设置鼠标提示 
+	
+mainForm.wndproc = function(hwnd,message,wParam,lParam){ 
+	select(message) {//判断消息类型
+		case( 0xACCF/*_WM_TRAYMESSAGE*/ ) { //托盘图标消息
+		
+	    	if( lParam = 0x205/*_WM_RBUTTONUP*/ ){
+	    		
+	    		x,y = mouse.getPos();
+	    		
+	    		//弹出托盘菜单以前,一定要前置主窗口中,不然不点击菜单不会消失
+	    		win.setForeground(mainForm.hwnd)
+	    		mainForm.popmenu.popup( x,y,true )
+	    	}
+		} 
+		case( 0x112/*_WM_SYSCOMMAND*/ ){ //系统命令消息
+			if( wParam == 0xF020/*_SC_MINIMIZE*/ ){ //用户点击了最小化按钮
+				
+            	mainForm.show(false); //隐藏窗口
+            	return true;//阻击默认消息传递,取消最小化过程
+			} 
+			elseif ( wParam == 0xF060/*_SC_CLOSE*/) {
+				//mainForm.show(false);
+				//return true;
+			}
+		}
+		
+	}
+}
+mainForm.popmenu = win.ui.popmenu(mainForm);//创建弹出菜单
+
+import common;
+var loadPic = function(){
+	//import fsys.dlg;
+	//common.path = fsys.dlg.open( "*.png|*.png|*.jpg|*.jpg|*.bmp|*.bmp","加载参考图","/ImgTemp" )
+	var child = mainForm.loadForm("/dlg/base.aardio", mainForm);
+}
+	
+//mainForm.popmenu.add('参考图预览',function(id){ });
+//mainForm.popmenu.add('回收站',function(id){ });
+//mainForm.popmenu.add('清空回收站',function(id){ });
+//mainForm.popmenu.add();//分隔线
+//mainForm.popmenu.add('制作参考图',function(id){ });
+mainForm.popmenu.add('导入参考图',function(id){ loadPic() });
+mainForm.popmenu.add();//分隔线
+mainForm.popmenu.add('选项',function(id){ mainForm.show(true); });
+mainForm.popmenu.add();//分隔线
+mainForm.popmenu.add('退出',function(id){ mainForm.close() })
+/*}}*/
+
+
+
+mainForm.onClose = function(hwnd,message,wParam,lParam){
+    mainForm.unreghotkey( common.hkid );
+    tray.delete();
+}
+
+
+mainForm.show()
+
+win.loopMessage();
+return mainForm;

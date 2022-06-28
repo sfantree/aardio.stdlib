@@ -1,0 +1,66 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add(
+btnClean={cls="button";text="清空控件上的图片";left=577;top=416;right=748;bottom=455;z=5};
+btnOpen={cls="button";text="打开图片";left=10;top=416;right=181;bottom=455;z=2};
+btnRead={cls="button";text="读取数据库图片到控件";left=388;top=416;right=559;bottom=455;z=4};
+btnSave={cls="button";text="控件图片保存到数据库";left=199;top=416;right=370;bottom=455;z=3};
+plus={cls="plus";left=5;top=6;right=751;bottom=402;edge=1;foreRepeat="scale";frame=1;z=1}
+)
+/*}}*/
+
+import fsys.dlg;
+import sqlite;
+
+var db = sqlite("/testPic.db")
+
+if( not db.existsTable("test") ){  
+	db.exec( "CREATE TABLE test(pic blob);")  
+}  
+
+winform.btnOpen.oncommand = function(id,event){//打开
+	var path = fsys.dlg.open('图片文件|*.bmp;*.jpg;*.png|所有文件|*.*|',"选择图片",,winform);
+	if(path){
+		winform.plus.foreground = path;
+	}
+}
+
+winform.btnSave.oncommand = function(id,event){//保存
+	if(winform.plus.getForeground()==null){
+		return ; 
+	}
+	//使用命名参数：@参数 前面要加上 blob 关键字，来显式的告诉程序该字段(本例中为‘pic’字段)是二进制数据。
+    //也可以使用string.load()函数直接将文件以二进制数据保存到数据库中。
+	var ret = db.prepare("INSERT INTO test VALUES (@blobpic);" ).step(
+ 		//blobPic = string.load();
+ 		blobpic = raw.tostring(winform.plus.getForeground().saveToBuffer());
+	);
+	
+	
+	if(ret >= 100){
+		win.msgbox("保存成功！");
+	}
+}
+
+winform.btnRead.oncommand = function(id,event){//读取
+	var ret,err = db.getTable("SELECT * FROM test ")
+	if(!ret){
+		win.msgbox(tostring(err));
+		return ; 
+	}
+	if(#ret<1){
+		win.msgbox("数据库中没有记录！");
+		return ; 
+	}
+	//显示数据库里最后一条记录
+	winform.plus.foreground = ret[#ret].pic;
+	win.msgbox("读取成功!");
+}
+
+winform.btnClean.oncommand = function(id,event){
+	winform.plus.foreground = null;
+}
+
+winform.show();
+win.loopMessage();

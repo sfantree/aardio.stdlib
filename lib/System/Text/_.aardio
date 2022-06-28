@@ -1,0 +1,6 @@
+﻿import dotNet;
+dotNet.import("System.Text","mscorlib");
+
+/**intellisense()
+System.Text = .Net System.Text 名字空间\n!dotNetNameSpace.
+end intellisense**/

@@ -1,0 +1,38 @@
+import console; 
+
+
+var t1 = { 
+     "<html>123</html>";
+     "<HtMl>456</html> <HtMl>789</html>"; 
+     "<HtMl>456(12)33</html>"; 
+     "<HtMl>4中文6(12)33</html>"; 
+     ">1>>>2>>3>" 
+}
+
+// <@@ ... @> 忽略大小写
+// console.log( string.match( str1, "<@@<html>@>(.*?)<@@</html>@>" ) );
+// @ 禁用模板匹配
+//console.log( string.match( str1, "@/" ) );
+
+for ( k, v in t1 ) {
+    // <@@ ... @> 忽略大小写 .*? 非贪婪匹配
+    console.log( string.match( v, "<@@<html>@>(.*?)<@@</html>@>" ) );
+    console.log( "============" );
+}
+
+
+
+for ( k, v in { ">"; ">1>2>3"; ">1>2>3>"; ">1>>>2>>3"; ">1>>>2>>3>" } ) {
+    console.log( string.match( v, "^(<\>\d*>*)$" ) );
+    console.log( string.match( v, "^(<\>\d*>*\>?)$" ) );
+    console.log( "============" );
+}
+
+for ( k, v in { ">"; ">1>2>3"; ">1>2>3>"; ">1>2>3>>>"; ">1>>>2>>3"; ">1>>>2>>3>"; ">1>2>>3>>>" } ) {
+    console.log( string.match( v, "^(<\>\d*>*)$" ) );
+    console.log( string.match( v, "^(<\>\d*>*~?)$" ) );
+    console.log( string.match( v ++ "~", "^(<\>\d*>*~?)$" ) );
+    console.log( "====================" );
+}
+
+console.pause(true);

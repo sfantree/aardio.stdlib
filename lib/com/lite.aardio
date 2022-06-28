@@ -1,0 +1,183 @@
+//lite 免组件调用
+import com.typeAttrs;
+import com.interface.IClassFactory;
+import com.interface.IClassFactory2;
+namespace com
+
+class lite{
+	ctor( dllFile,... ){
+		if( (#dllFile < 0x410/*_MAX_PATH_U8*/) && ..io.exist(dllFile) ){
+			this.$filePath = dllFile;
+		}
+		
+		this.dll = ..raw.loadDll(dllFile,... )
+		..table.push( _dll_cache__,this.dll );
+
+		this.DllGetClassObject = this.dll.api("DllGetClassObject","int(struct clsId, struct iid, pointer& ppv)" )
+		if( !this.DllGetClassObject ){
+			return;
+		}
+	};
+	registerServer = function(){
+		return this.dll.DllRegisterServer &&  (this.dll.DllRegisterServer())>=0/*_SUCCEEDED*/
+	};
+	unregisterServer = function(){
+		return this.dll.DllUnregisterServer &&  (this.dll.DllUnregisterServer())>=0/*_SUCCEEDED*/
+	};
+	requestLicKey = function(clsId){
+		clsId = guid.valid(clsId)
+		if(!clsId) error("参数@1 指定了错误的CLSID",2);
+		
+		var hr,pFactory = this.DllGetClassObject(clsId,IClassFactory2.IID  ); 
+		if( (hr)<0/*_FAILED*/ ) return;
+
+		var classFactory =  ..com.interface(pFactory,IClassFactory2 );
+		..com.Release(pFactory);
+		
+		var hr,strKey = classFactory.RequestLicKey();
+		if( (hr)>=0/*_SUCCEEDED*/ ) return strKey;
+	};
+	createUnknown = function(clsId,iid){
+	
+		clsId = guid.valid(clsId)
+		if(!clsId) error("参数@1 指定了错误的CLSID",2);
+		
+		var IFactory = this.licenseKey ? IClassFactory2 : IClassFactory; 
+		var hr,pFactory = this.DllGetClassObject(clsId,IFactory.IID  ); 
+		if( (hr)<0/*_FAILED*/ ) return hr;
+
+		var classFactory =  ..com.interface(pFactory,IFactory );
+		..com.Release(pFactory);
+		var hr,unknown;
+		
+		if(! this.licenseKey)
+			return classFactory.CreateInstance(null,iid); 
+		else
+			return classFactory.CreateInstanceLic(null,null,iid, this.licenseKey);
+	};
+	createInstance = function(clsId,itface){
+		clsId = guid.valid(clsId)
+		if(!clsId) error("参数@1 指定了错误的CLSID",2);
+			
+		if(!itface) itface = ..com.interface.IUnknown; 
+		checkInterface(itface,2);  
+		
+		var hr,unknown =  owner.createUnknown(clsId,itface.IID);
+		checkError(hr,2); 
+		
+		var interface =  ..com.interface(unknown,itface);
+		..com.Release(unknown)
+		return interface;
+	};
+	createObject = function(clsId,iid){
+		if(!iid) iid = IID_IDispatch; 
+		else{
+			iid = guid.valid(iid);
+			if(!iid) error("参数@2 指定了错误的IID",2)
+		} 
+		
+		if(!clsId){
+			clsId = this.firstCoClassId();
+			if(!clsId) error("请指定CLSID参数",2)
+		}
+		
+		clsId = guid.valid(clsId)
+		if(!clsId) error("参数@1 指定了错误的CLSID",2)
+		
+		var hr,unknown =  owner.createUnknown(clsId,iid);
+		checkError(hr,2);  
+		
+		var object = ..com.QueryObject(unknown); 
+		..com.Release(unknown) 
+		return object; 
+	};
+	createEmbed = function(winform,clsId,iid,embedObject){
+		if(!clsId){
+			clsId = this.firstCoClassId();
+			if(!clsId) error("请指定CLSID参数",2)
+		}
+		
+		var obj = this.createObject(clsId,iid);
+		return winform.createEmbed(obj,embedObject);
+	};
+	createEmbedEx = function(winform,clsId,iid){
+		var embed = this.createEmbed(winform,clsId,iid);
+		embed@ = {
+			_get = embed._object;
+			_set = function(k,v){ 
+				if(type(v) === "function") owner[[k]] = v;
+				else owner._object[k] = v; 
+			}
+		};
+		
+		return embed;
+	};
+	firstCoClassId = function(){
+		var path = this.getPath();
+		if(path){
+			if(!this.$firstCoClassId) {
+				this.$firstCoClassId = ..com.typeAttrs.firstCoClass(path)[["GUID"]];
+			}
+			return this.$firstCoClassId;
+		} 
+	};
+	getPath = function(){
+		if(!this.$filePath && (#dllFile < 0x410/*_MAX_PATH_U8*/)){
+			var buf = {WORD path[0x104]}
+			::Kernel32.GetModuleFileNameW(this.dll, buf, 0x104/*_MAX_PATH*/);
+			if(#buf.path) this.$filePath = buf.path;	
+		}
+		
+		return this.$filePath;	
+	};
+}
+	
+namespace lite{ 
+	guid = ..win.guid;
+	IID_IDispatch = guid.fromString("{00020400-0000-0000-C000-000000000046}");  
+	
+	checkError = ..com.interface.checkError;
+	checkInterface = ..com.interface.checkInterface;
+	IClassFactory2 = checkInterface(..com.interface.IClassFactory2);
+	IClassFactory = checkInterface(..com.interface.IClassFactory);
+	_dll_cache__ = {};
+	
+	appData = function(p,d){
+		var p = ..io.specialData(p,d,0x23/*_CSIDL_COMMON_APPDATA*/);
+		if(p) return ..com.lite(p);
+	}
+	
+	//@Deprecated
+	loadTypeAttrs = ..com.typeAttrs.load;
+}
+
+/**intellisense()
+com.lite = 免注册 COM 组件调用接口
+com.lite(.("x->dll") = 参数用法与 raw.loadDll() 函数相同,支持内存OCX\n如果该组件不是合法的COM组件,返回null空值
+com.lite() = !com_lite_dll.
+!com_lite_dll.createEmbed( = 创建嵌入控件,返回控件容器对象,\n容器对象的 _object 成员是创建的 COM 对象,\n容器对象可通过添加成员函数响应 COM 对象事件，\n容器对象的主要作用是充当访问 COM 对象的中间代理对象。\n通常使用 util.metaProperty 为容器对象添加属性元表，\n属性元表可拦截属性、函数调用并调用 _object 对象,\n\ncreateEmbedEx 返回的容器已添加默认代理以直接访问 COM 对象
+!com_lite_dll.createEmbed(.(winform,clsId,iid,embedObj) = 创建嵌入控件,返回控件容器对象,\n容器对象的 _object 成员是创建的 COM 对象,\n容器对象可通过添加成员函数响应 COM 对象事件，\n容器对象的主要作用是充当访问 COM 对象的中间代理对象,\n@clsId 指定控件 CLSID,如果控件不是自内存加载,\n则可省略 @clsId 并由 firstCoClassId函数自动获取,\n参数@3指定接口IID,可省略,默认值为 IID_IDispatch,\n可选在参数@4 中指定 COM 对象绑定的容器对象
+!com_lite_dll.createEmbed() = !embedObject.
+!com_lite_dll.createEmbedEx( = 创建嵌入控件,返回控件容器对象,\n容器对象的 _object 成员是创建的 COM 对象,\n容器对象可通过添加成员函数响应 COM 对象事件，\n容器对象的主要作用是充当访问 COM 对象的中间代理对象。\n此函数返回的容器已添加元表并创建代理以直接访问 COM 对象
+!com_lite_dll.createEmbedEx(.(winform,clsId,iid,embedObj) = 创建嵌入控件,返回控件容器对象,\n此函数返回的容器已添加元表并创建代理以直接访问 COM 对象,\n@clsId 指定控件 CLSID,如果控件不是自内存加载,\n则可省略 @clsId 并由 firstCoClassId函数自动获取,\n参数@3指定接口IID,可省略,默认值为 IID_IDispatch,\n可选在参数@4 中指定 COM 对象绑定的容器对象
+!com_lite_dll.createEmbedEx() = !embedObject.
+!com_lite_dll.createObject(.(clsId,iid) = 创建COM对象\n参数2可省略,默认值为 IID_IDispatch
+!com_lite_dll.createInstance(.(clsId,interface) = 创建COM接口\n参数@interface 指定接口类,可省略,\n@interface 认值为 com.interface.IUnknown
+!com_lite_dll.createInstance() = !interface.
+!com_lite_dll.registerServer() = 注册组件
+!com_lite_dll.unregisterServer() = 卸载组件
+!com_lite_dll.licenseKey = 设置创建控件使用的许可证密钥
+!com_lite_dll.getPath() = 返回加载的 DLL 文件路径,\n内存 DLL 返回 null
+!com_lite_dll.requestLicKey(.(clsId) = 开发时调用此函数返回许可证密钥
+!com_lite_dll.firstCoClassId() = 获取控件的首个 CLSID,\n通过内存加载控件时此函数不可用
+com.lite.appData( = 将@path指定的相对路径转换为系统  %CommonAppData% 目录下的绝对路径
+com.lite.appData(.(path,data) = 可选使用@data指定需要存入的数据,\n在文件路径前加上$符号即可将文件编译到代码中并可作为@data参数,\n只有在存入字节与目标文件内容长度不同时才会更新文件,\n最后使用该路径加载并返回组件对象\n\n使用这个方法可将控件嵌入EXE以生成独立文件,\n也可以解决一些控件不支持在包含Unicode字符的目录下运行的问题
+com.lite.appData() = !com_lite_dll.
+!embedObject._form = COM 控件宿主窗口,\n也就创建控件的构造参数中指定的 aardio 控件或窗口对象\n也是控件窗口的上级父窗口,\n!static.
+!embedObject._object = COM 控件对象,\n通过此对象可以访问 COM 对象的成员函数和成员属性,\n 可改造容器对象并在内部调用 _object 以改进 COM 对象接口\n也可以通过指定容器对象的成员函数以响应 COM 对象的事件
+!embedObject._host = COM 控件宿主对象
+!embedObject._host.close() = 关闭对象
+!embedObject._host.adjust() = 自动调整 COM 控件窗口大小
+!embedObject._host.tranacc(.(MSG消息对象) = 解析 COM 控件 快捷键,\n如果是快捷键返回真值
+!embedObject._host.doObjectVerb( _OLEIVERB__ ) = 执行指定的动词命令
+end intellisense**/

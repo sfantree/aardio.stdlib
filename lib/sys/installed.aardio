@@ -1,0 +1,107 @@
+﻿//installed 安装检测
+import win.reg;
+import fsys.time;
+import com;
+
+namespace sys.installed;
+
+var query = function(path){
+	var reg =  ..win.regReaderWow64(path);
+	if(!reg) return;
+	
+	var programs = {}
+	for k,writeTime in reg.eachKey() {
+		var r = reg.open(k,true);
+		if(r){
+			var t = r.queryValueTable("DisplayName","Version","DisplayVersion","InstallDate");
+			r.close();
+			
+			if(!t) continue;
+			
+			if(!t.InstallDate){
+				t.InstallDate = tostring(..fsys.time(writeTime,"%Y%d%m"))
+			}
+			
+			if(!t.Version && t.DisplayVersion){ 
+				var major,minor,build = ..string.match(t.DisplayVersion,"(\d+)\.(\d+)\.(\d+)\.\d+"); 
+				if(!major) major,minor,build = ..string.match(t.DisplayVersion,"(\d+)\.(\d+)\.(\d+)");
+				t.Version = ..raw.convert({ WORD build = build; BYTE minor = minor; BYTE major = major},{INT n=v}).n;
+			}
+			
+			t.id = k;
+			programs[k] = t;
+		}
+	}
+	
+	reg.close();
+	return programs;
+}
+
+programs = function(){
+	var r = {}
+	var programs = query("HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall","DisplayName","Version","DisplayVersion");
+	..table.assign(r,programs);
+	
+	var programs = query("HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall","DisplayName","Version","DisplayVersion");
+	..table.assign(r,programs);
+	
+	var msi  = ..com.CreateObject("WindowsInstaller.Installer");
+	var dateBuffer = ..raw.buffer(16);
+	
+	for index,productCode in ..com.each(msi.Products) {
+		if(!r[productCode]){
+			r[productCode] = {
+				DisplayName = msi.ProductInfo(productCode,"ProductName");
+				Version = msi.ProductInfo(productCode,"Version");	
+			} 
+			
+			r[productCode].id = productCode;
+		}
+		
+		r[productCode].ProductCode = productCode;
+	};
+	..com.Release(msi);
+	
+	return r;
+}
+
+find = function(p){
+	var t = programs() 	
+	for(k,v in t){ 
+		if(..string.find(v.DisplayName,p)) {
+			
+			if(!v.DisplayVersion){
+				var ver = ..raw.convert({INT n=v.Version},{ WORD build; BYTE minor; BYTE major});
+				v.DisplayVersion = ver.major + "." + ver.minor + "." + ver.build;
+			}
+			
+			if(v.ProductCode){
+				if(!v.InstallDate){
+					var buf = ..raw.buffer(16);
+					if(0==::Msi.MsiGetProductInfoW(v.ProductCode,"InstallDate",buf,{INT size=9})){
+						v.InstallDate = ..string.fromUnicode(buf,,8); 
+					} 
+				}	
+				
+				var buf = ..raw.buffer(0x208/*_MAX_PATH_U16*/);
+				if(0==::Msi.MsiGetProductInfoW(v.ProductCode,"InstallLocation",buf,{INT size=0x103})){
+					v.InstallLocation = ..string.fromUnicode(buf,,-1); 
+				}  
+			}
+			else{
+				v.InstallLocation =..win.reg.queryWow64("HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\"+v.id,"InstallLocation")
+					|| ..win.reg.queryWow64("HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\"+v.id,"InstallLocation")
+			}
+			
+			return v;
+		}
+	}
+}
+
+::Msi := ..raw.loadDll("msi.dll");
+
+/**intellisense()
+sys.installed = 用于检测指定的程序是否安装\n如果需要获取更多信息,请参考源码自注册表读取,\nMSI 安装程序可用 COM 对象 WindowsInstaller.Installer 读取更多信息
+sys.installed.programs() = 返回所有已安装的程序,\n返回值为表,键为已安装程序的ID,\n值为安装信息,包含 DisplayName 与 Version 字段,\nDisplayName 为显示名称,Version 字段的版本数值可作为 fsys.version 的参数解析为版本号\n另安装信息包含2个可选字段：DisplayVersion,InstallDate
+sys.installed.find(__) = 检测是否已安装指定的程序,\n参数指定要在显示名称中搜索的字符串,支持模式匹配\n成功返回包含 DisplayName、Version、DisplayVersion 字段的表,\n如果存在指示安装目标位置的字段 InstallLocation 则包含该字段,\n可能包含 InstallDate 字段用于指示安装日期,这是8个字符表示的日期,\n极个别的安装程序缺少 InstallDate 字段,\n未安装该程序则返回 null
+end intellisense**/

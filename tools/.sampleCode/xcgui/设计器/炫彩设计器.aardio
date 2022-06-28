@@ -1,0 +1,50 @@
+import xcgui;
+
+/*
+注意如果使用炫彩设计器，图像等资源文件只能放在外面（不支持资源目录，如有此需求建议改用HTMLayout,web.kit等，炫彩未提供此类接口）
+另外免费版本的设计器甚至都不能添加图像文件，而炫彩使用的XML语法复杂难以自行编辑（不象HTMLayout使用的通用HTML有较好的可读性），
+所以除非购买商业版本，下面的代码你就不用浪费时间看了。
+*/
+
+xcgui.res.load("\设计器\xml\resource.res")
+var xcWnd = xcgui.window.loadLayout("\设计器\xml\layout_QQ新版.xml");
+xcWnd.form.show();
+
+//<buttonUI buttonType="radio" id="201"/>
+var button1 = xcWnd.getButton(201);
+var button2 = xcWnd.getButton(202);
+var button3 = xcWnd.getButton(203);
+
+//获取树形视图
+var tree = xcWnd.getTreeView(301)
+
+//注意模拟tab不同于按钮，一般是在鼠标按下时触发事件
+button1.on("lbuttonDown",function(){
+	tree.clear();
+	tree.addField("name");
+	for(i=1;10;1){
+		tree.insertString( string.format("QQ-%d-0",i) )
+	}
+	tree.redraw(); //炫彩不同于其他的界面引擎，如果不明确的调用函数刷新，那么能不能显示你只能靠运气了
+})
+
+button2.on("lbuttonDown",function(){
+	tree.clear();
+	tree.addField("name")
+	for(i=1;10;1){
+		tree.insertString( string.format("QQ群-%d-0",i) )
+	}
+	tree.redraw(); //炫彩不同于其他的界面引擎，如果不明确的调用函数刷新，那么能不能显示你只能靠运气了
+})
+
+button3.on("lbuttonDown",function(){
+	tree.clear();
+	tree.addField("name")
+	for(i=1;10;1){
+		tree.insertString( string.format("最近聊天-%d-0",i) )
+	}
+	tree.redraw(); //炫彩不同于其他的界面引擎，如果不明确的调用函数刷新，那么能不能显示你只能靠运气了
+})
+
+win.loopMessage();
+return winform;

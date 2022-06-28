@@ -1,0 +1,52 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469;parent=...)
+winform.add()
+/*}}*/
+
+import web.form;
+var wb = web.form( winform,5/*_UIFLAG_DIALOG*/,,,true);
+wb.noScriptErr = true;
+
+wb.html = /** 
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />  
+    <title>FastCGI安装配置说明</title>
+</head>
+<body style="white-space:pre;font-size:	11pt;word-wrap: break-word;word-break: normal;">
+
+<pre>
+Miniblink 基于 Chromium 49 内核进行了精简，支持包含 XP 在内的所有操作系统。
+aardio 提供强大的 web.bink 扩展库支持 Miniblink 组件开发。使用 web.bink 
+可在网页 Javascript 内直接调用 aardio 函数，也可以在 aardio 内直接调用 
+Javascript 函数，接口简洁方便。
+
+此示例演示了 Typescript + React Hooks + Ant Design 的用法。
+1、请先安装 Node.js,VS Code,yarn 等前端开发环境。
+
+2、然后在此工程内右键点「网页源码」目录，弹出菜单中点击：「用外部编辑器打开」
+默认会在 VS Code 中打开，在 VS Code 中运行命令 yarn 安装依赖。
+
+3、然后运行命令 yarn start 启动网页调试服务器即可（修改源码网页可实时刷新）。
+发布 EXE 前在 VS Code 中运行 yarn build 命令即可，可生成独立的 EXE 文件。
+
+注意：
+请不要在工程内右键同步「网页」或「网页源码目录」，
+这几个目录是不需要做同步操作的，而且前端工具会生成巨大的 node_modules 目录，
+同步会不必要的占用大量资源。
+</pre>
+
+</body>
+</html>
+**/
+
+winform.getTemplatePath = function(){
+	return io.fullpath("/template/web/blink/") 
+}
+
+winform.show(true);
+win.loopMessage();
+return winform;

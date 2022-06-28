@@ -1,0 +1,85 @@
+//path 路径环境变量
+namespace win.path;
+
+get = function(){
+	return ..string.split(..string.getenv("path"),";")
+}
+	
+search = function(filename,dir){
+ 
+	if(dir){
+		filename = ..io.joinpath(dir,filename)
+		return ..io.exist(filename);
+	}
+	
+	var path = ..io.exist( filename )
+			|| search( filename, ..io.localpath("\"))
+			|| search( filename, ..io._exedir )
+			|| search( filename,..io.fullpath(".")) 
+			|| search( filename,..io.getSpecial(0x25/*_CSIDL_SYSTEM*/) ) 
+			|| search( filename,..io.getSpecial(0x24/*_CSIDL_WINDOWS*/) )  
+			
+	if(path) return path; 
+	
+	var paths = get();
+	for(k,v in paths ){
+		path = ..io.joinpath(v,filename);
+		if( ..io.exist(path) ) return path
+	} 
+	return 
+}
+
+searchDll = function(path,...){
+    path = ..io.localpath(path) : path;
+	var h = ::Kernel32.LoadLibraryEx(path, ,2/*_LOAD_LIBRARY_AS_DATAFILE*/);
+	if (h){ 
+		if(...){
+			::Kernel32.FreeLibrary(h);
+			return searchDll(...); 
+		}
+		
+		var buf = {WORD path[0x104]}
+		::Kernel32.GetModuleFileNameW(h, buf, 0x104/*_MAX_PATH*/);
+		::Kernel32.FreeLibrary(h);
+		if(#buf.path) return buf.path;
+	}	
+}
+
+add = function(path,name,last){
+	path = ..io.fullpath(path);
+	if(!name) name = "Path";
+	var values = ..string.getenv(name);  
+	if( !#values ){
+		..string.setenv(name,path)
+		return path;
+	}
+	
+	var tv = ..string.split(values,"<;>");
+	for(k,v in tv){
+		if( ..string.cmp(path,v) == 0 ) return values; 
+	}
+	
+	if(!last) values = path+ ";" + values;
+	else values = values+ ";" + path;
+	
+	..string.setenv(name,values)
+	return values;
+}
+
+update = function(user,name){
+	if(!..win.reg) error("请先导入 win.reg",2);
+	if(!name) name = "Path";
+	
+	var key = user ? "HKCU\Environment" : "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment"
+	var value = ..win.reg.query(key,name);
+	..string.setenv(name,value);
+}  
+
+/**intellisense(win.path)
+search("__") = 以当前目录、应用程序目录、EXE目录、系统目录,path环境变量指定的目录下查的文件
+get() = 返回PATH环境变量中的目录路径数组
+searchDll(__) = 按系统加载DLL的查找规则查找DLL文件,\n如果指定多个参数,只要一个参数指定的DLL没找到即返回null\n如果所有指定的DLL都找到了,返回最后一个参数指定的DLL完整路径
+add( = 添加文件路径到当前进程的指定环境变量
+add(.(path,name,last) = 添加 @path 指定的文件路径到当前进程的指定环境变量,\n可选用 @name 参数指定环境变量名,默认值为"Path",\n可选参数 @last 如果为 true,\n则添加到其他已存在的路径后面,否则插入到最前面
+update(.(user,name) = 自注册表读取指定环境变量的最新值,\n并更新当前进程的环境变量,\n以避免使用旧的值或从父进程继承了旧的值,\n参数@user 如果指定为 true,则读取用户环境变量。\n默认读取系统环境变量,\n可选用 @name 参数指定环境变量名,默认值为"Path"\n\n使用此函数之前调用代码必须自行导入 win.reg 库
+end intellisense**/

@@ -1,0 +1,26 @@
+﻿import web.rest.jsonLiteClient
+import crypt;
+
+class baota{
+	ctor(serverUrl,btKey){
+		var client = ..web.rest.jsonLiteClient();
+		client.btKey = btKey;
+		
+		client.beforeStringifyRequestParameters = function(params,codepage){
+			
+			var now = tonumber(..time());
+			return ..table.mixin(params,{
+				request_token = ..crypt.md5(now ++ ..crypt.md5(client.btKey,false),false );
+				request_time = now;
+			})
+		}
+		
+		this = client.api(serverUrl);
+	};
+}
+
+/**intellisense()
+baota =  用于创建宝塔面板API调用对象
+baota(.(serverUrl,btKey) =  创建宝塔面板API调用对象
+baota() = !web_rest_api.
+end intellisense**/

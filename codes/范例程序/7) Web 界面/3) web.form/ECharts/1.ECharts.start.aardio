@@ -1,0 +1,63 @@
+﻿//入门
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio echarts";right=909;bottom=669;border="dialog frame";max=false;min=false)
+/*}}*/
+
+import web.form;
+var wb = web.form.ie11( winform );
+
+import web.json;
+wb.external = {
+    getOption = function( num ){
+        var data = {
+            calculable = true;
+            legend = {
+                data = { "直接访问"; "邮件营销"; "联盟广告"; "视频广告"; "搜索引擎" };
+                orient = "vertical";
+                x = "left"
+            };
+            series = {
+                {
+                    center = { "50%"; "60%" };
+                    data = {
+                        { name = "直接访问"; value = 335 };
+                        { name = "邮件营销"; value = 310 };
+                        { name = "联盟广告"; value = 234 };
+                        { name = "视频广告"; value = 135 };
+                        { name = "搜索引擎"; value = 1548 }
+                    };
+                    name = "访问来源"; radius = "55%"; type = "pie"
+                }
+            };
+            title = { subtext = "纯属虚构"; text = "某站点用户访问来源"; x = "center"         };
+            toolbox = {
+                show = false
+            };
+            tooltip = { formatter = "{a} <br/>{b} : {c} ({d}%)"; trigger = "item" }
+        }
+         
+        return wb.eval( web.json.stringify(data) )
+    }
+}
+
+wb.html = /**
+<!doctype html>
+<html>
+<head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta charset="UTF-8">  
+</head>
+<body>
+    <div id="main" style="height:600px;"></div>
+    <script src="https://lib.baomitu.com/echarts/5.2.0/echarts.min.js"></script>
+    <script>
+        var myChart = echarts.init(document.getElementById('main'));
+        myChart.setOption( external.getOption() );
+    </script>
+</body>
+</html>
+**/
+
+winform.show();
+win.loopMessage();

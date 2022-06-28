@@ -1,0 +1,921 @@
+//__源代码
+namespace win.ui.ctrl;  
+ 
+_dll = ..raw.loadDll($"~/lib/win/ui/ctrl/scintilla/.res/SciLexer.dll","SciLexer.dll");
+
+scintilla = class {
+	ctor (parent, tvalue) {  
+		if(tvalue.edge)   
+				tvalue.exstyle |= 0x200/*_WS_EX_CLIENTEDGE*/; 
+				
+		this.hwnd = ::CreateWindowEx(tvalue.exstyle, "Scintilla", tvalue.text, 0x40000000/*_WS_CHILD*/ | tvalue.style
+			, tvalue.left, tvalue.top, tvalue.right-tvalue.left, tvalue.bottom-tvalue.top, parent[["hwnd"]] : parent
+			, tvalue.id,tvalue.hInstance );
+		if (!this.hwnd) {
+			return null;
+		}
+		this.SCNotification = SCNotification;
+	}
+	
+	onCreate = function(){ 
+	}
+	
+	onDestroy = function(){  
+	}
+	
+	setSavePoint = function () {
+		::SendMessageInt(this.hwnd, 2014/*_SCI_SETSAVEPOINT*/, 0, 0);
+	}
+	
+	getLine = function (line) {
+		var len = ::SendMessageInt(this.hwnd, 2350/*_SCI_LINELENGTH*/, line, 0);
+		var re, str = ::SendMessageByString(this.hwnd, 2153/*_SCI_GETLINE*/, line, len);
+		return ..string.left(str, re);
+	}
+	
+	getTextRange = function (s, e) {
+		var tr = Sci_TextRange();
+		tr.chrg.cpMin = s;
+		tr.chrg.cpMax = e;
+		tr.lpstrText = ..string.repeat(e - s + 1);
+		::SendMessageByStruct(this.hwnd, 2162/*_SCI_GETTEXTRANGE*/, 0, tr);
+		return ..string.str(tr.lpstrText);
+	}
+	
+	addText = function (str = "") {
+		::SendMessageByString(this.hwnd, 2001/*_SCI_ADDTEXT*/, #str, str);
+	}
+	
+	appendText = function (str = "") {
+		::SendMessageByString(this.hwnd, 2282/*_SCI_APPENDTEXT*/, #str, str);
+	}
+	
+	insertText = function (str, pos = -1) {
+		::SendMessageByString(this.hwnd, 2003/*_SCI_INSERTTEXT*/, pos, str);
+	}
+	
+	clearAll = function () {
+		::SendMessageInt(this.hwnd, 2004/*_SCI_CLEARALL*/, 0, 0);
+	}
+	
+	clearDocumentStyle = function () {
+		::SendMessageInt(this.hwnd, 2005/*_SCI_CLEARDOCUMENTSTYLE*/, 0, 0);
+	}
+	
+	getCharAt = function (pos = 0) {
+		return ::SendMessageInt(this.hwnd, 2007/*_SCI_GETCHARAT*/, pos, 0);
+	}
+	
+	getStyleAt = function (pos = 0) {
+		return ::SendMessageInt(this.hwnd, 2010/*_SCI_GETSTYLEAT*/, pos, 0);
+	}
+	
+	findText = function (text = "", flags = 0, startIndex = 0, endIndex) {
+		endIndex := this.length;
+		var ttf = Sci_TextToFind();
+		ttf.chrg.cpMin = startIndex;
+		ttf.chrg.cpMax = endIndex;
+		ttf.lpstrText = text;
+		var ret = ::SendMessageByStruct(this.hwnd, 2150/*_SCI_FINDTEXT*/, flags, ttf);
+		if (ret == -1) {
+			return -1;
+		} else {
+			return ttf.chrgText.cpMin, ttf.chrgText.cpMax;
+		}
+	}
+	
+	searchAnchor = function () {
+		return ::SendMessageInt(this.hwnd, 2366/*_SCI_SEARCHANCHOR*/, 0, 0);
+	}
+	
+	searchNext = function (text = "", flags = 0) {
+		var ret = ::SendMessageByString(this.hwnd, 2367/*_SCI_SEARCHNEXT*/, flags, text);
+		return ret;
+	}
+	
+	searchPrev = function (text = "", flags = 0) {
+		var ret = ::SendMessageByString(this.hwnd, 2368/*_SCI_SEARCHPREV*/, flags, text);
+		return ret;
+	}
+	
+	// 设置搜索位置在选中的区域内
+	targetFromSelection = function () {
+		return ::SendMessageInt(this.hwnd, 2287/*_SCI_TARGETFROMSELECTION*/, 0, 0);
+	}
+	
+	searchInTarget = function (text = "") {
+		var ret =  ::SendMessageByString(this.hwnd, 2197/*_SCI_SEARCHINTARGET*/, #text, text);
+		return ret;
+	}
+	
+	replaceTarget = function (text = "") {
+		var ret = ::SendMessageByString(this.hwnd, 2194/*_SCI_REPLACETARGET*/, -1, text);
+		return ret;
+	}
+	
+	replaceTargetRe = function (text = "") {
+		var ret = ::SendMessageByString(this.hwnd, 2195/*_SCI_REPLACETARGETRE*/, -1, text);
+		return ret;
+	}
+	
+	getTag = function (tagNumber) {
+		var ret, str = ::SendMessageByString(this.hwnd, 2616/*_SCI_GETTAG*/, tagNumber, 1024);
+		return str;
+	}
+	
+	// common operation
+	cut = function () {
+		return ::SendMessageInt(this.hwnd, 2177/*_SCI_CUT*/, 0, 0);
+	}
+	
+	copy = function () {
+		return ::SendMessageInt(this.hwnd, 2178/*_SCI_COPY*/, 0, 0);
+	}
+	
+	paste = function () {
+		return ::SendMessageInt(this.hwnd, 2179/*_SCI_PASTE*/, 0, 0);
+	}
+	
+	clear = function () {
+		return ::SendMessageInt(this.hwnd, 2180/*_SCI_CLEAR*/, 0, 0);
+	}
+	
+	copyAllowLine = function () {
+		return ::SendMessageInt(this.hwnd, 2519/*_SCI_COPYALLOWLINE*/, 0, 0);
+	}
+	
+	copyRange = function (startIndex, endIndex) {
+		return ::SendMessageInt(this.hwnd, 2419/*_SCI_COPYRANGE*/, startIndex, endIndex);
+	}
+	
+	copyText = function (text = "") {
+		var ret = ::SendMessageByString(this.hwnd, 2420/*_SCI_COPYTEXT*/, #text, text);
+		return ret;
+	}
+	
+	undo = function () {
+		return ::SendMessageInt(this.hwnd, 2176/*_SCI_UNDO*/, 0, 0);
+	}
+	
+	redo = function () {
+		return ::SendMessageInt(this.hwnd, 2011/*_SCI_REDO*/, 0, 0);
+	}
+	
+	emptyUndoBuffer = function () {
+		return ::SendMessageInt(this.hwnd, 2175/*_SCI_EMPTYUNDOBUFFER*/, 0, 0);
+	}
+	
+	beginUndoAction = function () {
+		return ::SendMessageInt(this.hwnd, 2078/*_SCI_BEGINUNDOACTION*/, 0, 0);
+	}
+	
+	endUndoAction = function () {
+		return ::SendMessageInt(this.hwnd, 2079/*_SCI_ENDUNDOACTION*/, 0, 0);
+	}
+	
+	addUndoAction = function (token, flags = 0) {
+		return ::SendMessageInt(this.hwnd, 2560/*_SCI_ADDUNDOACTION*/, token, flags);
+	}
+	
+	setSel = function (startIndex = -1, endIndex = -1) {
+		return ::SendMessageInt(this.hwnd, 2160/*_SCI_SETSEL*/, startIndex, endIndex);
+	}
+	
+	goToPos = function (pos) {
+		return ::SendMessageInt(this.hwnd, 2025/*_SCI_GOTOPOS*/, pos, 0);
+	}
+	
+	goToLine = function (line) {
+		return ::SendMessageInt(this.hwnd, 2024/*_SCI_GOTOLINE*/, line, 0);
+	}
+	
+	setEmptySelection = function (pos) {
+		return ::SendMessageInt(this.hwnd, 2556/*_SCI_SETEMPTYSELECTION*/, pos, 0);
+	}
+	
+	selectAll = function () {
+		return ::SendMessageInt(this.hwnd, 2013/*_SCI_SELECTALL*/, 0, 0);
+	}
+	
+	lineFromPosition = function (pos) {
+		return ::SendMessageInt(this.hwnd, 2166/*_SCI_LINEFROMPOSITION*/, pos, 0);
+	}
+	
+	positionFromLine = function (line) {
+		return ::SendMessageInt(this.hwnd, 2167/*_SCI_POSITIONFROMLINE*/, line, 0);
+	}
+	
+	getLineEndPosition = function (line) {
+		return ::SendMessageInt(this.hwnd, 2136/*_SCI_GETLINEENDPOSITION*/, line, 0);
+	}
+	
+	lineLength = function (line) {
+		return ::SendMessageInt(this.hwnd, 2350/*_SCI_LINELENGTH*/, line, 0);
+	}
+	
+	startStyling = function (pos, mask) {
+		return ::SendMessageInt(this.hwnd, 2032/*_SCI_STARTSTYLING*/, pos, mask);
+	}
+	
+	setStyling = function (length, style) {
+		return ::SendMessageInt(this.hwnd, 2033/*_SCI_SETSTYLING*/, length, style);
+	}
+	
+	setLineState = function (line, value) {
+		return ::SendMessageInt(this.hwnd, 2092/*_SCI_SETLINESTATE*/, line, value);
+	}
+	
+	getLineState = function (line) {
+		return ::SendMessageInt(this.hwnd, 2093/*_SCI_GETLINESTATE*/, line, 0);
+	}
+	
+	styleResetDefault = function () {
+		return ::SendMessageInt(this.hwnd, 2058/*_SCI_STYLERESETDEFAULT*/, 0, 0);
+	}
+	
+	styleClearAll = function () {
+		return ::SendMessageInt(this.hwnd, 2050/*_SCI_STYLECLEARALL*/, 0, 0);
+	}
+	
+	styleSetFont = function (styleNumber, fontName) {
+		var ret = ::SendMessageByString(this.hwnd, 2056/*_SCI_STYLESETFONT*/, styleNumber, fontName);
+		return ret;
+	}
+	
+	styleGetFont = function (styleNumber) {
+		var re, str = ::SendMessageByString(this.hwnd, 2486/*_SCI_STYLEGETFONT*/, styleNumber, 512);
+		return ..string.str(str);
+	}
+	
+	styleSetSize = function (styleNumber, sizeInPoints) {
+		return ::SendMessageInt(this.hwnd, 2055/*_SCI_STYLESETSIZE*/, styleNumber, sizeInPoints);
+	}
+	
+	styleGetSize = function (styleNumber) {
+		return ::SendMessageInt(this.hwnd, 2485/*_SCI_STYLEGETSIZE*/, styleNumber, 0);
+	}
+	
+	styleSetBold = function (styleNumber, bold) {
+		return ::SendMessageInt(this.hwnd, 2053/*_SCI_STYLESETBOLD*/, styleNumber, bold ? 1 : 0);
+	}
+	
+	styleGetBold = function (styleNumber) {
+		return !!::SendMessageInt(this.hwnd, 2483/*_SCI_STYLEGETBOLD*/, styleNumber, 0);
+	}
+	
+	styleSetItalic = function (styleNumber, italic) {
+		return ::SendMessageInt(this.hwnd, 2054/*_SCI_STYLESETITALIC*/, styleNumber, italic ? 1 : 0);
+	}
+	
+	styleGetItalic = function (styleNumber) {
+		return !!::SendMessageInt(this.hwnd, 2484/*_SCI_STYLEGETITALIC*/, styleNumber, 0);
+	}
+	
+	styleSetUnderline = function (styleNumber, underline) {
+		return ::SendMessageInt(this.hwnd, 2059/*_SCI_STYLESETUNDERLINE*/, styleNumber, underline ? 1 : 0);
+	}
+	
+	styleGetUnderline = function (styleNumber) {
+		return !!::SendMessageInt(this.hwnd, 2488/*_SCI_STYLEGETUNDERLINE*/, styleNumber, 0);
+	}
+	
+	styleSetFore = function (styleNumber, colour) {
+		return ::SendMessageInt(this.hwnd, 2051/*_SCI_STYLESETFORE*/, styleNumber, colour);
+	}
+	
+	styleGetFore = function (styleNumber) {
+		return ::SendMessageInt(this.hwnd, 2481/*_SCI_STYLEGETFORE*/, styleNumber, 0);
+	}
+	
+	styleSetBack = function (styleNumber, colour) {
+		return ::SendMessageInt(this.hwnd, 2052/*_SCI_STYLESETBACK*/, styleNumber, colour);
+	}
+	
+	styleGetBack = function (styleNumber) {
+		return ::SendMessageInt(this.hwnd, 2482/*_SCI_STYLEGETBACK*/, styleNumber, 0);
+	}
+	
+	setStyle = function (styleNumber, font, size, bold, italic, underline, fore, back) {
+		if (type(font) == type.table) {
+			size = font["size"];
+			bold = font["bold"];
+			italic = font["italic"];
+			underline = font["underline"];
+			fore = font["fore"];
+			back = font["back"];
+			font = font["font"];
+		}
+		
+		if (font)
+			this.styleSetFont(styleNumber, font);
+		
+		if (size)
+			this.styleSetSize(styleNumber, size);
+		
+		if (bold)
+			this.styleSetBold(styleNumber, bold);
+		
+		if (italic)
+			this.styleSetItalic(styleNumber, italic);
+		
+		if (underline)
+			this.styleSetUnderline(styleNumber, underline);
+		
+		if (fore)
+			this.styleSetFore(styleNumber, fore);
+		
+		if (back)
+			this.styleSetBack(styleNumber, back);
+	}
+	
+	/* Margin */
+	setMarginType = function (margin, iType) {
+		return ::SendMessageInt(this.hwnd, 2240/*_SCI_SETMARGINTYPEN*/, margin, iType);
+	}
+	
+	getMarginType = function (margin) {
+		return ::SendMessageInt(this.hwnd, 2241/*_SCI_GETMARGINTYPEN*/, margin, 0);
+	}
+	
+	setMarginWidth = function (margin, pixelWidth) {
+		return ::SendMessageInt(this.hwnd, 2242/*_SCI_SETMARGINWIDTHN*/, margin, pixelWidth);
+	}
+	
+	getMarginWidth = function (margin) {
+		return ::SendMessageInt(this.hwnd, 2243/*_SCI_GETMARGINWIDTHN*/, margin, 0);
+	}
+	
+	setMarginMask = function (margin, mask) {
+		return ::SendMessageInt(this.hwnd, 2244/*_SCI_SETMARGINMASKN*/, margin, mask);
+	}
+	
+	getMarginMask = function (margin) {
+		return ::SendMessageInt(this.hwnd, 2245/*_SCI_GETMARGINMASKN*/, margin, 0);
+	}
+	
+	setMarginSensitive = function (margin, sensitive) {
+		return ::SendMessageInt(this.hwnd, 2246/*_SCI_SETMARGINSENSITIVEN*/, margin, sensitive ? 1 : 0);
+	}
+	
+	getMarginSensitive = function (margin) {
+		return !!::SendMessageInt(this.hwnd, 2247/*_SCI_GETMARGINSENSITIVEN*/, margin, 0);
+	}
+	
+	setMarginCursor = function (margin, cursor) {
+		return ::SendMessageInt(this.hwnd, 2248/*_SCI_SETMARGINCURSORN*/, margin, cursor);
+	}
+	
+	getMarginCursor = function (margin) {
+		return ::SendMessageInt(this.hwnd, 2249/*_SCI_GETMARGINCURSORN*/, margin, 0);
+	}
+	
+	setKeywords = function (keyWordSet, keyWordList) {
+		var ret = ::SendMessageByString(this.hwnd, 4005/*_SCI_SETKEYWORDS*/, keyWordSet, keyWordList);
+		return ret;
+	}
+	
+	// --- Other function call this ---
+	sendEditor = function (uMsg, wParam = 0, lParam = 0) {
+		if (type(lParam) == type.number) {
+			return ::SendMessageInt(this.hwnd, uMsg, wParam, lParam);
+		} elseif (type(lParam) == type.string) {
+			if (type(wParam) == type.string) {
+				return SendMessageStrStr(this.hwnd, uMsg, wParam, lParam);
+			} else {
+				return ::SendMessageByString(this.hwnd, uMsg, wParam, lParam);
+			}
+		} else {
+			return ::SendMessageByStruct(this.hwnd, uMsg, wParam, lParam);
+		}
+	}
+	
+	@metaProperty;
+}
+
+scintilla.metaProperty = ..win.ui.ctrl.metaProperty(
+	length = {
+		_get = function () {
+			return ::SendMessageInt(owner.hwnd, 2006/*_SCI_GETLENGTH*/, 0, 0);
+		}
+	}
+	
+	text = {
+		_get = function () {
+			var re, str = ::SendMessageByString(owner.hwnd, 2182/*_SCI_GETTEXT*/, owner.length + 1, owner.length + 1);
+			return ..string.str(str);
+		}
+		_set = function (str = "") {
+			::SendMessageByString(owner.hwnd, 2181/*_SCI_SETTEXT*/, 0, str);
+		}
+	}
+	
+	selText = {
+		_get = function () {
+			var len = ::SendMessageInt(owner.hwnd, 2161/*_SCI_GETSELTEXT*/, 0, 0);
+			var re, str = ::SendMessageByString(owner.hwnd, 2161/*_SCI_GETSELTEXT*/, 0, len);
+			return ..string.str(str);
+		}
+		_set = function (v = "") {
+			::SendMessageByString(owner.hwnd, 2170/*_SCI_REPLACESEL*/, 0, v);
+		}
+	}
+	
+	readonly = {
+		_get = function () {
+			return !!::SendMessageInt(owner.hwnd, 2140/*_SCI_GETREADONLY*/, 0, 0);
+		}
+		_set = function (v) {
+			::SendMessageInt(owner.hwnd, 2171/*_SCI_SETREADONLY*/, v ? 1 : 0, 0);
+		}
+	}
+	
+	styleBits = {
+		_get = function () {
+			return ::SendMessageInt(owner.hwnd, 2091/*_SCI_GETSTYLEBITS*/, 0, 0);
+		}
+		_set = function (v) {
+			::SendMessageInt(owner.hwnd, 2090/*_SCI_SETSTYLEBITS*/, v, 0);
+		}
+	}
+	
+	/*For_searchInTarget{{*/
+	targetStart = {
+		_get = function () {
+			return ::SendMessageInt(owner.hwnd, 2191/*_SCI_GETTARGETSTART*/, 0, 0);
+		}
+		_set = function (v) {
+			return ::SendMessageInt(owner.hwnd, 2190/*_SCI_SETTARGETSTART*/, v, 0);
+		}
+	}
+	
+	targetEnd = {
+		_get = function () {
+			return ::SendMessageInt(owner.hwnd, 2193/*_SCI_GETTARGETEND*/, 0, 0);
+		}
+		_set = function (v) {
+			return ::SendMessageInt(owner.hwnd, 2192/*_SCI_SETTARGETEND*/, v, 0);
+		}
+	}
+	
+	searchFlags = {
+		_get = function () {
+			return ::SendMessageInt(owner.hwnd, 2199/*_SCI_GETSEARCHFLAGS*/, 0, 0);
+		}
+		_set = function (v) {
+			return ::SendMessageInt(owner.hwnd, 2198/*_SCI_SETSEARCHFLAGS*/, v, 0);
+		}
+	}
+	/*}}*/
+	
+	canPaste = {
+		_get = function () {
+			return !!::SendMessageInt(owner.hwnd, 2173/*_SCI_CANPASTE*/, 0, 0);
+		}
+	}
+	
+	pasteConvertEndings = {
+		_get = function () {
+			return !!::SendMessageInt(owner.hwnd, 2468/*_SCI_GETPASTECONVERTENDINGS*/, 0, 0);
+		}
+		_set = function (v) {
+			::SendMessageInt(owner.hwnd, 2467/*_SCI_SETPASTECONVERTENDINGS*/, v ? 1 : 0, 0);
+		}
+	}
+	
+	status = {
+		_get = function () {
+			return ::SendMessageInt(owner.hwnd, 2383/*_SCI_GETSTATUS*/, 0, 0);
+		}
+		_set = function (v) {
+			::SendMessageInt(owner.hwnd, 2382/*_SCI_SETSTATUS*/, v, 0);
+		}
+	}
+	
+	canUndo = {
+		_get = function () {
+			return !!::SendMessageInt(owner.hwnd, 2174/*_SCI_CANUNDO*/, 0, 0);
+		}
+	}
+	
+	canRedo = {
+		_get = function () {
+			return !!::SendMessageInt(owner.hwnd, 2016/*_SCI_CANREDO*/, 0, 0);
+		}
+	}
+	
+	undoCollection = {
+		_get = function () {
+			return !!::SendMessageInt(owner.hwnd, 2019/*_SCI_GETUNDOCOLLECTION*/, 0, 0);
+		}
+		
+		_set = function (v) {
+			::SendMessageInt(owner.hwnd, 2012/*_SCI_SETUNDOCOLLECTION*/, v ? 1 : 0, 0);
+		}
+	}
+	
+	lineCount = {
+		_get = function () {
+			return ::SendMessageInt(owner.hwnd, 2154/*_SCI_GETLINECOUNT*/, 0, 0);
+		}
+	}
+	
+	firstVisibleLine = {
+		_get = function () {
+			return ::SendMessageInt(owner.hwnd, 2152/*_SCI_GETFIRSTVISIBLELINE*/, 0, 0);
+		}
+		_set = function (v) {
+			::SendMessageInt(owner.hwnd, 2613/*_SCI_SETFIRSTVISIBLELINE*/, v, 0);
+		}
+	}
+	
+	linesOnScreen = {
+		_get = function () {
+			return ::SendMessageInt(owner.hwnd, 2370/*_SCI_LINESONSCREEN*/, 0, 0);
+		}
+	}
+	
+	modify = {
+		_get = function () {
+			return !!::SendMessageInt(owner.hwnd, 2159/*_SCI_GETMODIFY*/, 0, 0);
+		}
+	}
+	
+	currentPos = {
+		_get = function () {
+			return ::SendMessageInt(owner.hwnd, 2008/*_SCI_GETCURRENTPOS*/, 0, 0);
+		}
+		_set = function (v) {
+			::SendMessageInt(owner.hwnd, 2141/*_SCI_SETCURRENTPOS*/, v, 0);
+		}
+	}
+	
+	anchor = {
+		_get = function () {
+			return ::SendMessageInt(owner.hwnd, 2009/*_SCI_GETANCHOR*/, 0, 0);
+		}
+		_set = function (v) {
+			::SendMessageInt(owner.hwnd, 2026/*_SCI_SETANCHOR*/, v, 0);
+		}
+	}
+	
+	selectionStart = function () {
+		_get = function () {
+			return ::SendMessageInt(owner.hwnd, 2143/*_SCI_GETSELECTIONSTART*/, 0, 0);
+		}
+		_set = function (v) {
+			::SendMessageInt(owner.hwnd, 2142/*_SCI_SETSELECTIONSTART*/, v, 0);
+		}
+	}
+	
+	selectionEnd = function () {
+		_get = function () {
+			return ::SendMessageInt(owner.hwnd, 2145/*_SCI_GETSELECTIONEND*/, 0, 0);
+		}
+		_set = function (v) {
+			::SendMessageInt(owner.hwnd, 2144/*_SCI_SETSELECTIONEND*/, v, 0);
+		}
+	}
+	
+	curLine = {
+		_get = function () {
+			var len = ::SendMessageInt(owner.hwnd, 2027/*_SCI_GETCURLINE*/, 0, 0);
+			var re, str = ::SendMessageByString(owner.hwnd, 2027/*_SCI_GETCURLINE*/, len, len);
+			return ..string.str(str);
+		}
+	}
+	
+	selectionIsRectangle = {
+		_get = function () {
+			return !!::SendMessageInt(owner.hwnd, 2372/*_SCI_SELECTIONISRECTANGLE*/, 0, 0);
+		}
+	}
+	
+	selectionMode = {
+		_get = function () {
+			return ::SendMessageInt(owner.hwnd, 2423/*_SCI_GETSELECTIONMODE*/, 0, 0);
+		}
+		_set = function (v) {
+			::SendMessageInt(owner.hwnd, 2422/*_SCI_SETSELECTIONMODE*/, v, 0);
+		}
+	}
+	
+	endStyled = {
+		_get = function () {
+			return ::SendMessageInt(owner.hwnd, 2028/*_SCI_GETENDSTYLED*/, 0, 0);
+		}
+	}
+	
+	selFore = {
+		_set = function (v) {
+			if (v)
+				::SendMessageInt(owner.hwnd, 2067/*_SCI_SETSELFORE*/, 1, v);
+			else
+				::SendMessageInt(owner.hwnd, 2067/*_SCI_SETSELFORE*/, 0, 0);
+		}
+	}
+	
+	selAlpha = {
+		_get = function () {
+			return ::SendMessageInt(owner.hwnd, 2477/*_SCI_GETSELALPHA*/, 0, 0);
+		}
+		_set = function (v) {
+			::SendMessageInt(owner.hwnd, 2478/*_SCI_SETSELALPHA*/, v, 0);
+		}
+	}
+	
+	selEOLFilled = {
+		_get = function () {
+			return !!::SendMessageInt(owner.hwnd, 2479/*_SCI_GETSELEOLFILLED*/, 0, 0);
+		}
+		_set = function (v) {
+			::SendMessageInt(owner.hwnd, 2480/*_SCI_SETSELEOLFILLED*/, v ? 1 : 0, 0);
+		}
+	}
+	
+	controlCharSymbol = {
+		_get = function () {
+			return ::SendMessageInt(owner.hwnd, 2389/*_SCI_GETCONTROLCHARSYMBOL*/, 0, 0);
+		}
+		_set = function (v) {
+			::SendMessageInt(owner.hwnd, 2388/*_SCI_SETCONTROLCHARSYMBOL*/, v, 0);
+		}
+	}
+	
+	marginLeft = {
+		_get = function () {
+			return ::SendMessageInt(owner.hwnd, 2156/*_SCI_GETMARGINLEFT*/, 0, 0);
+		}
+		_set = function (v) {
+			::SendMessageInt(owner.hwnd, 2155/*_SCI_SETMARGINLEFT*/, 0, v);
+		}
+	}
+	
+	marginRight = {
+		_get = function () {
+			return ::SendMessageInt(owner.hwnd, 2158/*_SCI_GETMARGINRIGHT*/, 0, 0);
+		}
+		_set = function (v) {
+			::SendMessageInt(owner.hwnd, 2157/*_SCI_SETMARGINRIGHT*/, 0, v);
+		}
+	}
+	
+	fontQuality = {
+		_get = function () {
+			return ::SendMessageInt(owner.hwnd, 2612/*_SCI_GETFONTQUALITY*/, 0, 0);
+		}
+		_set = function (v) {
+			::SendMessageInt(owner.hwnd, 2611/*_SCI_SETFONTQUALITY*/, v, 0);
+		}
+	}
+	
+	codepage = {
+		_get = function () {
+			return ::SendMessageInt(owner.hwnd, 2137/*_SCI_GETCODEPAGE*/, 0, 0);
+		}
+		_set = function (v) {
+			::SendMessageInt(owner.hwnd, 2037/*_SCI_SETCODEPAGE*/, v, 0);
+		}
+	}
+	
+	tabWidth = {
+		_get = function () {
+			return ::SendMessageInt(owner.hwnd, 2121/*_SCI_GETTABWIDTH*/, 0, 0);
+		}
+		_set = function (v) {
+			::SendMessageInt(owner.hwnd, 2036/*_SCI_SETTABWIDTH*/, v, 0);
+		}
+	}
+	
+	useTabs = {
+		_get = function () {
+			return !!::SendMessageInt(owner.hwnd, 2125/*_SCI_GETUSETABS*/, 0, 0);
+		}
+		_set = function (v) {
+			::SendMessageInt(owner.hwnd, 2124/*_SCI_SETUSETABS*/, v ? 1 : 0, 0);
+		}
+	}
+	
+	indent = {
+		_get = function () {
+			return ::SendMessageInt(owner.hwnd, 2123/*_SCI_GETINDENT*/, 0, 0);
+		}
+		_set = function (v) {
+			::SendMessageInt(owner.hwnd, 2122/*_SCI_SETINDENT*/, v, 0);
+		}
+	}
+	
+	/* Lexer */
+	lexer = {
+		_get = function () {
+			return ::SendMessageInt(owner.hwnd, 4002/*_SCI_GETLEXER*/, 0, 0);
+		}
+		_set = function (v) {
+			::SendMessageInt(owner.hwnd, 4001/*_SCI_SETLEXER*/, v, 0);
+		}
+	}
+	
+	lexerLanguage = {
+		_get = function () {
+			var re, str = ::SendMessageByString(owner.hwnd, 4012/*_SCI_GETLEXERLANGUAGE*/, 0, 128);
+			return ..string.str(str);
+		}
+		_set = function (v) {
+			::SendMessageByString(owner.hwnd, 4006/*_SCI_SETLEXERLANGUAGE*/, 0, v);
+		}
+	}
+	
+	describeKeywordSets = {
+		_set = function (v) {
+			::SendMessageByString(owner.hwnd, 4017/*_SCI_DESCRIBEKEYWORDSETS*/, 0, v);
+		}
+	}
+	
+	styleBitsNeeded = {
+		_get = function () {
+			return ::SendMessageInt(owner.hwnd, 4011/*_SCI_GETSTYLEBITSNEEDED*/, 0, 0);
+		}
+	}
+	
+);
+
+ 
+
+namespace scintilla {
+
+	Sci_NotifyHeader = class {
+		int hwndFrom;
+		INT idFrom;
+		INT code;
+	};
+	var Sci_NotifyHeader = Sci_NotifyHeader;
+	SCNotification = class {
+		struct nmhdr = Sci_NotifyHeader();
+		int position;
+		int ch;
+		int modifiers;
+		int modificationType;
+		string text;
+		int length;
+		int linesAdded;
+		int message;
+		INT wParam;
+		INT lParam;
+		int line;
+		int foldLevelNow;
+		int foldLevelPrev;
+		int margin;
+		int listType;
+		int x;
+		int y;
+		int token;
+		int annotationLinesAdded;
+		int updated;
+	};
+
+	// 一些结构体
+
+	Sci_CharacterRange = class {
+ 		int cpMin;
+ 		int cpMax;
+	};
+	var Sci_CharacterRange = Sci_CharacterRange;
+	
+	Sci_TextRange = class {
+ 		struct chrg = Sci_CharacterRange();
+ 		string lpstrText;
+	};
+	
+	Sci_TextToFind = class {
+    	struct chrg = Sci_CharacterRange();     // range to search
+    	string lpstrText;                                          // the search pattern (zero terminated)
+    	struct chrgText = Sci_CharacterRange(); // returned as position of matching text
+	};
+	
+	SendMessageStrStr = ::User32.api("SendMessageA", "int(int,int,string,string)");
+
+}
+
+
+/**intellisense()
+scintilla = Scintilla 代码编辑框
+scintilla.create(.(父窗口,左,顶,宽,高) = 创建一个 Scintilla 代码编辑框
+!sci.setSavePoint() = 设置保存点，将文档设置为未修改状态，通常在新建文档或保存动作之后执行
+!sci.getLine(.(行号) = 取指定行文本，行号从 0 开始
+!sci.getTextRange(.(开始位置,结束位置) = 取指定区域内的文本
+!sci.addText(.(文本) = 向当前光标处追加文本
+!sci.appendText(.(文本) = 向文档尾部追加文本
+!sci.insertText(.(文本, 位置) = 向文档指定位置追加文本
+!sci.clearAll() = 清空文档内容
+!sci.clearDocumentStyle() = 清空文档所有样式
+!sci.getCharAt(.(位置) = 取得文档指定位置的字符的代码
+!sci.getStyleAt(.(位置) = 取得文档指定位置的样式
+!sci.findText(.(文本) = 在整个文档中搜索指定文本，找到返回开始位置和结束位置，找不到则返回 -1
+!sci.findText(.(文本,标识) = 同上，但可以指定标识参数为 _SCFIND_ 开头的常量以设置搜索的模式
+!sci.findText(.(文本,标识,开始位置,结束位置) = 同上，但可以指定搜索的范围\n当不是正则搜索模式的时候，开始位置可以大于结束位置，意为反向查找
+!sci.searchAnchor() = 设置当前位置为搜索的起始位置
+!sci.searchNext(.(文本) = 从 searchAnchor 调用时的位置开始往后搜索指定文本
+!sci.searchNext(.(文本,标识) = 同上，但可以指定标识参数为 _SCFIND_ 开头的常量以设置搜索的模式
+!sci.searchPrev(.(文本) = 从 searchAnchor 调用时的位置开始往前搜索指定文本
+!sci.searchPrev(.(文本,标识) = 同上，但可以指定标识参数为 _SCFIND_ 开头的常量以设置搜索的模式
+!sci.targetFromSelection() = 设置搜索的目标为选中区域（仅在选中区域内搜索）
+!sci.searchInTarget(.(文本) = 在指定目标内搜索文本
+!sci.replaceTarget(.(文本) = 将指定目标替换为指定文本
+!sci.replaceTargetRe(.文本) = 同 replaceTarget，但支持正则表达式
+!sci.getTag()
+!sci.cut() = 剪切
+!sci.copy() = 复制
+!sci.paste() = 粘贴
+!sci.clear() = 清除
+!sci.copyAllowLine() = 同 copy，但当没有选中任何区域时，复制光标所在行
+!sci.copyRange(.(开始位置,结束位置) = 复制指定区域的文本到剪贴板
+!sci.copyText(.(文本) = 将指定文本放到剪贴板内
+!sci.undo() = 撤销
+!sci.redo() = 重做
+!sci.emptyUndoBuffer() = 清空撤销缓存（之前的所有撤销数据将被清除）
+!sci.beginUndoAction()
+!sci.endUndoAction()
+!sci.addUndoAction(.(标识字符串,标识)
+!sci.setSel(.(开始位置,结束位置) = 选中指定区域
+!sci.goToPos(.(位置) = 将光标移至指定区域
+!sci.goToLine(.(行号) = 将光标移至指定行
+!sci.setEmptySelection(.(位置) = 将光标移至指定位置，并且清除其余选区
+!sci.selectAll() = 全选
+!sci.lineFromPosition(.(位置) = 取指定位置的文本所在的行号
+!sci.positionFromLine(.(行号) = 取指定行号的首字符位置
+!sci.lineLength(.(行号) = 取指定行的文本长度
+!sci.startStyling()
+!sci.setStyling()
+!sci.setLineState(.(行号,状态)
+!sci.getLineState(.(行号)
+!sci.styleResetDefault() = 重置默认风格
+!sci.styleClearAll() = 将所有风格样式设置为与 _STYLE_DEFAULT 相同
+!sci.styleSetFont(.(风格号,字体) = 设置指定风格号字体
+!sci.styleGetFont(.(风格号) = 取指定风格号字体
+!sci.styleSetSize(.(风格号,字号) = 设置指定风格号字号
+!sci.styleGetSize(.(风格号) = 取指定风格号字号
+!sci.styleSetBold(.(风格号,是否加粗) = 设置指定风格号是否为粗体
+!sci.styleGetBold(.(风格号) = 取指定风格号是否为粗体
+!sci.styleSetItalic(.(风格号,是否倾斜) = 设置指定风格号是否为斜体
+!sci.styleGetItalic(.(风格号) = 取指定风格号是否为斜体
+!sci.styleSetUnderline(.(风格号,是否有下划线) = 设置指定风格号是否为粗体
+!sci.styleGetUnderline(.(风格号) = 取指定风格号是否有下划线
+!sci.styleSetFore(.(风格号,颜色) = 设置指定风格号的前景色
+!sci.styleGetFore(.(风格号) = 取指定风格号的前景色
+!sci.styleSetBack(.(风格号,颜色) = 设置指定风格号的背景色
+!sci.styleGetBack(.(风格号) = 取指定风格号的背景色
+!sci.setStyle(.(风格号,字体,字号,粗体,斜体,下划线,前景色,背景色) = 设置风格的简易方法，任意参数可空，留空为不设置指定项
+!sci.setMarginType(.(边栏号,类型) = 设置指定边栏类型，边栏号可以为 0～4，类型为 _SC_MARGIN_SYMBOL(符号) 或 _SC_MARGIN_NUMBER(数字)
+!sci.getMarginType(.(边栏号) = 取指定边栏类型
+!sci.setMarginWidth(.(边栏号,宽度) = 设置指定边栏宽度
+!sci.getMarginWidth(.(边栏号) = 取指定边栏宽度
+!sci.setMarginMask(.(边栏号,标识)
+!sci.getMarginMask(.(边栏号)
+!sci.setMarginSensitive(.(边栏号,是否响应鼠标点击) = 设置指定边栏是否响应鼠标点击，如果响应，当鼠标点击时，会发送一个 _SCN_MARGINCLICK 通知
+!sci.getMarginSensitive(.(边栏号) = 取指定边栏是否响应鼠标点击
+!sci.setMarginCursor(.(边栏号,鼠标指针) = 设置指定边栏的鼠标指针，鼠标指针参数为以 _SC_CURSOR 开头的常量
+!sci.getMarginCursor(.(边栏号) = 取指定边栏的鼠标指针
+!sci.setKeywords(.(索引,关键字列表) = 设置关键字列表，索引可以为 0～８，关键字列表中的各关键字可以用空格、制表符或换行符分割
+!sci.sendEditor(.(消息号,附加参数一,附加参数二) = 向编辑器发送指定消息，可以实现编辑器提供的所有功能，消息号为以 _SCI_ 开头的常量
+!sci.length = 文档字符串长度（字数）
+!sci.text = 文档内容
+!sci.selText = 被选中的文本，设置该属性可以替换当前选区的文本
+!sci.readonly = 是否只读
+!sci.styleBits = 风格位
+!sci.targetStart = 搜索开始位置，供 searchInTarget 使用
+!sci.targetEnd = 搜索结束位置，供 searchInTarget 使用
+!sci.searchFlags = 搜索模式，以 _SCFIND_ 开头的常量，供 searchInTarget 使用
+!sci.canPaste = 能否粘贴
+!sci.pasteConvertEndings = 是否转换粘贴数据的换行模式为当前文档的换行模式
+!sci.status
+!sci.canUndo = 能否撤销
+!sci.canRedo = 能否重做
+!sci.undoCollection = 是否自动收集撤销步骤
+!sci.lineCount = 当前文档的行数
+!sci.firstVisibleLine = 当前文档的首个可见行
+!sci.linesOnScreen = 当前文档在屏幕上的可见行数
+!sci.modify = 文档是否已被修改，配合 setSavePoint 使用
+!sci.currentPos = 当前光标位置
+!sci.anchor = 当前锚位置
+!sci.selectionStart = 选区开始位置
+!sci.selectionEnd = 选区结束位置
+!sci.curLine = 当前行文本
+!sci.selectionIsRectangle
+!sci.selectionMode
+!sci.endStyled = 最后被渲染的字符代码
+!sci.selAlpha = 选区透明度
+!sci.selEOLFilled
+!sci.controlCharSymbol = 控制符号的替换字符代码，0 为不启用
+!sci.marginLeft = 边栏左侧外边距
+!sci.marginRight = 边栏右侧外边距
+!sci.fontQuality = 字体质量，为 _SC_EFF_ 开头的常量
+!sci.codepage = 代码页，显示中文可以设置为 936 或以 _SC_CP_ 开头的常量
+!sci.tabWidth = 制表符宽度
+!sci.useTabs = 是否使用制表符，如果为 false，则使用空格代替制表符
+!sci.indent = 缩进
+!sci.lexer = 词法分析器，是以 _SCLEX_ 开头的常量
+!sci.lexerLanguage = 词法分析器名称，区分大小写，如 cpp
+!sci.describeKeywordSets = 关键字解释列表
+!sci.styleBitsNeeded = 当前词法分析器需要的风格位
+
+?win.ui.ctrl.scintilla = !sci.
+end intellisense**/

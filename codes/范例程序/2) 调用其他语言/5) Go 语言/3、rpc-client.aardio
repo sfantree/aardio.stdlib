@@ -1,0 +1,58 @@
+//RPC客户端
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio调用go语言演示";right=759;bottom=469)
+winform.add(
+button={cls="button";text="调用Go语言的Calculator.Add函数";left=382;top=389;right=678;bottom=427;db=1;dr=1;z=5};
+edit={cls="edit";left=19;top=12;right=732;bottom=352;db=1;dl=1;dr=1;dt=1;edge=1;hscroll=1;multiline=1;vscroll=1;z=1};
+editX={cls="edit";text="2";left=109;top=392;right=185;bottom=424;db=1;dl=1;edge=1;z=2};
+editY={cls="edit";text="3";left=238;top=392;right=320;bottom=420;db=1;dl=1;edge=1;z=3};
+static={cls="static";text="+";left=198;top=395;right=230;bottom=420;align="center";db=1;dl=1;transparent=1;z=4}
+)
+/*}}*/
+
+import wsock.tcp.jsonClient;
+import process.popen;
+
+/*
+gotest.exe 是使用 go 语言编写的exe文件。
+go 生成的 exe 可能在启动时误报病毒，选择信任即可。
+*/
+var goPrcs = process.popen("/gotest.exe");
+goPrcs.codepage = 65001 //管道使用UTF8编码
+if(!goPrcs) return winform.msgbox("启动go程序失败");
+
+//读取服务端地址(使用自动分配的空闲端口避免冲突)
+var url = goPrcs.read();
+if( !url || string.startWith(url,"error:")  ) return winform.msgbox("启动go程序失败");
+
+//连接go语言服务端
+var go = wsock.tcp.jsonClient(url)
+winform.edit.print("已连接到go程序",url);
+
+import process.job.limitKill;
+goPrcs.assignToJobObject( process.job.limitKill );
+
+winform.onDestroy = function(){ 
+	go.Calculator.Exit(0);//通知go程序退出
+}
+
+winform.button.oncommand = function(id,event){
+   
+    //调用go语言提供的函数
+    var rep = go.Calculator.Add({
+        X = tonumber(winform.editX.text);
+        Y = tonumber(winform.editY.text);
+    } )
+     
+    if( rep[["result"]] ){  
+        winform.edit.print( "调用成功", rep.result )
+    }
+    else {
+        winform.edit.print( rep[["error"]] )
+    }
+}
+
+winform.show()
+win.loopMessage();
+

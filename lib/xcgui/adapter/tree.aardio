@@ -1,0 +1,113 @@
+﻿import util.metaProperty;
+namespace xcgui.adapter;
+
+class tree{
+	ctor(hAdapter){
+		if(hAdapter===null){
+			this.hAdapter = topointer( ::Xcgui.XAdTree_Create() );
+		}
+		else {
+			this.hAdapter = topointer(hAdapter);
+		}
+		if(!this.hAdapter)return;
+	};
+	@_metaProperty;
+}
+
+
+namespace tree{
+
+	_metaProperty = ..util.metaProperty(
+	
+		addField = function(fieldName){
+			return ::Xcgui.XAdTree_AddColumn(owner.hAdapter,fieldName);
+		}
+		setField = function(fieldName){
+			return ::Xcgui.XAdTree_SetColumn(owner.hAdapter,fieldName);
+		}
+		insertString = function(value,parentId,afterId){
+			return ::Xcgui.XAdTree_InsertItemText(owner.hAdapter,value,parentId,afterId:-3);
+		}
+		insertFieldString = function(fieldName,value,parentId,afterId){
+			return ::Xcgui.XAdTree_InsertItemTextEx(owner.hAdapter,fieldName,value,parentId,afterId:-3);
+		}
+		insertImage = function(hImage,parentId,afterId){
+			return ::Xcgui.XAdTree_InsertItemImage(owner.hAdapter,hImage,parentId,afterId:-3);
+		}
+		insertFieldImage = function(fieldName,hImage,parentId,afterId){
+			return ::Xcgui.XAdTree_InsertItemImageEx(owner.hAdapter,fieldName,hImage,parentId,afterId:-3);
+		}
+		count = function(){
+			return ::Xcgui.XAdTree_GetCount(owner.hAdapter);
+		}
+		fieldCount = function(){
+			return ::Xcgui.XAdTree_GetCountColumn(owner.hAdapter);
+		}
+		setString = function(itemId,iColumn,value){
+			return ::Xcgui.XAdTree_SetItemText(owner.hAdapter,itemId,iColumn,value);
+		}
+		setFieldString = function(itemId,fieldName,value){
+			return ::Xcgui.XAdTree_SetItemTextEx(owner.hAdapter,itemId,fieldName,value);
+		}
+		setImage = function(itemId,iColumn,hImage){
+			return ::Xcgui.XAdTree_SetItemImage(owner.hAdapter,itemId,iColumn,hImage);
+		}
+		setFieldImage = function(itemId,fieldName,hImage){
+			return ::Xcgui.XAdTree_SetItemImageEx(owner.hAdapter,itemId,fieldName,hImage);
+		}
+		getString = function(itemId,iColumn,pOut,nOutLen){
+			var sb = ..string.builder(500);
+			::Xcgui.XAdTree_GetItemText(owner.hAdapter,itemId,iColumn,sb,250);
+			return sb.fromUnicode();
+		}
+		getImage = function(itemId,iColumn){
+			return ..xcgui.image( topointer(::Xcgui.XAdTree_GetItemImage(owner.hAdapter,itemId,iColumn)));
+		}
+		getFieldString = function(itemId,fieldName){
+			var sb = ..string.builder(500);
+			::Xcgui.XAdTree_GetItemTextEx(owner.hAdapter,itemId,fieldName,sb,250);
+			return sb.fromUnicode();
+		}
+		getFieldImage = function(itemId,fieldName){
+			return ..xcgui.image( topointer(::Xcgui.XAdTree_GetItemImageEx(owner.hAdapter,itemId,fieldName)));
+		}
+		delete = function(itemId){
+			return ::Xcgui.XAdTree_DeleteItem(owner.hAdapter,itemId);
+		}
+		clear = function(){
+			return ::Xcgui.XAdTree_DeleteItemAll(owner.hAdapter);
+		}
+		clearField = function(){
+			return ::Xcgui.XAdTree_DeleteColumnAll(owner.hAdapter);
+		}
+		_topointer = function(){
+			return owner.hAdapter;
+		}
+	)
+}
+
+/**intellisense()
+xcgui.adapter.tree() = 数据适配器\n!stdxcadtree.
+end intellisense**/
+
+/**intellisense(!stdxcadtree)
+addField("__") = 添加列,参数为字符串
+setField("__") = 设置列,参数为字符串
+insertString(.(文本值,父ID,插入位置ID) = 插入项,数据填充到第一列\n返回值为插入新项的ID值
+insertFieldString(.(模板名字,文本值,父ID,插入位置ID) = 插入项,数据填充到指定列\n省略最后一个参数追加到最后一列\n返回值为插入新项的ID值
+insertImage(.(hImage,parentId,afterId) = 插入项,数据填充到第一列\n返回值为插入新项的ID值
+insertFieldImage(.(fieldName,hImage,parentId,afterId) = 插入项,数据填充到指定列\n省略最后一个参数追加到最后一列\n返回值为插入新项的ID值
+count() = 获取项数量
+fieldCount() = 获取列数量
+setString(.(itemId,iColumn,value) = 设置项数据
+setFieldString(.(itemId,fieldName,value) = 设置项文件内容
+setImage(.(itemId,iColumn,hImage) = 设置项数据
+setFieldImage(.(itemId,fieldName,hImage) = 设置项内容
+getString(.(itemId,iColumn,pOut,nOutLen) = 获取项文本内容
+getImage(.(itemId,iColumn) = 获取项内容
+getFieldString(.(itemId,fieldName,pOut,nOutLen) = 获取项文本内容
+getFieldImage(.(itemId,fieldName) = 获取项内容
+delete(__) = 删除项
+clear() = 删除所有项
+clearField() = 删除所有列,并且清空数据
+end intellisense**/

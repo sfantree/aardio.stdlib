@@ -1,0 +1,554 @@
+import console;
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=1063;bottom=503)
+winform.add(
+button={cls="button";text="导入用户";left=8;top=416;right=112;bottom=448;z=2};
+button2={cls="button";text="刷新工单列表";left=952;top=416;right=1056;bottom=448;z=8};
+button3={cls="button";text="刷新用户";left=152;top=416;right=256;bottom=448;z=3};
+button5={cls="button";text="操作工单";left=952;top=456;right=1056;bottom=488;z=9};
+checkbox={cls="checkbox";text="启用代理";left=8;top=464;right=80;bottom=488;z=4};
+checkbox2={cls="checkbox";text="监控工单";left=392;top=416;right=464;bottom=440;z=11};
+edit={cls="edit";left=96;top=464;right=256;bottom=488;edge=1;z=5};
+listview={cls="listview";left=8;top=8;right=384;bottom=400;edge=1;fullRow=1;gridLines=1;z=1};
+listview2={cls="listview";left=392;top=8;right=1056;bottom=400;edge=1;fullRow=1;gridLines=1;z=6};
+static={cls="static";left=712;top=416;right=904;bottom=432;transparent=1;z=7};
+static2={cls="static";left=712;top=464;right=904;bottom=480;notify=1;transparent=1;z=10}
+)
+/*}}*/
+
+import fsys;
+import fsys.dlg;
+import config;
+import web.json;
+import inet.http;
+import web.rest.jsonClient;
+import win.timer;
+import win.util.tray;
+
+// 窗口状态持久化
+winform.bindConfig( config.winform,{
+    edit = "text";
+    checkbox = "checked";
+} );
+
+winform.listview.insertColumn("用户名", 80);
+winform.listview.insertColumn("姓名", 180);
+winform.listview.insertColumn("手机号", 150);
+winform.listview.insertColumn("登陆状态", 80);
+
+winform.listview2.insertColumn("工单号", 135);
+winform.listview2.insertColumn("主题", 150);
+winform.listview2.insertColumn("接单人", 120);
+winform.listview2.insertColumn("是否接单", 80);
+
+
+UserList = {};
+CurrentUser = null;
+
+UndoEmosList = {};
+CurrentEmos = null;
+
+timer = win.timer(winform, 5000);
+timer.disable();
+
+hasUnAccept = false;
+
+
+// 导入数据
+winform.button.oncommand = function(id,event){
+	var TxtPath = fsys.dlg.open("*.txt|*.txt||","请选择txt文件",,winform.hwnd);
+ 	if(#TxtPath){
+ 		UserList = {};
+ 		for line in io.lines(TxtPath) {
+		//io.lines()返回的迭代器函数每次读取文件中的一行
+    		var t = string.split(line, " ");
+    		//console.dump(t);
+    		if( t[1] and t[2] ) {
+    		    var user = {};
+    		    user.username = t[1];
+    		    user.token = t[2];
+    		    table.push(UserList, user);
+    		}
+		}
+	}
+	RefreshListView();
+}
+
+
+// 获取在线状态
+GetLoginUser = function(Bearer){
+	var Url = "http://10.30.111.50:9002/eoms-html/prod-api/flow/fault/getCurrentUser";
+	// 设置http代理
+	
+	//var Proxy = "127.0.0.1:1086";
+	var Proxy = string.trim(winform.edit.text);
+	
+	inet.clearCookie();
+	
+	var Http;
+	if(winform.checkbox.checked) {
+	    Http = inet.http(,Proxy);
+	} else {
+	    Http = inet.http();
+	}
+	Http.setTimeouts(1000, 1000, 1000);
+	
+	inet.setCookie("http://10.30.111.50:9002", Bearer, "Admin-Token" );
+    inet.setCookie("http://10.30.111.50:9002", "43200", "Admin-Expires-In" );
+    
+    Http.addHeaders = "Authorization: Bearer " + Bearer;
+    
+    //var Html, Err, ErrCode = Http.get( "https://httpbin.org/anything" );
+    var Html, Err, ErrCode = Http.get( Url );
+    Http.close();
+    
+    if( not Html) {
+        return false;
+    }
+    
+    var JsonRoot = web.json.tryParse(Html);
+    //console.dump(JsonRoot);
+    if(not JsonRoot) {
+        return false;
+    }
+    
+/*
+    if(JsonRoot[["code"]] != "200") {
+        return false;
+    }
+*/
+    
+    return true, JsonRoot[["data"]]["currentUser"][["nickName"]], JsonRoot[["data"]]["currentUser"][["mobilePhone"]];
+}
+
+
+// 获取工单在当前班组下运行状态
+GetEmosRunningInfo = function(Bearer, EmosId, EmosInstantId){
+	// http://10.30.111.50:9002/eoms-html/prod-api/flow/fault/getTodo/23547110/611683236117102592
+	var UrlTemplate = "http://10.30.111.50:9002/eoms-html/prod-api/flow/fault/getTodo/%s/%s";
+	var Url = string.format(UrlTemplate, tostring(EmosId), tostring(EmosInstantId));
+	//console.dump(Url);
+	// 设置http代理
+	
+	//var Proxy = "127.0.0.1:1086";
+	var Proxy = string.trim(winform.edit.text);
+	
+	inet.clearCookie();
+	
+	var Http;
+	if(winform.checkbox.checked) {
+	    Http = inet.http(,Proxy);
+	} else {
+	    Http = inet.http();
+	}
+	Http.setTimeouts(1000, 1000, 1000);
+	
+	inet.setCookie("http://10.30.111.50:9002", Bearer, "Admin-Token" );
+    inet.setCookie("http://10.30.111.50:9002", "43200", "Admin-Expires-In" );
+    
+    Http.addHeaders = "Authorization: Bearer " + Bearer;
+    
+    //var Html, Err, ErrCode = Http.get( "https://httpbin.org/anything" );
+    var Html, Err, ErrCode = Http.get( Url );
+    Http.close();
+    
+    if( not Html) {
+        return false;
+    }
+    
+    var JsonRoot = web.json.tryParse(Html);
+    //console.dump(JsonRoot);
+    if(not JsonRoot) {
+        return false;
+    }
+    
+/*
+    if(JsonRoot[["code"]] != "200") {
+        return false;
+    }
+*/
+    
+    return true, JsonRoot;
+}
+
+
+// 获取受理需要提交的参数
+GetClaimData = function(){
+	if(not CurrentUser) {
+		//winform.static.text = "请指定CurrentUser"
+	    return;
+	}
+	
+	if(not CurrentEmos) {
+		//winform.static2.text = "请指定CurrentEmos"
+	    return;
+	}
+	
+	var r, JsonRoot = GetEmosRunningInfo(CurrentUser[["token"]], CurrentEmos[["id"]], CurrentEmos[["multiinstantid"]]);
+		//console.dump(t);
+	if(not r) {
+	    return;
+	}
+		
+	var t = JsonRoot[["data"]][["processTask"]];
+	if(not t) {
+	    return;
+	}
+	
+	return t;
+}
+
+// 受理工单
+
+ClaimTask = function(Bearer, EmosId, EmosInstantId){
+	// http://10.30.111.50:9002/eoms-html/prod-api/flow/fault/claimTask/23321502/605517264863383555
+	var UrlTemplate = "http://10.30.111.50:9002/eoms-html/prod-api/flow/fault/claimTask/%s/%s";
+	var Url = string.format(UrlTemplate, tostring(EmosId), tostring(EmosInstantId));
+	//console.dump(Url);
+	// 设置http代理
+	
+	//var Proxy = "127.0.0.1:1086";
+	var Proxy = string.trim(winform.edit.text);
+	
+	inet.clearCookie();
+	
+	var Http;
+	if(winform.checkbox.checked) {
+	    Http = web.rest.jsonClient(,Proxy);
+	} else {
+	    Http = web.rest.jsonClient(,);
+	}
+	//Http.setTimeouts(1000, 1000, 1000);
+	
+	inet.setCookie("http://10.30.111.50:9002", Bearer, "Admin-Token" );
+    inet.setCookie("http://10.30.111.50:9002", "43200", "Admin-Expires-In" );
+    
+    Http.addHeaders = "Authorization: Bearer " + Bearer;
+    
+    //var Html, Err, ErrCode = Http.get( "https://httpbin.org/anything" );
+    
+    //Url = "https://httpbin.org/anything"
+    
+    var PostData = GetClaimData();
+    var PostDataText = web.json.stringify(PostData);
+    var Html, Err, ErrCode = Http.post( Url, PostData );
+    Http.close();
+    
+    if( not Html) {
+        return false;
+    }
+    console.dump(Html);
+}
+
+
+
+
+
+RefreshListView = function(){
+	winform.listview.clear();
+	for k,v in UserList  { 
+		
+		var username, token = v.username, v.token;
+		
+	    var valid, nickname, mobile = GetLoginUser(token);
+	    if(valid == true) {
+	        winform.listview.addItem( {username, nickname, mobile,"在线"} );
+	    } else {
+	        winform.listview.addItem( {username, "", "","离线"} );
+	    }
+	};
+}
+
+winform.button3.oncommand = function(id,event){
+	
+	RefreshListView();
+}
+
+winform.checkbox.oncommand = function(id,event){
+	if(winform.checkbox.checked) {
+	    winform.edit.disabled = false;
+	} else {
+	    winform.edit.disabled = true;
+	}
+}
+
+// 添加当前用户所有工单中的Action type
+RefreshAction = function(){
+	if(not CurrentUser) {
+		//winform.static.text = "请指定CurrentUser"
+	    return;
+	}
+	for(i=1; #UndoEmosList;1){
+		var emos = UndoEmosList[i]
+	    var r, JsonRoot = GetEmosRunningInfo(CurrentUser[["token"]], emos[["id"]], emos[["multiinstantid"]]);
+		//console.dump(t);
+		if(not r) {
+	    	return;
+		}
+		
+		var ActionList = {};
+		if(JsonRoot) {
+			var t1 = JsonRoot[["data"]][["nextActivities"]];
+			if( t1 and #t1 > 0) {
+				
+		    	for(i=1; #t1; 1) {
+		        	table.push(ActionList, t1[i][["actionId"]]);
+		    	}
+	        }
+	    }
+	    
+	    emos.actionlist = ActionList;
+	    UndoEmosList[i] = emos;
+	}
+}
+
+
+DoEmos = function(){
+	//console.dump("DoEmos");
+	if(not CurrentUser) {
+		//winform.static.text = "请指定CurrentUser"
+	    return;
+	}
+	if(not CurrentEmos) {
+		//winform.static2.text = "请指定CurrentEmos"
+	    return;
+	}
+	
+	
+	
+	//console.dump("DoEmos 3");
+}
+
+
+
+// 用户列表选中事件
+winform.listview.onnotify = function(id,code,ptr){ 
+    
+    select(code) {
+    	case  0xFFFFFF9B/*_LVN_ITEMCHANGED*/ {
+    		var nm = winform.listview.getNotifyMessage(code,ptr)
+    		if(winform.listview.selIndex){
+        		
+        		
+        		for k,v in UserList {
+        		    if(v.username == winform.listview.getItemText(nm.iItem,nm.iSubItem)) {
+        		        CurrentUser = v; 
+        		    }
+        		}
+        		
+            	//win.util.tray.pop( winform.static.text )
+        	}
+    	}
+/**
+    	case 0xFFFFFF94/*_LVN_COLUMNCLICK*/ {
+    		winform.static.text = "请实现排序"
+        	win.util.tray.pop("请实现排序")
+    	}
+    	case 0xFFFFFFFB/*_NM_RCLICK*/  {
+    		var x,y = win.getCursorPos();
+    		winform.popmenu.popup(x,y,true);//弹出菜单
+    	}
+**/
+    }
+    
+}
+
+winform.static.text = "请指定CurrentUser";
+winform.button2.oncommand = function(id,event){
+	if(not CurrentUser) {
+		winform.static.text = "请指定CurrentUser"
+	    return;
+	}
+	winform.static.text = CurrentUser[["username"]];
+	RefreshListView2();
+	RefreshAction();
+}
+
+winform.static2.text = "请指定CurrentEmos";
+winform.button5.oncommand = function(id,event){
+	if(not CurrentEmos) {
+		winform.static2.text = "请指定CurrentEmos"
+	    return;
+	}
+	winform.static2.text = CurrentEmos[["EmosNo"]];
+	//DoEmos();
+	
+	RefreshAction();
+	
+	ClaimTask(CurrentUser[["token"]], CurrentEmos[["id"]], CurrentEmos[["multiinstantid"]]);
+	
+	//console.dump(UndoEmosList);
+	
+}
+
+
+
+
+import web.rest.jsonClient;
+/**
+ * @method
+ * @param {string} Bearer 网页抓包获取的登陆token
+ * @returns {string} Html 代办工单列表信息的json文本
+ * @desc 获取代办工单列表
+**/
+GetUndoEmos = function(Bearer){
+	var Url = "http://10.30.111.50:9002/eoms-html/prod-api/flow/fault/todoList?pageNum=1&pageSize=50&prop=&order=&params=%7B%22routeName%22:%22Faulttodo%22%7D&beginTime=&endTime=";
+	// 设置http代理
+	var Proxy = "127.0.0.1:1086";
+	inet.clearCookie();
+	
+	
+	//var Proxy = "127.0.0.1:1086";
+	var Proxy = string.trim(winform.edit.text);
+		
+	var Http;
+	if(winform.checkbox.checked) {
+	    Http = web.rest.jsonClient(,Proxy);
+	} else {
+	    Http = web.rest.jsonClient(,);
+	}
+	//Http.setTimeouts(1000, 1000, 1000);
+	
+	
+	// 注意提交方式为 application/json
+	
+	inet.setCookie("http://10.30.111.50:9002", Bearer, "Admin-Token" );
+    inet.setCookie("http://10.30.111.50:9002", "43200", "Admin-Expires-In" );
+    
+    Http.addHeaders = "Authorization: Bearer " + Bearer;
+    
+    
+    var PostJsonText = /**
+        {"pageNum":1,"pageSize":50,"prop":"","order":"","params":{"routeName":"Faulttodo"},"beginTime":"","endTime":""}
+    **/
+    
+    //var Html, Err, ErrCode = Http.post( "https://httpbin.org/anything", PostText );
+    var Html, Err, ErrCode = Http.post(Url, PostJsonText);
+    Http.close();
+    
+    return Html;
+}
+
+//RefreshListView();
+
+RefreshListView2 = function(){
+	
+	if(not CurrentUser) {
+	    return;
+	}
+	
+	var JsonText =  GetUndoEmos(CurrentUser[["token"]]);
+	
+	if( ( type(JsonText) != type.string ) or ( #JsonText == 0 ) ) {
+		//error("")
+	    //return;
+	}
+	
+	var JsonRoot;
+	if( ( type(JsonText) == type.table ) ) {
+	    JsonRoot = JsonText;
+	} else {
+	    JsonRoot = web.json.tryParse(JsonText);
+	}
+	
+	
+	if(JsonRoot != null) {
+    	var EmosCount = tonumber(JsonRoot[["total"]]);
+    	//console.log(EmosCount)
+    	if(EmosCount != null) {
+        	
+        	winform.listview2.clear();
+        	UndoEmosList = {};
+        	
+        	for(i = 1 ; EmosCount; 1){
+            	// 工单号
+        		var EmosNo = JsonRoot[["rows"]][i][["worksheetId"]]
+        		// 工单主题
+        		var EmosTopic = JsonRoot[["rows"]][i][["title"]]
+        		// 接单人
+        		var EmosOwner = JsonRoot[["rows"]][i][["params"]][["taskownerName"]]
+        		// 是否接单
+        		var EmosAcceptStatus = JsonRoot[["rows"]][i][["params"]][["taskStatus"]]
+        		if(EmosAcceptStatus == "1") {
+        	    	EmosAcceptStatus = "已接单";
+        		} else {
+        	    	EmosAcceptStatus = "未接单";
+        	    	hasUnAccept = true;
+        		}
+        		// 填充数据 到 列表框
+        		winform.listview2.addItem( {EmosNo, EmosTopic, EmosOwner, EmosAcceptStatus} );
+        		
+        		
+        		var emos = {};
+        		emos.id = JsonRoot[["rows"]][i][["id"]]
+        		// rows[1].multiInstance
+        		emos.multiinstantid = JsonRoot[["rows"]][i][["multiInstance"]]
+        		emos.EmosNo = EmosNo;
+        		table.push(UndoEmosList, emos);
+        		console.dump(emos)
+        		
+        	}
+    	}
+	}
+}
+
+// 用户列表选中事件
+winform.listview2.onnotify = function(id,code,ptr){ 
+    
+    select(code) {
+    	case  0xFFFFFF9B/*_LVN_ITEMCHANGED*/ {
+    		var nm = winform.listview2.getNotifyMessage(code,ptr)
+    		if(winform.listview2.selIndex){
+        		
+        		
+        		for k,v in UndoEmosList {
+        		    if(v.EmosNo == winform.listview2.getItemText(nm.iItem,nm.iSubItem)) {
+        		        CurrentEmos = v; 
+        		    }
+        		}
+        		
+            	//win.util.tray.pop( winform.static.text )
+        	}
+    	}
+/**
+    	case 0xFFFFFF94/*_LVN_COLUMNCLICK*/ {
+    		winform.static.text = "请实现排序"
+        	win.util.tray.pop("请实现排序")
+    	}
+    	case 0xFFFFFFFB/*_NM_RCLICK*/  {
+    		var x,y = win.getCursorPos();
+    		winform.popmenu.popup(x,y,true);//弹出菜单
+    	}
+**/
+    }
+    
+}
+
+notify = function(){
+	var tray = win.util.tray(winform)
+	tray.pop("欢迎使用托盘图标","aardio")
+	tray.message = 0xACCF/*_WM_TRAYMESSAGE*/
+	tray.tip = "鼠标提示" //设置鼠标提示 
+}
+
+
+timer.onTimer = function(){
+	hasUnAccept = false;
+	winform.button2.oncommand();
+	if(hasUnAccept) {
+	    notify()
+	}
+}
+
+winform.checkbox2.oncommand = function(id,event){
+	if(winform.checkbox2.checked) {
+	    timer.enable();
+	    
+	} else {
+	    timer.disable();
+	}
+}
+
+winform.show();
+win.loopMessage();

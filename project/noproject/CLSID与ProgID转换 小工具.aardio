@@ -1,0 +1,50 @@
+import win.ui;
+import win.guid;
+import win.clip;
+/*DSG{{*/
+var winform = win.form(parent=...; bottom=151;max=false;text="aardio Form";right=527 )
+winform.add(
+button2={ bottom=136;text="ProgID -> CLSID";left=296;top=112;font=LOGFONT( name="宋体";h=-12 );z=7;right=400;cls="button" };
+edit={ bottom=64;right=432;left=72;top=40;font=LOGFONT( name="宋体";h=-12 );z=2;text="";edge=1;cls="edit" };
+static={ bottom=25;color=0;text="CLSID与ProgID";left=200;top=8;font=LOGFONT( name="宋体";h=-16;out=3;family=2;weight=700;clip=2;quality=1 );transparent=1;right=326;z=1;cls="static" };
+static2={ bottom=64;color=0;text="CLSID:";left=24;top=48;font=LOGFONT( name="宋体";h=-12;out=3;family=2;weight=700;clip=2;quality=1 );transparent=1;right=64;z=3;cls="static" };
+static4={ bottom=128;color=255;text="";left=432;top=112;font=LOGFONT( name="宋体";h=-14;out=3;family=2;weight=700;clip=2;quality=1 );transparent=1;right=512;z=10;cls="static" };
+checkbox={ bottom=24;right=520;left=448;top=8;font=LOGFONT( name="宋体";h=-12 );z=11;text="窗口置顶";cls="checkbox" };
+static3={ bottom=96;color=0;text="ProgID:";left=16;top=80;font=LOGFONT( name="宋体";h=-12;out=3;family=2;weight=700;clip=2;quality=1 );transparent=1;right=64;z=5;cls="static" };
+button={ bottom=136;text="CLSID -> ProgID";left=104;top=112;font=LOGFONT( name="宋体";h=-12 );z=6;right=208;cls="button" };
+button3={ bottom=64;right=512;left=448;top=40;font=LOGFONT( name="宋体";h=-12 );z=8;text="复制内容";cls="button" };
+button4={ bottom=96;right=512;left=448;top=72;font=LOGFONT( name="宋体";h=-12 );z=9;text="复制内容";cls="button" };
+edit2={ bottom=96;right=432;left=72;top=72;font=LOGFONT( name="宋体";h=-12 );z=4;text="";edge=1;cls="edit" }
+)
+/*}}*/
+
+winform.checkbox.oncommand = function(id,event){
+    if( winform.checkbox.checked ){ winform.setPos(,,,,-1/*_HWND_TOPMOST*/) }
+    else { winform.setPos(,,,,-2/*_HWND_NOTOPMOST*/) }
+}
+winform.button4.oncommand = function(id,event){
+    if( win.clip.write( winform.edit2.text )!=null ){ winform.static4.text = "复制成功！" }
+    else { winform.static4.text = "复制失败，请手动复制！" }   
+}
+
+
+winform.button3.oncommand = function(id,event){
+    if( win.clip.write( winform.edit.text )!=null ){ winform.static4.text = "复制成功！" }
+    else { winform.static4.text = "复制失败，请手动复制！" }
+}
+
+
+winform.button2.oncommand = function(id,event){
+    var guid = win.guid.fromString(string.trim(winform.edit2.text));
+    if( guid ){  winform.edit.text = guid;  }
+    else { winform.edit.text = "没找到什么哦~"; }
+}
+
+winform.button.oncommand = function(id,event){
+    var progid = win.guid.toProgId("{"++ string.trim(winform.edit.text) ++"}");
+    if( #progid ){ winform.edit2.text = progid;  }
+    else { winform.edit2.text = "没找到什么哦~"; }
+}
+
+winform.show()
+win.loopMessage();

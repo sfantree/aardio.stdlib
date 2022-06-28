@@ -1,0 +1,186 @@
+﻿import util.metaProperty;
+
+namespace fsys;
+
+class tagLib{
+	ctor(filename,fileType){
+		if(type(filename) != "string") error(2,"参数@1必须指定文件路径");
+		filename = ..string.toUnicode(filename);
+		
+		if(fileType) this.$file =  _dll.taglib_file_new_typeP(filename, self.fileType[..string.upper(fileType)]); 
+		else this.$file =  _dll.taglib_file_newP(filename);  
+	
+		if(!this.$file) return null,"无效的文件";
+		this.$tag   = _dll.taglib_file_tagP(this.$file);
+		this.$audio = _dll.taglib_file_audiopropertiesP(this.$file);
+		..table.gc(this,"close");
+		
+		
+	};
+	@_metaProperty
+}
+
+namespace tagLib{
+    if( _WINXP ){ error("TagLib 不支持 Windows XP",2)}
+	/*
+	https://github.com/taglib/taglib/blob/master/COPYING.LGPL
+	CMake 打开taglib源码，取消勾选 BUILD_SHARED_LIBS，勾选 ENABLE_STATIC_RUNTIME，开发环境选 VC2017 / WIN32， 
+	把生成的 tag_c 工程改为 DLL 项目（C++运行时改为MT），然后在 tag_c 工程里打开 tag_c.h 源码，TAGLIB_C_EXPORT 定义替换为 #define TAGLIB_C_EXPORT __declspec(dllexport)
+	taglib_file_new,taglib_file_new_type 的 filename 参数类型改为 const wchar_t *filename 修正文件路径不支持 Unicode 的 BUG,
+	然后先编译生成 tag 项目生成 taglib.lib ，复制 taglib.lib 的路径并添加到 tag_c 项目的静态库引用中，然后编译生成 tag_c.dll。
+	*/
+	_dll = ..raw.loadDll($"~\lib\fsys\tagLib\.res\tag_c.dll",,"cdecl");
+	_dll.taglib_set_string_management_enabled(false);
+	
+	var rawStr = function(p){
+		if(p){ 
+			var s = ..raw.str(p)
+			_dll.taglib_free(p)
+			return s;
+		}
+	}
+
+	_metaProperty = ..util.metaProperty(
+		save = function(){
+			return _dll.taglib_file_save(owner.$file) != 0;
+		}
+		close = function(){
+			if(owner.$file){
+				_dll.taglib_file_free(owner.$file);
+				owner.$file = null;
+			}
+		}
+		title = {
+			_get = function(){  
+				return rawStr(_dll.taglib_tag_titleP(owner.$tag)); 
+			}
+			_set = function( v ){
+				_dll.taglib_tag_set_title(owner.$tag, v)
+			} 	
+		};
+		artist = {
+			_get = function(){
+				return rawStr( _dll.taglib_tag_artistP(owner.$tag) );
+			}
+			_set = function( v ){
+				_dll.taglib_tag_set_artist(owner.$tag, v)
+			} 	
+		};
+		album = {
+			_get = function(){  
+				
+				return rawStr( _dll.taglib_tag_albumP(owner.$tag) );
+			}
+			_set = function( v ){
+				_dll.taglib_tag_set_album(owner.$tag, v)
+			} 	
+		};
+		comment = {
+			_get = function(){  
+				return rawStr( _dll.taglib_tag_commentP(owner.$tag) );
+			}
+			_set = function( v ){
+				_dll.taglib_tag_set_comment(owner.$tag, v)
+			} 	
+		};
+		genre = {
+			_get = function(){  
+				return rawStr( _dll.taglib_tag_genreP(owner.$tag) );
+			}
+			_set = function( v ){
+				_dll.taglib_tag_set_genre(owner.$tag, v)
+			} 	
+		};
+		year = {
+			_get = function(){  
+				return rawStr( _dll.taglib_tag_yearP(owner.$tag) );
+			}
+			_set = function( v ){
+				_dll.taglib_tag_set_year(owner.$tag, v)
+			} 	
+		};
+		track = {
+			_get = function(){  
+				return rawStr( _dll.taglib_tag_trackP(owner.$tag) );
+			}
+			_set = function( v ){
+				_dll.taglib_tag_set_track(owner.$tag, v)
+			} 	
+		};
+		length = {
+			_get = function(){  
+				return _dll.taglib_audioproperties_length(owner.$audio);
+			} 
+		};
+		bitrate = {
+			_get = function(){  
+				return _dll.taglib_audioproperties_bitrate(owner.$audio);
+			} 
+		};
+		samplerate = {
+			_get = function(){  
+				return _dll.taglib_audioproperties_samplerate(owner.$audio);
+			} 
+		};
+		channels = {
+			_get = function(){  
+				return _dll.taglib_audioproperties_channels(owner.$audio);
+			} 
+		};
+		each = function(){
+			return ..table.eachName(owner,,owner@._keys);
+		};
+		_keys={"title";"artist";"album";"comment";"genre";"year";"track";"length";"bitrate";"samplerate";"channels";}
+		_type="object";
+	)
+
+	enableUtf8 = function(enabled){
+		_dll.taglib_set_strings_unicode(!!enabled)
+	}
+	
+	setDefaultEncoding = function(encoding){
+		_dll.taglib_id3v2_set_default_text_encoding(({latin1=0,utf16=1,utf16be=2,utf8=3})[encoding])
+	}
+
+	fileType = {
+		MPEG=0,
+		OggVorbis=1,
+		FLAC=2,
+		MPC=3,
+		OGGFlAC=4,
+		WAVPACK=5,
+		SPEEX=6,
+		TRUEAUDIO=7,
+		MP4=8,
+		ASF=9
+	} 
+}
+
+/**intellisense()
+fsys.tagLib(.(fileName,tileType)) = 
+fsys.tagLib() = !fsysTaglib.
+end intellisense**/
+
+/**intellisense(fsys.tagLib)
+enableUtf8(.(enabled) = TagLib 组件是否启用 UTF-8，默认已启用
+setDefaultEncoding(.(encoding) =  设置默认编码,\n参数可以是以下字符串之一："latin1","utf16","utf16be","utf8"
+end intellisense**/
+
+/**intellisense(!fsysTaglib)
+save() = 保存
+close() = 关闭
+title =  标题,字符串,可读写
+artist =  作者,字符串,可读写
+album = 专集,字符串,可读写 
+comment = 备注,字符串,可读写
+genre = 类型,字符串,可读写
+year = 出品年代,数值,可读写
+track = 曲目,数值,可读写
+length = 长度,数值,只读
+bitrate = 比特率,数值,只读
+samplerate = 采样率,数值,只读
+channels = 声道数,数值,只读
+each() = @for name,value in ??.each(){
+	__
+}
+end intellisense**/

@@ -1,0 +1,44 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="设置";right=247;bottom=127;border="thin";exmode="none";max=false;min=false;mode="popup")
+winform.add(
+button={cls="button";text="应用";left=152;top=88;right=216;bottom=112;z=7};
+edit={cls="edit";left=40;top=16;right=96;bottom=40;edge=1;z=1};
+edit2={cls="edit";left=160;top=16;right=216;bottom=40;edge=1;z=2};
+edit3={cls="edit";left=120;top=56;right=216;bottom=80;edge=1;z=3};
+static={cls="static";text="长";left=16;top=16;right=48;bottom=40;center=1;transparent=1;z=4};
+static2={cls="static";text="宽";left=136;top=16;right=168;bottom=40;center=1;transparent=1;z=5};
+static3={cls="static";text="颜色（十进制）";left=16;top=56;right=104;bottom=80;center=1;transparent=1;z=6}
+)
+/*}}*/
+
+var args = {...};//接收全部参数
+var parent = table.shift(args);
+
+/*
+console.log("父窗体",parent);
+console.log("其它参数")
+console.varDump(args)
+*/
+
+if(args[1]) {
+    winform.edit.text = args[1];
+}
+if(args[2]) {
+    winform.edit2.text = args[2];
+}
+if(args[3]) {
+    winform.edit3.text = args[3];
+}
+
+winform.button.oncommand = function(id,event){
+	//检查输入合法
+	var h = tonumber(winform.edit.text);
+	var w = tonumber(winform.edit2.text);
+	var color = tonumber(winform.edit3.text);
+	var retval = {h, w, color};
+	winform.endModal(retval);
+}
+
+winform.show();
+win.loopMessage();

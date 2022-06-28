@@ -1,0 +1,30 @@
+//点击全选
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="文本框点击全选";right=759;bottom=469)
+winform.add(
+edit={cls="edit";text="Edit";left=47;top=35;right=371;bottom=65;dl=1;dt=1;edge=1;hidesel=1;multiline=1;tabstop=1;z=1};
+edit2={cls="edit";text="Edit";left=45;top=101;right=369;bottom=131;dl=1;dt=1;edge=1;hidesel=1;multiline=1;tabstop=1;z=2};
+richedit={cls="richedit";text="RichEdit";left=45;top=160;right=243;bottom=220;dl=1;dt=1;edge=1;multiline=1;tabstop=1;z=3}
+)
+/*}}*/
+
+winform.edit.onFocusGot = function(){ 
+	winform.setTimeout( lambda() winform.edit.selectAll() );	
+}
+
+winform.edit2.onFocusGot = function(id){ 
+	winform.setTimeout( lambda() winform.edit2.selectAll() );	
+}
+
+/*
+如果在点击获得焦点时直接全选，
+在全选以后窗口会继续处理鼠标消息，导致选区被取消。 
+所以我们需要先从事件中返回让，并使用 winform.setTimeout 延后执行全选操作。
+*/
+winform.richedit.onFocusGot = function(id){  
+	winform.setTimeout( lambda() winform.richedit.selectAll() );	
+}
+ 
+winform.show();
+win.loopMessage();

@@ -1,0 +1,131 @@
+import fsys;
+import raw.apiHook;
+namespace winring0;
+ 
+path = ..fsys.appdata("/aardio/std/WinRing0/WinRing0.dll",$"~/lib/winring0/.res/WinRing0.dll")
+..fsys.appdata("/aardio/std/WinRing0/WinRing0x64.sys",$"~/lib/winring0/.res/WinRing0x64.sys")
+..fsys.appdata("/aardio/std/WinRing0/WinRing0.sys",$"~/lib/winring0/.res/WinRing0.sys")
+
+var dll = ..raw.loadDll(path);
+GetDllStatus =dll.api("GetDllStatus","INT()");
+GetDllVersion =dll.api("GetDllVersion","INT( BYTE& major, BYTE& minor, BYTE& revision, BYTE& release )");
+GetDriverVersion =dll.api("GetDriverVersion","INT(BYTE& major,BYTE& minor,BYTE& revision,BYTE& release )");
+GetDriverType =dll.api("GetDriverType","INT()"); 
+InitializeOlsApi =dll.api("InitializeOls","bool()");
+DeinitializeOls=dll.api("DeinitializeOls","void()");
+
+
+InitializeOls = function(){
+    var hookGetModuleFileName = function (hModule,pBuffer,size) { 
+		::CopyMemory(pBuffer,path,#path);
+		return #path;
+	}
+
+	var hook = ..raw.apiHook("kernel32.dll", "GetModuleFileNameA"
+		, "int(pointer,pointer,int)", hookGetModuleFileName).install();
+
+	var ret = InitializeOlsApi();
+	hook.unInstall();
+	return ret;
+} 
+
+if( InitializeOls() ){
+	..table.gc(self, DeinitializeOls);
+}
+
+/**intellisense(winring0)
+InitializeOls() = 加载驱动,成功返回true\n导入库时会自动调用该函数
+DeinitializeOls() = 卸载驱动,库卸载时会自动调用该函数。
+GetDllStatus() = 返回DLL状态码,以_OLS_DLL_前缀的常量表示不同状态,\n0/*_OLS_DLL_NO_ERROR*/表示加载驱动成功
+GetDllVersion() = 返回版本号，返回四个值:\n version,major,minor,revision,release
+GetDriverVersion() = 返回驱动版本号，返回四个值:\n version,major,minor,revision,release
+GetDriverType() = 返回驱动类型,\nOLS_DRIVER_TYPE_前缀常量表示不同类型
+end intellisense**/
+
+/*intellisense(winring0)*/
+IsCpuid=dll.api("IsCpuid","bool()");
+IsMsr=dll.api("IsMsr","bool()");
+IsTsc=dll.api("IsTsc","bool()");
+Rdmsr=dll.api("Rdmsr","bool(INT index,INT &eax,INT &edx )");
+RdmsrTx=dll.api("RdmsrTx","bool(INT index,INT & eax,INT & edx, INT threadAffinityMask)");
+RdmsrPx=dll.api("RdmsrPx","bool(INT index,INT & eax,INT & edx, INT processAffinityMask)");
+Wrmsr=dll.api("Wrmsr","bool(INT index, INT eax, INT edx )");
+WrmsrTx=dll.api("WrmsrTx","bool(INT index, INT eax, INT edx,INT threadAffinityMask)");
+WrmsrPx=dll.api("WrmsrPx","bool(INT index, INT eax, INT edx,INT processAffinityMask)");
+Rdpmc=dll.api("Rdpmc","bool(INT index,INT & eax,INT &edx )");
+RdpmcTx=dll.api("RdpmcTx","bool(INT index,INT & eax,INT &edx,INT threadAffinityMask)");
+RdpmcPx=dll.api("RdpmcPx","bool(INT index,INT & eax,INT &edx,INT processAffinityMask)");
+Cpuid=dll.api("Cpuid","bool(INT index,INT &eax,INT &ebx,INT &ecx,INT &edx)");
+CpuidTx=dll.api("CpuidTx","bool(INT index,INT &eax,INT &ebx,INT &ecx,INT &edx,INT threadAffinityMask)");
+CpuidPx=dll.api("CpuidPx","bool(INT index,INT &eax,INT &ebx,INT &ecx,INT &edx,INT processAffinityMask)");
+Rdtsc=dll.api("Rdtsc","bool(INT &eax,INT &edx )");
+RdtscTx=dll.api("RdtscTx","bool(INT &eax,INT &edx,INT threadAffinityMask)");
+RdtscPx=dll.api("RdtscPx","bool(INT &eax,INT & edx,INT processAffinityMask)");
+Hlt=dll.api("Hlt","bool()");
+HltTx=dll.api("HltTx","bool(INT threadAffinityMask)");
+HltPx=dll.api("HltPx","bool(INT processAffinityMask)");
+ReadIoPortByte=dll.api("ReadIoPortByte","BYTE( WORD port )");
+ReadIoPortWord=dll.api("ReadIoPortWord","WORD( WORD port )");
+ReadIoPortDword=dll.api("ReadIoPortDword","INT( WORD port )");
+ReadIoPortByteEx=dll.api("ReadIoPortByteEx","int( WORD port, BYTE& value )");
+ReadIoPortWordEx=dll.api("ReadIoPortWordEx","int( WORD port, WORD& value )");
+ReadIoPortDwordEx=dll.api("ReadIoPortDwordEx","int( WORD port, INT value )");
+WriteIoPortByte=dll.api("WriteIoPortByte","void( WORD port, BYTE value )");
+WriteIoPortDword=dll.api("WriteIoPortDword","void( WORD port, INT value )");
+WriteIoPortWord=dll.api("WriteIoPortWord","void( WORD port, WORD value )");
+WriteIoPortByteEx=dll.api("WriteIoPortByteEx","int( WORD port, BYTE value )");
+WriteIoPortWordEx=dll.api("WriteIoPortWordEx","int( WORD port, WORD value )");
+WriteIoPortDwordEx=dll.api("WriteIoPortDwordEx","int( WORD port, INT value )");
+SetPciMaxBusIndex=dll.api("SetPciMaxBusIndex","void( BYTE max )");
+ReadPciConfigByte=dll.api("ReadPciConfigByte","BYTE(INT pciAddress, BYTE regAddress )");
+ReadPciConfigWord=dll.api("ReadPciConfigWord","WORD(INT pciAddress, BYTE regAddress )");
+ReadPciConfigDword=dll.api("ReadPciConfigDword","INT(INT pciAddress, BYTE regAddress )");
+ReadPciConfigByteEx=dll.api("ReadPciConfigByteEx","int(INT pciAddress, INT regAddress, BYTE& value )");
+ReadPciConfigWordEx=dll.api("ReadPciConfigWordEx","int(INT pciAddress, INT regAddress, WORD& value )");
+ReadPciConfigDwordEx=dll.api("ReadPciConfigDwordEx","int(INT pciAddress, INT regAddress, INT value )");
+WritePciConfigByte=dll.api("WritePciConfigByte","void(INT pciAddress, BYTE regAddress, BYTE value )");
+WritePciConfigWord=dll.api("WritePciConfigWord","void(INT pciAddress, BYTE regAddress, WORD value )");
+WritePciConfigDword=dll.api("WritePciConfigDword","void(INT pciAddress, BYTE regAddress, INT value )");
+WritePciConfigByteEx=dll.api("WritePciConfigByteEx","int(INT pciAddress, INT regAddress, BYTE value )");
+WritePciConfigWordEx=dll.api("WritePciConfigWordEx","int(INT pciAddress, INT regAddress, WORD value )");
+WritePciConfigDwordEx=dll.api("WritePciConfigDwordEx","int(INT pciAddress, INT regAddress, INT value )");
+FindPciDeviceById=dll.api("FindPciDeviceById","INT( WORD vendorId, WORD deviceId, BYTE index )");
+FindPciDeviceByClass=dll.api("FindPciDeviceByClass","INT( BYTE baseClass, BYTE subClass, BYTE programIf, BYTE index )");
+
+PciBusDevFunc = function(Bus, Dev, Func){
+	return (Bus&0xFF)<<8) | ((Dev&0x1F)<<3) | (Func&7); 
+}
+
+PciGetBus = function(address){
+	return ((address>>8) & 0xFF)
+}
+
+PciGetDev = function(address){
+	return ((address>>3) & 0x1F)
+}
+
+PciGetFunc = function(address){
+	return (address&7)
+}
+/*end intellisense*/
+
+ /**intellisense()
+ winring0 = winring0 ver 1.0.0.5\n支持win7，但需要管理员权限\n可在启动a代码文件(例如main.aardio)首行加上以下代码启用管理权限\n//RUNAS//
+_OLS_DLL_NO_ERROR=@0/*_OLS_DLL_NO_ERROR*/
+_OLS_DLL_UNSUPPORTED_PLATFORM=@1/*_OLS_DLL_UNSUPPORTED_PLATFORM*/
+_OLS_DLL_DRIVER_NOT_LOADED=@2/*_OLS_DLL_DRIVER_NOT_LOADED*/
+_OLS_DLL_DRIVER_NOT_FOUND=@3/*_OLS_DLL_DRIVER_NOT_FOUND*/
+_OLS_DLL_DRIVER_UNLOADED=@4/*_OLS_DLL_DRIVER_UNLOADED*/
+_OLS_DLL_DRIVER_NOT_LOADED_ON_NETWORK=@5/*_OLS_DLL_DRIVER_NOT_LOADED_ON_NETWORK*/
+_OLS_DLL_UNKNOWN_ERROR=@9/*_OLS_DLL_UNKNOWN_ERROR*/
+_OLS_DRIVER_TYPE_UNKNOWN=@0/*_OLS_DRIVER_TYPE_UNKNOWN*/
+_OLS_DRIVER_TYPE_WIN_9X=@1/*_OLS_DRIVER_TYPE_WIN_9X*/
+_OLS_DRIVER_TYPE_WIN_NT=@2/*_OLS_DRIVER_TYPE_WIN_NT*/
+_OLS_DRIVER_TYPE_WIN_NT4=@3/*_OLS_DRIVER_TYPE_WIN_NT4*/
+_OLS_DRIVER_TYPE_WIN_NT_X64=@4/*_OLS_DRIVER_TYPE_WIN_NT_X64*/
+_OLS_DRIVER_TYPE_WIN_NT_IA64=@5/*_OLS_DRIVER_TYPE_WIN_NT_IA64*/
+_OLS_ERROR_PCI_BUS_NOT_EXIST=@0xE0000001/*_OLS_ERROR_PCI_BUS_NOT_EXIST*/
+_OLS_ERROR_PCI_NO_DEVICE=@0xE0000002/*_OLS_ERROR_PCI_NO_DEVICE*/
+_OLS_ERROR_PCI_WRITE_CONFIG=@0xE0000003/*_OLS_ERROR_PCI_WRITE_CONFIG*/
+_OLS_ERROR_PCI_READ_CONFIG=@0xE0000004/*_OLS_ERROR_PCI_READ_CONFIG*/
+end intellisense**/

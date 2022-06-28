@@ -1,0 +1,556 @@
+﻿//edit 文本框
+import xcgui.ctrl.metaProperty;
+namespace xcgui.ctrl;
+
+class edit{
+
+	ctor(hParentPointer,tParam){ 
+		if(! (hParentPointer || tParam) ) return null;
+		if(type(tParam)!=type.table){
+			this.hPointer = topointer( hParentPointer);
+		}
+		else {
+			if( tParam.resource ) ..xcgui.res.load(tParam.resource);
+			if(tParam.layout){
+				var hEle = ..xcgui.loadLayout(tParam.layout,hParentPointer);
+				if( ::Xcgui.XC_IsHELE (hEle) ){ 
+					if( ::Xcgui.XEle_GetType(hEle) != 0x17/*_XC_RICHEDIT*/ ) return null; 
+					::Xcgui.XEle_AdjustLayoutObject(hEle);
+					this.hPointer = topointer(hEle);
+				}
+				else {
+					return null;
+				}
+			}
+			else{
+				this.hPointer = topointer( ::Xcgui.XRichEdit_Create(tParam.left,tParam.top,tParam.right-tParam.left,tParam.bottom-tParam.top,hParentPointer) ); 
+			};
+		}
+		
+		this@ = _metaProperty;
+		if( tParam.wrap === null && tParam.multiline ) tParam.wrap=true;
+	};
+	
+}
+
+::Msvcrt := ..raw.loadDll("Msvcrt.dll",,"cdecl");
+edit._metaProperty = metaProperty( 
+	wrap = {
+		_get = function(){ 
+			return ::Xcgui.XRichEdit_IsAutoWrap(owner.hPointer);
+		}
+		_set = function( v ){
+			::Xcgui.XRichEdit_EnableAutoWrap(owner.hPointer,v);
+		} 				
+	}
+	multiline = {
+		_get = function(){ 
+			return ::Xcgui.XRichEdit_IsMultiLine(owner.hPointer);
+		}
+		_set = function( v ){
+			::Xcgui.XRichEdit_EnableMultiLine(owner.hPointer,v);
+		} 				
+	}
+	getHtml = function(){
+		var len = owner.getLength();
+		var p;
+		do{
+			len = len * 2;
+			 p = ..raw.realloc( len,p );
+			::Xcgui.XRichEdit_GetHTMLFormat(owner.hPointer,p,len/2); 
+			
+		}while( !::Msvcrt.wcsstr(p,'<!--EndFragment -->\r\n</body></html>'u )  )  
+		var str = ..raw.str(p,true);
+		..raw.realloc(0,p);
+		
+		return str;
+	};
+	valign = {
+		_set = function( v ){
+			::Xcgui.XRichEdit_EnableVerticalCenter (owner.hPointer,( v==4 ) || ( v === true ) )
+		} 	
+	}
+	limit = {
+		_set = function( v ){
+			::Xcgui.XRichEdit_SetLimitNum (owner.hPointer,v) 
+		} 	
+	}	
+	delete = function(){
+		 ::Xcgui.XRichEdit_DeleteSelect (owner.hPointer) 
+	} 
+ 
+	deselect = function(){
+		 ::Xcgui.XRichEdit_CancelSelect (owner.hPointer) 
+	}
+    selectAll = function(){
+		::Xcgui.XRichEdit_SelectAll (owner.hPointer) 
+	}; 
+    clear = function(){
+    	 ::Xcgui.XRichEdit_DeleteAll (owner.hPointer) 
+    };
+    copy = function(){
+    	::Xcgui.XRichEdit_ClipboardCopy (owner.hPointer) 
+    };
+    cut = function(){
+    	::Xcgui.XRichEdit_ClipboardCut (owner.hPointer) 
+    };
+    paste = function(){
+    	::Xcgui.XRichEdit_ClipboardPaste (owner.hPointer) 
+    };
+	getLength = function(){
+		return ::Xcgui.XRichEdit_GetTextLength(owner.hPointer);
+	}
+	data = {
+		_get = function(){ 
+			var size = { int value }
+			var p = topointer( ::Xcgui.XRichEdit_GetData(owner.hPointer,size) );
+			if( p ){
+				var b = ..raw.buffer(size.value);
+				..raw.concat(b,p,,size.value);
+				::Xcgui.XC_Free(p);
+				return b;
+			}
+		}
+		_set = function( v ){ 
+		 	::Xcgui.XRichEdit_DeleteAll (owner.hPointer) 
+			::Xcgui.XRichEdit_InsertData(owner.hPointer,v,0,0)
+		}		
+	}	
+	text = {
+		_get = function(){ 
+			var len = ::Xcgui.XRichEdit_GetTextLength(owner.hPointer);
+			if(!len) return;
+
+			var sb = ..string.builder(len*2)  
+			return  sb.fromUnicode( ::Xcgui.XRichEdit_GetText(owner.hPointer,sb,len+1)  ) ;
+		}
+		_set = function( v ){ 
+			::Xcgui.XRichEdit_SetText(owner.hPointer,v)
+		}		
+	}				
+	selText = {
+		_get = function(){  
+			var min,max = owner.getsel();  
+			if( (min!==null) && ( max>min) ){
+				var len = max-min+1;
+				var p = ..raw.realloc(len*2) 
+				len = ::Xcgui.XRichEdit_GetSelectText(owner.hPointer,p,len);
+				var s = ..string.fromUnicode(p,,len);
+				..raw.realloc(0,p);
+				return s;
+			} 
+		}
+		_set = function( v ){ 
+			::Xcgui.XRichEdit_DeleteSelect (owner.hPointer);
+     		::Xcgui.XRichEdit_InsertString (owner.hPointer,v,null);
+     		owner.redraw(false);
+		} 	
+	};
+	getsel = function(){ 
+      var pos = owner.getselPosition();
+      if(pos)return owner.positionToChar(pos.startPosition.row,pos.startPosition.col),owner.positionToChar(pos.endPosition.row,pos.endPosition.col); 
+    }
+    setsel = function(min=0,max=0){
+    	var pos = {
+     		startPosition = {int row;int col};
+     		endPosition = {int row;int col}
+     	}
+     	if(!owner.positionFromChar(min,pos.startPosition))return;
+    	if(!owner.positionFromChar(max,pos.endPosition))return;
+        ::Xcgui.XRichEdit_SetSelect(owner.hPointer,pos.startPosition.row-1,pos.startPosition.col-1,pos.endPosition.row-1,pos.endPosition.col)
+        owner.redraw(false);
+        return true;
+    } 
+	getselPosition = function(){ 
+     	var pos = {
+     		startPosition = {int row;int col};
+     		endPosition = {int row;int col}
+     	}
+      	if(::Xcgui.XRichEdit_GetSelectPosition(owner.hPointer,pos.startPosition,pos.endPosition)){
+      		pos.startPosition.row = pos.startPosition.row +1;
+      		pos.startPosition.col = pos.startPosition.col +1;
+      		pos.endPosition.row = pos.endPosition.row +1;
+      		return pos;
+      	}
+    }
+    setselPosition = function(pos){
+    	return ::Xcgui.XRichEdit_SetSelect(owner.hPointer,pos.startPosition.row-1,pos.startPosition.col-1,pos.endPosition.row-1,pos.endPosition.col-1); 
+    }
+    getPosition = function(){ 
+     	return ::Xcgui.XRichEdit_GetCurrentRow (owner.hPointer),::Xcgui.XRichEdit_GetCurrentColumn (owner.hPointer);
+    }
+    setPosition = function(row,col){
+    	return ::Xcgui.XRichEdit_SetCurrentPos(owner.hPointer,row,col); 
+    }
+	insertString = function(str,font,row,col){
+		if(font) font = ..xcgui.font(font);
+		if(col!==null) return ::Xcgui.XRichEdit_InsertStringEx (owner.hPointer,row,col,str,font);
+		::Xcgui.XRichEdit_InsertString (owner.hPointer,str,font);
+	}
+	print = function(...){
+		var args = {...};
+		var b,e = ..table.range(args)
+		for(i=b;e){
+			if( type(args[i]) != "string" ) args[i] = tostring(args[i]); 
+		};
+		owner.insertString( ..string.join(args,'\t') ++ '\r\n');
+	};
+	insertImage = function(image,row,col){
+		if(col!==null) return ::Xcgui.XRichEdit_InsertImageEx (owner.hPointer,row,col,..xcgui.image(image),null);
+		::Xcgui.XRichEdit_InsertImage (owner.hPointer,..xcgui.image(image),null);
+	}
+	insertGif = function(image,row,col){
+		if(col!==null) return ::Xcgui.XRichEdit_InsertGifEx (owner.hPointer,row,col,..xcgui.image(image),null);
+		::Xcgui.XRichEdit_InsertGif (owner.hPointer,..xcgui.image(image),null);
+	}
+	empty = function(){
+		return ::Xcgui.XRichEdit_isEmpty(owner.hPointer);
+	}
+	positionFromChar = function(chr,pos){
+		var s = 0;
+		var c = owner.lineCount;
+		var l;
+		for(i=1;c;1){
+			l = owner.lineLength(i)+1
+			s = s + l;
+			if( s>chr ){
+				if(pos){
+					pos.row=i;
+					pos.col=l-(s-chr);
+				}
+				return i,l-(s-chr);
+			}
+		}
+    }
+    positionToChar = function(line=1,col){
+		var s = 0;
+		var c = owner.lineCount;
+		for(i=1;c;1){
+			if(i==line) return s+col;
+			s = s + owner.lineLength(i)+1;
+		}
+    }
+    lineFromChar = function(chr){
+		var s = 0;
+		var c = owner.lineCount;
+		for(i=1;c;1){
+			s = s + owner.lineLength(i)+1;
+			if( s>chr ) return i;
+		}
+    }
+    lineToChar = function(line=1){
+		var s = 0;
+		var c = owner.lineCount;
+		for(i=1;c;1){
+			if(i==line) return s+1;
+			s = s + owner.lineLength(i)+1;
+		}
+    }
+	lineLength = function( i ){ 
+		return ::Xcgui.XRichEdit_GetRowLength(owner.hPointer,i-1); 		
+	}
+	lineCount = {
+		_get = function(){ 
+			return ::Xcgui.XRichEdit_GetRowCount(owner.hPointer);
+		}			
+	}
+	lineHeight = {
+		_set = function(v){ 
+			return ::Xcgui.XRichEdit_SetRowHeight(owner.hPointer,v);
+		}			
+	}
+	lineIndex = {
+		_get = function(){ 
+			return ::Xcgui.XRichEdit_GetCurrentRow(owner.hPointer)+1;
+		}			
+	}
+	column = {
+		_get = function(){ 
+			return ::Xcgui.XRichEdit_GetCurrentColumn(owner.hPointer);
+		}			
+	}
+	defaultText = { 
+		_set = function( v ){
+			::Xcgui.XRichEdit_SetDefaultText(owner.hPointer,v);
+		} 				
+	}
+	defaultColor = { 
+		_set = function( v ){
+			::Xcgui.XRichEdit_SetDefaultTextColor(owner.hPointer,v & 0xFFFFFF,v>> 24 & 0xFF);
+		} 				
+	}	
+	autoSelectAll = { 
+		_set = function( v ){
+			::Xcgui.XRichEdit_EnableAutoSelAll(owner.hPointer,v);
+		} 				
+	}
+	readonly = {
+		_get = function(){ 
+			return ::Xcgui.XRichEdit_IsReadOnly (owner.hPointer);
+		}
+		_set = function( v ){
+			::Xcgui.XRichEdit_EnableReadOnly(owner.hPointer,v);
+		} 				
+	}	
+	password = {
+		_get = function(){ 
+			return ::Xcgui.XRichEdit_IsPassword(owner.hPointer);
+		}
+		_set = function( v ){
+			::Xcgui.XRichEdit_EnablePassword(owner.hPointer,v);
+		} 				
+	}
+	caretColor = { 
+		_set = function( v ){
+			::Xcgui.XRichEdit_SetCaretColor(owner.hPointer,v );
+		} 				
+	}
+	inputColor = { 
+		_set = function( v ){
+			::Xcgui.XRichEdit_SetCurrentInputTextColor(owner.hPointer,v & 0xFFFFFF,v>> 24 & 0xFF);
+		} 				
+	}		
+ 	selBgcolor = { 
+		_set = function( v ){
+			::Xcgui.XRichEdit_SetSelectBkColor(owner.hPointer,v & 0xFFFFFF,v>> 24 & 0xFF);
+		} 				
+	}	
+	setItemFont = function(font,beginRow,beginColumn,endRow,endColumn){
+		if( beginRow === null ){
+			var pos = owner.getselPosition();
+			beginRow = startPosition.row;
+      		beginColumn = pos.startPosition.col;
+      		endRow = pos.endPosition.row;
+      		endColumn = pos.endPosition.col; 
+		}
+		
+		font  = ..xcgui.font(font);
+		::Xcgui.XRichEdit_SetItemFontEx(font,beginRow-1,beginColumn-1,endRow-1,endColumn-1);
+		if(font.color) ::Xcgui.XRichEdit_SetItemColorEx(font.color,beginRow-1,beginColumn-1,endRow-1,endColumn-1);
+	}
+) 
+ 
+/**intellisense()
+xcgui.ctrl.edit(.(父窗口,参数表) = 创建一个富文本框
+xcgui.ctrl.edit() = !stdxcedit.
+win.ui.ctrl.xcedit() = !stdxcedit.
+end intellisense**/
+
+/**intellisense(!stdxcedit)
+wrap = 是否自动换行\n不自动换行是没有任何滚动条的\n选择自动换行则显示垂直滚动条
+multiline = 是否多行	
+valign = 垂直对齐
+limit = 字数限制	
+delete() = 删除选中内容
+deselect() = 取消选择
+selectAll() = 全选 
+clear() = 清空内容
+copy() =复制
+cut() = 剪切
+paste() = 粘贴
+getLength() = 获取长度
+getHtml() = 获取HTML
+data = 内容原始数据	
+text = 文本				
+selText = 选区文本
+getsel() = 返回选区开始、结束索引
+setsel(.(开始,结束索引) = 设置选区 
+getselPosition() = 返回选区行列\n详细格式查看函数源码
+setselPosition(__) = 设置选区\n详细格式查看函数源码
+getPosition() = 返回当前位置行,列位置
+setPosition(.(行,列) = 设置当前位置
+positionFromChar(__) = 索引字符位置转换为行,列
+positionToChar(.(行,列) = 行列转换为字符索引位置\n列可以省略
+print(.(->->->) = 将多个参数转换为字符串,\n并使用制表符分隔各参数追加到文本尾部\n并追加换行
+insertString(.("文本",字体,行,列) = 插入文本,除第一个参数以外其他参数可省略\n不指定行列则插入当前位置
+insertImage(.(image,row,col) = 插入图像\n图像可以直接指定路径,或指定xcgui.image对象,\n不指定行列则插入当前位置
+insertGif(.(image,row,col) = 插入GIF动画\n图像可以直接指定路径,或指定xcgui.image对象,\n不指定行列则插入当前位置	
+readonly = 是否只读
+empty() = 内容是否为空
+lineFromChar(__) = 使用字符位置获取所在行号
+lineToChar(__) = 行号转换为字符位置
+lineLength(__) = 获取指定行长度
+lineCount = 获取总行数
+lineHeight = 行高
+lineIndex = 当前行索引
+column = 当前列
+defaultText = 默认文本
+defaultColor = 默认文本颜色	
+autoSelectAll = 是否自动全选	
+password = 是否密码框		 
+caretColor = 插入符颜色
+inputColor = 输入颜色		
+selBgcolor = 选区背景色	
+setItemFont(.(font,row,col,endRow,endCol) = 设置指定区块字体\n不指定区块位置则自动获取选区位置
+background = 获取控件的背景管理器\n!stdxcbkmanager.
+bkAddFill(.("状态",图像,颜色数值或RGB分量) = 设置控件填充颜色\n可用的背景状态请查看xcgui.state
+bkAddBorder(.("状态",线宽,透明度,RGB颜色) = 添加背景边框\n状态可以是字符串或数值,可用值参考xucgui.state
+bkAddImage( = 添加背景内容图片\n注意相同路径的图像会自动缓存,不会重复创建相同图像\n所以不应在参数@2中应传入文件路径,而非文件数据
+bkAddImage(.(状态,图像) = 添加背景内容图片,参数为xcgui.image对象,也可以直接指定图片路径\n状态参数使用字符串表述,可用值参考xcgui.state库源码
+bkAddImage(.(状态,文件路径,绘制类型) = 创建图像,支持资源路径,拉伸参数可选 - 默认值为true\n状态参数使用字符串表述,可用值参考xcgui.state库源码\n绘制类型为字符串值，参考xcgui.image.repeat
+bkAddImage(.(状态,文件路径,"expand",左,上,右,下) = 创建九宫格图像,支持资源路径\n状态参数使用字符串表述,可用值参考xcgui.state库源码
+bkAddImage(.(状态,文件路径,是否位伸,左,上,宽,高) = 加载图片上指定的部分\n状态参数使用字符串表述,可用值参考xcgui.state库源码
+skin(样式配置) = @.skin(\n	background = { \n		hover = "\image\button_hover.png";\n		active = "\image\button_down.png";\n		leave = "\image\button_leave.png"; \n	}\n)
+id = ID值
+z = Z序
+topmost(true) = Z序置顶
+getWindow() = 返回父窗体\n!stdxcwnd
+hitEle(.(x,y) = 根据指定的坐标获取子节点\n!stdxcele
+getParent() = 获取父节点\n!stdxcele
+getParentHandle() = 获取父节点句柄
+getParentType() = 获取父节点类型
+getObjectType() = 获取节点类型
+addEle(__) = 添加子节点
+insertEle(.(child,index) = 在index指定的位置插入子节点child 
+remove() = 移除元素,但不销毁.
+disabled = 是否禁用
+hide = 是否隐藏;
+pointerEvents = 是否触发鼠标事件\n值设为false可实现鼠标穿透效果
+transparent = 是否支持背景透明\n透明PNG图像需要设置此属性为true
+alpha = 透明度
+color = 字体颜色
+border = 设置是否允许显示边框\n只写属性
+focusBorderColor = 焦点边框颜色
+enableDrawFocus = 是否允许绘制焦点
+focusBorder = 是否启用焦点
+scrollView = 是否允许显示滚动
+tabstop = 是否允许键盘切换焦点
+tooltip = 提示文本
+css("__") = 修改CSS样式名\n无参数时返回CSS样式名
+popupToolTip(.(x,y) = 在指定坐标弹出提示
+getFont() = 获取字体\n!stdxcfont.
+setFont(.(字体名,字体大小,样式) = 创建字体
+setFont(.(字体名） = 设置字体
+setFont(.(name="字体"） = 设置字体\n参数为LOGFONT对象，或指定部分LOGFONT属性的表
+setFont(.(句柄） = 设置字体\n参数为字体句柄
+getClientRect() = 返回客户区区块,::RECT对象\n!rect. 
+getRect = 返回控件区块,::RECT对象\n!rect. 
+setRect(.(rect,是否重绘) = 设置区块,参数@1为::RECT对象
+getLogicRect = 返回控件逻辑区块,::RECT对象\n!rect. 
+setLogicRect(.(rect,是否重绘) = 设置控件逻辑区块,参数@1为::RECT对象
+setPos(.(x坐标,y坐标,宽,高) = 调整控件位置或排序,所有参数可选\n同时指定x,y坐标则移动位置\n同时指定宽高则改变大小
+getPos() = 返回相对坐标,宽,高,返回4个值：x,y,cx,cy
+autoResize = 是否允许aardio窗口自动调整控件位置\n只有在窗口设计器中添加的控件,并是aardio窗口对象的成员时此属性才有效
+getWidth() = 获取宽度
+getHeight() = 获取高度
+layoutObject = 获取或绑定布局对象\n获取布局对象时如果布局对象不存在则自动创建\n!stdxclayoutObj.
+getParentLayoutObject() = 获取父布局对象
+adjustLayoutObject() = 调整布局对象
+adjustLayout() = 调整布局
+setLayoutHeight(.(宽度,选项) = 设置布局宽度
+setLayoutWidth(.(高度,选项) = 设置布局高度 
+cursor = 鼠标指针
+redraw() = 重绘
+redrawRect(__) = 重绘区块,参数为::RECT对象
+getScrollView() = 获取滚动视图接口\n!stdxcscrollview.
+close() = 销毁控件
+post("click__",wParam,lParam) = 发送消息,不获取返回值\n参数@1可使用任何字符串自定义新的控件消息
+send("click__",wParam,lParam) = 发送消息,获取消息处理函数的返回值\n任何一个事件回调函数返回非null值都会结束当次事件并返回该值,\n参数@1可使用任何字符串自定义新的控件消息
+.onMessage= @.on("message",function(message,wParam,lParam){
+	if( message == "自定义消息" ) return __/*返回非null值结束本次回调*/;
+})
+.onChange = @.on("change",function(){
+	__
+})
+.onPaint = @.on("paint",function(hDraw){
+	__
+})
+.onPaintEnd = @.on("paintEnd",function(hDraw){
+	__
+})
+.onPaintScrollView = @.on("paintScrollView",function(hDraw){
+
+})
+.onMove = @.on("move",function(nFlags,pt){
+	
+	__
+})
+.onEnter = @.on("enter",function(){
+
+})
+.onHover = @.on("hover",function(nFlags, pt){
+	
+	__
+})
+.onLeave = @.on("leave",function(hEleHover){
+
+})
+.onWheel = @.on("wheel",function(nFlags,pt){
+	
+	__
+})
+.onLbuttonDown = @.on("lbuttonDown",function(nFlags, pt){
+	
+	__
+})
+.onLbuttonUp = @.on("lbuttonUp",function(nFlags, pt){
+	
+	__
+})
+.onRbuttonDown = @.on("rbuttonDown",function(nFlags, pt){
+	
+	__
+})
+.onRbuttonUp = @.on("rbuttonUp",function(nFlags, pt){
+	
+	__
+})
+.onDblclick = @.on("dblclick",function(nFlags, pt){
+	
+	__
+})
+.onFocus = @.on("focus",function(){
+	__
+})
+.onKillFocus = @.on("killFocus",function(){
+	__
+})
+.onDestroy = @.on("destroy",function(){
+	__
+})
+.onSize = @.on("size",function(){
+	__
+})
+.onShow = @.on("show",function(shown){
+	__
+})
+.onSetFont = @.on("font",function(){
+	__
+})
+.onKeyDown = @.on("keyDown",function(wParam,lParam){
+	__
+})
+.onChar = @.on("char",function(wParam,lParam){
+	__
+})
+.onSetCapture = @.on("setCapture",function(){
+	__
+})
+.onKillCapture = @.on("killCapture",function(){
+	__
+})
+.onCursor = @.on("cursor",function(wParam,lParam){
+	__
+})
+.onDropfiles = @.on("dropfiles",function(wParam){
+	var files = ..win.getDropFile(wParam) __
+})
+.onMenuPopup = @.on("menuPopup",function(hMenu){
+	__
+})
+.onMenuPopupWnd = @.on("menuPopupWnd",function(hMenu,pInfo){
+	__
+})
+.onMenuSelect = @.on("menuSelect",function(id){
+	__
+})
+.onMenuDrawBackground = @.on("menuDrawBackground",function(hDraw,pInfo){
+	__
+})
+.onMenuDrawitem = @.on("menuDrawitem",function(hDraw,pInfo){
+	__
+})
+.onMenuExit = @.on("menuExit",function(){
+	__
+})
+end intellisense**/

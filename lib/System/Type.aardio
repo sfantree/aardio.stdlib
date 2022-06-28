@@ -1,0 +1,9 @@
+﻿//Type 类型
+import dotNet;
+dotNet.import("System.Type","mscorlib")
+
+/**intellisense()
+System.Type = .Net 类型类
+System.Type.GetType("__") = 获取指定的类型，参数指定类型完整名称
+System.Type.? = .Net 名字空间、类、结构体的成员，\n可访问成员名字空间、类、枚举、静态属性或字段，\n导入的类可用于构造 .Net 对象，传回 .Net 则自动转为该类的 Type 对象\n!dotNetNameSpace.
+end intellisense**/

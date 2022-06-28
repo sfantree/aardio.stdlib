@@ -1,0 +1,48 @@
+//托盘图标跳动
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="托盘图标跳动";right=759;bottom=469)
+winform.add(
+button={cls="button";text="停止";left=386;top=296;right=534;bottom=339;z=1};
+button2={cls="button";text="开始";left=208;top=296;right=356;bottom=339;z=2}
+)
+/*}}*/
+
+
+//var hIcon = ::LoadIcon(null, topointer(0x7F00/*_IDI_APPLICATION*/)); 
+
+import win.util.tray;
+var tray = win.util.tray(winform,hIcon);
+var hIcon = _HAPPICON;
+
+trayflash = function(){
+	if(traytid) {
+	    return;
+	}
+	traytid = winform.reduce( { hIcon;},
+		function(value,index){
+			tray.icon = value;
+			return 500;
+		} 
+	)
+}
+
+trayunflash = function(){
+	if(not traytid) {
+	    return;
+	}
+	winform.clearInterval(traytid);
+    tray.icon = hIcon;
+    traytid = null;
+}
+
+winform.button2.oncommand = function(id,event){
+    trayflash();
+}
+
+winform.button.oncommand = function(id,event){
+	trayunflash();
+}
+
+winform.show() 
+win.loopMessage();

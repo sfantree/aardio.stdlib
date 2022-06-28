@@ -1,0 +1,52 @@
+//首先创建一个登录对话框
+import win.ui;
+var loginForm = win.form(text="aardio 登录演示";right=474;bottom=166;border="dialog frame";max=false)
+loginForm.add(
+button={cls="button";text="登录";left=260;top=101;right=421;bottom=141;z=3};
+edit={cls="edit";left=162;top=59;right=344;bottom=87;edge=1;multiline=1;z=1};
+static={cls="static";text="请输入口令“hello”";left=43;top=62;right=148;bottom=87;align="right";transparent=1;z=2}
+)
+
+//用户点击登录对话框上的【登录】按钮
+loginForm.button.oncommand = function(id,event){
+    if( loginForm.edit.text == "hello" ){
+        loginForm.endModal("hello"); //登录成功结束模态对话框，参数中返回得到的用户令牌
+    }
+    else {
+        loginForm.msgboxErr("口令输入错误")
+        loginForm.edit.setFocus(0,-1)
+    }
+}
+
+//以模态对话框显示登录窗口
+if( loginForm.doModal() != "hello" ){
+    return;
+}
+
+/*-----------------------------------------
+上半部分代码是登录，下半部分是登录成功才执行
+---------------------------------*/
+
+import win.ui;
+/*DSG{{*/
+mainForm = ..win.form(text="aardio form";right=522;bottom=252)
+mainForm.add()
+/*}}*/
+
+import web.form;
+var wb = web.form( mainForm );
+wb.html = /**
+<!doctype html>
+<html>
+<head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+</head>
+<body>
+    <div style="font-size:16px;"> 您已登录成功  </div>
+</body>
+</html>
+**/
+
+mainForm.show(true);
+win.loopMessage();

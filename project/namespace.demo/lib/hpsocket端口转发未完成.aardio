@@ -1,0 +1,52 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add()
+/*}}*/
+
+import console;
+import debug;
+
+import hpsocket.tcpServer;
+import hpsocket.tcpAgent;
+
+hpServer = hpsocket.tcpServer();
+hpAgent = hpsocket.tcpAgent();
+
+hpAgent.onThreadCreated = function(){
+    import console;
+    import thread.event;
+    import hpsocket.tcpServer;
+    import thread.command;
+    import wsock;
+    import time.performance;
+    
+    log = function(...){
+        thread.lock("proxy_log")
+        ..console.dump(...)
+        thread.unlock("proxy_log")
+    }
+    _hpTcpServer = hpsocket.tcpServer(_serverSocket);
+}
+
+hpAgent.threadGlobal = {
+     _serverSocket = hpServer.pSocket;
+}
+
+hpAgent.onConnect = function(hpTcpAgent,connId){
+	//__/*建立连接后触发*/
+}
+
+hpAgent.onReceive = function(hpTcpAgent,connId,pData,length){
+	//var data = ..raw.tostring(pData,1,length)
+	// 返回连接ID绑定的指针
+	var pextra = hpTcpAgent.getConnectionExtra(connId);
+	if(pextra) {
+	    //hpServer.send(.(connId,buffer,length)
+	    _hpTcpServer.send(pextra, pData, length);
+	}
+	
+}
+
+winform.show();
+win.loopMessage();

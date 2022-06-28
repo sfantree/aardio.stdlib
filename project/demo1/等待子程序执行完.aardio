@@ -1,0 +1,40 @@
+import win.ui;
+//导入自定义的用户库
+/*DSG{{*/
+mainForm = win.form(text="haha";right=378;bottom=270;border="dialog frame";edge=1;frame=1;parent=...)
+mainForm.add(
+button={cls="button";text="Button";left=22;top=197;right=167;bottom=241;z=2};
+edit={cls="edit";left=25;top=27;right=356;bottom=171;edge=1;multiline=1;z=1}
+)
+/*}}*/
+
+mainForm.edit.oncommand = function(id,event){
+	
+}
+
+mainForm.button.oncommand = function(id,event){
+    
+    mainForm.button.disabled = true;
+    //mainForm.button.redraw();
+    //mainForm.button.text = mainForm.button.text;
+    
+    //sleep(500);
+    
+    import process;
+    import time;
+    
+	var prcs = -1;
+	prcs = process.executeWait("G:\elang\延时\sleep2300.exe",,,1,,);
+	//import process.job.limitKill;
+   	//prcs.assignToJobObject(process.job.limitKill);	
+   	//process.wait();
+   	
+   	
+	mainForm.edit.text =  tostring( time.now() );
+	
+	//mainForm.button.text = "456";
+	mainForm.button.disabled = false;
+}
+
+mainForm.show()
+win.loopMessage();

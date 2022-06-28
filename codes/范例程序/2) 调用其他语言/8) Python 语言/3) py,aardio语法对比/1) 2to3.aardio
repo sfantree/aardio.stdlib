@@ -1,0 +1,24 @@
+//1)文本编码差别
+?>
+<title>Python2，3的文本编码差别</title>
+
+<pre style="font-size:16px;">
+Python3 的 str/bytes 对应于 aardio 中的 string/buffer 类型。
+Python3 中的字符串为 Unicode 字符串，在与 aardio 交互的内部接口使用 UTF-8 编码，这同样是 aardio 字符串的默认编码。
+Python3 里的 bytes 在 aardio 中会转换为 buffer（即二进制字节数组）。
+
+Python2 里 unicode 是一个单独的类型，
+相当于 aardio 中的 Unicode 字符串，也就是 aardio 里的 '这种字符串'u，内部都是使用 UTF-16 编码。
+Python2 里的 bytes 实际就是 str - 可以理解为二进制字符串，相当于 aardio 中的普通字符串。
+
+aardio 字符串虽然也可以容纳二进制字节，
+但 aardio 默认文本编码为 UTF-8，并且 aardio 有专门处理二进制的 buffer 类型。
+
+但可惜的是 Python2 在 Windows 上默认使用 ANSI 编码，
+ANSI 编码在不同的系统会解释为不同编码，简体中文系统即 GBK，这就很乱很容易出问题了。
+
+Python2 虽然也可以在代码文件前加一个声明用 UTF8 编码。但这是没有多大用的，
+Python2 对 UTF-8 的支持很糟糕，如果在代码中有包含中文或Unicode字符的文件路径，或者控制台输出中文，都会非常麻烦。
+总之一句话：尽量用 Python3 不要用 Python2。
+</pre>
+

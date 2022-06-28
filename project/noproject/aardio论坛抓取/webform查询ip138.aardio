@@ -1,0 +1,31 @@
+import win;
+import win.ui;
+import web.blink;
+/*DSG{{*/
+mainForm = win.form(text="aardio Form";right=600;bottom=400;parent=...;scroll=1)
+mainForm.add(
+static={cls="static";text="static";left=10;top=59;right=592;bottom=393;ah=1;aw=1;transparent=1;z=1}
+)
+/*}}*/
+
+
+//创建web窗体
+var mainWb = web.blink( mainForm.static );
+
+//打开目标网站
+mainWb.go("https://www.ip138.com/iplookup.asp?ip=117.151.232.98&action=2")
+mainForm.show(); //显示窗体
+mainWb.noScriptErr=true        //禁止脚本错误提示
+mainWb.wait("");//等待指定网址,可以使用模式匹配语法
+
+//判断安全控件是否打开
+//mainWb.getEle("TPL_username_1",0).focus()  //获得焦点
+//mainWb.getEle("TPL_username_1",0).value="账号"  //写入账号
+//var ele = wb.getEle("TPL_password_1",0)  
+//var ele = wb.getEle("TPL_username_1",0)  
+
+
+
+//进入消息循环
+win.loopMessage();
+return winform,mainWb;

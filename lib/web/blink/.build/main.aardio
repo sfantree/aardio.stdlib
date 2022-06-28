@@ -1,0 +1,23 @@
+import ide;
+import fsys;
+
+var publisDir = ide.getPublisDir();
+if(!#publisDir)return; 
+
+var dataFile = ::Kernel32.LoadLibraryExW(ide.getPublishPath() , ,2/*_LOAD_LIBRARY_AS_DATAFILE*/)
+if(dataFile){
+	import fsys.res;  
+	fsys.res.enum(
+		function(module,resType,resName){
+			if(resName == "WEB.BLINK.PORTABLE"){
+				import win;
+				win.msgboxErr('web.blink 已默认支持生成独立文件\n请移除代码中的 import web.blink.portable');
+				return false;
+			}
+
+			return true;
+		},"LIB",topointer(dataFile)
+	) 
+	::Kernel32.FreeLibrary(dataFile);
+}
+

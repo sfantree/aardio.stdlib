@@ -1,0 +1,90 @@
+﻿//github 接口
+import crypt;
+import web.rest.jsonLiteClient;
+namespace web.rest;
+
+class github{
+	ctor(...){
+		this = ..web.rest.jsonLiteClient(...);
+		this.defaultUrlTemplate = "https://api.github.com";
+	};
+}
+
+namespace github{
+    
+    parseUrlArgs = function(user,repos,path,branch){
+        
+    	if(!(repos && path)){
+			var url = user;
+			user,repos,branch,path = ..string.match(url,"github\.com/([^/]+)/([^/]+)/<blob>|<raw>/([^/]+)/([^\s\#\?]+)")
+			if(!user){
+				user,repos,branch,path = ..string.match(url,"([^/]+)/([^/]+)/<blob>|<raw>/([^/]+)/([^\s\#\?]+)")
+				if(!user){
+					user,repos,branch,path = ..string.match(url,"raw\.githubusercontent\.com/([^/]+)/([^/]+)/([^/]+)/([^\s\#\?]+)")
+					if(!user){
+						user,repos = ..string.match(url,"github\.com/([^/]+)/([^/]+)")
+					}
+				}
+			}
+		}
+		return user,repos,path,branch;
+    }
+    
+	getContent = function(user,repos,path,branch){
+		user,repos,path,branch = parseUrlArgs(user,repos,path,branch);
+
+		if(user&&repos&&path){
+			var client = ..web.rest.github();
+			var result = client.api().repos[user][repos].contents[path].get(,{ref=branch});
+
+			if(result[["content"]] && result[["encoding"]]=="base64"){
+				var str = ..crypt.decodeBin(result[["content"]]);
+				client.close();
+				
+				return ..string.removeBom(str);
+			}
+			
+			var ret = client._http.get("https://github.com/"+user+"/"+repos+"/raw/"+(branch:"main")+"/" + path);
+			client.close()
+				
+			return ..string.removeBom(ret);
+		}
+	};
+	
+	latestRelease = function(repo,filename){
+		var client = ..web.rest.github();
+		var latest = client.api().repos[repo].releases.latest.get();
+		client.close();
+		
+		if(filename && latest && latest.tag_name){
+			var url = type.isString(filename) ? filename : filename(latest.tag_name);
+			if(url) url = "https://github.com/"+repo+"/releases/download/" + latest.tag_name + "/" + url;
+			return url;
+		}
+		return latest;
+	}; 
+	
+	self.import = function(user,repos,path,branch){
+		var code = getContent(user,repos,path,branch);
+		if(!code) return;
+		
+		user,repos,path,branch = parseUrlArgs(user,repos,path,branch);
+		..string.save("~/lib/" + path,code);
+		
+		if(_STUDIO_INVOKED){
+			..global.import("ide");
+			..ide.refreshStdLib();
+		}
+	}
+}
+
+/**intellisense(web.rest.github)
+getContent(.(网址) = 自指定的 GitHub 网址获取数据,\n包含 blob,raw 的 GitHub 网址可省略域名部分
+getContent(.(用户名,仓库名,文件路径,分支名) = 自指定的 GitHub 网址获取数据,分支名可省略
+import(.(网址) = 自指定的 GitHub 网址获取 *.aardio 扩展库文件代码并安装,\n包含 blob,raw 的 GitHub 网址可省略域名部分,\n仅支持小型单文件扩展库,\n项目中的文件路径必须与库目录下的子路径一致
+latestRelease(.("用户名/仓库名") = 获取最新发布版本信息\n\n如果参数@2指定文件名,或获取文件名的函数,\n则返回该文件的完整下载地址
+end intellisense**/
+
+/**intellisense()
+web.rest.github() = 创建 GitHub 接口客户端\n使用 api 函数返回接口对象,不需要输入接口地址,\n!web_restClient.
+end intellisense**/

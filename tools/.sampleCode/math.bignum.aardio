@@ -1,0 +1,13 @@
+import console; 
+import math.bignum;
+
+var a = math.bignum("123456789")
+var b = math.bignum("0xFFFFFFEEEDEEEEE")
+var c = a + b;
+
+console.log("10进制" ,tostring(c,10) );
+console.log("16进制" ,tostring(c) );
+console.log("转为math.size64" ,c.size64());
+console.log("随机数","0." + tostring(a.random(100),10) );
+
+console.pause(true);

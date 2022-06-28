@@ -1,0 +1,157 @@
+//gdiRender 绘图模块
+import gdi;
+namespace web.kit;
+
+class gdiRender{
+	ctor( wkeView,hwnd ){
+		if( ! wkeView[["hWebView"]] ) error("参数@1必须是web.kit.view视图对象",2);
+		this.wkeView = wkeView;
+		wkeView.print = function(hdc,scale){
+			return this.print(hdc,scale);
+		}
+		
+		if( hwnd ){
+			var hdc = ::GetDC(hwnd);
+			this.compatibleDc = ::CreateCompatibleDC(hdc); 
+			::ReleaseDC(hwnd,hdc);
+		}
+		else{
+			this.compatibleDc = ::CreateCompatibleDC(null); 
+		}
+	};
+	delete = function(){
+		if (this.compatibleDc){
+            ::DeleteDC(this.compatibleDc);
+            this.compatibleDc = null;
+		}
+		
+        if (this.memBitmap){
+            ::DeleteObject(this.memBitmap);
+            this.memBitmap = null;
+        }
+	};
+	resize = function(w,h){
+		if ( w!=this.width || h!=this.height ){
+            var hbmp,bits = createBitmap(w,h);
+            ::SelectObject(this.compatibleDc, hbmp);
+
+        	if (this.memBitmap)
+            	::DeleteObject(this.memBitmap);
+            	
+        	this.memBitmap = hbmp;
+        	this.memPixels = bits;
+        	this.width = w;
+        	this.height = h;
+		}
+	};
+	draw = function(hwnd){
+	
+		var wkeView = this.wkeView;
+		var w,h = this.width,this.height; 
+		if(! ( w && h ) ) return;
+		 
+        wkeView.paint(this.memPixels, w*4); 
+        var hdc = ::GetDC(hwnd);
+        if( hdc ){
+        	::BitBlt(hdc, 0, 0, w, h, this.compatibleDc, 0, 0, 0xCC0020/*_SRCCOPY*/  );
+        	::ReleaseDC(hwnd,hdc);
+        }
+    };
+    drawDc = function(hdc,x,y,cx,cy){
+		var wkeView = this.wkeView;
+		var w,h = this.width,this.height; 
+		if(! ( w && h ) ) return;
+		 
+        wkeView.paint(this.memPixels, w*4); 
+        ::BitBlt(hdc,x,y,cx,cy,this.compatibleDc,0,0,0xCC0020/*_SRCCOPY*/  );
+    };
+    print = function(hdc,scale){ 
+		 
+		if(!wkeView.document)return;
+		var scrollWidth = wkeView.document.body.scrollWidth; 
+        var scrollHeight  = wkeView.document.body.scrollHeight; 
+        var dcWidth = ::Gdi32.GetDeviceCaps(hdc,0x8/*_HORZRES*/);
+    	var dcHeight = ::Gdi32.GetDeviceCaps(hdc,0xA/*_VERTRES*/);
+    	var outWidth,outHeight = scrollWidth,scrollHeight;
+    	if( !scale ) scale = 1;
+;
+        if( scale > 0 ){
+        	outWidth = scrollWidth * scale;
+        	outHeight = scrollHeight * scale;
+        	  
+    		if( (outWidth < dcWidth) && (outHeight < dcHeight ) ){
+    		}
+    		else{
+    			if ( outWidth / scrollWidth < outHeight / scrollHeight ) {
+					outHeight = outWidth * scrollHeight / scrollWidth;
+				}
+				else {
+					outWidth = outHeight * scrollWidth / scrollHeight;
+				}
+			}
+        }
+        else{
+        	scale = ..math.abs(scale);
+        	if ( dcWidth / scrollWidth < dcHeight / scrollHeight ) {
+				outHeight = (dcWidth * scrollHeight / scrollWidth) * scale;
+				outWidth = (dcWidth) * scale;
+			}
+			else {
+				outWidth = (dcHeight * scrollWidth / scrollHeight) * scale;
+				outHeight = (dcHeight) * scale;
+			}
+        }
+    	 
+		var wkeView = this.wkeView; 
+		wkeView.resize(scrollWidth,scrollHeight);
+        var hbmp,bits = createBitmap(scrollWidth,scrollHeight);
+        var compatibleDc = ::CreateCompatibleDC(hdc); 
+        var holdBmp = ::SelectObject(compatibleDc, hbmp);
+		wkeView.paint(bits, scrollWidth*4); 
+       
+       ::SetStretchBltMode(hdc,0x4/*_STRETCH_HALFTONE*/);   
+	   ::SetBrushOrgEx(hdc,0,0,{});
+       ::StretchBlt( hdc,0 ,0, outWidth,outHeight,compatibleDc,0,0,scrollWidth,scrollHeight,0xCC0020/*_SRCCOPY*/);  
+       
+       ::SelectObject(compatibleDc, holdBmp);
+       ::DeleteObject(hbmp);
+        ::DeleteDC(compatibleDc);
+        
+        wkeView.resize(this.width,this.height); 
+    };
+}
+
+import gdi;
+namespace gdiRender{
+	createBitmap = function(w,h){
+		var bi = {
+    		struct bmiHeader = {
+				INT biSize;     
+				int biWidth;    
+				int biHeight;    
+				WORD biPlanes;    
+				WORD biBitCount;
+				INT biCompression;  
+				INT biSizeImage;   
+				int biXPelsPerMeter;  
+				int biYPelsPerMeter;  
+				INT biClrUsed;  
+				INT biClrImportant; 
+    		}
+    		INT bmiColors[1];
+		}  
+		
+		bi.bmiHeader.biSize = ..raw.sizeof(bi);
+		bi.bmiHeader.biWidth = w;
+		bi.bmiHeader.biHeight = -h;
+		bi.bmiHeader.biPlanes = 1;
+		bi.bmiHeader.biBitCount = 32;
+		bi.bmiHeader.biCompression = 0x0/*_BI_RGB*/;
+		
+		var bits = {pointer pixels}
+		var hbmp = ::Gdi32.CreateDIBSection(0, bi, 0x0/*_DIB_RGB_COLORS*/, bits, null, 0);
+		return topointer(hbmp),bits.pixels
+	}	
+}
+
+

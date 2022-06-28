@@ -1,0 +1,123 @@
+//rawInput 原始输入钩子
+namespace win.rawInput;
+
+class RAWINPUTDEVICE{
+    WORD usagePage;  
+    WORD usage; 
+    INT flags;
+    int hwndTarget;  
+}
+
+
+RAWMOUSE = class { 
+    WORD flags;  
+    WORD buttonFlags;
+    WORD buttonData; 
+    INT rawButtons; 
+    int lastX; 
+    int lastY;
+    INT extraInformation;
+}
+var RAWMOUSE = RAWMOUSE;
+
+RAWKEYBOARD = class { 
+    WORD makeCode; 
+    WORD flags;
+    WORD reserved;
+    WORD vKey;
+    INT message; 
+    INT extraInformation; 
+}
+var RAWKEYBOARD = RAWKEYBOARD;
+
+RAWHID = class {
+    INT sizeHid; 
+    INT count; 
+    BYTE rawData[1];
+}
+var RAWHID = RAWHID;
+
+RAWINPUTHEADER = class {
+    INT dwType;
+    INT size;
+    ptr device;
+    int param;
+}
+var RAWINPUTHEADER = RAWINPUTHEADER;
+
+RAWINPUT = class {
+    struct header = RAWINPUTHEADER();
+    union data={
+        struct mouse = RAWMOUSE();
+        struct keyboard = RAWKEYBOARD();
+        struct hid = RAWHID();
+    };
+}
+
+GetRawInputData = ::User32.api( "GetRawInputData", "INT(int hRawInput,INT command,pointer pData,INT &cbData,INT sizeHeader)");
+
+register = function(winform,usagePage,usage,flags){
+    var hwnd =winform[["hwnd"]] :winform;
+    var rid = RAWINPUTDEVICE();
+    rid.usagePage = usagePage: 0x01;
+    rid.usage = usage : 0x06;
+    rid.flags = flags : 0x100/*_RIDEV_INPUTSINK*/;
+    rid.hwndTarget = winform.hwnd;
+    
+    ::User32.RegisterRawInputDevices(rid, 1, ..raw.sizeof(rid));  
+}
+  
+var rawInput = RAWINPUT();  
+
+getData = function(lparam){ 
+    
+    var ret,size = GetRawInputData(lparam, 0x10000003/*_RID_INPUT*/, , 0 ,16/*raw.sizeof(RAWINPUTHEADER() )*/ ); 
+    if(!size)
+        return; //出错了;
+        
+    var pdata = ..raw.malloc( ..math.max(40/*..raw.sizeof(rawInput)*/,size ) ) 
+    
+    var ret,size = GetRawInputData(lparam, 0x10000003/*_RID_INPUT*/, pdata, size , 16/*raw.sizeof(RAWINPUTHEADER() )*/ ) ; 
+    if(ret != size )
+        return; //出错了
+    
+    ..raw.convert(pdata,rawInput); 
+    return rawInput  
+}
+
+
+/**intellisense(win.rawInput)
+register(__/*窗口对象或句柄*/) = 注册原始输入钩子窗口
+getData(lparam) = 返回原始输入钩子数据\n!rawInputData.
+end intellisense**/
+
+/**intellisense()
+!rawInputMouse.flags = 选项 
+!rawInputMouse.buttonFlags =  鼠标按钮转换状态
+!rawInputMouse.buttonData =  鼠标按钮数据
+!rawInputMouse.lastX = X坐标移动值
+!rawInputMouse.lastY = Y坐标移动值
+!rawInputMouse.extraInformation = 附加信息
+!rawInputKeyboard.makeCode = 扫描码
+!rawInputKeyboard.flags = 扫描码选项
+!rawInputKeyboard.vKey = 虚拟键码
+!rawInputKeyboard.message = 消息
+!rawInputKeyboard.extraInformation = 附加信息 
+!rawInputHid.sizeHid = 字节大小
+!rawInputHid.count = 输入计数
+!rawInputHid.rawData.? = 输入数据
+!rawInputHeader.dwType = @.dwType = _RIM_TYPE__ ;
+!rawInputHeader.size = 字节大小
+!rawInputHeader.device = 设备句柄
+!rawInputHeader.param = WM_INPUT 消息 wParam 参数值
+!rawInputData.header = !rawInputHeader.
+!rawInputData.data.mouse = !rawInputMouse.
+!rawInputData.data.keyboard = !rawInputKeyboard.
+!rawInputData.data.hid = !rawInputHid.
+end intellisense**/
+
+ /**intellisense()
+_RIM_TYPEMOUSE=@0/*_RIM_TYPEMOUSE*/
+_RIM_TYPEKEYBOARD=@1/*_RIM_TYPEKEYBOARD*/
+_RIM_TYPEHID=@2/*_RIM_TYPEHID*/
+end intellisense**/

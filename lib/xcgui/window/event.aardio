@@ -1,0 +1,184 @@
+﻿//event 事件回调
+
+if(!xcgui[["window"]]) import xcgui.window;
+namespace xcgui.window.event;
+
+ids = {
+	message = 0x7002;
+	timer = 0x7005;
+	paint = 0xF/*_WM_PAINT*/; 
+	paintEnd = 0x7000+19;
+	floatPane = 0x7000+18;
+	close = 0x10/*_WM_CLOSE*/;
+	dblclick = 0x203/*_WM_LBUTTONDBLCLK*/; 
+	move = 0x200/*_WM_MOUSEMOVE*/; 
+	hover = 0x2A1/*_WM_MOUSEHOVER*/;
+	leave = 0x02A3/*_WM_MOUSELEAVE*/;
+	wheel = 0x20A/*_WM_MOUSEWHEEL*/;
+	lbuttonDown = 0x201/*_WM_LBUTTONDOWN*/; 
+	lbuttonUp = 0x202/*_WM_LBUTTONUP*/; 
+	rbuttonDown = 0x204/*_WM_RBUTTONDOWN*/;
+	rbuttonUp = 0x205/*_WM_RBUTTONUP*/;
+	focus = 0x7/*_WM_SETFOCUS*/; 
+	killFocus = 0x8/*_WM_KILLFOCUS*/; 
+	destroy = 2/*_WM_DESTROY*/; 
+	ncDestroy = 0x82/*_WM_NCDESTROY*/;
+	size = 0x5/*_WM_SIZE*/; 
+	exitSizeMove = 0x232/*_WM_EXITSIZEMOVE*/;
+	keyDown = 0x100/*_WM_KEYDOWN*/; 
+	char = 0x102/*_WM_CHAR*/; 
+	capture = 0x0215/*_WM_CAPTURECHANGED*/; 
+	cursor = 0x20/*_WM_SETCURSOR*/; 
+	menuPopup = 0x7000+11;
+	menuPopupWnd = 0x7000+12; 
+	menuSelect = 0x7000+13;
+	menuDrawBackground = 0x7000+15;
+	menuDrawitem = 0x7000+16;
+	menuExit = 0x7000+14;
+	dropfiles = 0x233/*_WM_DROPFILES*/; 
+}
+
+__events__ = {};
+reg = function(wndOwner,eventId,func){
+	eventId = ids[eventId] : eventId; 
+	if(!eventId) error("错误的事件ID",2);
+	
+	var hWnd = ..raw.toPointer(wndOwner);
+	if(!hWnd) error("错误的元素对象",2);
+	
+	var events = __events__[hWnd];
+	if(!events) {
+		events = {};
+		__events__[hWnd] = events;
+		
+		var callback = ..raw.tostdcall(destroy,protos[2/*_WM_DESTROY*/],wndOwner);
+		events[callback] = 2/*_WM_DESTROY*/; 
+		::Xcgui.XWnd_RegEventC(wndOwner,2/*_WM_DESTROY*/,callback );
+		events.destroy = {};
+	}
+	
+	if(eventId==2/*_WM_DESTROY*/){
+		..table.push(events.destroy,func);
+		return func;
+	}
+	elseif(eventId==0x7002){
+		var proc = func;
+		func = function(event,wParam,lParam,handled){
+			var r,v = callex(,proc,owner,event,wParam,lParam,handled);
+			if(r) { if( v!==null ) return v,true;}
+			else {
+				error(v);
+			}
+		}
+	}
+	else {
+		var proc = func;
+		func = function(...){
+			var r,v = callex(,proc,owner,...);
+			if(r) { if( v!==null ) return v,true;}
+			else {
+				error(v);
+			}
+			
+		}
+	}
+	
+	var proto  = protos[eventId];
+	if(!proto) error("错误的事件ID",2);
+	
+	var callback = ..raw.tostdcall(func,proto,wndOwner); 
+	events[callback] = eventId;
+	
+	::Xcgui.XWnd_RegEventC(wndOwner,eventId,callback );
+	return callback;
+}
+
+removeEvent = function(wndOwner,callback){
+	var hWnd = ..raw.toPointer(wndOwner);
+	if(!hWnd) error("错误的元素对象",2);
+	
+	var events = __events__[hWnd];	
+	if(!events) return;
+	
+	if( type(callback) == type.function ){
+		for(k,v in events.destroy){
+			if(v==callback){
+				..table.remove(events.destroy,k);
+				return true;
+			}
+		}  
+	}
+	else {
+		for(c,id in events ){
+			if(c == callback){
+				::Xcgui.XWnd_RemoveEventC(hWnd,id,callback);
+				events[c] = null;
+				return true;
+			}
+		}
+	}
+}
+
+destroy = function(handled){
+	var hWnd = ..raw.toPointer(owner);
+	if(!hWnd) return;
+	
+	var events = __events__[hWnd];
+	if(events) {
+	
+		var r,e;
+		var destroys = events.destroy;
+		for(i=1;#destroys;1){
+			r,e = destroys[i]();
+			if(!r) error(e); 
+		}
+		events.destroy = null;
+		
+		for(callback,id in events){
+			::Xcgui.XWnd_RemoveEventC(hWnd,id,callback);
+		}
+	}
+	__events__[hWnd] = {};
+}
+
+protos = {
+	[0x7002] = "int(INT event, ADDR wParam, addr lParam, bool &handled)";
+	[0x102] = "int(ADDR wParam,addr lParam,bool &handled)";
+	[2] = "int(bool &handled)";
+	[0x10] = "int(bool &handled)";
+	[0x82] = "int(bool &handled)";
+	[1] = "int(INT event, ADDR wParam, addr lParam, bool &handled)";
+	[0x100] = "int(ADDR wParam,addr lParam,bool &handled)";
+
+	[0x7000+15] = "int(ptr hDraw,ptr pInfo,bool &handled)";
+	[0x7000+12] = "int(ptr hDraw,ptr pInfo,bool &handled)";
+	[0x7000+14] = "int(bool &handled)";
+	[0x7000+11] = "int(ptr hMenu, bool &handled)";
+	[0x7000+16] = "int(ptr hMenu,ptr pInfo,bool &handled)";
+	[0x7000+13] = "int(int id,bool &handled)";
+	[0x02A3] = "int(ptr hEleHover,bool &handled)";
+	
+	[0x203] = "int(INT nFlags,{int x;int y} pt,bool &handled)";
+	[10] = "int(INT nFlags,{int x;int y} pt,bool &handled)";
+	[11] = "int(INT nFlags,{int x;int y} pt,bool &handled)";
+	[0x202] = "int(INT nFlags,{int x;int y} pt, bool &handled)";
+	[0x2A1] = "int(INT nFlags,{int x;int y} pt, bool &handled)";
+	[0x200] = "int(INT nFlags,{int x;int y} pt, bool &handled)";
+	[0x201] = "int(INT nFlags,{int x;int y} pt,bool &handled)";
+	[0x20A] = "int(INT nFlags,{int x;int y} pt,bool &handled)";
+	[0x204] = "int(INT nFlags,{int x;int y} pt,bool &handled)";
+	[0x205] = "int(INT nFlags,{int x;int y} pt,bool &handled)";
+	
+	[0xF] = "int(ptr hDraw,bool &handled)";
+	[0x7000+19] = "int(ptr hDraw,bool &handled)";
+	[0x7000+18] = "int(ptr hFloatWnd,ptr hPane,bool &handled)";
+	
+	[0x0215] = "int(addr hwnd,bool &handled)";
+	[0x20] = "int(ADDR wParam,addr lParam,bool &handled)";
+	[0x7] = "int(bool &handled)";
+	[0x8] = "int(bool &handled)";
+	[0x7005] = "int(int id,bool &handled)";
+	[0x5] = "int(INT flags,ptr size,bool &handled)";
+	[0x232] = "int(bool &handled)";
+	[0x233] = "int(ptr hDropInfo, bool &handled)";
+}

@@ -1,0 +1,22 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="plus控件双击演示")
+winform.add(
+plus={cls="plus";text="鼠标左键双击这里";left=122;top=79;right=504;bottom=107;font=LOGFONT(h=-24);notify=1;z=1}
+)
+/*}}*/
+
+winform.plus.skin(
+    color = {
+        hover = 0xFFFF0000;
+        active = 0xFF00FF00;
+    }
+)
+
+winform.plus.onMouseDoubuleClick = function(wParam,lParam){
+    winform.msgbox("鼠标双击")
+}
+
+
+winform.show()
+win.loopMessage();

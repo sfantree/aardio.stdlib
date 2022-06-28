@@ -1,0 +1,95 @@
+//入门
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="Edge 浏览器控件 - web.view";right=759;bottom=469;bgcolor=16777215)
+winform.add()
+/*}}*/
+
+import web.view;
+import web.view.dev;
+
+var wb = web.view(winform,,"--disable-web-security --remote-debugging-port=9881");
+ // --disable-web-security 
+ /*
+导出为Javascript中的 aardio 对象，
+直接转换为 COM 对象，不需要经过 JSON 转换。
+Javascript 使用 Promise 访问此对象的成员。
+*/
+wb.external = {
+    toString = function(){
+    	return owner.property; 
+    };
+	property = "这是 aardio 对象的属性值";
+	methodWithParametersAndReturnValue = function(a,b){
+		return a + b
+	} 
+}
+ 
+//导出任意个 Javascript 全局函数, 使用JSON自动转换参数和返回值，
+//注意下面的 JS 回调函数内禁止调用 wb.doScript 或  wb.eval 执行Javascript。
+wb.export({
+    alert = function(msg){
+		winform.msgbox(msg) 
+	};
+	nativeAdd = function(a,b){ 
+		return a + b; 
+	}
+})
+ 
+wb.html = /**
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style type="text/css">
+    html,body{ height:100%; } 
+    </style>
+    <script type="text/javascript"> 
+    (async ()=>{
+    	var v = await aardio.property;
+    	var n = await aardio.methodWithParametersAndReturnValue(21,12);
+    	
+    	/*
+    	toString是 Javascript 函数
+    	要远程调用 aardio 函数按微软的文档要使用 applyHostFunction("toString")
+    	但实际上这样写会报错，正确用法应该是 getHostProperty("toString").applyHostFunction([])
+    	而且  applyHostFunction 其实可以省略，正确写法如下：
+    	*/
+    	var str = await aardio.getHostProperty("toString")()
+    	 
+    	//alert(str);
+    })()
+    </script>
+</head>
+<body style="margin:50px"><pre>
+<b>标准库 web.view</b>
+web.view 基于微软 WebView2（Edge/Chromium内核），
+支持 WIN7,WIN8,WIN10,WIN11已自带此组件，Office 已默认安装 WebView2。
+
+所有使用WebView2的程序共用一个 WebView2 Runtime，
+WebView2 Runtime 虽然需要单独安装，但下载安装速度非常快，
+
+标准库 web.view 的体积非常小，可以生成独立 EXE文件。
+如果检测到系统未安装 WebView2 将会自动下载安装。
+
+如果运行范例（或发布EXE）遇到问题，请首先到控制面板找到 旧版本 WebView2 并卸载，
+然后重新运行代码创建 web.view 对象时即可自动安装最新版 WebView2 组件。 
+
+网页右键菜单可以打开网页开发工具，
+在开发工具的「设置 / 语言」界面可切换开发工具的界面语言。
+</pre></body>
+</html>
+**/
+wb.go("https://www.jianshu.com/p/dbe88586544f")
+
+//执行 JS 并获取返回值。
+wb.doScript("window.location.href",function(result,err){
+	//winform.msgbox(result,"doScript")
+})
+
+/*
+http://api.aardio.com/v10/exlibs/
+*/
+
+winform.show();
+win.loopMessage();

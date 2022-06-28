@@ -1,0 +1,633 @@
+/* 
+ * 精悍的模板语言json-template的aardio移植，可能它会使你过度兴奋，高血压者请服药后阅读。
+ * 这是一个模板库，但不依赖任何外部扩展库，非侵入非绑定。
+ * 最普通的用途是把服务器端返回的json数据decode后混合模板，最终生成html页面。
+ * 你也可以用它生成其它的文档，模板语言风格可以自定义以适应各种需要。
+ * 由于多语言的支持，根据需要模板可以在客户端或服务器端编译。
+ * 根据需要既可预编译也可以即时编译，一次编译反复使用，aardio编译应该是最快的。
+ * 
+ * 作者: namwonsta  http://www.aardio.com
+ * 版本: 1.0.1
+ * 日期：August 10, 2010
+ * 备注: jsonTemplate模板库
+ */
+
+/*
+ * Copyright (C) 2010 namwonsta
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import web.json;
+namespace string;
+
+//反复使用的核心库函数，达到加速、简写目的
+var push,pop = ..table.push,..table.pop;
+var strpack = ..string.pack;
+var strsub,strsplit = ..string.sub,..string.split;
+var strleft,strright = ..string.left,..string.right;
+var strstartwith,strendwith = ..string.startWith,..string.endWith;
+var strreplace,strmatch,strfind = ..string.replace,..string.match,..string.find;
+var tabsub = function(tab,i,e){ return { ..table.unpack(tab,i,e) } }
+var print = ..io.print;
+
+//定义一些匹配到的模式字串
+var sectionPattern = "(<repeated>?)\s*(section)\s*(\S*)";
+var orPattern = "(or)\s*(.*)";
+var ifPattern = "(<if>?)\s*(.*)\?";
+
+var htmlEscape = function(s){
+	return strreplace(strreplace(strreplace(s,"&","&amp;"),"\>","&gt;"),"\<","&lt;");
+}
+
+var htmlTagEscape = function(s){
+	return strreplace(strreplace(strreplace(strreplace(s,"&","&amp;"),"\>","&gt;"),"\<","&lt;"),'"','&quot;');
+}
+
+var toString = function(s){
+	if(s === null){return 'NULL'};
+	return tostring(s);
+}
+
+var defaultFormatters = {
+	html = htmlEscape;
+	htmltag = htmlTagEscape;
+	['html-attr-value'] = htmlTagEscape;
+	str = toString;
+	raw = function(x) { return x; };
+ 	AbsUrl = function(value, context) {
+		// TODO: Normalize leading/trailing slashes
+		return context.get('base-url') + '/' + value;
+	}
+}
+
+var defaultPredicates = {
+	['singular?'] = function(x) { return  x == 1; };
+	['plural?'] = function(x) { return x > 1; };
+	['Debug?'] = function(unused, context) {
+		try {
+			return context.get('debug');
+		} catch(e) {
+			
+		}
+	}
+};
+
+//Douglas Crockford 的“函数式继承”模式，aardio可用
+var abstractSection = function(spec){
+	var that = {};
+	that.currentClause = {};
+	
+	that.append = function(statement){
+		push(that.currentClause,statement);
+	}
+	
+	that.alternatesWith = function(){
+		assert(true,'{.alternates with} can only appear with in {.repeated section ...}');
+	}
+	
+	that.newOrClause = function(pred){
+		assert(pred,'Not implemented!')
+	}
+	
+	return that;	
+}
+
+var section = function(spec){
+	var that = abstractSection(spec);
+	that.stms = {default = that.currentClause};
+	
+	that.sectionName = spec.sectionname;
+	
+	that.statements = function(clause){
+		clause = clause || 'default';
+		return that.stms[clause] || {};
+	}
+	
+	that.newOrClause = function(pred){
+		assert(pred === null,'{.or} clause only takes a predicate inside predicate blocks');			
+		that.currentClause = {};
+		that.stms['or'] = that.currentClause;
+	}
+	
+	return that;
+}
+
+var repeatedSection = function(spec){
+	var that = section(spec);
+	
+	that.alternatesWith = function(){
+		that.currentClause = {};
+		that.stms['alternate'] = that.currentClause; 
+	}
+	
+	return that;
+}
+
+var predicateSection = function(spec){
+	var that = abstractSection(spec);
+	
+	that.clauses = {};
+	
+	that.newOrClause = function(pred){
+		pred = pred || {function(x) {return true;};null};
+		that.currentClause = {};
+		push(that.clauses,{pred;that.currentClause});
+	}
+	
+	return that;
+}
+
+var functionRegistry = function(){
+	return {
+		lookup =  function(user_str){
+			return {null;null};
+		}
+	}
+}
+
+var callableRegistry = function(callable){
+	return {
+		lookup = function(user_str){
+			var func = callable(user_str);
+			return {func;null};
+		}
+	}
+}
+
+var simpleRegistry = function(obj){
+	return {
+		lookup = function(user_str){
+			var func = obj[user_str] || null;
+			return {func;null};
+		}
+	}
+}
+
+var prefixRegistry = function(functions){
+	return {
+		lookup = function(user_str){
+			for(i=1;#functions){
+				var name,func = functions[i].name,functions[i].func;
+				if(strsub(user_str,1,#name) == name){
+					var args;
+					var splitchar = strpack(user_str[#name+1]);
+					if(splitchar == ''){
+						args = {};
+					}else{
+						args = tabsub(strsplit(user_str,splitchar),2,-1);	
+					}
+					return {func;args};
+				}
+			}
+			return {null;null}//无formatter 
+		}
+	}
+}
+
+var chainedRegistry = function(registries){
+	return {
+		lookup = function(user_str){
+			for(i=1;#registries){
+				//print(i+"/"+#registries+":",registries[i].lookup(user_str));
+				var result = registries[i].lookup(user_str);
+				if(result[1] !== null){
+					return result;
+				}
+			}
+			return {null;null};//未找到
+		}
+	}
+}
+
+var scopedContext = function(context,undefstr)begin
+	var stack = {{context=context;index = -1}};
+
+	return{
+		pushSection = function(name){
+			if(name === null){return null;}
+			
+			var newcontext;
+			if(name == '@'){
+				newcontext = stack[#stack].context;
+			}else{
+				newcontext = stack[#stack].context[name] || null;
+			}
+			
+			push(stack,{context=newcontext;index = -1});
+			return newcontext;
+		};
+		
+		popStack = function(){
+			pop(stack);
+		};
+		
+		next = function(){
+			var stacktop = stack[#stack];
+			
+			//可变table进栈，开始迭代
+			if(stacktop.index == -1){
+				stacktop = {context=null;index=0};
+				push(stack,stacktop);
+			}
+			
+			//要迭代的东西
+			var contextarr = stack[#stack-1].context;
+			
+			//迭代完成
+			if(stacktop.index == #contextarr){
+				pop(stack);
+				return null;
+			}
+			stacktop.index++;
+			//print('stacktop.index:',stacktop.index);
+			stacktop.context = contextarr[stacktop.index];
+			return true;			
+		};
+		
+		undefined = function(name){
+			assert(undefstr !== null,name + " is not definded");
+			return undefstr;
+		};
+		
+		lookupStack = function(name){
+			var i = #stack;
+			
+			while(true){
+				var frame = stack[i];
+				
+				if(name = "@index"){
+					if(frame.index != -1)
+						return frame.index;
+				}else{
+					var context = frame.context;
+					if(type(context) == type.table){
+						var value = context[name];
+						if(value !== null)
+							return value;
+					}
+				}
+				i--;
+				if(i <= 0)
+					return owner.undefined(name);
+			}
+		};
+		
+		get = function(name){
+			if(name == "@"){
+				return stack[#stack].context;
+			}
+			
+			var parts = strsplit(name,'.');
+			var value = owner.lookupStack(parts[1]);
+			var partslen = #parts;
+			if(partslen>1){
+				for(i=2;partslen){
+					value = value[parts[i]];
+					if(value === null)
+						return owner.undefined(parts[i]);
+				}	
+			}
+			return value;
+		}
+	}
+end;
+
+var exec = function(statements,context,callback){
+	for(i=1;#statements){
+		var statement = statements[i];
+		if(type(statement) == type.string){
+			callback(statement);
+		}else{
+			var func = statement[1];
+			var args = statement[2];
+			func(args,context,callback);
+		}	
+	}	 
+}
+
+var doSubstitute = function(statement,context,callback){
+	var value = context.get(statement.name);
+	
+	//格式化value
+	for(i=1;#statement.formatters){
+		var pair = statement.formatters[i]
+		var formatter = pair[1];
+		var args = pair[2];
+		value = formatter(value,context,args)
+	}
+	callback(value);
+}
+
+var doSection = function(args,context,callback){
+	var block,dosection = args,false;
+	var value = context.pushSection(block.sectionName);
+	
+	if(value && #value>0)
+		dosection = true;
+		
+	if(dosection){
+		exec(block.statements(),context,callback);
+		context.popStack();
+	}else{
+		context.popStack();
+		exec(block.statements('or'),context,callback);
+	}
+}
+
+var doRepeatedSection = function(args,context,callback){
+	var block = args;
+	var items = context.pushSection(block.sectionName);
+	
+	if(items && #items>0){
+		var lastindex = #items;
+		var statements = block.statements();
+		var altstatements = block.statements('alternate');
+		
+		for(i=1;lastindex){
+			context.next();
+			exec(statements,context,callback);
+			if(i != lastindex)
+				exec(altstatements,context,callback);
+		}		 
+	}else{
+		exec(block.statements('or'),context,callback);
+	}
+	
+	context.popStack();
+}
+
+var doPredicates = function(args,context,callback)begin
+
+end;
+
+var escapeMeta = function(meta){
+	//aardio模式匹配语法字符都进行转义
+	return strreplace(meta,"([\{\}\(\)\[\]\<\>\|\!\%\^\$\+\?\*\\])","\\\1");
+}
+
+var tokenMatchCache = {};
+
+var makeTokenPattern = function(metaleft,metaright){
+	var key = metaleft + metaright;
+	var match = tokenMatchCache[key];
+	var metaleft = escapeMeta(metaleft);
+	var metaright = escapeMeta(metaright);
+	if(match === null)
+		//两个相同的元字符在一起,会从后一个元字符开始匹配
+		match = "(" + metaleft + "[^"+metaleft+"]*?" + metaright + "\n?)";
+	return match;
+}
+
+var makeRegistry = function(obj){
+	if(obj === null){
+		return functionRegistry();
+	}elseif(type(obj) == type.function){
+		return callableRegistry(obj);
+	}elseif(type(obj) == type.table){
+		return simpleRegistry(obj);
+	}
+}
+
+var compile = function(templatestr,options){
+	var	moreFormatters = makeRegistry(options.more_formatters);
+	
+	var default_formatters = prefixRegistry({
+		{name="pluralize";func=pluralize};
+		{name="cycle";func=cycle}
+	});
+	
+	var allFormatters = chainedRegistry({
+		moreFormatters;
+		simpleRegistry(defaultFormatters);
+		default_formatters
+	});
+	
+	var morePredicates = makeRegistry(options.more_predicates);
+	
+	var allPredicates = chainedRegistry({
+		morePredicates;simpleRegistry(defaultPredicates)
+	});
+	
+	//设置默认的formatter为‘str’，否则使用传入的default_formatter配置值
+	var defaultFormatter;
+	if(options.default_formatter === null){
+		defaultFormatter = 'str';
+	}else{
+		defaultFormatter = options.default_formatter;
+	}
+	
+	getFormatter = function(formatstr){
+		var pair = allFormatters.lookup(formatstr);
+		if(pair[1] === null){};
+		return pair;
+	}
+	
+	getPredicate = function(predstr){
+		var pair = allPredicates.lookup(predstr);
+		if(pair[1] === null){}
+		return pair;		
+	}
+	
+	var formatchar = options.format_char || '|';
+	
+	if(formatchar != ':' && formatchar != '|'){};
+	
+	var meta = options.meta || '{}';//默认元字符为'{}'
+	var len = #meta;
+	var halflen = len>>1;
+	
+	if(halflen == 1){};
+	
+	var metaleft,metaright = strleft(meta,halflen),strright(meta,halflen);
+	var pattern = makeTokenPattern(metaleft,metaright);//动态装配一个模式字串
+	var currentblock = section({});
+	var stack = {currentblock};
+	var tokenmatch;
+	var lastindex = 1;
+	
+	while(true){
+		var i,j,tokenmatch = strfind(templatestr,pattern,lastindex);
+		//print(i,j,tokenmatch)
+		
+		if(tokenmatch === null){
+			break;//不是有效模板退出
+		}else{
+			token = tokenmatch;
+		}
+
+		if(i > lastindex){
+			var tok = strsub(templatestr,lastindex,i - 1);//取非语法部分
+			currentblock.append(tok);
+		}
+		
+		lastindex = j + 1;
+		var hadnewline = false;
+		if(strendwith(token,'\n')){
+			token = strsub(token,1,-2);
+			hadnewline = true;
+		}
+		
+		token = strsub(token,halflen + 1,-halflen - 1);//取元字符内的字串
+		
+		if(strstartwith(token,"#"))//#开头为注释指令
+			continue ;//忽略注释内容
+
+		if(strstartwith(token,".")){//点开头
+			token = strsub(token,2,-1);
+			
+			//检测是否为原义字符
+      		var literal = ({
+				['meta-left'] = metaleft;
+				['meta-right'] = metaright;
+				space = ' ';
+				tab = '\t';
+				newline = '\n'
+			})[token];			
+			if(literal !== null){
+				currentblock.append(literal);
+				continue;
+			}
+			
+			var newblock,func;
+			
+			//检测是否为内建指令
+			var rep,sec,secname = strmatch(token,sectionPattern);
+			if(sec !== null && sec != ''){
+				if(rep !== null && rep != ''){
+					func = doRepeatedSection;
+					newblock = repeatedSection({sectionname = secname})
+				}else{
+					func = doSection;
+					newblock = section({sectionname = secname});
+				}
+				currentblock.append({func;newblock});
+				push(stack,newblock);
+				//print("stack nums after {.section} or {.repeated section}",#stack);
+				currentblock = newblock;
+				continue ;
+			}
+			
+			var predstr,pred;
+			
+			// 检测{.pred?}之前，先检测是否为{.or pred?}
+			var orstr,predstr = strmatch(token,orPattern);
+			if(orstr){
+				pred = predstr !== ''? getPredicate(predstr) : null;
+				currentblock.newOrClause(pred);
+				continue ;
+			}
+			
+			// 检测是否为{.pred?} 或 {.if pred?}
+			var ifstr,predstr = strmatch(token,ifPattern);
+			if(predstr && strendwith(token,'?')){
+				pred = predstr !== ''? getPredicate(predstr) : null;
+				newblock = predicateSection();
+				newblock.newOrClause(pred);
+				currentblock.append({doPredicates;newblock});
+				push(stack,newblock);
+				//print("stack nums after {.pred?}",#stack);
+				currentblock = newblock;
+				continue ;
+			}
+			
+			//检测是否为{.alternates with}
+			if(token == "alternates with"){
+				currentblock.alternatesWith();
+				continue;
+			}
+			
+			//检测是否有{.section}和{.repeated section}指令对应的结束指令
+			if(token == "end"){
+				//print("stack nums before pop:",#stack);
+				pop(stack);
+				//print("stack nums:",#stack);
+				if(#stack > 0){
+					currentblock = stack[#stack];
+				}
+				assert(#stack > 0,'Got too many {end} statements');
+				continue ;
+			}
+		}
+
+		//检测变量，并检测是否有formatter
+		var parts = strsplit(token,formatchar);
+		var formatters,name;
+		if(#parts == 1){
+			assert(defaultFormatter !== null,'This template requires explicit formatters.');
+			formatters = {getFormatter(defaultFormatter)};
+			name = token;
+		}else{
+			formatters = {};
+			for(i = 2;#parts){
+				push(formatters,getFormatter(parts[i]));
+			}
+			name = parts[1];	
+		}
+		
+		currentblock.append({doSubstitute;{name=name;formatters=formatters}});
+
+		if(hadnewline)
+			currentblock.append('\n');
+	}
+
+	//向currentClause数组添加模板尾部非语言部分
+	if(lastindex < #templatestr)
+		currentblock.append(strsub(templatestr,lastindex));
+
+	assert(#stack == 1,'Got too few {end} statements');
+	
+	return currentblock;
+}
+
+/*供外部调用的类
+ *templatestr: 模板字串
+ *options: 配置项talbe
+ *options.meta: 模板元字符，系统默认为'{}'
+ *options.default-formatter: 模板默认格式化函数，系统默认为'str'
+ *options.format-char: 模板变量后紧跟的格式化符，系统默认为'|'
+ *options.more_formatters: 库外自定义的格式化函数
+ *options.undefined_str: 数据与模板变量无对应值时定义的替换字符串
+ */
+class jsonTemplate{
+	ctor(templatestr,options){
+		this.options = options || {};
+		this.program = compile(templatestr,this.options);
+	};
+	
+	render = function(data,callback){
+		var context = scopedContext(data,this.options.undefined_str);
+		exec(this.program.statements(),context,callback);
+	};
+	
+	expand  = function(data){ 
+		var tokens = {};
+		this.render(data,function(x){push(tokens,x)});
+		return ..string.join(tokens,"");
+	}
+	
+	expandJson = function(data){
+		data = ..web.json.parse(data);
+			
+		var tokens = {};
+		this.render(data,function(x){push(tokens,x)});
+		return ..string.join(tokens,"");
+	}
+}
+
+/***intellisense()
+string.jsonTemplate(__/*模板字串*/) = 模板类\n参数(模板字串)
+string.jsonTemplate(__/*模板字串*/,/*配置项table*/) = 模板类\n参数(模板字串,配置项table)
+!string_atemplate.expand(.(表对象) = 模板导入数据 
+!string_atemplate.expandJson(.(JSON文本) = 模板导入数据 
+string.jsonTemplate() = !string_atemplate.
+end intellisense***/

@@ -1,0 +1,18 @@
+import py2;
+import py2.lib.numpy;
+import console; 
+
+var pyCode = /**
+import numpy
+
+def test():
+	return numpy.array([1, 2, 3])
+**/
+py2.exec(pyCode);
+
+//注意小写的 tolist() 是 Python 函数，toList() 则是 aardio 扩展的函数
+var list = py2.main.test().tolist();
+console.log( list.toString() );
+
+console.log( "numpy 版本：",py2.lib.numpy.__version__ );
+console.pause(true);

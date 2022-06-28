@@ -1,0 +1,36 @@
+import console; 
+
+// 读取csv
+
+import string.database;
+
+
+var getUrlsFromCsv = function(filepath){
+	var csvObject = string.database("," ,);
+	var dataTable = csvObject.load(filepath);
+	
+	var urls = {};
+	
+	for(i=1;#dataTable;1){
+		var eachLine = dataTable[i];
+		var url = eachLine[2];
+		var pattern =  "bbs.aardio.com"
+    	var strMatchResult = string.match( url, pattern );
+		if(strMatchResult) {
+	    	table.push(urls, url);
+		}
+	}
+	
+/*
+	for(i=1;#urls;1){
+		console.log(urls[i]);
+	}
+*/
+	
+	return urls;
+
+}
+
+
+
+console.pause(true);

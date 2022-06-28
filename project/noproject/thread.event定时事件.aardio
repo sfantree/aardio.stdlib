@@ -1,0 +1,57 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(parent=...; text="使用thread.event创建定时执行任务的线程";right=403;bottom=196 )
+winform.add(
+trackbar={ bottom=82;max=1000;right=319;left=15;top=52;z=2;min=500;cls="trackbar" };
+lbTip={ bottom=103;text="";left=26;right=100;top=85;z=3;transparent=1;cls="static" };
+static={ bottom=44;align="center";text="";left=138;top=13;center=1;z=5;right=309;edge=1;cls="static" };
+btnStart={ bottom=154;text="启动定时线程";left=24;top=112;z=1;right=190;cls="button" };
+btnStop={ disabled=1;bottom=154;right=374;left=208;top=112;z=4;text="结束定时线程(CTRL+N)";cls="button" }
+)
+/*}}*/
+
+io.open();
+
+task_t = function(hwnd,ms){
+    import win;
+    import thread.event;
+   
+    var evt = thread.event("定时事件 GUID:32DA0FC7-A96D-4850-9A28-DA1DD4464B44")
+    while( ! evt.wait(ms) ){
+        win.setText(hwnd,tostring( time() ) )
+    }
+    io.print("任务已完成")
+}
+
+import thread.event;
+var evtTask = thread.event("定时事件 GUID:32DA0FC7-A96D-4850-9A28-DA1DD4464B44",false)
+
+winform.btnStart.oncommand = function(id,event){
+
+    winform.btnStart.disabled = true;
+    winform.btnStop.disabled = false;
+    winform.trackbar.disabled = true;
+   
+    hThread = thread.create(task_t,winform.static.hwnd,winform.trackbar.pos);
+    thread.waitOne(hThread)
+   
+    winform.btnStart.disabled = false;
+    winform.btnStop.disabled = true;
+    winform.trackbar.disabled = false;
+}
+
+winform.btnStop.oncommand = function(id,event){
+    evtTask.set();//使事件对象切换为有信号状态,使wait函数退出
+}
+
+winform.trackbar.oncommand = function(id,event,pos){
+    winform.lbTip.text = owner.pos + "毫秒"
+}
+
+winform.reghotkey( function(id,mod,vk){
+    evtTask.set()
+},0x2/*_MOD_CONTROL*/,'N'#)
+
+
+winform.show()
+win.loopMessage();

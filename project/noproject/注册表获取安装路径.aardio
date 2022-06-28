@@ -1,0 +1,29 @@
+import console; 
+import win.reg;
+import win;
+
+var getCalibrePath = function(){
+	var convertRegPath = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\ebook-convert.exe"
+	var convertPath = nil;
+	var reg = win.reg(convertRegPath, true);
+	
+	if(reg) {
+    	convertPath = reg.queryValue();
+    	reg.close();
+	}
+	return convertPath;
+}
+
+var main = function(){
+    var p = getCalibrePath();
+    if(p) {
+        win.msgbox("Calibre 安装路径：" + p)
+    }
+    if(not p) {
+        win.msgboxErr("Calibre未安装")
+    }
+}
+
+main();
+
+console.pause(true);

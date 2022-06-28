@@ -1,0 +1,23 @@
+import xcgui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469;bgcolor=15245824)
+winform.add(
+closebutton={cls="xcclosebutton";text="r";left=725;top=2;right=749;bottom=28;dr=1;dt=1;font=LOGFONT(name='Marlett');transparent=1;z=1}
+)
+/*}}*/
+
+winform.show(true);
+
+/*
+炫彩自带的阴影功能，需要先把窗口设为分层窗口，
+我试了一下影响性能，窗体反应迟钝，拖放不灵敏，而且所有传统控件都失效了。
+
+这里使用 aardio 中的 win.ui.shadow 创建阴影，没有上面的问题。
+因为炫彩默认圆角，而 win.ui.shadow 默认直角，所以加了个 xcgui.shadow用于设为默认圆角。
+*/
+import xcgui.shadow;
+xcgui.shadow( winform )
+
+win.loopMessage();
+return winform;
+

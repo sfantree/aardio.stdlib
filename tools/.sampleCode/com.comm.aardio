@@ -1,0 +1,37 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="MSComm控件示例";right=759;bottom=469)
+winform.add(
+btnSend={cls="button";text="发送";left=520;top=416;right=664;bottom=448;z=2};
+edit={cls="edit";left=48;top=32;right=712;bottom=392;edge=1;multiline=1;z=1}
+)
+/*}}*/
+
+import com.comm;
+var comm = com.comm();//创建MSComm控件
+
+//响应MSComm控件的事件
+comm.onComm = function(event){
+    if( event == comm.comEvReceive ){ 
+     	winform.edit.print( "收到数据:",comm.input ); 
+    }	
+}
+
+//设置控件属性
+comm.commPort = 2; //设置串口
+comm.sttings = "9600,N,8,1";//设置波特率等参数
+comm.inBufferSize = 1024; //设置输入缓冲区大小
+comm.outBufferSize = 1024; //设置输出缓冲区大小
+comm.rThreshold = 1; //设置收到多少个字符后触发OnComm事件
+comm.inputMode = 1; //设置输入方式为二进制方式 
+comm.inputLen = 0; //设置当前接收长度为0
+comm.portOpen = true; //打开串口
+comm.getInput(); //清除接收缓冲区数据
+
+
+winform.btnSend.oncommand = function(id,event){ 
+	comm.output = winform.edit.text; //发送数据
+}
+
+winform.show() 
+win.loopMessage();

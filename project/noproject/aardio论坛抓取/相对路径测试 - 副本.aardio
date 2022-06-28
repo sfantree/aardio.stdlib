@@ -1,0 +1,48 @@
+import console;
+import fsys.path;
+import fsys;
+
+// gitclone\snipOCR\dist
+var res = fsys.path.relative("E:\gitclone\snipOCR\dist", "E:\", false)
+//console.log(res);
+
+// 保留目录结构 保持目录结构
+var srcPath = "E:\aardio论坛抓取网页备份\";
+var dstPath = "E:\aardio论坛抓取网页备份txt\"
+
+/*
+//HTML转文本
+import console;
+import inet.http;
+var html = inet.http().get("http://www.aardio.com")
+
+import string.html; 
+txt = string.html.toText(html);
+
+console.log( txt )
+console.pause();
+*/
+import string.html;
+var keepDirStruct = function(srcPath, dstPath){
+	fsys.enum( srcPath, "*.html",
+		function(dir, filename, fullpath, findData){ 
+			if(filename){
+				 var relatePath = fsys.path.relative(fullpath, srcPath, false);
+				 var targetPath = fsys.joinpath(dstPath, relatePath);
+				 var targetPathParent = fsys.getParentDir(targetPath)
+				 //console.log(targetPathParent);
+				 var html = string.load(fullpath);
+				 var txt = string.html.toText(html);
+				 string.save(fsys.joinpath(targetPathParent, filename + ".txt"), txt,true);
+	        }
+		},
+		true
+	);
+}
+
+keepDirStruct(srcPath, dstPath);
+
+
+
+
+console.pause();

@@ -1,0 +1,10 @@
+import console;
+console.open();
+import wsock.tcp.simpleHttpServer;
+server = wsock.tcp.simpleHttpServer("127.0.0.1", 8082);
+server.run(
+    function(response,request,session){
+        response.status = "404 Not Found";
+	    response.write("404 Not Found");
+    }
+);

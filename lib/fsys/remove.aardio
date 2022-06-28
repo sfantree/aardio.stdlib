@@ -1,0 +1,31 @@
+﻿//remove 移除操作
+import fsys;
+import fsys.safepath;
+namespace fsys;
+
+class remove {
+	ctor( path ){
+		path = ..fsys.safepath(path);
+		if( ..io.exist(path) ){
+			if(..fsys.isDir(path)){
+				var dirs = {};
+				..fsys.enum( path, "*.*",
+					function(d,f,fullpath){ 
+						if(f)  ..io.remove(fullpath) 
+						else ..table.push(dirs,fullpath);
+					},true
+				);
+				
+				for(i=#dirs;1;-1)::Kernel32.RemoveDirectory(dirs[i]); 
+				if( ::Kernel32.RemoveDirectory(path) ) return true;
+			}
+			else if( ..io.remove(path) ) return true;
+		}
+	
+		return ::Kernel32.MoveFileExB(path,null,4/*_MOVEFILE_DELAY_UNTIL_REBOOT*/);
+	}; 
+}
+
+/**intellisense()
+fsys.remove(__) = 用于移除参数@1指定路径的目录或文件，\n支持 fsys.delete 函数无法删除的畸形路径,\n此函数库不在 fsys 库内需要单独导入
+end intellisense**/

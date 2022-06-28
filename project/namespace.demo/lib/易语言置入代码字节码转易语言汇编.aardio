@@ -1,0 +1,88 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add(
+button={cls="button";text="Button";left=632;top=432;right=752;bottom=464;z=3};
+edit={cls="edit";left=8;top=104;right=752;bottom=232;autohscroll=false;edge=1;multiline=1;z=1};
+edit2={cls="edit";text="void( INT id, struct & cpuid )";left=8;top=24;right=752;bottom=72;dl=1;dr=1;dt=1;edge=1;multiline=1;z=4};
+editByteCode={cls="edit";left=8;top=256;right=752;bottom=384;autohscroll=false;edge=1;multiline=1;z=2};
+static={cls="static";text="函数原型:";left=8;top=8;right=65;bottom=24;dl=1;dt=1;transparent=1;z=5}
+)
+/*}}*/
+
+import console;
+getAsciiList = function(str){
+	var pattern =  "\-?[0-9]\d*";
+	var r = ..table.array();
+	for s in string.gmatch( str, pattern ){
+		table.push(r, s);
+	}
+	return r;
+}
+
+//import string.builder;
+getBufferFromAsciiList = function(AsciiList){
+	var r = string.pack(AsciiList);
+	return r;
+}
+
+import udis86;
+
+import string.template; 
+var templateCode = string.template();
+templateCode.template = /***
+import process;
+var app = process();//打开目标进程,可在参数中指定程序路径
+
+//写入机器码,并返回函数对象
+var func = app.asmCdecl(
+	"${PARAMS}",
+	${ASM_CODE}
+)
+***/
+
+winform.button.oncommand = function(id,event){
+	var str = winform.edit.text;
+	var r;
+	var binCode;
+	var tAsmCode = {};
+	var asmCode;
+	
+	if(str and #str > 0) {
+	    r = getAsciiList(str);
+	    binCode = getBufferFromAsciiList(r);
+	    var ud = udis86(); 
+	    ud.translateIntel();
+	    ud.setInputBuffer(binCode);
+	    
+	    while( ud.disassemble() ){ 
+			var byteCode = string.replace( ud.byteCode() ,".",
+				function(x){ 
+					return string.format("\x%02X",x[1] );
+				}
+			); 
+			table.push(tAsmCode,string.format("	'%s', //%s",byteCode, ud.asm) );
+		}  
+		
+		asmCode = string.join(tAsmCode,'\r\n'); 
+		
+		//console.dump(tAsmCode);
+	    winform.editByteCode.text = templateCode.format(
+			ASM_CODE = string.trim( asmCode );
+			PARAMS = winform.edit2.text;
+		)
+	}
+}
+
+winform.edit.text = /*
+置入代码 ({ 83, 49, 192, 100, 139, 29, 24, 0, 0, 0, 100, 139, 13, 48, 0, 0, 0, 133, 201, 121, 32, 185, 0, 0, 83, 0, 57, 75, 88, 117, 4, 176, 1, 235, 113, 57, 75, 84, 117, 4, 176, 2, 235, 104, 57, 75, 124, 117, 99, 176, 3, 235, 95, 139, 153, 168, 0, 0, 0, 139, 137, 164, 0, 0, 0, 131, 249, 4, 119, 4, 176, 4, 235, 74, 131, 249, 5, 117, 27, 131, 251, 0, 117, 4, 176, 5, 235, 60, 131, 251, 1, 117, 4, 176, 6, 235, 51, 131, 251, 2, 117, 4, 176, 7, 235, 42, 131, 249, 6, 117, 35, 131, 251, 0, 117, 4, 176, 8, 235, 28, 131, 251, 1, 117, 2, 176, 9, 131, 251, 2, 117, 2, 176, 10, 131, 251, 3, 117, 2, 176, 11, 131, 251, 4, 117, 2, 176, 12, 91, 201, 195 })
+*/
+
+//console.dump(r);
+
+winform.edit2.oncommand = function(id,event){
+	
+}
+
+winform.show();
+win.loopMessage();

@@ -1,0 +1,23 @@
+//创建对象
+import com;
+import console;
+
+//创建 COM 对象，注意 COM 有关的函数通常首字母大写
+var fs = com.CreateObject("Scripting.FileSystemObject");
+
+//使用 COM 对象
+var dir = fs.GetFolder( io.fullpath("/") ); 
+
+//遍历COM对象成员
+for index,file in com.each(dir.Files) {
+    console.log(file.path);
+}
+console.more();
+
+//查看 COM 对象成员
+console.dump( com.DumpTypeInfo(dir) );
+
+//上面的函数可以简写为
+console.dump( dir );
+
+console.pause();

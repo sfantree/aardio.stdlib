@@ -1,0 +1,37 @@
+//截图 / 远程调试
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="Edge 浏览器控件 - web.view";right=759;bottom=469;bgcolor=16777215)
+winform.add()
+/*}}*/
+
+import web.view;
+var wb = web.view(winform,,0/*自动分配调试端口*/);
+ 
+winform.show();
+
+//创建远程调试对象
+import web.socket.chrome;
+var ws = wb.openRemoteDebugging()
+ 
+//允许触发Runtime.executionContextCreated
+ws.Runtime.enable();
+
+//通过远程调试协议打开指定网页     
+ws.Page.navigate(
+    url = "https://www.example.com/";
+).end = function(result,err){
+   
+} 
+
+//截图
+wb.wait("example");
+import crypt;
+ws.Page.captureScreenshot().end = function(result,err){
+   if(result[["data"]]){
+       var bin = crypt.decodeBin(result[["data"]]);
+       string.save("/screenshot.png",bin )
+   } 
+} 
+
+win.loopMessage();

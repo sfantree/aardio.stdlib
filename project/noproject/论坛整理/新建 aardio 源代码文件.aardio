@@ -1,0 +1,23 @@
+
+// https://bbs.aardio.com/forum.php?mod=viewthread&tid=31074
+
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="miniblink";right=1213;bottom=743)
+
+/*}}*/
+
+import web.blink.form;
+var mb = web.blink.form(winform)
+
+//打开网页
+mb.go("http://example.org/")
+
+//执行JS脚本
+mb.doScript("mb.window.aardioText = '123';");
+
+//调用JS函数
+mb.window.alert( mb.window.aardioText );
+
+winform.show();
+win.loopMessage();

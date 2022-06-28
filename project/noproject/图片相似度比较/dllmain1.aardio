@@ -1,0 +1,65 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=607;bottom=335)
+winform.add(
+button={cls="button";text="Button";left=488;top=288;right=584;bottom=320;z=3};
+plus2={cls="plus";left=24;top=24;right=288;bottom=272;frame=1;notify=1;z=1};
+plus3={cls="plus";left=320;top=24;right=584;bottom=272;frame=1;notify=1;z=2}
+)
+/*}}*/
+
+winform.buffer1 = nil;
+winform.buffer2 = nil;
+
+
+winform.plus2.oncommand = function(id,event){
+	var path = fsys.dlg.open("富文本格式(*.jpg)|*.jpg|");
+    if(not path){
+		return;
+	}
+
+	var bmp = gdip.bitmap(path);
+    //显示
+	winform.plus2.background = bmp;
+    winform.buffer1 = bmp.saveToBuffer(".bmp",) 
+}
+
+
+
+import console;
+import fsys.dlg;
+winform.plus3.oncommand = function(id,event){
+	
+    var path = fsys.dlg.open("富文本格式(*.jpg)|*.jpg|");
+    if(not path){
+		return;
+	}
+
+	var bmp = gdip.bitmap(path);
+    //显示
+	winform.plus3.background = bmp;
+    winform.buffer2 = bmp.saveToBuffer(".bmp",) 
+	//console.dump(bmpBuffer)
+}
+
+winform.button.oncommand = function(id,event){
+	if(not winform.buffer1) {
+	    return
+	}
+	if(not winform.buffer2) {
+	    return
+	}
+	var dll = raw.loadDll( "/ImageSimilarity.dll" );
+	if(not dll) {
+	    return
+	}
+	var getSimilarity = dll.api( "getSimilarity","double(point, int, point, int)", "stdcall" );
+	var result = 0.0;  
+	result = getSimilarity(winform.buffer1, #winform.buffer1 , winform.buffer2, #winform.buffer2) 
+	winform.msgbox(result);
+	
+}
+
+winform.show();
+win.loopMessage();
+return winform;

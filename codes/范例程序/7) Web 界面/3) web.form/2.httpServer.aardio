@@ -1,0 +1,79 @@
+//嵌入HTTP服务器
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="嵌入HTTP服务器";right=759;bottom=469)
+winform.add()
+/*}}*/
+
+import web.form;
+var wb = web.form.ie11(winform);
+if(!wb) return;
+
+wb.noScriptErr = true;
+wb.showMenu = lambda() false; 
+
+import wsock.tcp.asynHttpServer;
+var httpServer = wsock.tcp.asynHttpServer();
+
+/* 
+有很多网页程序仅支持在HTT服务器上运行的网站，不支持本地文件，
+aardio 使用 wsock.tcp.asynHttpServer 或者 wsock.tcp.simpleHttpServer 
+仅需数句代码就可以启动一个轻量的 HTTP 服务器，而且可以自动分配空闲端口,
+*/
+httpServer.run( 
+    ["/index.html"] = /*
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <style type="text/css">
+      html,
+      body {
+        margin:0;
+        overflow: hidden;
+        text-align: center;
+      }
+    </style>
+    <script src="https://lib.baomitu.com/promise-polyfill/8.2.0/polyfill.min.js"></script>
+    <script src="https://unpkg.com/hanzi-writer@2.3.0/dist/hanzi-writer.min.js"></script>
+  </head>
+  <body>
+    <div id="character-target-div" onclick="writer.animateCharacter()" title="点击重新播放按标准笔顺书写的动画"></div>
+    <script>
+      var writer = HanziWriter.create("character-target-div", "", {
+        width: 160,
+        height: 160,
+        padding: 5,
+        strokeColor: "#337ab7",
+        showOutline: true,
+        showCharacter: false,
+        strokeAnimationSpeed: 1,
+        delayBetweenStrokes: 12,
+      });
+
+      animateCharacter = function (char) {
+        if(!char) {
+          writer.setCharacter(""); 
+          return;
+        }
+
+        writer.setCharacter(char);
+        setTimeout(function () {
+          writer.animateCharacter();
+        }, 1000);
+      };
+      
+      animateCharacter("测")
+    </script>
+    
+  </body>
+</html>
+    */
+);
+
+//打开目标网站
+wb.go( httpServer.getUrl("/index.html") ) 
+winform.show();
+
+win.loopMessage();

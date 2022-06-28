@@ -1,0 +1,203 @@
+﻿//value 数据类型转换
+
+import julia.lib;
+import julia.gc;
+
+namespace julia.value;
+
+importType = function(t){
+	if(!self[t]) {
+		var p = ::LibJulia.api("jl_" + t);
+		if(p){
+			self[t] = ..raw.convert(p,{ptr v}).v;
+		}
+	}
+
+	return self[t];
+}
+
+typeof = function(v,raw){
+	if(type(v)!="pointer"){ 
+		return null;
+	}
+	
+	var t = ::LibJulia.jl_typeof_strP(v); 
+	if(raw) return t;
+	
+	if(t) return ..raw.str(t);
+}
+
+importType("typeofbottom_type")
+importType("datatype_type")
+importType("uniontype_type")
+importType("unionall_type")
+importType("tvar_type")
+importType("any_type")
+importType("typename_type")
+importType("symbol_type")
+importType("ssavalue_type")
+importType("abstractslot_type")
+importType("slotnumber_type")
+importType("typedslot_type")
+importType("argument_type")
+importType("const_type")
+importType("partial_struct_type")
+importType("method_match_type")
+importType("simplevector_type")
+importType("anytuple_type")
+importType("emptytuple_type")
+importType("function_type")
+importType("builtin_type")
+importType("method_instance_type")
+importType("code_instance_type")
+importType("code_info_type")
+importType("method_type")
+importType("module_type")
+importType("weakref_type")
+importType("abstractstring_type")
+importType("string_type")
+importType("errorexception_type")
+importType("argumenterror_type")
+importType("loaderror_type")
+importType("initerror_type")
+importType("typeerror_type")
+importType("methoderror_type")
+importType("undefvarerror_type")
+importType("lineinfonode_type")
+importType("boundserror_type")
+importType("bool_type");
+importType("char_type");
+importType("int8_type");
+importType("uint8_type");
+importType("int16_type");
+importType("uint16_type");
+importType("int32_type");
+importType("uint32_type");
+importType("int64_type");
+importType("uint64_type");
+importType("float16_type");
+importType("float32_type");
+importType("float64_type");
+importType("floatingpoint_type");
+importType("number_type");
+importType("nothing_type");
+importType("signed_type");
+importType("voidpointer_type");
+importType("uint8pointer_type");
+importType("task_type");
+importType("expr_type");
+importType("globalref_type");
+importType("linenumbernode_type");
+importType("gotonode_type");
+importType("gotoifnot_type");
+importType("returnnode_type");
+importType("phinode_type");
+importType("pinode_type");
+importType("phicnode_type");
+importType("upsilonnode_type");
+importType("quotenode_type");
+importType("newvarnode_type");
+importType("intrinsic_type");
+importType("methtable_type");
+importType("typemap_level_type");
+importType("typemap_entry_type");
+importType("array_uint8_type");
+importType("array_any_type");
+importType("array_symbol_type");
+importType("array_symbol_type");
+importType("array_int32_type");
+
+var gcProtect = ..julia.gc.protect;
+var callFunction = function(f,...){
+	if(...===null){
+		var ret = ::LibJulia.jl_call0(f);
+		return parse(ret);
+	} 
+		
+	var args = {...};
+	for(k,v in args){
+		args[k] = build(v)
+	}
+	
+	return gcProtect(args,function(){ 
+		var ret = ::LibJulia.jl_callP(f,{ptr args[]=args},#args);
+		if(ret) return parse(ret);	
+	})
+}
+
+var jl_unbox_int64 = ::LibJulia.api("jl_unbox_int64","long(ptr)")
+parse = function(v){
+	if(type(v)!="pointer")return v;
+	
+	var t = ::LibJulia.jl_typeofP(v);
+	if(::LibJulia.jl_isa(v,number_type)){
+		if(t===bool_type){
+			return ::LibJulia.jl_unbox_boolB(v)
+		}
+		
+		if(::LibJulia.jl_isa(v,floatingpoint_type)){
+			return ::LibJulia.jl_unbox_float64D(v)
+		}
+		
+		if(t===uint64_type){
+			return ::LibJulia.jl_unbox_uint64L(v)
+		}
+		return ::LibJulia.jl_unbox_int64(v)
+	}
+	
+	if(t===string_type){ 
+		var len = ..raw.convert(v,{ int v; })
+		return ..raw.tostring(v,5,5+len.v) 
+	}
+	
+	if(t===array_uint8_type){ 
+		var p = ::LibJulia.jl_array_ptrP(v)
+		var len =  ::LibJulia.jl_array_size(v,0)
+		return ..raw.buffer(len,p); 
+	}
+	
+	if( ::LibJulia.jl_isa(v,function_type) ){
+		return function(...){
+			return callFunction(v,...);
+		}
+	}
+	
+	return v;
+}
+
+jl_box_float64 = ::LibJulia.api("jl_box_float64","ptr(double)" )
+build = function(v){
+	var j;
+	
+	var t = type(v);
+	if(t==="number"){
+		j = jl_box_float64(v);
+	}
+	elseif(t==="string"){
+		j = ::LibJulia.jl_pchar_to_stringP(v,#v);
+	}
+	elseif(t==="buffer"){
+		j = ::LibJulia.jl_pchar_to_arrayP(v,#v);
+	}
+	elseif(t==="boolean"){
+		j = ::LibJulia.jl_box_boolP(v);
+	}
+	elseif(t==="pointer"){
+		j = v;
+	}
+	
+	return j;
+}
+
+self.topointer = function(v){
+	return ::LibJulia.jl_unbox_voidpointerP(v)
+}
+
+/**intellisense(julia.value)
+build(__) = 将参数传入的 aardio 对象转换为 Julia 对象,\n传入指针类型时，不作任何转换
+parse(__) = 将参数传入的 Julia 对象原始指针转换为 aardio 对象,\n参数传入指针时必须是 Julia 对象原始指针,非指针类型参数直接返回,\n无法转换的对象直接返回原指针
+topointer(__) = 取出 Julia 对象指针指向的指针值,\n返回的已经是普通内存指针，不能再作为 Julia 对象指针使用
+typeof(__) = 返回 Julia 对象指针的数据类型,返回值为字符串,\n参数@2为true是返回类型对象的原始指针而不会返回字符串,\n如果传入参数不是指针，返回 null
+importType("__") = 导入并返回 Julia 类型对象指针，例如 importType("any_type")
+end intellisense**/
+

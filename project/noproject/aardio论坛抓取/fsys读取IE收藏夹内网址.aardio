@@ -1,0 +1,41 @@
+
+import win.ui;
+import fsys.lnk
+import fsys.ini;
+import process
+/*DSG{{*/
+var winform = win.form(parent=...; text="aardio Form";right=384;bottom=303 )
+winform.add(
+button={ bottom=296;color=0;right=376;left=269;top=267;font=LOGFONT( h=-16;name='微软雅黑' );z=1;text="读取收藏夹";cls="button" };
+richedit={ wrap=1;vscroll=1;bottom=260;color=0;text="";left=5;multiline=1;top=8;font=LOGFONT( h=-14;name='微软雅黑' );link=1;z=2;right=378;hscroll=1;edge=1;cls="richedit" }
+)
+/*}}*/
+
+winform.button.oncommand = function(id,event){
+
+    var Favorite=fsys.getSpecial(0x6 /*_CSIDL_FAVORITES*/ )  
+    fsys.enum(      
+        Favorite,
+        "*.url",
+        function(dir,file,fullpath,findData){
+            if(file){  
+                winform.richedit.text+ = string.left(file,#file-4) +': \n'
+                try{
+                    var ini =fsys.ini(fullpath)
+                    var link =ini.read("InternetShortcut", "URL")
+                    winform.richedit.text+=link+'\n'  
+                }
+            }
+        }
+    );
+}
+
+winform.richedit.onlink=function(msg,title){
+    if(msg ==0x201/*_WM_LBUTTONDOWN*/){
+        process.execute(title)
+    }
+}
+
+winform.show()
+win.loopMessage();
+return winform;

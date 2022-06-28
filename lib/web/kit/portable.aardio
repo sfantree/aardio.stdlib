@@ -1,0 +1,8 @@
+﻿//portable 嵌入组件
+import web.kit;
+import web.kit.fileSystem;
+namespace web.kit.portable;
+
+/**intellisense()
+web.kit.portable =  此模块已废弃,\nweb.kit 已默认支持生成独立 EXE 文件
+end intellisense**/

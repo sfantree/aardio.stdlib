@@ -1,0 +1,16 @@
+ 
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="工程向导 - winform";right=1031;bottom=712;bgcolor=16777215;border="dialog frame")
+winform.add(
+plus={cls="plus";left=45;top=30;right=974;bottom=649;ah=1;aw=1;background="\forms\images\htmlayout.jpg";repeat="scale";z=1}
+)
+/*}}*/
+
+winform.getTemplatePath = function(){
+	return io.fullpath("/template/web/layoutUi/") 
+}
+
+winform.show() 
+win.loopMessage();
+return winform;

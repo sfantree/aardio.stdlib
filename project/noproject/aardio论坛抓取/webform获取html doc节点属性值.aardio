@@ -1,0 +1,11 @@
+
+/*
+<a onClick="javascript:delinfo('f1b97d4b3dafff33013db020c04d0025');" href="#">删除</a>
+<a onClick="javascript:delinfo('f1b97d4b3dafff33013db02cb7a80031');" href="#">删除</a>
+通过
+*/
+var ele = wb.queryEles(  innerHTML="删除";href="@8090/unigs/common/sendGroupAction.do?method=index#";tagName="^A$"  );
+
+
+ele[1].outerHTML
+ele[1].attributes("onclick").nodeValue;

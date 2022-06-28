@@ -1,0 +1,123 @@
+import console; 
+
+class mpz {
+	int mp_alloc;
+	int mp_size;
+	pointer mp_d;
+};
+
+libgmp = ..raw.loadDll("G:\chromedl\libgmp-6.1.2-2-mingw32-dll-10\bin\libgmp-10.dll");
+//mpz_init(b);  __gmpz_init ; void mpz_init (mpz_ptr)
+mpz_init = libgmp.api("__gmpz_init","void(struct&)" ,"cdcel");
+//mpz_clear(b);  __gmpz_clear; void mpz_clear (mpz_ptr);
+mpz_clear = libgmp.api("__gmpz_clear","void(struct&)" ,"cdcel");
+// mpz_init_set_ui ; __gmpz_init_set_ui ;  void mpz_init_set_ui (mpz_ptr, unsigned long int);
+mpz_init_set_ui = libgmp.api("__gmpz_init_set_ui","void(struct&, LONG)" ,"cdcel");
+// __gmpz_add; void mpz_add (mpz_ptr, mpz_srcptr, mpz_srcptr);
+mpz_add = libgmp.api("__gmpz_add","void(struct&, struct, struct)" ,"cdcel");
+
+// #define mpz_get_str __gmpz_get_str
+// __GMP_DECLSPEC char *mpz_get_str (char *, int, mpz_srcptr);
+mpz_get_str = libgmp.api("__gmpz_get_str","void(pointer, int, struct)" ,"cdcel");
+
+
+// #define mpz_size __gmpz_size
+/*
+#if __GMP_INLINE_PROTOTYPES || defined (__GMP_FORCE_mpz_size)
+__GMP_DECLSPEC size_t mpz_size (mpz_srcptr) __GMP_NOTHROW __GMP_ATTRIBUTE_PURE;
+#endif
+*/
+mpz_size = libgmp.api("__gmpz_size","int(struct)" ,"cdcel");
+
+
+mpz_set_str= libgmp.api("__gmpz_set_str","void(struct&, string , int)", "cdcel");
+
+
+console.open();
+
+a1 = mpz();
+a2=  mpz_init(a1);
+a3 = mpz_init_set_ui( (a2), math.size64(65535));
+
+b1 = mpz();
+b2=  mpz_init(b1);
+b3 = mpz_set_str( (b2), "11111111111111111111111115545131313", 10);
+
+
+
+
+//console.dump(a3.mp_d);
+
+var buffer = raw.buffer(64);
+mpz_get_str((buffer), 10, (a3) );
+console.log("buffer:", buffer, string.hex(buffer) )
+
+
+var buffer = raw.buffer(64);
+mpz_get_str((buffer), 10, (b3) );
+console.log("buffer:", buffer, string.hex(buffer) )
+
+
+//mpz_clear(a2);
+mpz_clear(b3);
+
+mpz_clear(a3);
+
+
+/*
+mpz_init(topointer(a));
+mpz_init(topointer(b));
+mpz_init(topointer(c));
+console.log(1);
+*/
+
+/*
+mpz_init((a));
+
+console.dump(a._mp_d);
+
+mpz_init_set_ui( (a), 102222323011);
+
+console.dump(a._mp_d);
+
+var buffer = raw.buffer(64);
+mpz_get_str(topointer(buffer), 10, (a) );
+console.log("buffer:", (buffer) )
+*/
+//l = mpz_size(b)
+
+//mpz_init_set_ui(topointer(b), 10011);
+
+/*
+mpz_init_set_ui(topointer(b), 10011);
+mpz_init_set_ui(topointer(c), 20022);
+
+l = mpz_size(b)
+
+console.log(l);
+
+//mpz_add(topointer(a), topointer(b), topointer(c));
+
+console.log(1);
+
+var buffer = raw.buffer(64);
+mpz_get_str(buffer, 10, topointer(c));
+
+console.log(1);
+
+console.log("buffer:", buffer)
+*/
+
+/*
+mpz_clear(topointer(a));
+mpz_clear(topointer(b));
+mpz_clear(topointer(c));
+*/
+
+/*
+mpz_clear((a));
+*/
+
+
+
+console.pause(true);

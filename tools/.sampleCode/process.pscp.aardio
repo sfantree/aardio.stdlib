@@ -1,0 +1,4 @@
+import console;
+import process.pscp;
+ 
+process.pscp.upload(,"本地文件路径","./","服务器IP","登录密码" );

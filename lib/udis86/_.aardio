@@ -1,0 +1,391 @@
+//默认库(反汇编)
+
+class udis86 {
+
+	ctor(){
+		var state = ..raw.malloc( _ud_state() );
+		ud_init(state);  
+		ud_set_mode(state,32);  
+		ud_set_syntax(state,ud_translate_intel);  
+	};
+	
+	setMode = function(mode=32){
+		ud_set_mode(state,mode);  
+	};
+	
+	translateIntel = function(){
+		ud_set_syntax(state,ud_translate_intel);  
+	};
+	
+	translateAtt = function(){
+		ud_set_syntax(state,ud_translate_att);  
+	};
+	
+	setInputBuffer = function(buffer,size,eip){
+		if(!size)size=#buffer; 
+		ud_set_input_buffer(state,buffer,size);
+		
+		if(!eip) {
+			eip = ..raw.convert({ pointer p = buffer},{LONG eip}).eip;
+			this.pc = eip;
+			this.base = eip;
+		};
+		ud_set_pc(state,eip);
+	};
+	 
+	setPc = function(eip){
+		ud_set_pc(state,tonumber( eip ) );
+	};
+	
+	addPc = function(n){
+		ud_set_pc(state,this.pc + n);
+	};
+	 
+	setVendor = function(v=2){
+		ud_set_vendor(state,v);
+	};
+	
+	hexCode = function(){
+		return ud_insn_hex(state);
+	};
+	
+	operand = function(idx=1){
+		var p = ud_insn_opr(state,idx);
+		if( p ) return ..raw.convert(p,_ud_operand() );
+	};
+	
+	inputEnd = function(){
+		return ud_input_end(state)
+	};
+	
+	inputSkip = function(n){
+		if( n <= 0 ) error("参数必须大于零",2)
+		return ud_input_skip(state,n)
+	};
+	
+	byteCode = function(){
+		if( this.len ){
+			var p = ud_insn_ptr(state);
+			if(p) return ..raw.tostring(p,1,this.len )
+		}
+	};
+	
+	disassemble = function(){ 
+		var len = ud_disassemble(state); 
+		if( len ){
+			this.asm = ud_insn_asm(state); 
+			this.pc = this.pc + len;
+			this.len = len;
+			
+			var s = ud_insn_ptr(state); 
+			return len;
+		}
+	} 
+}
+
+namespace udis86 {
+
+	var dll = ..raw.loadDll($"~\lib\udis86\.res\libudis86.dll","libudis86");
+	
+	ud_init = dll.api("ud_init","void(POINTER ud)" ,"cdecl")
+	ud_set_mode = dll.api("ud_set_mode","void(POINTER ud, BYTE mode)" ,"cdecl")
+	ud_set_pc = dll.api("ud_set_pc","void(POINTER ud, LONG)" ,"cdecl")
+	ud_set_input_hook = dll.api("ud_set_input_hook","void(POINTER ud,pointer hook)" ,"cdecl") 
+	ud_set_input_buffer = dll.api("ud_set_input_buffer","void(POINTER ud,pointer, INT size)" ,"cdecl") 
+	ud_set_input_file = dll.api("ud_set_input_file","void(POINTER ud,pointer file)" ,"cdecl") 
+	ud_set_vendor = dll.api("ud_set_vendor","void(POINTER ud, int)" ,"cdecl") 
+	ud_set_syntax = dll.api("ud_set_syntax","void(POINTER ud, pointer)" ,"cdecl")
+	ud_translate_intel = dll.api("ud_translate_intel","void(POINTER ud)" ,"cdecl") 
+	ud_input_skip = dll.api("ud_input_skip","void(POINTER ud, INT)" ,"cdecl") 
+	ud_input_end = dll.api("ud_input_end","bool(POINTER ud)" ,"cdecl") 
+	ud_decode = dll.api("ud_decode","INT(POINTER ud)" ,"cdecl") 
+	ud_disassemble = dll.api("ud_disassemble","INT(POINTER ud)" ,"cdecl")  
+	ud_translate_att = dll.api("ud_translate_att","void(POINTER ud)" ,"cdecl") 
+	ud_insn_asm = dll.api("ud_insn_asm","string(POINTER ud)" ,"cdecl") 
+	ud_insn_ptr = dll.api("ud_insn_ptr","pointer(POINTER ud u)" ,"cdecl") 
+	ud_insn_off = dll.api("ud_insn_off","LONG(POINTER ud)" ,"cdecl") 
+	ud_insn_hex = dll.api("ud_insn_hex","string(POINTER ud)" ,"cdecl") 
+	ud_insn_len = dll.api("ud_insn_len","INT (POINTER ud u)" ,"cdecl") 
+	ud_insn_opr = dll.api("ud_insn_opr","pointer(POINTER ud, INT n)" ,"cdecl") 
+	ud_opr_is_sreg = dll.api("ud_opr_is_sreg","int ud_opr_is_sreg(struct opr)" ,"cdecl")  
+	ud_lookup_mnemonic = dll.api("ud_lookup_mnemonic","string(int c)" ,"cdecl") 
+	ud_set_user_opaque_data = dll.api("ud_set_user_opaque_data","void (POINTER ud,pinter)" ,"cdecl") 
+	ud_get_user_opaque_data = dll.api("ud_get_user_opaque_data","pointer(POINTER ud)" ,"cdecl")  
+	ud_set_asm_buffer = dll.api("ud_set_asm_buffer","void(POINTER u,pointer buf, INT size)" ,"cdecl") 
+	ud_set_sym_resolver = dll.api("ud_set_sym_resolver","void (POINTER u,pointer resolver)" ,"cdecl")
+ 	
+	class _ud_operand {
+		int type;
+		BYTE size;
+		int base;
+		int index;
+		BYTE scale;  
+		BYTE offset;
+		union lval = {
+			byte sbyte;
+			BYTE ubyte;
+			word sword;
+			WORD uword;
+			int sdword;
+			INT udword;
+			long sqword;
+			LONG uqword;
+			struct ptr = {
+    			WORD seg;
+    			INT off;
+			};
+		}
+		LONG disp; 
+		BYTE oprcode;
+	};
+	var _ud_operand = _ud_operand;
+ 	
+	class _ud_state { 
+  		pointer inp_hook; 
+  		pointer inp_file; 
+  		BYTE inp_curr;
+  		BYTE inp_fill;
+  		BYTE inp_ctr;
+  		pointer inp_buff;
+  		pointer inp_buff_end;
+  		BYTE inp_end;
+  		BYTE inp_cache[256];
+  		BYTE inp_sess[64];
+  		pointer translator;
+  		LONG  insn_offset;
+  		byte insn_hexcode[64]; 
+  		pointer asm_buf;
+  		INT asm_buf_size;
+  		INT asm_buf_fill;
+  		byte asm_buf_int[128];
+  		pointer sym_resolver; 
+  		BYTE dis_mode;
+  		LONG pc;
+  		BYTE vendor;
+  		int mnemonic;
+  		struct operand[3] = { _ud_operand() };
+  		BYTE   error;
+  		BYTE   pfx_rex;
+  		BYTE   pfx_seg;
+  		BYTE   pfx_opr;
+  		BYTE   pfx_adr;
+  		BYTE   pfx_lock;
+  		BYTE   pfx_str;
+  		BYTE   pfx_rep;
+  		BYTE   pfx_repe;
+  		BYTE   pfx_repne;
+  		BYTE   default64;
+  		BYTE   opr_mode;
+  		BYTE   adr_mode;
+  		BYTE   br_far;
+  		BYTE   br_near;
+  		BYTE   implicit_addr;
+  		BYTE   have_modrm;
+  		BYTE   modrm;
+  		BYTE   primary_opcode;
+  		pointer user_opaque_data;
+  		pointer itab_entry;
+  		pointer le;
+	};
+}
+
+/**intellisense()
+udis86() = 创建udis86反汇编对象\n!udis86.
+!udis86.setInputBuffer(.(机器码,长度,EIP) = 设置需要反汇编的机器码,\n参数一可以是字符串或缓冲区指针\n其他参数可选
+!udis86.translateIntel() = 使用intel汇编语法
+!udis86.translateAtt() = 使用ATT汇编语法
+!udis86.setMode(.(32) = 设置CPU模式,默认为32位
+!udis86.disassemble() = @while( ??.disassemble() ){
+	io.print( "汇编代码:",ud.asm )
+	io.print( "指令长度:",ud.len )
+	io.print( "PC:",ud.pc )
+	io.print("")__
+}
+!udis86.setPc(.(EIP) = 修改程序指令地址
+!udis86.addPc(.(相对偏移值) = 提供一个相对偏移修改程序指令地址
+!udis86.pc = 程序指令地址,即Program Counter
+!udis86.asm = 返汇编代码
+!udis86.base = 指令起始位置
+!udis86.len = 当前指令长度
+!udis86.byteCode() = 返回当前反编译的字节码
+!udis86.hexCode() = 以16进制格式返回已处理的字节码
+!udis86.operand(.(操作数索引) = 返回指定的操作数信息
+!udis86.operand() = !udis86_operand.
+!udis86.inputEnd() = 是否到输入尾
+!udis86.inputSkip(.(节点数) = 跳过输入字节数
+!udis86.setVendor( _UD_VENDOR__ ) = 设置CPU厂商
+end intellisense**/
+
+/**intellisense(!udis86_operand)
+type = 值为 _UD_ 前缀常量
+size = size
+base = 值为 _UD_ 前缀常量
+index = 值为 _UD_ 前缀常量
+scale = scale
+offset = offset
+lval.sbyte = sbyte
+lval.ubyte = ubyte
+lval.sword = sword
+lval.uword = uword
+lval.sdword = sdword
+lval.udword = udword
+lval.sqword = sqword
+lval.uqword = uqword
+lval.ptr.seg = seg
+lval.ptr.off = off
+LONG disp = disp 
+BYTE oprcode = oprcode
+end intellisense**/
+
+ /**intellisense()
+_UD_VENDOR_AMD=@0/*_UD_VENDOR_AMD*/
+_UD_VENDOR_INTEL=@1/*_UD_VENDOR_INTEL*/
+_UD_VENDOR_ANY=@2/*_UD_VENDOR_ANY*/
+
+_UD_NONE=@0/*_UD_NONE*/
+_UD_R_CR9=@0x54/*_UD_R_CR9*/
+_UD_R_ST6=@0x79/*_UD_R_ST6*/
+_UD_R_BH=@8/*_UD_R_BH*/
+_UD_R_XMM6=@0x81/*_UD_R_XMM6*/
+_UD_R_R13W=@0x22/*_UD_R_R13W*/
+_UD_R_SP=@0x19/*_UD_R_SP*/
+_UD_R_ST5=@0x78/*_UD_R_ST5*/
+_UD_R_ESI=@0x2B/*_UD_R_ESI*/
+_UD_R_R10B=@0xF/*_UD_R_R10B*/
+_UD_R_DR11=@0x66/*_UD_R_DR11*/
+_UD_R_GS=@0x4A/*_UD_R_GS*/
+_UD_R_AH=@5/*_UD_R_AH*/
+_UD_R_XMM0=@0x7B/*_UD_R_XMM0*/
+_UD_R_MM0=@0x6B/*_UD_R_MM0*/
+_UD_R_EDI=@0x2C/*_UD_R_EDI*/
+_UD_R_R11W=@0x20/*_UD_R_R11W*/
+_UD_R_CR2=@0x4D/*_UD_R_CR2*/
+_UD_R_SIL=@0xB/*_UD_R_SIL*/
+_UD_R_CR7=@0x52/*_UD_R_CR7*/
+_UD_R_DX=@0x17/*_UD_R_DX*/
+_UD_R_R12W=@0x21/*_UD_R_R12W*/
+_UD_R_R15B=@0x14/*_UD_R_R15B*/
+_UD_R_CR15=@0x5A/*_UD_R_CR15*/
+_UD_R_ECX=@0x26/*_UD_R_ECX*/
+_UD_R_CR13=@0x58/*_UD_R_CR13*/
+_UD_R_CR8=@0x53/*_UD_R_CR8*/
+_UD_R_DIL=@0xC/*_UD_R_DIL*/
+_UD_R_XMM12=@0x87/*_UD_R_XMM12*/
+_UD_R_R10W=@0x1F/*_UD_R_R10W*/
+_UD_R_DL=@3/*_UD_R_DL*/
+_UD_R_MM2=@0x6D/*_UD_R_MM2*/
+_UD_R_XMM9=@0x84/*_UD_R_XMM9*/
+_UD_R_R10D=@0x2F/*_UD_R_R10D*/
+_UD_R_XMM10=@0x85/*_UD_R_XMM10*/
+_UD_R_MM4=@0x6F/*_UD_R_MM4*/
+_UD_R_R15W=@0x24/*_UD_R_R15W*/
+_UD_R_R13D=@0x32/*_UD_R_R13D*/
+_UD_R_DI=@0x1C/*_UD_R_DI*/
+_UD_R_CR1=@0x4C/*_UD_R_CR1*/
+_UD_R_R10=@0x3F/*_UD_R_R10*/
+_UD_R_RCX=@0x36/*_UD_R_RCX*/
+_UD_R_R14D=@0x33/*_UD_R_R14D*/
+_UD_R_XMM5=@0x80/*_UD_R_XMM5*/
+_UD_R_ST7=@0x7A/*_UD_R_ST7*/
+_UD_R_MM6=@0x71/*_UD_R_MM6*/
+_UD_R_R14B=@0x13/*_UD_R_R14B*/
+_UD_R_BP=@0x1A/*_UD_R_BP*/
+_UD_R_XMM8=@0x83/*_UD_R_XMM8*/
+_UD_R_SS=@0x47/*_UD_R_SS*/
+_UD_R_XMM15=@0x8A/*_UD_R_XMM15*/
+_UD_R_BPL=@0xA/*_UD_R_BPL*/
+_UD_R_XMM4=@0x7F/*_UD_R_XMM4*/
+_UD_R_MM1=@0x6C/*_UD_R_MM1*/
+_UD_R_ST4=@0x77/*_UD_R_ST4*/
+_UD_R_R14=@0x43/*_UD_R_R14*/
+_UD_R_R8B=@0xD/*_UD_R_R8B*/
+_UD_R_DR14=@0x69/*_UD_R_DR14*/
+_UD_R_BX=@0x18/*_UD_R_BX*/
+_UD_R_CL=@2/*_UD_R_CL*/
+_UD_R_ST3=@0x76/*_UD_R_ST3*/
+_UD_R_EBX=@0x28/*_UD_R_EBX*/
+_UD_R_FS=@0x49/*_UD_R_FS*/
+_UD_R_DH=@7/*_UD_R_DH*/
+_UD_R_CS=@0x46/*_UD_R_CS*/
+_UD_R_R12B=@0x11/*_UD_R_R12B*/
+_UD_R_DR15=@0x6A/*_UD_R_DR15*/
+_UD_R_DR12=@0x67/*_UD_R_DR12*/
+_UD_R_DR6=@0x61/*_UD_R_DR6*/
+_UD_R_DR8=@0x63/*_UD_R_DR8*/
+_UD_R_BL=@4/*_UD_R_BL*/
+_UD_R_DR1=@0x5C/*_UD_R_DR1*/
+_UD_R_CR5=@0x50/*_UD_R_CR5*/
+_UD_R_RAX=@0x35/*_UD_R_RAX*/
+_UD_R_ST0=@0x73/*_UD_R_ST0*/
+_UD_R_R9D=@0x2E/*_UD_R_R9D*/
+_UD_R_DR0=@0x5B/*_UD_R_DR0*/
+_UD_R_XMM1=@0x7C/*_UD_R_XMM1*/
+_UD_R_RBX=@0x38/*_UD_R_RBX*/
+_UD_R_R15=@0x44/*_UD_R_R15*/
+_UD_R_CR12=@0x57/*_UD_R_CR12*/
+_UD_R_R14W=@0x23/*_UD_R_R14W*/
+_UD_R_SI=@0x1B/*_UD_R_SI*/
+_UD_R_RSP=@0x39/*_UD_R_RSP*/
+_UD_R_CX=@0x16/*_UD_R_CX*/
+_UD_R_DR10=@0x65/*_UD_R_DR10*/
+_UD_R_ST2=@0x75/*_UD_R_ST2*/
+_UD_R_CR11=@0x56/*_UD_R_CR11*/
+_UD_R_R12D=@0x31/*_UD_R_R12D*/
+_UD_R_CH=@6/*_UD_R_CH*/
+_UD_R_R15D=@0x34/*_UD_R_R15D*/
+_UD_R_DR5=@0x60/*_UD_R_DR5*/
+_UD_R_CR3=@0x4E/*_UD_R_CR3*/
+_UD_R_RDI=@0x3C/*_UD_R_RDI*/
+_UD_R_XMM13=@0x88/*_UD_R_XMM13*/
+_UD_R_AL=@1/*_UD_R_AL*/
+_UD_R_DR9=@0x64/*_UD_R_DR9*/
+_UD_R_RIP=@0x8B/*_UD_R_RIP*/
+_UD_R_XMM14=@0x89/*_UD_R_XMM14*/
+_UD_R_ES=@0x45/*_UD_R_ES*/
+_UD_R_AX=@0x15/*_UD_R_AX*/
+_UD_R_R8D=@0x2D/*_UD_R_R8D*/
+_UD_R_R9B=@0xE/*_UD_R_R9B*/
+_UD_R_R9=@0x3E/*_UD_R_R9*/
+_UD_R_XMM7=@0x82/*_UD_R_XMM7*/
+_UD_R_XMM3=@0x7E/*_UD_R_XMM3*/
+_UD_R_RBP=@0x3A/*_UD_R_RBP*/
+_UD_R_R9W=@0x1E/*_UD_R_R9W*/
+_UD_R_XMM2=@0x7D/*_UD_R_XMM2*/
+_UD_R_DS=@0x48/*_UD_R_DS*/
+_UD_R_ESP=@0x29/*_UD_R_ESP*/
+_UD_R_MM7=@0x72/*_UD_R_MM7*/
+_UD_R_EDX=@0x27/*_UD_R_EDX*/
+_UD_R_R11D=@0x30/*_UD_R_R11D*/
+_UD_R_R11=@0x40/*_UD_R_R11*/
+_UD_R_CR14=@0x59/*_UD_R_CR14*/
+_UD_R_XMM11=@0x86/*_UD_R_XMM11*/
+_UD_R_SPL=@9/*_UD_R_SPL*/
+_UD_R_RSI=@0x3B/*_UD_R_RSI*/
+_UD_R_ST1=@0x74/*_UD_R_ST1*/
+_UD_R_R8=@0x3D/*_UD_R_R8*/
+_UD_R_R12=@0x41/*_UD_R_R12*/
+_UD_R_MM3=@0x6E/*_UD_R_MM3*/
+_UD_R_R13=@0x42/*_UD_R_R13*/
+_UD_R_R11B=@0x10/*_UD_R_R11B*/
+_UD_R_EAX=@0x25/*_UD_R_EAX*/
+_UD_R_DR13=@0x68/*_UD_R_DR13*/
+_UD_R_R13B=@0x12/*_UD_R_R13B*/
+_UD_R_CR6=@0x51/*_UD_R_CR6*/
+_UD_R_RDX=@0x37/*_UD_R_RDX*/
+_UD_R_CR0=@0x4B/*_UD_R_CR0*/
+_UD_R_DR7=@0x62/*_UD_R_DR7*/
+_UD_R_MM5=@0x70/*_UD_R_MM5*/
+_UD_R_DR4=@0x5F/*_UD_R_DR4*/
+_UD_R_DR3=@0x5E/*_UD_R_DR3*/
+_UD_R_DR2=@0x5D/*_UD_R_DR2*/
+_UD_R_CR10=@0x55/*_UD_R_CR10*/
+_UD_R_EBP=@0x2A/*_UD_R_EBP*/
+_UD_R_CR4=@0x4F/*_UD_R_CR4*/
+_UD_R_R8W=@0x1D/*_UD_R_R8W*/
+_UD_OP_REG=@0x8C/*_UD_OP_REG*/
+_UD_OP_MEM=@0x8D/*_UD_OP_MEM*/
+_UD_OP_PTR=@0x8E/*_UD_OP_PTR*/
+_UD_OP_IMM=@0x8F/*_UD_OP_IMM*/
+_UD_OP_JIMM=@0x90/*_UD_OP_JIMM*/
+_UD_OP_CONST=@0x91/*_UD_OP_CONST*/
+end intellisense**/

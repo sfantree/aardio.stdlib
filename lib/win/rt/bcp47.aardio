@@ -1,0 +1,100 @@
+﻿//bcp47 语言标签
+import win.rt.hString;
+
+namespace win.rt.bcp47;
+
+try{
+	::Bcp47Langs := ..raw.loadDll("bcp47langs.dll",,"stdcall,unicode")	
+	::Winlangdb := ..raw.loadDll("winlangdb.dll",,"stdcall,unicode")
+}
+
+getUserLanguages = function(){
+	var hstr = ..win.rt.hString();
+	::Bcp47Langs.GetUserLanguages(';'#,hstr.byStruct());
+	return ..string.split( tostring(hstr):"",';')	
+}
+
+setUserLanguages = function(v){
+	if(type(v)=="table") v = ..string.join(v,";");
+	
+	var hstr = ..win.rt.hString(v);
+	::Winlangdb.SetUserLanguages(';'#,hstr); 
+	hstr.free();
+}
+
+getUserLanguageInputMethods = function(lang){
+	if(!#sepChar) sepChar = ';';
+	
+	var hstr = ..win.rt.hString();
+	::Bcp47Langs.GetUserLanguageInputMethods(lang,';'#,hstr.byStruct());
+	return ..string.split( tostring(hstr):"",';')		
+}
+
+getInputMethods = function(){
+	var result = {}
+	var langs = getUserLanguages();
+	for i,lang in ..table.eachIndex(langs){
+		result[lang] = getUserLanguageInputMethods(lang)
+	}
+	return result;
+}
+
+lcidFrom = function(bcp47){
+	var lcid = {INT v};
+	var lang = ..win.rt.hString(bcp47);
+	::Bcp47Langs.LcidFromBcp47(lang,lcid);
+	lang.free();
+	
+	return lcid.v;
+}
+
+getName = function(bcp47){
+	var hstr = ..win.rt.hString()
+	var lang = ..win.rt.hString(bcp47);
+	::Bcp47Langs.Bcp47GetLanguageName(lang,hstr.byStruct())
+	lang.free();
+	
+	return tostring(hstr);
+}
+ 
+getAbbreviation = function(bcp47){
+	var hstr = ..win.rt.hString()
+	var lang = ..win.rt.hString(bcp47);
+	::Bcp47Langs.Bcp47GetAbbreviation(lang,hstr.byStruct())
+	lang.free();
+	
+	return tostring(hstr);
+}
+
+getIsoCode = function(bcp47){
+	var isoCode = ..win.rt.hString();
+	var lang = ..win.rt.hString(bcp47);
+	::Bcp47Langs.Bcp47GetIsoLanguageCode(lang,isoCode.byStruct());
+	lang.free();
+	
+	return tostring(isoCode);
+}
+
+/**intellisense(win.rt.bcp47) 
+getInputMethods() = 返回所有启用的输入法
+getUserLanguages() = 返回所有启用的 BCP47 语言缩写标签
+setUserLanguages(__) = 设置系统语言,进程需要管理权限,\n参数可以指定BCP47 语言缩写标签组成的数组,\n也可以传入一个字符串，并且分号分隔所有BCP47 语言缩写标签
+getUserLanguageInputMethods(.(bcp47lang) = 返回指定语言所有启用的输入法,\n参数指定 BCP47 语言缩写标签
+lcidFrom(.(bcp47lang) = 参数指定 BCP47 语言缩写标签,\n返回对应的 LCID 数值
+getIsoCode(.(bcp47lang) = 参数指定 BCP47 语言缩写标签,\n返回对应的 ISO 语言代码 
+getName(.(bcp47lang) = 返回指定语言的完整名称,\n参数指定 BCP47 语言缩写标签
+getAbbreviation(.(bcp47lang) = 返回指定语言的缩写名称,\n例如中文返回"简体",英文返回"ENU",\n参数指定 BCP47 语言缩写标签
+end intellisense**/
+
+/**intellisense()
+win.rt.bcp47 = BCP47语言标签相关函数库,\n支持WIN8以及WIN8以后的操作系统,\nWindows Vista及以后版本，采用RFC 4646作为语言标签，\n字符串最大长度85，包含了结尾的零字符
+end intellisense**/
+
+/**intellisense(::)
+::Winlangdb = 标准库 win.rt.bcp47 加载的系统DLL组件,\n仅 Win8 以及 Win8 以后的系统支持此组件,\n!dllmodule.
+::Bcp47Langs = 标准库 win.rt.bcp47 加载的系统DLL组件,\n仅 Win8 以及 Win8 以后的系统支持此组件,\n!dllmodule.
+end intellisense**/
+
+/*
+Microsoft.InternationalSettings.Commands.dll
+*/

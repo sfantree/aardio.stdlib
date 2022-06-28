@@ -1,0 +1,42 @@
+﻿//tpmInfo 可信平台模块
+import process.admin;
+import com.wmi;
+
+namespace sys.tpmInfo;
+
+get = function(){
+	var tpmInfo;
+	if(..process.admin.isRunAs()){
+		tpmInfo = ..com.wmi.getProperties('SELECT * FROM Win32_TPM',"\root\cimv2\Security\MicrosoftTPM")
+		if(tpmInfo && tpmInfo.SpecVersion == "Not Supported"){
+			tpmInfo = null;
+		}
+	}
+	else { 
+		tpmInfo = ..com.wmi.getProperties('Select * from Win32_PNPEntity where Service="TPM"')
+		if( tpmInfo ){
+			tpmInfo.IsEnabled_InitialValue = !! #tpmInfo[["Name"]];
+			tpmInfo.IsActivated_InitialValue = tpmInfo.Status == "OK"; 
+			
+			if(#tpmInfo[["Name"]]) { 
+				tpmInfo.SpecVersion = ..string.match(tpmInfo.Name,"\d+\.\d+")
+			} 
+		}
+	}
+
+	if(tpmInfo){
+		return { 
+			enabled = tpmInfo.IsEnabled_InitialValue;
+			activated = tpmInfo.IsActivated_InitialValue;
+			version = tpmInfo.SpecVersion;
+		}; 		
+	} 
+}
+
+/**intellisense()
+sys.tpmInfo = 用于获取可信平台模块（Trusted Platform Module）支持信息
+sys.tpmInfo.get() = 返回 TPM 信息,\n不支持 TPM 返回 null,\n!sysTpmInfo.
+!sysTpmInfo.enabled = 是否启用
+!sysTpmInfo.activated = 是否激活
+!sysTpmInfo.version = 支持版本,\n多个版本以逗号分开,\n如果进程无管理权限仅返回当前版本号
+end intellisense**/

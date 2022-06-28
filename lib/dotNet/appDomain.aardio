@@ -1,0 +1,911 @@
+//appDomain 应用程序域
+namespace dotNet;
+
+var freeDomainId = 0;
+
+class appDomain{
+
+	ctor( clr,domainName ){
+		
+		if (clr===null ){
+			if(self.$singletonAppDomain){
+				return self.$singletonAppDomain; 
+			}
+			
+			if(!..dotNet.clr) error("请先导入 dotNet 或 dotNet.clr 库!",2);
+			
+			var clr,err = ..dotNet.clr();
+			if(!clr){ return null,err; }
+			
+			return clr.createAppDomain();
+		}
+		elseif( domainName === null ) {
+			if(!self.$singletonAppDomain) self.$singletonAppDomain = this;
+		} 
+		
+		var appDomain;
+		 
+		if(!domainName) {
+			domainName = "Aardio.CLR.AppDomain["+ ..thread.getId() +"]" + freeDomainId;  
+			freeDomainId++; 
+		}
+		
+		if( __appDomainCache[domainName] ) return __appDomainCache[domainName];
+		__appDomainCache[domainName] = this;
+		
+		this.clr = clr;
+		var hr,pAppDomain = clr.corRuntimeHost.CreateDomainEx( ..string.toUnicode(domainName),clr.AppDomainSetup ); 
+		
+		var IsNetObject = ..com.IsNetObject
+		this.wrapObject = function(obj){
+			var t = IsNetObject(obj);
+			if(t) return { _dotNetObject = obj; _dotNetAppDomain = this;@_objectMeta; }
+			
+			if( type(obj) == "function" ) {
+				return function(...){
+					return this.wrapObject(obj(...));
+				}
+			}
+			return obj;
+			
+		};
+	
+		var wrapAssembly = function(asm,...){
+			if(!asm) return asm,...;
+			asm = unwrapObject(asm);
+			 
+			asm[["Name"]] = asm.GetName().Name;
+			asm[["__createInstanceRaw"]] = asm.CreateInstance;
+			asm[["__createInstanceTest"]] = function(typeName,...){
+				var arrlist = this.rawCreateArrayList({...}); 
+				var ok,result  = call(this.utility.getInvokeMember,this.utility, asm ,typeName,""
+					, 512 /*BindingFlags.CreateInstance*/
+					,arrlist,null );
+				if( !ok ) return null,result;
+				return this.wrapObject(result);
+			} 
+			asm[["new"]] = function(typeName,...){
+				if( type(typeName)!=type.string )error("请指定类名称,参数@2",2);
+				var obj,err = asm.__createInstanceTest(typeName,...);
+
+				if(obj) return obj;
+				if(!..string.startWith(typeName,asm.Name +".") && !(..string.indexOf(typeName,".")) )
+					return asm.__createInstanceTest( asm.Name +"."+ typeName,...);
+					
+				return null,err;
+			}
+			asm[["createInstance"]] = asm[["new"]]; //@Deprecated
+
+			asm[["invokeStaticMember"]] = function(typeName,...){
+				var typeName,methodName = ..string.match(typeName,"(.+)\.([^.]+)$"); 
+				
+				var arrlist = this.rawCreateArrayList({...});
+				
+				var ok,result  = call(this.utility.getInvokeMember,this.utility, asm ,typeName,methodName
+					,16 | 8 | 256 /*Public|Static|InvokeMethod*/
+					,arrlist,null); 
+				if( !ok ) return null,result;
+				return this.wrapObject(result);
+			}
+			asm[["getStaticMember"]] = function(typeName,...){
+				var typeName,methodName = ..string.match(typeName,"(.+)\.([^.]+)$");  
+				var arrlist = this.rawCreateArrayList({...});
+				
+				var ok,result  = call(this.utility.getInvokeMember,this.utility, asm ,typeName,methodName
+					,16 | 8 | 4096 | 1024 /*Public|Static|GetProperty|GetField*/
+					,arrlist,null); 
+				if( !ok ) return null,result;
+				return this.wrapObject(result);
+			} 
+			asm[["_namespace"]] = {}
+			  
+			asm[["import"]] = function(typeName){
+				if(typeName===null) typeName = asm.Name;
+				if( type(typeName)!=type.string )error("参数@1请指定类型名称",2);
+				
+				var nspace = asm[["_namespace"]][typeName];
+				if( nspace ) return nspace;
+				
+				var objType = unwrapObject( this.utility.GetTypeByName(asm,typeName) );
+
+				nspace = ..table.namespace(typeName); 
+				if(!nspace) error("name conflict for namespace '"+typeName+"'",2) 
+				elseif(nspace@) nspace = {_dotNetObject = objType};
+				elseif(!nspace[["_dotNetObject"]]) nspace[["_dotNetObject"]] = objType;
+				
+				asm[["_namespace"]][typeName] = nspace;
+				nspace@ = {
+					_toComObject = lambda() owner[["_dotNetObject"]];
+					_dotNetNamespace = typeName;
+					_tostring = typeName;
+					_eq = __equals;
+					_set = function(k,v){
+						if(objType && (!(v@[["_dotNetNamespace"]]))){ 
+							var arrlist = this.rawCreateArrayList({v});
+							var ok,result  = call(this.utility.getInvokeMember2,this.utility,objType,asm ,typeName,k
+									,16 | 8 | 8192 | 2048 /*Public|Static|SetProperty|SetField*/
+									,arrlist,null); 
+									 
+							if(!ok) error(result,2);
+						}
+						else {
+							owner[[k]] = v;
+						} 
+					};
+					_get = function(methodName,ownerCall){
+						if( type(typeName)!=type.string ) return owner[[methodName]]; 
+						if(methodName[1]=='_'# && (methodName=="_safearray" || methodName=="_type" || methodName=="_struct")){
+							return;
+						}
+						
+						if(!ownerCall){
+							var ok,result  = call(this.utility.getInvokeMember2,this.utility,objType,asm,typeName,methodName
+								,16 | 8 | 4096 | 1024 /*Public|Static|GetProperty|GetField*/
+								,null,null); 
+							
+							if( !ok ) {
+								if(result){
+									var ok,enumType = call(this.utility.getInvokeEnumType,this.utility,asm,typeName,methodName);
+									if(ok && enumType) {
+										owner[[methodName]] = this.wrapEnumType(enumType); 
+									}
+									else {
+										owner[[methodName]] = asm[["import"]](typeName + "." + methodName); 
+									}
+									
+									return owner[[methodName]];
+								}
+								return null,result;	
+							}
+							return this.wrapObject(result);	
+						}
+						else {
+							return function(...){
+								var arrlist = this.rawCreateArrayList({...}); //存在可能参数@1为null,但其他参数不为 null
+								var ok,result  = call(this.utility.getInvokeMember2,this.utility,objType, asm ,typeName,methodName
+									,16 | 8 | 256 /*Public|Static|InvokeMethod*/
+									,arrlist,null); 
+								if( !ok ) error(result,2)
+								return this.wrapObject(result);
+							}
+							
+							return owner[[methodName]];
+						}
+						
+					};
+					_call = function(...){ 
+						var obj,err = asm.__createInstanceTest(typeName,...);
+						if(obj) return obj;
+						
+						if(!..string.startWith(typeName,asm.Name +".") && !(..string.indexOf(typeName,".")) ){
+							var obj,err = asm.__createInstanceTest( asm.Name +"."+ typeName,...);
+							if(obj){
+								typeName = asm.Name +"."+ typeName;
+							}
+							
+							return obj,err;
+						}
+							
+						return null,err;
+					}
+				} 
+				
+				return nspace;
+			} 
+			
+			return asm,...;
+		}
+		
+		if(  (hr)>=0/*_SUCCEEDED*/ ){
+			appDomain = ..com.QueryObject( pAppDomain);
+			..com.Release(pAppDomain);
+			
+			this.loadFile  = function( rawAssembly,pdbData ){    
+				if(type(rawAssembly)!=type.string )error("请指定程序集",2);
+				
+				if( #rawAssembly < 0x410/*_MAX_PATH_U8*/ ){
+					if(!pdbData && ..io.exist(rawAssembly)) {
+						return this.load(rawAssembly); 
+					}
+					
+					rawAssembly = ..string.load(rawAssembly) : rawAssembly;
+				}
+				
+				if( pdbData ){
+					if(#pdbData < 0x410/*_MAX_PATH_U8*/ ){
+						pdbData = ..string.load(pdbData) : pdbData;
+					}
+					
+					return wrapAssembly( appDomain.Load_4(rawAssembly,pdbData) )
+				}
+				
+				return wrapAssembly( appDomain.Load_3( rawAssembly ) );
+			}; 
+			
+			this[["_assemblies"]] = {};
+			this.load = function( name,data ){  
+				if(!name) error("请指定程序集名称",2);  
+				if(data) this.reference(name,data);
+				
+				var a = this[["_assemblies"]][name];
+				if(a) return a;
+				
+				a = wrapAssembly( this.utility.loadAssembly( ..io.localpath(name) : name ) );
+				if(a){
+					this[["_assemblies"]][name] = a;
+					return a;
+				}
+			};
+			this.loadAppData = function(path,data){ 
+				var path = ..io.appData(path,data); 
+				if(path) return this.load(path);
+			};
+			this.import = function(nspace,path){
+				var assembly = this.load(path:nspace);
+				if(assembly) return assembly.import(nspace);
+			};
+			
+			this.interop = this.loadFile($"~\lib\dotNet\.res\bin\Release\Aardio.InteropServices.dll");  
+			//this.interop = this.loadFile( "~\lib\dotNet\.res\bin\Debug\Aardio.InteropServices.dll" ,"~\lib\dotNet\.res\bin\Debug\Aardio.InteropServices.pdb" ); 
+			
+			//createInstance 要在构造函数完成后才能使用,这里必须用 __createInstanceRaw	 		
+			this.utility = unwrapObject( this.interop.__createInstanceRaw("Aardio.InteropServices.Utility") );  
+		  	this.utility[["getInvokeMember"]] = this.utility.getInvokeMember;
+		  	this.utility[["getInvokeMember2"]] = this.utility.getInvokeMember2;
+		  	this.utility[["getInvokeObjectMember"]] = this.utility.getInvokeObjectMember;
+			this.utility[["getInvokeEnumValue"]] = this.utility.getInvokeEnumValue; 
+			this.utility[["getRoundTrip"]] = this.utility.getRoundTrip; 
+			
+			this.mscorlib = this.load("mscorlib");
+			this.system = this.load("System");
+			this.Array = this.mscorlib.import("System.Array");
+			
+			this.DispatchableDelegate = this.interop.import("Aardio.InteropServices.DispatchableDelegate");
+			//注意在此构造函数未退出前,如果调用下面还未创建的函数会出错
+		}
+		else {
+			return null,..lasterr(hr,"dotNet.appDomain");
+		}
+		 
+		this.id = appDomain.Id;
+		this.appDomainReal = appDomain;
+		this._dotNetObject = appDomain;
+		this._dotNetAppDomain = this;
+	};
+	reference = function(path,data){
+		if(!this.delegateAssemblyResolve){
+			this[["(referencePaths)"]] = {};
+			var match = ..string.match;
+			this.delegateAssemblyResolve = this.delegate.combine(
+				this.appDomainReal,"AssemblyResolve",function(sender,args){
+					var name = match(args.Name,"^[^,]+");
+					
+					var refs = this[["(referencePaths)"]];
+					var path = refs[name];
+					if(!path) return;
+					
+					if(type(path)=="function") {
+						path = invoke(path,refs,name,args.Name,args);
+						if(!type.isString(path)) return path;
+					}
+					
+					if(path) return this.loadFile(path); 
+				} 
+			)
+		} 
+			
+		if(type(path)=="table"){
+			..table.assign(this[["(referencePaths)"]],path);
+		}
+		else {
+			this[["(referencePaths)"]][path] = data;
+		} 
+	};
+	object = function(v,ref){
+		if(v[["_dotNetObject"]]) return v;
+		return { _dotNetObject = this.utility.CreateAnyObject(v,ref); _dotNetAppDomain = this; 	@_objectMeta; 	} 
+	};
+	byte = function(v,ref){
+		return this.object(..com.byte(v),ref);	
+	};
+	ubyte = function(v,ref){
+		return this.object(..com.ubyte(v),ref);	
+	};
+	word = function(v,ref){
+		return this.object(..com.word(v),ref);	
+	};
+	uword = function(v,ref){
+		return this.object(..com.uword(v),ref);	
+	};
+	int = function(v,ref){
+		return this.object(..com.int(v),ref);	
+	};
+	uint = function(v,ref){
+		return this.object(..com.uint(v),ref);	
+	};
+	long = function(v,ref){
+		return this.object(..com.long(v),ref);	
+	};
+	ulong = function(v,ref){
+		return this.object(..com.ulong(v),ref);	
+	};
+	float = function(v,ref){
+		return this.object(..com.float(v),ref);	
+	};	
+	double = function(v,ref){
+		return this.object(..com.double(v),ref);	
+	}; 
+	double = function(v,ref){
+		return this.object(..com.double(v),ref);	
+	}; 
+	createArray = function(t,...){
+		return this.Array.CreateInstance(t,...);
+	};
+	rawCreateArrayList = function( tab ){ 
+		var list = this.mscorlib.CreateInstance("System.Collections.ArrayList"); 
+		if( tab ){
+			var v;
+			for(i=1;#tab){
+				v = tab[i];
+				if(type(v) = "function") list.Add( this.safeCallback(v) );  
+				else list.Add(v); 
+			} 
+		}
+		return list;
+	}; 
+	createArrayList = lambda(v) this.wrapObject( this.rawCreateArrayList(v) );
+	createNameValueList = lambda(k,v) this.wrapObject( this.utility.NameValueList(k,v) );
+	invokeMember = function(assemblyName,typeName,methodName,bindingFlags,target,...){
+		var arrlist = this.rawCreateArrayList({...});
+		var ok,result  = call(this.utility.getInvokeMember,this.utility, ..io.localpath(assemblyName) : assemblyName 
+				,typeName,methodName ,bindingFlags : 0 ,arrlist,unwrapObject(target)); 
+		if( !ok ) return null,result;
+		
+		if( result!==null ) return this.wrapObject(result);
+	};
+	invokeInstanceMember = function(target,methodName,...){
+		var arrlist = this.rawCreateArrayList({...});
+		var ok,result  = call(this.utility.getInvokeObjectMember,this.utility,unwrapObject(target),methodName 
+			,16 | 8 | 4 | 64| 256 /*Public|Static|Instance|InvokeMethod*/,arrlist); 
+		if( !ok ) return null,result;
+		
+		if( result!==null ) return this.wrapObject(result);
+	};
+	setInstanceMember = function(target,methodName,...){
+		var arrlist = this.rawCreateArrayList({...});
+		var ok,result  = call(this.utility.getInvokeObjectMember,this.utility,unwrapObject(target),methodName 
+			,16 | 8 | 4 | 64| 8192 | 2048 /*Public|Static|Instance|FlattenHierarchy|SetProperty|SetField*/ ,arrlist); 
+		if( !ok ) return null,result;
+		return true;
+	};
+	getInstanceMember = function(target,methodName,...){
+		var arrlist = (...!=null) ? this.rawCreateArrayList({...}) : null;
+		var ok,result  = call(this.utility.getInvokeObjectMember,this.utility,unwrapObject(target),methodName 
+			,32 | 16 | 8 | 4 | 64 | 4096 | 1024 /*NonPublic|Public|Static|Instance|FlattenHierarchy|GetProperty|GetField*/ ,arrlist); 
+		if( !ok ) return null,result;
+		
+		return this.wrapObject(result);
+	};
+	setItem = function(target,...){
+		var arrlist = this.rawCreateArrayList({...});
+		var ok,result  = call(this.utility.getInvokeObjectMember,this.utility,unwrapObject(target),"Item"  
+			,16 | 4 | 8192 /*SetProperty*/ ,arrlist);
+		if( !ok ) return null,result;
+		return true;
+	};
+	getItem = function(target,...){
+		var arrlist = this.rawCreateArrayList({...})
+		var ok,result  = call(this.utility.getInvokeObjectMember,this.utility,unwrapObject(target),"Item" 
+			,16 | 4 | 4096 /*GetProperty*/ ,arrlist);
+		if( !ok ) return null,result;
+		
+		return this.wrapObject(result);
+	};
+	invokeStaticMember = function(assemblyName,typeName,...){
+		var typeName,methodName = ..string.match(typeName,"(.+)\.([^.]+)$"); 
+		
+		var arrlist = this.rawCreateArrayList({...}); 
+		var ok,result  = call(this.utility.getInvokeMember,this.utility, ..io.localpath(assemblyName) : assemblyName 
+				,typeName,methodName ,16 | 8 | 256 /*Public|Static|InvokeMethod*/
+				,arrlist,null); 
+		if( !ok ) return null,result;
+		
+		if( result!==null ) return this.wrapObject(result);
+	};
+	getStaticMember = function(assemblyName,typeName,...){
+		var typeName,methodName = ..string.match(typeName,"(.+)\.([^.]+)$"); 
+			
+		var arrlist = this.rawCreateArrayList({...}); 
+		var ok,result  = call(this.utility.getInvokeMember,this.utility, ..io.localpath(assemblyName) : assemblyName 
+				,typeName,methodName ,16 | 8 | 64 | 4096 | 1024 /*Public|Static|FlattenHierarchy|GetProperty|GetField*/
+				,arrlist,null); 
+		if( !ok ) return null,result;
+		
+		return this.wrapObject(result);
+	}; 
+	createInstance = function(assemblyName,typeName,...){
+		if( !assemblyName ) error("请指定程序集,参数@1",2); 
+		if(type(typeName)!=type.string )error("请指定类名称,参数@2",2);
+		assemblyName = ..io.localpath(assemblyName) : assemblyName;
+		
+		if( ... !== null || (type(assemblyName)!="string"))  {
+			var arrlist = this.rawCreateArrayList({...});
+			var ok,result  = call(this.utility.getInvokeMember,this.utility, assemblyName 
+					,typeName,"", 512 /*BindingFlags.CreateInstance*/
+					,arrlist,null); 
+					
+			if( !ok ) return null,result;
+			return this.wrapObject(result);
+		}
+		
+		var handle;
+		if(..io.exist(assemblyName)) handle = appDomain.CreateInstanceFrom(assemblyName,typeName);
+		else handle = appDomain.CreateInstance(assemblyName,typeName);
+		if(handle!==null) return this.wrapObject(handle.UnWrap());
+	};
+	createWebService = function(url,strNamespace,protocol,dllPath){
+		var compiler = this.createCompiler("C#");
+		if(dllPath){ 
+			compiler.Parameters.OutputAssembly  =  ..io.fullpath(dllPath)
+			compiler.Parameters.GenerateExecutable =  false;
+			compiler.Parameters.GenerateInMemory =  false;
+		}
+		
+		compiler.Parameters.CompilerOptions = "/optimize";
+		var assembly = compiler.CompileWebService(url,strNamespace,protocol : "Soap");
+		if(assembly) return wrapAssembly(assembly);
+		return assembly,compiler.getLastError();
+	}; 
+	createCompiler = function(lang){ 
+		
+		var providers = {
+			["C#"] = "Microsoft.CSharp.CSharpCodeProvider";
+			["VB"] = "Microsoft.VisualBasic.VBCodeProvider";
+		}
+		var providerType = providers[lang];
+		if( ! providerType ) error("请正确指定编译器语言",2)
+		
+		var compiler = this.utility.CreateCompiler(providerType); 
+		if( compiler ){
+			compiler[["_Reference"]] = compiler.getReference;
+			compiler[["Reference"]] = function(path,...){
+				if(path=="System"){
+					path = "System.dll"; //默认已引用，避免冲突
+				}
+				
+				path = ..io.localpath(path) : path; 
+				var a = ::Kernel32.GetFileAttributes(path);
+				if( (a!=-1) && ( a & 0x10/*_FILE_ATTRIBUTE_DIRECTORY*/) ){
+					return owner._Reference( ..io.joinpath(path,...) );
+				}
+				
+				if(!(..string.endWith(path,".dll",true) || ..io.exist(path) ) ){
+					var location;
+					var asms = appDomain.GetAssemblies();
+					for(i,asm in asms){
+						var name = ..string.match(asm.FullName,"^[^\s\,]+") 
+						if( name  == path ){
+							location = asm.Location;	
+						}
+					}
+					
+					if(!location){
+						var asm = this.load(path);
+						if(asm) location = asm.Location;
+					}
+					
+					if(location){
+						path = location;
+					} 
+				}
+				
+				var ret = owner._Reference( ..io.localpath(path) : path )
+				if(!...) return ret;
+				
+				return owner.Reference(...);
+			} 
+			compiler[["_Compile"]] = compiler.getCompile;
+			compiler[["Compile"]] = function(dllPath,throwOnFailure){  
+				
+				if(dllPath){
+					compiler.Parameters.OutputAssembly  =  ..io.fullpath(dllPath)
+					compiler.Parameters.GenerateExecutable =  !..string.endWith(dllPath,".dll",true);
+					compiler.Parameters.GenerateInMemory =  false;	
+				}
+				elseif(!compiler.Parameters.GenerateInMemory) {
+					if(compiler.Parameters.OutputAssembly){
+						compiler.Parameters.OutputAssembly = ..io.fullpath(compiler.Parameters.OutputAssembly)
+					}
+				}
+				
+				var code = compiler.Source;  
+				if( type.isString(code) &&  ..string.find(code,'^<\xEF\xBB\xBF>?\\s*<\\?\\>>|<\\<\\?>') ){
+				
+					compiler.Source = ..string.loadcode(code);
+				}
+				
+				return wrapAssembly( owner._Compile() ); 
+			} 
+			
+			compiler[["CompileOrFail"]] = function(dllPath){
+				var asm = owner.Compile(dllPath);
+				if(!asm) error(compiler.getLastError(),2);
+				return asm;
+			}
+		 
+			compiler[["import"]] = function(path){
+				var asm = owner.Compile(dllPath);
+				if(!asm) error(compiler.getLastError(),2);
+				return asm.import(path);
+			}
+			
+			compiler[["addSource"]] = function(path,rep){
+				var code = path;
+				if(#path < 0x410/*_MAX_PATH_U8*/ && (..io.exist(path)||..io.localpath(path))){
+					code = ..string.load(path);
+				}
+				
+				if(!code) error("参数错误!",2);
+			 
+				if( ..string.find(code,'^<\xEF\xBB\xBF>?\\s*<\\?\\>>|<\\<\\?>') ){
+					code = ..string.loadcode(code); 
+				}
+				
+				var src = compiler.Source;
+				if(rep || !#src)  src = { code };
+				elseif(type(src)=="table") ..table.push(src,code);	 
+				else src = { src,code }; 
+				
+				compiler.Source = src;
+			}
+			
+		}
+		return compiler;
+	};
+	wrapEnumType = function(enumType){
+		return {
+			enumType = enumType;
+			@{
+				_get = function(name){
+					if(type.isString(name)){
+						owner[[name]] = this.utility.getInvokeEnumValue(owner.enumType,name);
+						return owner[[name]];
+					}
+				}; 
+			}
+		}	
+	};
+
+	delegate = { 
+		create = function(obj,name,func){ 
+			return this.DispatchableDelegate.CreateDelegateByMemberName(obj,name,func);
+		};
+		combine = function(a,b,c){
+			if(type(b)=="string"){ 
+				if(!(a&&c)) return;
+				return this.DispatchableDelegate.CombineDelegateByMemberName(a,b,c); 
+			}
+			else if(!(a && b)) return a || b;
+			
+			return this.DispatchableDelegate.CombineDelegates(a,b);
+		};
+		remove = function(a,b,c){ 
+			if(type(b)=="string"){
+				if(!(a&&c)) return;
+				return this.DispatchableDelegate.RemoveDelegateByMemberName(a,b,c);
+			}
+			
+			if(a&&b)return this.DispatchableDelegate.RemoveDelegate(a,b);
+		};
+		list = function(v){
+			return v.GetInvocationList();
+		};
+	};
+	safeCallback = function(cb){
+		return function(...){
+			var args,t = {...}
+			for(i,a in args){
+				t = IsNetObject(a);
+				if(t) args[i] =  { _dotNetObject = a; _dotNetAppDomain = this;@_objectMeta; }  
+			}
+			
+			return invoke(cb,owner,..table.unpackArgs(args));
+		} 	
+	};
+	each = function(obj){
+		var n = obj[["_dotNetObject"]] : obj;
+		if(!..com.IsObject(n)){
+			return ..table.eachIndex(obj);
+		}
+		
+		var next = ..com.each( obj[["_dotNetObject"]] : obj);
+		var is = ..com.IsNetObject;
+		return function(){
+			var i,v = next();
+			if(is(v)) v = this.wrapObject(v); 
+			return i,v;
+		} 
+	};
+	unload = function(){
+		if(appDomain){
+			if(self.$singletonAppDomain ===  this){
+				return;
+			}
+			
+			__appDomainCache[domainName] = null;
+			
+			var pAppDomain = ..com.GetPointer(appDomain);
+			var hr = clr.corRuntimeHost.UnloadDomain(pAppDomain)
+			..com.Release(pAppDomain)
+			
+			appDomain = null;
+			this.appDomainReal = null;
+			
+			if(  (hr)>=0/*_SUCCEEDED*/ ) return true;
+			return null,..lasterr(hr);
+		}
+	};
+	@_meta;
+}
+
+namespace appDomain{
+
+	__appDomainCache = {} 
+	__equals = lambda(v) unwrapObject(owner) == unwrapObject(v);
+	
+	_meta = {
+		_toComObject = lambda() owner[["_dotNetObject"]];
+		_topointer = lambda() owner[["_dotNetObject"]];
+		_tostring = lambda() owner[["_dotNetObject"]].ToString();
+		_eq = __equals;
+	}
+	
+	var __reserved_keys__ = {_struct=1;Item=1;setItem=1;getItem=1}
+	_objectMeta = {
+		
+		_get = function(k,ownerCall){
+			var object = owner[["_dotNetObject"]];
+			var appDomain = owner._dotNetAppDomain;
+			
+			if(type(k)==="number"){
+				return appDomain.wrapObject( appDomain.getItem(object,k-1) );
+		 	}
+		 	
+		 	if(__reserved_keys__[k]){
+		 		if(k=="Item") {
+					owner[["Item"]] = { _dotNetObject = object; _dotNetAppDomain = owner._dotNetAppDomain;@_objectItemMeta; }
+					return owner[["Item"]];
+				}
+				elseif(k=="getItem") {
+					owner[["getItem"]] = lambda(k,...) appDomain.wrapObject( appDomain.getItem(object,k,...) );  
+					return owner[["getItem"]];
+				}
+				elseif(k=="setItem") {
+					owner[["setItem"]] = function(k,...){ appDomain.setItem(object,k,...) } 
+					return owner[["setItem"]];
+				}	
+				elseif(k=="_struct") return;		
+		 	}
+		 	
+			if(ownerCall){
+				return function(...){
+					var obj,err = appDomain.invokeInstanceMember(object,k,...);
+					if( (obj==null) && err ) error(err,2) 
+					return obj; 
+				}
+			}
+			
+			return appDomain.wrapObject( appDomain.getInstanceMember(object,k) );
+		};
+		_set = function(k,v){
+			var app = owner._dotNetAppDomain;
+			 
+			if(type(k)==="number"){
+				return app.setItem(owner[["_dotNetObject"]],k-1,v);
+		 	} 
+			
+			var ok,err = app.setInstanceMember(owner[["_dotNetObject"]],k,v);
+			if(!ok) error(err,2);
+		};
+		_toComObject = lambda() owner[["_dotNetObject"]];
+		_topointer = lambda() owner[["_dotNetObject"]];
+		_eq = __equals;
+		_json = function(pretty){
+			if(jsonStringify){return jsonStringify(owner,pretty),true}
+			return owner; 
+		};
+		_tostring = function(){
+			return owner.ToString();
+		};
+		_tonumber = function(){
+			return tonumber(owner.ToString());
+		};
+		_call = function(...){
+			return owner.Invoke(...);
+		};
+	} 
+	
+	_objectItemMeta = {
+		_get = function(k,ownerCall){
+		 	if(k=="_struct") return;
+			var appDomain = owner._dotNetAppDomain;
+			return appDomain.wrapObject( appDomain.getItem(owner[["_dotNetObject"]],k) );
+		};
+		_set = function(k,v){
+			var ok,err = owner._dotNetAppDomain.setItem(owner[["_dotNetObject"]],k,v);
+			if(!ok) error(err,2);
+		};
+		_toComObject = lambda() owner[["_dotNetObject"]];
+		_topointer = function(){
+			return owner[["_dotNetObject"]];
+		};
+		_eq = __equals;
+		_json = function(pretty){
+			if(jsonStringify){return jsonStringify(owner,pretty),true}
+			return owner; 
+		};
+		_tostring = function(...){
+			return owner._dotNetAppDomain.invokeInstanceMember(owner[["_dotNetObject"]],"ToString",...);
+		};
+		_call = function(...){
+			var appDomain = owner._dotNetAppDomain;
+			return appDomain.wrapObject( appDomain.getItem(owner[["_dotNetObject"]],...) );
+		};
+	} 
+
+	unwrapObject = function(obj){
+		return obj[["_dotNetObject"]] ||obj;
+	}
+	
+	..subscribe("beforeUnload",function(){
+		self.$singletonAppDomain = null;
+		for(k,appDomain in __appDomainCache){
+			appDomain.unload(); 
+		}	
+	} );
+ 	
+ 	var reopenConsole = function(){
+ 
+ 		for(k,appDomain in __appDomainCache){
+			appDomain.utility.ReopenConsole(!!..io.utf8); 
+		}
+ 	}
+ 	if(::Kernel32.GetConsoleWindow()) reopenConsole();
+ 	..subscribe("afterConsoleOpen",reopenConsole);
+}
+
+/**intellisense()
+dotNet.appDomain( = 创建应用程序域,\n注意应当通过导入 dotNet 库自动导入 dotNet.appDomain
+dotNet.appDomain(.() = 不指定参数为当前线程创建唯一的应用程序域实例,\n该实例可能被其他代码使用,主动调用 unload 函数会被忽略,\n线程结束前会自动释放此实例。\n\n成功返回应用程序域,失败返回 null,错误信息,\n失败一般是因为系统没有安装 .Net 运行时。\n除了XP系统，WIN7 以及 WIN7 以上系统已自带 .Net 运行时,\n所以不检测返回值也行。\n\n注意应当通过导入 dotNet 库自动导入 dotNet.appDomain
+dotNet.appDomain(.(clr,domainName) = 参数 @clr 指定 dotNet.clr 对象，\n可选用 @domainName 指定应用程序域名称，\n指定参数时应改用 dotNet.clr 对象的 createAppDomain 函数\n\n无参数调用 dotNet.appDomain 总是返回默认单例应用程序域，\n引入 dotNet 库也会自动创建默认应用程序域 
+dotNet.appDomain() = !dotNetAppDomain.
+end intellisense**/
+
+/**intellisense(!dotNetAppDomain)
+id = 应用程序域 ID\
+clr = .Net 运行时\n!dotNetClr
+appDomainReal = AppDomain 托管对象
+interop = Aardio.InteropServices.dll 程序集\n!dotNetCrlAssembly.
+utility = Aardio.InteropServices.Utility 对象
+invokeMember(.(程序集,"类名","方法名",BindingFlags,目标对象,其他调用参数) = 调用类方法,目标对象可省略,\n失败返回空值,以及错误信息
+invokeStaticMember(.(程序集,"类型名->方法名",其他调用参数) = 参数一可以是程序集对象,名称或路径都可以,\n调用类的静态方法,支持传入多个调用参数并返回值。	\n失败返回空值,以及错误信息		
+getStaticMember(.(程序集,"类型名->字段名") = 参数一可以是程序集对象,名称或路径都可以,\n获取静态字段、属性值、枚举值等。
+createInstance(.(程序集,"类名",其他调用参数) = 参数一可以是程序集对象,名称或路径都可以,\n调用类的构造函数,支持传入多个调用参数并返回创建的对象。	\n失败返回空值,以及错误信息		
+invokeInstanceMember(.(目标对象,"方法名",其他调用参数) = 调用类的成员方法,支持传入多个调用参数并返回值	\n失败返回空值,以及错误信息	
+getInstanceMember(.(目标对象,"字段名") = 获取对象字段或属性\n失败返回空值,以及错误信息	
+setInstanceMember(.(目标对象,"字段名",值) = 设置对象实例的字段或属性\n成功返回 true ,失败返回空值,以及错误信息
+load( = 使用当前线程默认应用程序域载入程序集,\n也就是 .Net 创建的 DLL 文件,\n程序集如果引用了自身路径必须使用 load 函数加载,\n用 loadFile 函数加载会失败\n\n在同一应用程序域如果已使用此函数导入同名程序集,\n则直接返回该程序集
+load(.("程序集名") = 载入程序集,也就是 .Net 创建的 DLL 文件,\n参数可以是程序集名称或路径。\n\n此函数会按以下顺序调用下列函数尝试加载程序集：\nAssembly.LoadWithPartialName,Assembly.Load,Assembly.LoadFrom,Assembly.LoadFile
+load(.("程序集名",程序集二进制数据) = 用于内存加载程序集，\n会自动调用 reference 函数绑定程序集名称与内存程序集，\n然后再调用 load 函数按正常式式加载程序集。\n更推荐用 load 函数加载内存程序集，loadFile 只是加载并未绑定程序集名，\n可能导致其他试图加载该程序集的 .Net 代码找不到程序集
+loadFile( = 使用当前线程默认应用程序域载入程序集,\n也就是 .Net 创建的 DLL 文件,\n参数可以是路径,或内存资源,\n程序集如果引用了自身路径必须使用 load 函数加载\n\n注意 load 函数也可以在第 @2 个参数中绑定内存程序集\n更推荐用 load 函数加载内存程序集，loadFile 只是加载并未绑定程序集名，\n可能导致其他试图加载该程序集的 .Net 代码找不到程序集
+loadFile(.("程序集路径") = 载入程序集,\n参数可以是路径,或内存资源。\n\n在路径字符串前加$符号可将文件编译并嵌入 aardio 代码,\n可选在第2个参数中指定pdb调试数据或pdb调试文件路径。
+import( = 加载参数@1指定名字的程序集\n将 参数@1指定的名字空间或类导入 aardio 全局名字空间。\n在当前应用程序域 import,load 等函数不会导入重复的程序集，\n在同一程序集中不会重复导入名字空间。\n\n如果程序集用其他函数加载，则有可能重复导入名字空间,\n重复导入 .Net 名字空间不会修改已存在的全局名字空间，\n但此函数总是会返回当前调用实际创建的名字空间
+import(.(名字空间) = 加载参数@1指定名字的程序集\n将 参数@1指定的名字空间或类导入 aardio 全局名字空间。\n必须指定完整名字空间,不传入参数则默认指定参数为程序集名称。\n\n返回名字空间可作为类构造函数调用并创建对象\n也可以用成员操作符返回静态成员，或调用静态函数。\n\n重复导入 .Net 名字空间不会修改已存在的全局名字空间，\n但此函数总是会返回当前调用实际创建的名字空间
+import(.(名字空间,程序集名) = 加载参数@2指定名字的程序集\n将 参数@1指定的名字空间或类导入 aardio 全局名字空间。\n必须指定完整名字空间,不传入参数则默认指定参数为程序集名称。\n\n返回名字空间可作为类构造函数调用并创建对象\n也可以用成员操作符返回静态成员，或调用静态函数。\n\n重复导入 .Net 名字空间不会修改已存在的全局名字空间，\n但此函数总是会返回当前调用实际创建的名字空间
+import() = !dotNetNameSpace.
+load() = !dotNetCrlAssembly.
+loadFile() = !dotNetCrlAssembly.
+loadAppData( = 可用于嵌入并自 %appData% 目录加载\n不支持通过 loadFile 函数内存加载的程序集
+loadAppData(.(path,data) = 用 @path 指定 %appData% 目录下的相对路径,\n将 @data 参数指定的内存程序集数据释放到该路径,\n并使用 load 函数加载此程序集,\n@data 参数应在路径前加$符号使文件数据嵌入到代码中
+loadAppData() = !dotNetCrlAssembly.
+unload() = 卸载应用程序域,一般不需要手动调用此函数,\n当前线程退出时会自动释放此线程创建的所有应用程序域,\n不带参数调用 dotNet.appDomain 创建的应用程序域不应手动调用此函数释放
+createWebService( = 创建 Web 服务程序集
+createWebService(.(服务网址,名字空间,协议名,DLL路径) = 创建 Web 服务程序集,可选在参数@2中指定一个自定义的名字空间\n协议名默认为"Soap",可选值"Soap12",\n如果使用参数@4指定输出DLL路径则在内存中编译程序集
+createWebService() = !dotNetCrlAssembly.
+createCompiler("C#") = 创建C#编译器
+createCompiler("VB") = 创建VB编译器
+createCompiler() = !dotNetCompiler.
+createArray( = 创建 .Net 类型化数组。\n注意 .Net 数组应当用 Length 属性取数组长度而非用 #号取长度，\n简单值类型数组自动转换为 com.SafeArray 数组则可以用 # 取长度
+createArray(.(类型,长度->->->) = 参数 @1 请指定程序集的 import 函数或 dotNet.import 等导入的 .Net 类\n可指定多个长度参数以创建多维数组\n\n注意直接将 .Net 对象放入普通 aardio 数组在 .Net 中会识别为 System.Object 类型，\n.Net 通常要求数组类型完全匹配，所以最好是用这个函数创建类型匹配的数组\n\n普通数值数组建议改用 dotNet.double,dotNet.int 等函数创建
+createArrayList(.(初始化数组) = 创建 System.Collections.ArrayList 对象\n可传递到C#函数中,C#中应声明为 object 类型,然后强制转换为 ArrayList,\n可选参数一指定 table 数组用于初始化对象
+createArrayList() = !dotNetCrlArrayList.
+createNameValueList(.(names,values) = 创建 List<NameValue<K,V>> 列表对象,\n参数@name,@value 必须是长度相等的非空数组,\n返回 List 对象的每个元素都具有 Name,Value 属性，\n其值由 @names,@values 参数按数组索引顺序分配
+delegate = 用于操作 .Net 委托（Delegate）或事件（event），\n在 .Net 里函数要转换为委托对象才能作为回调函数传输，\n在 aardio 里对所有 .Net 对象的委托字段直接赋值总是覆盖而不是追加，\n对所有 .Net 事件赋值时总是追加而不是覆盖，\n!dotNetDelegate.
+reference( = 自定义程序集（Assembly）引用路径或内存数据
+reference(.(assemblySimpleName,pathOrData) = 自定义程序集（Assembly）引用路径或内存数据\n@assemblySimpleName 指定程序集名称，\n@pathOrData 指定程序集路径或内存数据，支持内嵌资源路径。\n@pathOrData 也可以是返回程序集路径或数据的回调函数
+reference(.(simpleName2pathOrData) = 自定义程序集（Assembly）引用路径或内存数据\n@simpleName2pathOrData 指定一个表以磄，表中的键为程序集名称，\n表中键对应的值指定程序集路径或内存数据，支持内嵌资源路径,\n值也可以指定返回程序集路径的回调函数
+wrapObject(__) = 如参数是原生 .Net 对象,则返回 dotNet.object 对象，否则直接返回参数。\n\n所有 .Net 原生对象已经自动转换为 dotNet.object 对象，\n除非 .Net 调用普通 aardio 对象的成员函数而非回调特定的委托或事件函数。\n这时候回调参数中的 .Net 对象需要用此函数转换，但数值和字符串不需要转换。\n\n参数传入 com.IsNetObject 函数会返回非 0 值即为原生 .Net 对象，\n非原生 .Net 对象转换为 dotNet.object 应当直接调用 dotNet.object 函数。
+object( = 转换参数指定的 aardio 值或数组为 dotNet.object 对象
+object(.(value,byRef) = 转换参数 @value 指的的 aardio 值或数组为 .Net 对象。\n参数 @byRef 为 true 则支持 .Net 的输出或引用参数\n\n参数如果是 .Net 原生对象,\n也就是传入 com.IsNetObject 会返回非 0 值,\n不应传入此函数,而应改用 dotNet.wrapObject 函数\n所有 .Net 返回的对象已经自动调用 dotNet.wrapObject 转换为 dotNet.object 对象
+byte( = 创建 .Net System.SByte 类型数值或数组
+byte(.(value,byRef) = 创建 .Net System.SByte 类型数值或数组，\n用于存储8位整数。\n\n参数 @value 可以为数值或数组，\n参数 @byRef 为 true 则支持 .Net 的输出或引用参数
+ubyte( = 创建 .Net System.Byte 类型数值或数组
+ubyte(.(value,byRef) = 创建 .Net System.Byte 类型数值或数组，\n用于存储8位无符号整数。\n\n参数 @value 可以为数值或数组，\n参数 @byRef 为 true 则支持 .Net 的输出或引用参数
+word( = 创建 .Net System.Int16 类型数值或数组
+word(.(value,byRef) = 创建 .Net System.Int16 类型数值或数组，\n用于存储16位整数。\n\n参数 @value 可以为数值或数组，\n参数 @byRef 为 true 则支持 .Net 的输出或引用参数
+uword( = 创建 .Net System.UInt16 类型数值或数组
+uword(.(value,byRef) = 创建 .Net System.UInt16 类型数值或数组，\n用于存储16位无符号整数。\n\n参数 @value 可以为数值或数组，\n参数 @byRef 为 true 则支持 .Net 的输出或引用参数
+int( = 创建 .Net System.Int32 类型数值或数组
+int(.(value,byRef) = 创建 .Net System.Int32 类型数值或数组，\n用于存储32位整数。\n\n参数 @value 可以为数值或数组，\n参数 @byRef 为 true 则支持 .Net 的输出或引用参数,\n\n注意普通数值传入 .Net 函数时，\n整数默认转为32位整数,小数默认按double类型处理
+uint( = 创建 .Net System.UInt32 类型数值或数组
+uint(.(value,byRef) = 创建 .Net System.UInt32 类型数值或数组，\n用于存储32位无符号整数。\n\n参数 @value 可以为数值或数组，\n参数 @byRef 为 true 则支持 .Net 的输出或引用参数
+long( = 创建 .Net System.Int64 类型数值或数组
+long(.(value,byRef) = 创建 .Net System.Int64 类型数值或数组，\n用于存储64位整数。\n\n参数 @value 可以为数值或数组，\n参数 @byRef 为 true 则支持 .Net 的输出或引用参数
+ulong( = 创建 .Net System.UInt64 类型数值或数组
+ulong(.(value,byRef) = 创建 .Net System.UInt64 类型数值或数组，\n用于存储64位无符号整数。\n\n参数 @value 可以为数值或数组，\n参数 @byRef 为 true 则支持 .Net 的输出或引用参数
+float( = 创建 .Net System.Single 类型数值或数组
+float(.(value,byRef) = 创建 .Net System.Single 类型数值或数组，\n用于存储32位浮点数。\n\n参数 @value 可以为数值或数组，\n参数 @byRef 为 true 则支持 .Net 的输出或引用参数
+double( = 创建 .Net System.Double 类型数值或数组
+double(.(value,byRef) = 创建 .Net System.Double 类型数值或数组，\n用于存储64位浮点数。\n\n参数 @value 可以为数值或数组，\n参数 @byRef 为 true 则支持 .Net 的输出或引用参数,\n\n注意普通数值传入 .Net 函数时，\n整数默认转为32位整数,小数默认按double类型处理
+each(netObj) = @for i,v in ??.each(__/*输入需要遍历的 .Net 对象或普通数组，\n返回值 i 为当前索引,v 为当前值，\n注意并非所有 .Net 类型都支持此接口*/) {
+	
+}
+end intellisense**/
+
+/**intellisense(!dotNetCrlArrayList) 
+Add(.(添加对象) = 添加成员到数组中
+Clear() = 添空数组
+ToArray() = 转换并返回数组
+ToList() = 转换并返回 List 对象
+end intellisense**/
+
+/****intellisense(!dotNetCompiler)
+Parameters = 编译参数
+Parameters.OutputAssembly  = 指定输出文件路径,\n参数需要调用io.fullpath()转换为绝对路径,\n需要设GenerateInMemory为false取消内存编译,\n调用setGenerateExecutable指定编译为DLL或者EXE
+Parameters.GenerateExecutable = 是否编译为EXE执行文件\n编译为DLL设为false
+Parameters.GenerateInMemory = 是否内存编译
+Parameters.CompilerOptions = @.CompilerOptions = "/optimize /unsafe"__/*编译参数，/optimize 为开启优化*/
+getProvider() = 编译器
+getLastError()  = 获取编译错误信息
+Reference( = 引用程序集，System.dll 已默认添加\n\n注意这函数不支持内存 DLL，\n也不支持用 dotNet.reference 添加的内存 DLL。
+Reference(.(assemblyPath,->->->) = 引用程序集,\n可指定任意多个程序集路径或名称参数,\n如果指定不含 dll 后缀名的程序集名，则加载程序集并转换为完整路径。
+Reference(.(assemblyDir,subPath->->->) = 引用程序集,\n参数@1指定目录,可指定一个或多个子路径,\n使用 io.joinpath 函数合并参数转换为完整路径,\n然后引用该程序集。
+Source = @.Source = /***\nusing System;\n\nnamespace CSharpLibrary  \n{\n	public class NetObject  \n	{\n		public NetObject()\n		{\n			__/*Source 属性可用字符串或字符串数组指定要编辑的代码。\n如果代码起始非空白空字等为 <? 或  ?> 则用启用 aardio 模板语法。\nCLR v2.0 / v4.0 可运行在 3.x,4.x 编译的 DLL，但编译器仅支持 CLR 相同版本语法。\n如果要添加文件，请改用 addSource 函数。*/\n		} \n	}\n} \n***/
+Compile( = 编译并返回程序集
+addSource( = 添加源码，使用此函数指定源码后 Source 属性将变为数组
+addSource(.(code,rep) = 参数 @code 可以指定代码或代码文件路径。\n可指定嵌入资源路径，源文件必须使用 UTF-8 编码。\n如果代码起始非空白空字等为 <? 或  ?> 则用启用 aardio 模板语法。\n参数 @rep 指定是否丢弃之前添加的代码
+Compile(.(outpath) = 编译并返回程序集,所有参数可选,\n如果参数 @outpath 指定了输出 dll 或 exe 文件路径，则输出为文件,\n遇到错误不会抛出异常，请调用 getLastError 函数获取错误信息
+Compile() = !dotNetCrlAssembly.
+CompileOrFail( = 编译并返回程序集
+CompileOrFail(.(outpath) = 编译并返回程序集,所有参数可选,\n如果参数 @outpath 指定了输出 dll 或 exe 文件路径，则输出为文件,\n遇到错误会抛出异常
+CompileOrFail() = !dotNetCrlAssembly.
+import( = 编译代码生成程序集，遇到错误会抛出异常。\n将 参数@1指定的名字空间或类导入 aardio 全局名字空间。\n在同一程序集中不会重复导入名字空间。\n\n如果程序集用不是用 load 函数加载，则有可能重复导入名字空间,\n重复导入 .Net 名字空间不会修改已存在的全局名字空间，\n但此函数总是会返回当前调用实际创建的名字空间
+import(.(netNamespace) = 编译代码生成程序集，遇到错误会抛出异常。\n将 参数@1指定的名字空间或类导入 aardio 全局名字空间。\n必须指定完整名字空间,不传入参数则默认指定参数为程序集名称。\n\n返回名字空间可作为类构造函数调用并创建对象\n也可以用成员操作符返回静态成员，或调用静态函数。\n\n重复导入 .Net 名字空间不会修改已存在的全局名字空间，\n但此函数总是会返回当前调用实际创建的名字空间
+import() = !dotNetNameSpace.
+end intellisense****/
+
+/**intellisense(!dotNetCrlAssembly)
+Location = 获取完整路径
+FullName = 获取程序集的全名
+import( = 将 .Net 类名或名字空间导入 aardio 全局名字空间。\n在当前应用程序域 import,load 等函数不会导入重复的程序集，\n在同一程序集中不会重复导入名字空间。\n\n如果程序集用其他函数加载，则有可能重复导入名字空间,\n重复导入 .Net 名字空间不会修改已存在的全局名字空间，\n但此函数总是会返回当前调用实际创建的名字空间
+import(.(netNamespace) = \n将参数@1 指定的 .Net 类名或名字空间导入 aardio 全局名字空间，\n必须指定完整名字空间,不传入参数则默认指定参数为程序集名称。\n\n返回名字空间可作为类构造函数调用并创建对象\n也可以用成员操作符返回静态成员，或调用静态函数。\n\n重复导入 .Net 名字空间不会修改已存在的全局名字空间，\n但此函数总是会返回当前调用实际创建的名字空间
+new(.("类名",->->-> ) = 创建对象实例,\n可添加不定个数构造参数\n失败返回空值,以及错误信息
+invokeStaticMember(.("类名->方法名",->->-> ) = 调用类的静态方法,\n可添加不定个数调用参数\n失败返回空值,以及错误信息
+getStaticMember(.("类名->字段名") = 获取字段或属性值、或枚举值
+end intellisense**/
+
+/**intellisense(!dotNetDelegate)
+combine( = 合并委托\n在 .Net 里函数要转换为委托对象才能作为回调函数传输
+combine(.(对象,委托成员名,委托对象) = 自参数@1指定的 .Net 对象中查询参数 @2指定的的属性或字段,\n如果该成员是一个 delegate 或 event 类型，则合并参数@2，@3指定的委托并更新该成员的值。\n原委托成员可为空值，但参数@1,@2 不可省略。\n\n参数 @3 可指定 .Net 委托对象、null 值或省略。\n如果参数 @3 是普通的 aardio 函数或表则转换为所需类型的 .Net 委托。\n此函数返回参数@3创建的委托对象,可用于 remove 函数.
+combine(.(委托对象1,委托对象2) = 返回合并的委托对象,允许省略所有参数，\n如果指定参数则至少有一个 .Net 委托对象，\n另一个参数可以是委托对象，也可指定普通 aardio 函数或表,\n如果是普通 aardio 表则回调 _call 元方法,\naardio 函数或表参数会自动转换为所需类型的 .Net 委托	
+remove( = 移除委托
+remove(.(对象,委托成员名,委托对象) = 自参数@1指定的 .Net 对象中查询参数 @2指定的的属性或字段,\n如果该成员是一个 delegate 或 event 类型，则移除参数@3指定的委托并更新该成员的值。\n原委托成员可为空值，但参数@1,@2 不可省略。\n\n参数 @3 必须指定 .Net 委托对象。\n成功返回 true，失败返回 false
+remove(.(委托对象1,委托对象2) = 自参数@1指定的委托中移除以参数@2指定的委托，\n所有参数必须是 .Net 委托对象,\n成功返回新的委托，\n失败或委托调用链没有变化返回 null,\n任何一个参数为 null 返回 null
+create( = 创建委托\n在 .Net 里函数要转换为委托对象才能作为回调函数传输
+create(.(对象,委托成员名,函数对象) = 自参数@1指定的 .Net 对象中查询参数 @2指定的的属性或字段,\n如果该成员是一个 delegate 或 event 类型，\n则将@3指定的函数转换为该类型的委托对象并返回
+list(__) = 返回参数 @1 指定委托对象的调用对象列表,\n相当于调用委托对象的 GetInvocationList 函数。
+end intellisense**/
+
+/**intellisense(!dotNetNameSpace)
+? = .Net 名字空间、类、结构体的成员，\n可访问成员名字空间、类、枚举、静态属性或字段，\n导入的类可用于构造 .Net 对象，传回 .Net 则自动转为该类的 Type 对象\n!dotNetNameSpace.
+end intellisense**/

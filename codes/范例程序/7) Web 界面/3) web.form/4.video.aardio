@@ -1,0 +1,83 @@
+//视频/全屏
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="WebView2(web.view) 播放视频并支持全屏";right=1008;bottom=616)
+winform.add()
+/*}}*/
+
+import web.form; 
+var wb = web.form.ie11( winform );
+
+//导出网页 JavaScript 可调用的 external 对象。
+wb.external = {
+	//浏览器仅仅是发出全屏指令,在这里用 aardio 控制全屏
+	fullscreen = lambda(fs) winform.fullscreen(fs) 
+}
+
+import wsock.tcp.asynHttpServer;
+var httpServer = wsock.tcp.asynHttpServer(); 
+httpServer.run( {
+	["/index.html"] = /**
+<html>
+<head>
+    <style type="text/css">
+        html,body { height: 100%; width: 100%; margin: 0;overflow: hidden; }
+    </style>
+    
+    <!-- 第一步：引入下面2个文件加载播放器 -->
+    <link href="https://lib.baomitu.com/video.js/7.15.0/video-js.min.css" rel="stylesheet">
+    <script src="https://lib.baomitu.com/video.js/7.15.0/video.min.js"></script>
+    
+    <!-- 高亮边框补丁 -->
+    <script src="https://unpkg.com/focus-visible@5.2.0/dist/focus-visible.min.js"></script>
+</head>
+<body>
+
+	<!-- 第二步：插入视频文件 -->
+    <video id="my-player" class="video-js" controls preload="auto" poster="https://vjs.zencdn.net/v/oceans.png"
+        style="width:100%;height:100%" data-setup='{}'>
+        <source src="http://download.aardio.com/demo/video.aardio" type=" video/mp4">
+        <track kind='captions' src="/sintel.vtt" label="English"  default >
+    </video>
+
+    <script>
+
+		//第三步：修改播放器选项,这一步可以省略
+        videojs("my-player", {
+            controlBar: {
+                fullscreenToggle: true
+            }
+        });
+
+        //第四步：响应网页全屏请求注意 MSFullscreenChange 大小写不能错
+		document.addEventListener("MSFullscreenChange", function () {
+   			external.fullscreen(!!document.msFullscreenElement)
+		}, false);  
+    </script>
+</body></html>
+**/;
+	["/sintel.vtt"] = /**
+WEBVTT
+
+0
+00:00:11.400 --> 00:00:14.800
+What brings you to the land of the gatekeepers?
+
+1
+00:00:18.000 --> 00:00:20.500
+I'm searching for someone.
+
+2
+00:00:36.850 --> 00:00:39.750
+A dangerous quest for a lone hunter.
+
+3
+00:00:40.950 --> 00:00:44.870
+I've been alone for as long as I can remember.
+**/;
+}); 
+
+wb.go( httpServer.getUrl("index.html") );
+
+winform.show(); 
+win.loopMessage();

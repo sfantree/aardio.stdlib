@@ -1,0 +1,16 @@
+
+// 窗口自定义类名
+import win.ui;
+win.registerClassEx("frmCustom",{
+    hIcon = _HAPPICON;
+    hIconSm = _HAPPICON;
+    hCursor = ::LoadCursor(null, topointer(0x7F00/*_IDC_ARROW*/) );
+    hbrBackground =  topointer(0xF/*_COLOR_3DFACE*/ + 1);
+} );
+
+/*DSG{{*/
+var winform = win.form(text="aardio form";className="frmCustom";right=759;bottom=469)
+/*}}*/
+
+winform.show()
+win.loopMessage();

@@ -1,0 +1,69 @@
+﻿//installer 安装程序
+import inet.downBox;
+import process;
+		
+namespace inet;
+
+class installer{
+	ctor( appName,url,parameters,savePath,winform,operation){
+		if(!savePath){
+			savePath = ..io.appData("aardio/inet/installer/");
+		}
+		
+		if(type(url)==type.table){
+			url = _WIN_64 ? url.x64 : url.x86;
+		}
+		
+		if(_WINXP && operation === null ){
+			operation = "open"
+		}
+		
+		var downBox = ..inet.downBox(winform : ..win.getActive(),"正在下载程序运行必需组件：" + appName,100) 
+		downBox.endProc = function(){ 
+			downBox.text = "安装本程序运行必需组件：" + appName;  
+			downBox.labInfo.text = "请允许 " + appName + " 安装程序以管理权限启动  ……"; 
+			downBox.labProgress.text = ""; 
+
+			downBox.progress.setProgressRange(0,100) 
+			
+			var prcs,err; 
+			if(..string.endWith(downBox.savePath,".msi",true)){
+				parameters = `/i "` + downBox.savePath + `" ` + (parameters : "/quiet /qn /passive /norestart") ; 
+				prcs,err = ..process.shell("msiexec.exe",parameters,operation:"runas",,,downBox[["hwnd"]]);
+			}
+			else {
+				prcs,err = ..process.shell(downBox.savePath,parameters,operation:"runas",,,downBox[["hwnd"]]);
+			} 
+			
+			if(prcs){ 
+				downBox.labInfo.text = "正在安装，请稍候数分钟 ……" 
+				downBox.labProgress.text = "如果安全软件阻止安装，请选择「允许全部操作」"; 
+				downBox.progress.startProgress();  
+	
+				prcs.waitOne();
+				prcs.free();
+				
+				::Kernel32.MoveFileEx(this.savePath,null,0x4/*_MOVEFILE_DELAY_UNTIL_REBOOT*/)
+			}
+			else {
+				downBox.labInfo.text = "启动安装时遇到错误" 
+				downBox.labProgress.text = ..string.replace(err:"","[\r\n]",""); 
+				downBox.progress.hide = false;
+				downBox.complete = false;
+			}
+		} 
+	
+		downBox.download(url,savePath);  
+		return downBox.complete ? downBox.savePath;
+	}; 
+}
+
+installer.asInvoker = function(appName,url,parameters,savePath,winform){
+	return ..inet.installer(appName,url,parameters,savePath,winform,"open");
+}
+
+/**intellisense()
+inet.installer( = 下载并启动安装程序\n通常启动安装程序加上 /? 参数可以查看该安装程序支持的参数
+inet.installer(.(appName,url,parameters,savePath,winform) = 下载并启动安装程序,以管理权限启动安装,\n@appName 参数下载窗口标题显示的应用程序名,\n@url 参数为下载地址,允许传入一个动态返回 url 的线程函数,\n@url 参数也可以传入一个表,使用x64,x86键值分别指定64位、32位系统下载网址，\n@parameters 参数为运行安装程序的参数,可选参数,\n@savePath 参数为存储路径,可选参数,\n@winform 用于指定父窗口,可选参数\n用户阻止安装程序以管理权限启动返回false,成功启动并关闭返回true\n返回true并不表明安装过程中没有出错
+inet.installer.asInvoker(.(appName,url,parameters,savePath,winform) = 下载并启动安装程序,以当前进程权限启动安装,\n@appName 参数下载窗口标题显示的应用程序名,\n@url 参数为下载地址,允许传入一个动态返回 url 的线程函数,\n@parameters 参数为运行安装程序的参数,可选参数,\n@savePath 参数为存储路径,可选参数,\n@winform 用于指定父窗口,可选参数\n用户阻止安装程序以管理权限启动返回false,成功启动并关闭返回true\n返回true并不表明安装过程中没有出错
+end intellisense**/

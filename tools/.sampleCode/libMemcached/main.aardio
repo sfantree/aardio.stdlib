@@ -1,0 +1,90 @@
+//RUNAS//
+import win.ui;
+import service;
+import process.popen;
+/*DSG{{*/
+mainForm = win.form(text="libMemcached演示";right=942;bottom=550)
+mainForm.add(
+btnAdd={cls="button";text="添加到数据库";left=693;top=436;right=864;bottom=467;z=14};
+btnGet={cls="button";text="查询数据";left=693;top=479;right=864;bottom=510;z=15};
+btnInstall={cls="button";text="安装服务";left=30;top=384;right=127;bottom=415;z=2};
+btnStart={cls="button";text="启动服务";left=414;top=386;right=511;bottom=417;z=4};
+btnStop={cls="button";text="停止服务";left=527;top=386;right=624;bottom=417;z=5};
+btnUninstal={cls="button";text="卸载服务";left=142;top=384;right=239;bottom=415;z=3};
+edit={cls="edit";left=14;top=34;right=920;bottom=378;db=1;dl=1;dr=1;dt=1;edge=1;multiline=1;z=1};
+editGetKey={cls="edit";text="测试键名";left=617;top=485;right=681;bottom=515;edge=1;z=16};
+editKey={cls="edit";text="测试键名";left=392;top=438;right=512;bottom=468;edge=1;z=10};
+editMem={cls="edit";text="64";left=320;top=390;right=360;bottom=413;align="right";edge=1;multiline=1;z=9};
+editValue={cls="edit";text="测试值";left=562;top=437;right=682;bottom=467;edge=1;z=11};
+spinMem={cls="spin";left=364;top=391;right=384;bottom=411;edge=1;z=8};
+static={cls="static";text="最大内存:";left=246;top=394;right=316;bottom=410;align="right";transparent=1;z=6};
+static2={cls="static";text="MB";left=389;top=392;right=418;bottom=409;transparent=1;z=7};
+static3={cls="static";text="键:";left=330;top=446;right=381;bottom=461;align="right";transparent=1;z=12};
+static4={cls="static";text="值：";left=521;top=444;right=555;bottom=460;align="right";transparent=1;z=13};
+static5={cls="static";text="键:";left=558;top=492;right=612;bottom=508;align="right";transparent=1;z=17}
+)
+/*}}*/
+
+import libMemcached;
+var mClient = libMemcached();
+mainForm.btnGet.oncommand = function(id,event){
+	var result,err = mClient.get(mainForm.editGetKey.text)
+	if(err) mainForm.edit.print(err);
+	else {
+		if( result )
+			mainForm.edit.print("查询结果：",result);
+		else {
+			mainForm.edit.print("没有找到数据");
+		}
+	}
+}
+
+mainForm.btnAdd.oncommand = function(id,event){
+	var result,err = mClient.set(mainForm.editKey.text,mainForm.editValue.text)
+	if(err) mainForm.edit.print(err);
+	else {
+		mainForm.edit.print("成功写入数据");
+	}
+	
+}
+
+
+mainForm.spinMem.buddy = mainForm.editMem;
+mainForm.spinMem.setRange(32,1024);
+::User32.SendMessage(mainForm.spinMem.hwnd,0x46B/*_UDM_SETACCEL*/,1,{INT sec = 0;INT inc = 64;} );
+
+mainForm.btnStop.oncommand = function(id,event){
+	var prcs  = process.popen("\memcached-win32\memcached.exe","-d stop")
+	var err  = prcs.readErr(-1);
+	mainForm.edit.print( #err ? err : "停止服务成功" )
+	prcs.close();
+	
+}
+
+mainForm.btnStart.oncommand = function(id,event){
+	var prcs  = process.popen("\memcached-win32\memcached.exe","-m" + mainForm.editMem.text +" -d start")
+	var err  = prcs.readErr(-1);
+	mainForm.edit.print( #err ? err : "启动服务成功" )
+	prcs.close();
+}
+
+
+mainForm.btnUninstal.oncommand = function(id,event){
+	service.stop("memcached")
+	var prcs  = process.popen("\memcached-win32\memcached.exe","-d uninstall")
+	var err  = prcs.readErr(-1);
+	mainForm.edit.print( #err ? err : "卸载服务成功" )
+	prcs.close(); 	
+	
+}
+
+mainForm.btnInstall.oncommand = function(id,event){
+	var prcs  = process.popen("\memcached-win32\memcached.exe","-d install")
+	var err  = prcs.readErr(-1);
+	mainForm.edit.print( #err ? err : "安装服务成功" )
+	prcs.close();
+	 
+}
+
+mainForm.show();
+return win.loopMessage(); 

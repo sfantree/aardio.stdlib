@@ -1,0 +1,85 @@
+﻿//qywx 企业微信
+
+import web.rest.jsonClient;
+
+namespace web.rest;
+
+class qywx{
+	ctor( ... ){
+		this = ..web.rest.jsonClient(...);
+		this.defaultUrlTemplate = "https://qyapi.weixin.qq.com/cgi-bin";
+	};
+	refreshAccessToken = function(){
+		var token = this.api().gettoken.get(
+			corpid=this.corpid;
+			corpsecret=this.corpsecret;
+		)
+		
+		this.accessToken = token[["access_token"]];
+		if(this.accessToken){
+			this.extraUrlParameters ={
+				access_token = this.accessToken;
+			}
+		}
+
+		return this.accessToken;	
+	}
+	setAuth = function(corpid,corpsecret){
+		if(!(corpid&&corpsecret)){
+			error("参数错误",2);
+		}
+		
+		this.corpid = corpid;
+		this.corpsecret = corpsecret;
+		this.refreshAccessToken();
+	};
+	checkResponseResult = function(result){
+		if(result[["errcode"]]==40014 || result[["errcode"]]==41001){
+			var lastRequestInfo = this.lastRequestInfo;
+			if(!this.refreshAccessToken()){
+				return result;
+			}
+			return this.requestEx(lastRequestInfo);
+		}
+		elseif(result[["errcode"]]!=0){
+			if( this.onError ){
+				this.onError(result[["errcode"]],result[["errmsg"]])
+			}
+		}
+		
+		return result;
+	}
+}
+
+/**intellisense()
+web.rest.qywx = 企业微信API客户端
+web.rest.qywx() = 创建企业微信API客户端\n!web_restClient.
+end intellisense**/
+
+/*
+var http = web.rest.qywx();
+http.setAuth("corpid","corpsecret");
+var wx = http.api();
+
+//注意企业微信API有些接口网址里有用到get名称,
+//这时候请写为["/get"]即可避免被 web.rest 识别为默认的HTTP方法名，
+var user = qywx.user["/get"].get(userid="*********")
+
+//
+var result = wx.externalcontact.groupchat.list({
+	status_filter=0;
+	limit=10;
+})
+
+//debug模式调用接口，同一个api每分钟不能超过5次
+var result = wx.externalcontact.groupchat.list({
+	status_filter=0;
+	limit=10;
+},{
+	debug = 1 //查询：https://open.work.weixin.qq.com/devtool/query
+})
+
+if(result[["errcode"]]!==0){
+	io.print(result[["errcode"]],result[["errmsg"]])
+}
+*/

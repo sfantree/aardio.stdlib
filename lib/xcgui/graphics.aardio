@@ -1,0 +1,19 @@
+﻿//graphics 画板对象
+import gdip.family;
+import gdip.graphics;
+namespace xcgui;
+
+class graphics{
+	ctor(  hDraw){
+		var hdc = topointer( ::Xcgui.XDraw_GetHDC(hDraw) );
+		if( hdc ){
+			return ..gdip.graphics(hdc);
+		}
+	};
+}
+
+/**intellisense()
+xcgui.graphics = 画板对象
+xcgui.graphics(hDraw) = 创建GDI+画板对象
+xcgui.graphics() = !gdipgraphics.
+end intellisense**/

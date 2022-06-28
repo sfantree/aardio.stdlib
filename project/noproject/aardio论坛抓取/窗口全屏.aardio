@@ -1,0 +1,13 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add(
+static={cls="static";text="按ESC退出全屏";left=224;top=160;right=536;bottom=265;center=1;color=255;font=LOGFONT(h=-48;name='宋体');transparent=1;z=1}
+)
+/*}}*/
+
+//窗口全屏
+winform.fullscreen();
+
+winform.show();
+win.loopMessage();

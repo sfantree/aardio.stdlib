@@ -1,0 +1,72 @@
+﻿//downBox 下载对话框
+import fsys.dlg;
+import inet.downBox;
+import fsys.mime;
+import inet.http;
+
+namespace web.blink;
+
+class downBox{
+	ctor( mb ){ 
+		this = mb; 
+	};
+	getDownloadFileName = function(url){ 	
+    	if(!url) return;
+    	
+    	var http = ..inet.http(this.script.navigator.userAgent);
+    	http.disableCache(); 
+    	http.disableCookies();
+    	var cookies = this.cookieData(url);
+    	http.addHeaders ={cookie = cookies };
+    	
+		url = http.location(url);
+		if( !http.head(url) ){
+			http.close();
+			return;
+		}
+		var c = http.readHeader("Content-Type");
+    	var r = http.readHeader("Accept-Ranges");
+    	var filename = http.readHeaderContent()[["disposition"]][["filename"]];
+    	http.close();
+    	
+    	if(!filename) return;
+    	if( ..string.cmp(r,"bytes") == 0 ) return filename;
+    	
+    	if(c){
+    		c = ..string.lower(c);
+    		if( c == "application/octet-stream" ) return filename;
+    		if( ..string.match(c,"^<text>|<image>/" ) ) return false;
+    		if( ..string.find(c,"<javascript>|<json>|<font>|<html>|<xml>" ) )return false;
+    		return filename;
+    	} 
+	};
+    onDownload = function(url){
+        this.fileDownloadUrl = null;
+        
+    	var c = ..fsys.mime.fromUrl(url);
+    	if( ..string.match(c,"^<text>|<image>/" ) ) return false;
+    	if( ..string.find(c,"<javascript>|<json>|<font>|<html>|<xml>" ) ) return false;
+    	  
+    	..win.setTimeout(
+    		function(){
+        		var filename = this.getDownloadFileName(url);
+        		if(!filename) return;
+        		
+        		var path = ..fsys.dlg.save(,"下载文件",,this._form,,filename);
+        		if(!path) return;
+        		
+    			var downBox = ..inet.downBox(this._form,"下载");
+    			downBox.userAgent = this.script.navigator.userAgent;
+    			downBox.cookies = this.cookieData(url);
+    			if( downBox.download(url,path) ) { downBox.removeResumeFile() }     			
+    		}
+    	)
+		return false;
+	}
+}
+
+/**intellisense()
+web.blink.downBox = 用于添加下载文件对话框
+web.blink.downBox(__) = 创建下载文件对话框，参数请指定web.blink.form对象
+web.blink.downBox() = !web_blink_view.
+end intellisense**/

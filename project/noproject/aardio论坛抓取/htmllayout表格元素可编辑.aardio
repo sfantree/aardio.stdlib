@@ -1,0 +1,98 @@
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form( bottom=399;parent=...;text="HTMLayout 列表框";right=599 )
+winform.add(  )
+/*}}*/
+
+import web.layout;
+var wbLayout = web.layout(winform)
+   
+wbLayout.html = /**
+<HTML>
+     <HEAD>
+     <STYLE>
+     body { font:10pt verdana; }
+     #report td
+{
+   context-menu: selector(menu#menuId); /*selector函数的参数是指定右键菜单的CSS选择器*/
+   border:1px solid threedlightshadow;
+   padding:4px;
+}
+   
+     #report
+     {
+       width:*;
+       height:*;
+     }
+     #report th
+     {
+       background-color: threedhighlight threedhighlight threedlightshadow threedlightshadow;
+       border:1px solid threedlightshadow;
+       padding:4px;
+     }
+     #report td
+     {
+       border:1px solid threedlightshadow;
+       padding:4px;
+     }
+     #report tr:nth-child(even) /* every even row */
+     {
+       background-color: mintcream;
+     }
+   
+     #report tr:current td /* current row */
+     {
+       background-color: highlight;
+       color: highlighttext;
+       behavior: edit;
+     }
+     </STYLE>
+     </HEAD>
+     <BODY>
+     
+     <widget type="select" id="report"  >
+         <table border=1 width=100%% cellspacing=-1px> <!-- cell border collapsing hack-->
+                 <tr><th>标题字段</th><th>段1</th><th>段2</th></tr>
+                 <tr role="option" value=1> <td>测试</td> <td> <INPUT type="checkbox" name="cb" />复选框 </td> </tr>
+                 <tr role="option" value=2> <td>测试</td> <td>测试1</td>  <td>测试2</td> </tr>
+                 <tr role="option" value=3> <td>测试</td> <td>测试1</td>  <td>测试2</td> </tr>         
+                 <tr role="option" value=4> <td>测试</td> <td>测试1</td>  <td>测试2</td> </tr>
+                 <tr role="option" value=5> <td>测试</td> <td>测试1</td>  <td>测试2</td> </tr>
+                 <tr role="option" value=6> <td>测试</td> <td>测试1</td>  <td>测试2</td> </tr>         
+         </table>
+     </widget>
+     
+     <menu.context id="menuId">
+              <li id="i1">菜单项</li>
+              <li id="i2">菜单项</li>
+              <hr/> <!-- 分隔线 -->
+              <li>子菜单
+                 <menu>
+                 <li id="i5">子菜单项</li>
+                 <li id="i6">子菜单项</li>
+                 </menu>  
+              </li>
+              
+</menu>
+      
+     </BODY>
+</HTML>
+
+**/
+
+//改变选项时触发此事件
+wbLayout.onSelectSelectionChanged = {
+     report = function (ltTarget,ltEle,reason,behaviorParams) {
+         winform.text =  ltTarget.value ;//ltTarget.value获取被选中行的值
+    }
+}
+
+
+//右键菜单触发下面的函数
+wbLayout.onMenuItemClick = function (ltTarget,ltEle,reason,behaviorParams) {
+     var elOption = wbLayout.queryEle("#report tr:current");
+      winform.msgbox("你点击了菜单 " + ltTarget.innerText + ' \n当前选中行:' + elOption.outerHTML )
+}
+
+winform.show()
+win.loopMessage();

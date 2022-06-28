@@ -1,0 +1,89 @@
+//入门
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="图表组件: Chart.js";right=1063;bottom=729)
+winform.add(
+button={cls="button";text="aardio 修改数据";left=832;top=683;right=990;bottom=723;db=1;dr=1;z=2};
+lbBrowser={cls="static";text="Static";left=15;top=8;right=1053;bottom=680;db=1;dl=1;dr=1;dt=1;transparent=1;z=1}
+)
+/*}}*/
+
+import web.form; 
+var wb = web.form.ie11(winform.lbBrowser);
+
+import web.json;
+wb.external = {
+	getData = function(){
+		var data = {{
+            label: '# of Votes',
+            data: {12, 19, 3, 5, 2, 3},
+            backgroundColor: {
+                'rgba(255, 99, 132, 0.2)',
+                'rgba(54, 162, 235, 0.2)',
+                'rgba(255, 206, 86, 0.2)',
+                'rgba(75, 192, 192, 0.2)',
+                'rgba(153, 102, 255, 0.2)',
+                'rgba(255, 159, 64, 0.2)'
+            },
+            borderColor: {
+                'rgba(255, 99, 132, 1)',
+                'rgba(54, 162, 235, 1)',
+                'rgba(255, 206, 86, 1)',
+                'rgba(75, 192, 192, 1)',
+                'rgba(153, 102, 255, 1)',
+                'rgba(255, 159, 64, 1)'
+            },
+            borderWidth: 1
+        }}
+		
+		return web.json.stringifyArray(data);
+	};
+} 
+
+winform.button.oncommand = function(id,event){ 
+	wb.script.chart.data.datasets[0].data[2] = 50;  
+	wb.script.chart.update(); 
+}
+
+/*
+实际开发建议下载 JS,CSS 到本地。
+中文文档请参考: https://chartjs.bootcss.com
+*/ 
+
+wb.html = /**
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" /> 
+	<script src="https://lib.baomitu.com/Chart.js/2.9.4/Chart.min.js"/></script>
+	<link rel="stylesheet" href="https://lib.baomitu.com/Chart.js/2.9.4/Chart.min.css"/>
+</head>
+<body>
+
+<canvas id="myChart" width="400" height="200"></canvas>
+<script>
+var ctx = document.getElementById('myChart');
+window.chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
+        datasets: JSON.parse( external.getData() )
+    },
+    options: {
+        scales: {
+            yAxes: [{
+                ticks: {
+                    beginAtZero: true
+                }
+            }]
+        }
+    }
+});
+</script>
+</body>
+</html>
+**/
+
+winform.show();
+return win.loopMessage();

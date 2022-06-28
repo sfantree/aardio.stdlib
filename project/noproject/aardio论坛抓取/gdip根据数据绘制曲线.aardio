@@ -1,0 +1,24 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio Form";right=572;bottom=515)
+winform.add(
+button={cls="button";text="绘制曲线";left=496;top=119;right=545;bottom=395;font=LOGFONT(h=-32);z=1}
+)
+/*}}*/
+
+import gdip.graphics;
+import gdip.pen;
+winform.button.oncommand = function(id,event){
+    //图形对象graphics（可以看作是画板）
+    var graphics = gdip.graphics(  winform )
+    var Pen= gdip.pen(0xFFFF0000,2);
+   
+    graphics.drawLine( Pen, 20, 500, 50, 450,)
+    graphics.drawLine( Pen, 50, 450, 100, 300)
+    graphics.drawLine( Pen, 100, 300, 200, 350)
+    graphics.drawLine( Pen, 200,350, 260, 200)
+    graphics.drawLine( Pen, 260, 200, 450, 160)  
+}
+
+winform.show(true)
+win.loopMessage();

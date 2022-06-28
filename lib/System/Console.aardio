@@ -1,0 +1,7 @@
+﻿//Console 控制台
+import dotNet;
+dotNet.import("System.Console","System") 
+
+/**intellisense()
+System.Console = .Net System.Console 名字空间\n!dotNetNameSpace.
+end intellisense**/

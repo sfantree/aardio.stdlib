@@ -1,0 +1,37 @@
+﻿//v8ora 运行时
+import java;
+import inet.installer;
+
+namespace java.jre.v8ora;
+
+path = ..java.path.jreHomeFromRegistry(false,"1.8") 
+if(!path) path = ..java.path.jreHomeFromRegistry(true,"1.8") 
+if(!path) path = ..java.path.jreHomeFromProgramFiles("1.8",false);
+if(!path) path = ..java.path.jreHomeFromProgramFiles("1.8",true); 
+if(!path){
+	path = ..java.path.jdkHomeFromRegistry(false);
+	if( path ){ 
+		if(..io.exist(..io.joinpath(path,,"/jre/"))){
+			path = ..io.joinpath(path,,"/jre/");
+		} 
+	}	
+}
+
+if(..io.exist(path)){
+	if(! (..java.path.findJre(path) && ..java.path.findJvm(path)) ){
+		path = null;
+	}
+}
+
+if(!..io.exist(path)){
+	var ok = ..inet.installer("JRE 8","https://javadl.oracle.com/webapps/download/AutoDL?BundleId=245477_4d5417147a92418ea8b615e228bb6935","/s")
+	path = ..java.path.jreHomeFromRegistry(false,"1.8");
+	if( !path ) return; 
+}
+
+..java.path.setJreHome(path);
+
+/**intellisense()
+java.jre.v8ora = 检测并在必要时自动下载 Oracle JDK 8u311,\n导入此库后，发布不用带 JDK
+java.jre.v8ora.path = 如果成功下载并设为 JDK 根目录,\n此属性为 JDK 根目录路径,\n否则此属性值为 null
+end intellisense**/

@@ -1,0 +1,106 @@
+﻿import fsys;
+import fsys.version;
+import fsys.wow64;
+import string.cmdline;
+import process.popen;
+
+namespace process;
+
+class mpCmdRun{
+	ctor(...){ 
+		return ..fsys.wow64.disableRedirection(
+			function(...){
+				var prcs = ..process.popen(path()
+					,..string.cmdline.arguments(...),{workDir=..io.splitpath(path()).dir}); 
+				if(prcs){
+					prcs.codepage = 65001;
+					prcs.writeClose();
+					prcs.logResponse(logger);
+					prcs.waitOne();
+					
+					var ret = prcs.getExitCode();
+					prcs.close();
+					return ret; 	
+				}		        
+			},...
+		)
+	}; 
+}
+
+namespace mpCmdRun{
+	
+    get = function(...){
+    	var prcs = ..process.popen(path()
+				,..string.cmdline.arguments(...),{workDir=..io.splitpath(path()).dir}); 
+		if(prcs){ 
+			prcs.codepage = 65001;
+			prcs.writeClose();
+			var out = prcs.read(-1);
+			var err = prcs.readErr(-1);
+			prcs.close();
+			
+			return out,err;
+		}	
+    }
+   
+	updateDefinitions = function(){
+		..process.mpCmdRun("-removedefinitions -dynamicsignatures");
+		..process.mpCmdRun("-SignatureUpdate"); 
+	}
+	
+	getDiagnosticFile = function(path){
+		if(path){
+			path = ..io.fullpath(path);
+			if(0 == ..process.mpCmdRun("-GetFiles","-SupportLogLocation",path)){
+				return path;
+			}
+		}
+		else {
+			if( 0 == ..process.mpCmdRun("-GetFiles") ){
+				return ..io.getSpecial( 0x23/*_CSIDL_COMMON_APPDATA*/,"\Microsoft\Windows Defender\Support\MpSupportFiles.cab" );
+			} 
+		} 
+	}
+	
+	path = function(){
+ 		var updatedDir = ..io.getSpecial(0x23/*_CSIDL_COMMON_APPDATA*/,"Microsoft\Windows Defender\Platform");
+ 		if( ..fsys.isDir(updatedDir)){
+			var files,dirs = ..fsys.list(updatedDir)
+			
+			if(#dirs){
+				var latest;
+				for(i=1;#dirs;1){
+					var name = dirs[i];
+					if(!latest) latest = name;
+					elseif( ..fsys.version(name) > ..fsys.version(latest)) {
+						latest = name; 
+					}  
+				}
+				
+				if(latest){
+					return ..io.joinpath(dirs[latest],"MpCmdRun.exe");
+				}
+			}	
+ 		}
+ 		
+ 		return programFiles("Windows Defender\MpCmdRun.exe");
+	}
+	
+	programFiles = function(...){
+		var path = {WORD v[260]}
+		if( ::Kernel32.ExpandEnvironmentStringsW("%ProgramW6432%",path,260) ){
+			if(path.v!="%ProgramW6432%") return ..io.joinpath(path.v,...)
+		}
+		
+		return ..io.getSpecial(0x26/*_CSIDL_PROGRAM_FILES*/,...)	
+	}
+}
+
+/**intellisense()
+process.mpCmdRun = 调用 C:\Program Files\Windows Defender\MpCmdRun.exe,\n执行成功返回 0，进程需要管理权限
+process.mpCmdRun(->->->) = 可指定一个或多个命令行参数，成功返回0，\n由 string.cmdline.arguments 函数转换为执行参数,\n规则见该函数说明
+process.mpCmdRun.get(->->->) = 可指定一个或多个命令行参数，返回标准输出,错误输出，\n由 string.cmdline.arguments 函数转换为执行参数,\n规则见该函数说明
+process.mpCmdRun.updateDefinitions() = 更新 Windows Defender 缓存与病毒定义
+process.mpCmdRun.logger = 指定 process.popen 对象支持的回显对象或回显函数,\n用法请参考库源码\n\n如果不指定此属性,且已导入 console 则默认输出到控制台
+process.mpCmdRun.getDiagnosticFile() = 获取日志文件,可选用参数@1指定日志文件路径,\n成功则返回获取的日志文件路径\n\n如果已检测通过的文件仍然出现误报,\n可调用此函数获取日志再次提交到 Defender 官网检测\n为尽量仅收集与问题有关的数据，建议在干净的电脑或虚拟机上执行此操作。\n\n运行此函数需要管理权限
+end intellisense**/

@@ -1,0 +1,71 @@
+ //SeleniumBasic
+import console;
+console.showLoading(" 正在启动 SeleniumBasic ");
+ 
+/*
+在 aardio 里用 chrome.driver 更简单一些。aardio 实际不需要任何第三方组件即可调用 ChromeDriver，
+这是因为 aardio 可以自动将任意 Web 接口转换为 aardio 对象，所以实现 WebDriver 协议只需要极少的代码。
+
+dotNet.seleniumBasic 基于开源的 SeleniumBasic，但增加了以下功能：
+1、自动检测并配置运行环境，如果没有 .Net 4.x 则自动安装，如果没有 Chrome 则自动安装。
+自动匹配 Chrome 版本下载对应版本的 ChromeDriver ，自动配置所有路径参数。
+2、自动兼容系统安装的 Chrome 或 Edge Chromium，自动选择 ChromeDriver 或 EdgeDriver
+3、基于强大的 dotNet.reference() 内存加载所有 DLL ，可以生成绿色独立的 EXE 文件。 不再需要注册 COM 控件。
+*/
+import dotNet.seleniumBasic;
+
+//此扩展库自动创建全局名字空间 SeleniumBasic（指向 dotNet.seleniumBasic ）
+var wd = SeleniumBasic.CreateDefaultWebDriver();
+if(!wd) error("初始化或配置环境失败",2) 
+
+//通过 COM 调用是忽略大小写的，但通过 .Net 调用不能忽略大小写，Url 不能写为 URL。
+wd.Url = "https://www.baidu.com"
+
+//创建等待工具，作用类似 aardio 中的 win.wait() 。
+var waiter = wd.CreateWaiter(5);
+
+//等待并返回 id 为 form 的节点，作用类似 aardio 中其他浏览器组件提供的 waitEle 函数。
+var form = waiter.Until("id","form")
+
+//查找输入框
+var keyword = form.FindElementById("kw")
+
+//清空输入框，aardio 不能像 VB 那样省略函数调用后的括号
+keyword.Clear();
+    
+keyword.SendKeys("aardio");
+
+var button = form.FindElementById("su");
+button.Click();
+ 
+//获取 cookie
+var cookies = wd.Manage().Cookies.AllCookies()
+
+//用 dotNet 遍历 .Net 数组
+for i,cookie in dotNet.each(cookies) {
+	console.log(cookie.Name)
+	console.log(cookie.Value)
+	console.log(cookie.Domain)
+}
+    
+//截图
+wd.GetScreenshot().SaveAsFile(io.fullpath("/baidu.png"), 0);
+//上面第2个参数 0 ,也可以用枚举 SeleniumBasic.Utility.ScreenshotImageFormat.Png 获取
+
+console.close();
+console.log(wd.Title, wd.Url);
+console.log(wd.PageSource);
+console.pause(,"按任意键退出浏览器");
+
+//退出浏览器
+wd.Quit();
+
+/*
+更多用法可参考 
+https://www.cnblogs.com/ryueifu-VBA/p/13694765.html
+
+也可以运行下面的代码查看 SeleniumBasic.dll 的源代码
+
+import dotNet.ilSpy;
+dotNet.ilSpy("~\lib\dotNet\seleniumBasic\.res\SeleniumBasic.dll");
+*/

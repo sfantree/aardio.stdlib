@@ -1,0 +1,6 @@
+﻿import dotNet;
+dotNet.import("System.Windows","System")
+
+/**intellisense()
+System.Windows = .Net System.Windows 名字空间\n!dotNetNameSpace.
+end intellisense**/

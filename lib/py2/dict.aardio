@@ -1,0 +1,158 @@
+//dict 字典
+import util.metaProperty;
+namespace py2;
+	
+class dict {
+
+	ctor( object ){ 
+	
+		var tt = type(object) 
+		select(tt) {
+			case type.pointer{
+				this.pyObject = object;
+			}
+			case type.null{
+				this.pyObject = PyDict_New();
+			}
+			else {
+				if(object[["pyObject"]] ){
+					if( object.checkDict() ){
+						this[["pyObject"]] = object[["pyObject"]];
+						..py2.IncRef(this.pyObject);
+					}
+					else {
+						var dict =  ..py2.builtin.dict(object);
+						if(dict.checkDict()){
+							this[["pyObject"]] = dict.stealPtr()
+						}
+						else {
+							return null;
+						}
+					}
+				}
+				else{
+					if(tt===type.table && !object@){
+						this.pyObject = PyDict_New();
+						this@ = _metaProperty; 
+						
+						for k,v in ..table.eachName(object) this.setItem(k,v);
+						..table.add_gc(this,"release");
+						return this;
+					}
+					else {
+						error("py2.dict 构造参数不支持此数据类型:" + tt ,2);
+					}   
+				}
+			} 
+		}
+		
+		this@ = _metaProperty; 
+		..table.add_gc(this,"release");
+	}
+}
+
+namespace dict {
+
+	_metaProperty = ..util.metaProperty(   
+	
+		_topointer = function(){
+			if(!owner.pyObject) error("Python Dict已销毁",2);
+			return owner.pyObject;
+		};   
+		getItem = function(k){
+			return owner[k]
+		}; 
+		setItem = function(k,v){
+			owner[k] = v;
+		}; 
+		__get = function(k,ownerCall){ 
+			var item = PyDict_GetItemString(owner.pyObject,k) 
+			if(item){
+				..py2.IncRef(item);//特例 borrow reference
+				return ..py2.object(  item,true ) ;
+			} 
+		};
+		__set = function(k,v){
+			if(v===null)
+				PyDict_DelItemString(owner.pyObject,k);
+			else {
+			 	PyDict_SetItemString(owner.pyObject,k,..py2.object(v) ); 
+			} 
+		};
+		each = function(){
+			var pos = 0;
+			var ret,k,v;
+			return function(){
+				ret,pos,k,v = PyDict_Next(owner.pyObject,pos);
+				if( k !== null){
+					..py2.IncRef(k);
+					..py2.IncRef(v);
+					return ..py2.object(k,true) ,..py2.object(v,true) 
+				}
+			} 
+		};
+		len = function(){
+			return PyDict_Size(owner._pyObject);
+		} 
+		statement = function(s,locals){
+			if( !PyDict_GetItemString(owner.pyObject,"__builtins__")  ){
+				//模块会自动导入对内建模块的引用,自己创建的字典需要手动导入
+				PyDict_SetItemString( owner.pyObject,"__builtins__",::Python2.PyEval_GetBuiltinsP());
+			}
+			PyRun_String(s,256/*_Py_single_input*/,owner,locals || owner);
+		};
+		exec = function(s,locals){
+			if( !PyDict_GetItemString(owner.pyObject,"__builtins__")  ){
+				PyDict_SetItemString( owner.pyObject,"__builtins__",::Python2.PyEval_GetBuiltinsP());
+			}
+			PyRun_String(s,257/*_Py_file_input*/,owner,locals || owner);
+		};
+		eval = function(s,locals){
+			if( !PyDict_GetItemString(owner.pyObject,"__builtins__")  ){
+				PyDict_SetItemString( owner.pyObject,"__builtins__",::Python2.PyEval_GetBuiltinsP());
+			}
+			var p = PyRun_String(s ,258/*_Py_eval_input*/,owner,locals || owner);
+			if( p ) return ..py2.object( p,true ); 
+		};
+		
+		_type = "py2.dict";
+	);
+	..table.mix(_metaProperty,..py2.object._metaProperty);
+	
+	PyDict_New = ::Python2.api("PyDict_New","pyObject()","cdecl")  
+	PyDict_GetItemString = ::Python2.api("PyDict_GetItemString","pyObject(PyObject dp,string key)","cdecl")  
+	PyDict_SetItemString = ::Python2.api("PyDict_SetItemString","pyObject(PyObject dp,string key,pyObject item)","cdecl") 
+	PyDict_DelItemString = ::Python2.api("PyDict_DelItemString","pyObject(PyObject dp,string key)","cdecl")  
+	PyDict_Next = ::Python2.api("PyDict_Next","int(PyObject dp,INT &pos,pyObject &key,pyObject &value)","cdecl")  
+	PyDict_Size = ::Python2.api("PyDict_Size","INT(PyObject dp)","cdecl") 
+	PyRun_String = ::Python2.api("PyRun_String","pointer(string str, int start, PyObject globals, PyObject locals)")
+}
+
+/**intellisense()
+py2.dict( = 创建新的字典对象\n此对象继承自 py2.object,\n一般不需要手动创建此对象,aardio 会在传参数时自动转换
+py2.dict(.() = 创建新字典
+py2.dict(.(pyObject指针) = 参数为指针则作为 Python 字典指针构建对象,\n不会添加引用计数,但对象销毁时负责释放引用计数
+py2.dict(.(pyObject对象) = 如果传入 Python 对象是一个 dict,\n返回绑定相同对象的 py2.dict 对象,添加引用计数,对象销毁时负责释放引用计数\n否则将传入对象作为 python 内置函数 dict 的参数并返回 py2.dict 对象\n失败返回 null
+py2.dict(.(aardio表) = 数为未指定元表的 aardio 表则转换为 Python 字典
+!py2Dict.stealPtr() =  接管此对象的指针并盗用一次引用计数\n原对象的内部指针被清空,并不再负责释放引用计数\n steal references
+!py2Dict.parseValue() = 转换为aardio数组
+!py2Dict.type() = 返回类型名字
+!py2Dict.has("__/*属性名*/") = 是否存在指定的属性
+!py2Dict.getAttr("__/*属性名*/") = 读属性成员,也可以用成员操作符获取\n属性值为 py2.object 对象
+!py2Dict.setAttr("__/*属性名*/",) = 写属性成员的值,也可以用成员操作符赋值
+!py2Dict.getAttr() = !pyObject.
+!py2Dict.setItem("键名",) = 写字典中的元素的值，也可以直接用下标操作符赋值\n在aardio中也可以用成员操作符代替下标赋元素值
+!py2Dict.getItem("键名") = 返回字典中的元素的值，也可以直接用下标操作符取值\n在aardio中也可以用成员操作符代替下标取元素值,\n成员操作后后面是一个函数调用,则返回成员函数而不是返回字典中的元素
+!py2Dict.getItem() = !pyObject.
+!py2Dict.toString() = 转换为 aardio 字符串\n也可以直接将对象作为参数传入 tostring 函数转换为字符串
+!py2Dict.toTuple() = 转换为 Python 元组\n!py2Tuple.
+!py2Dict.toList() = 转换为 Python 列表\n!py2List.
+!py2Dict.checkDict() = 检测是否字典
+!py2Dict.each() =  @for( kObject,vObject in ??.each() ){\n	__/*两个都是py.object对象*/\n}\n!pyObject.
+!py2Dict.? = !pyObject.
+!py2Dict.statement(.("python语句",locals) = 以该字典为名字空间运行单个python语句
+!py2Dict.exec(.("python代码",locals) = 以该字典为名字空间运行代码,locals省略则默认为当前字典\n类似python代码中的 exec "..." in globals, locals 语句
+!py2Dict.eval(.("python表达式",locals) = 以该字典为名字空间运行代码并返回值,locals省略则默认为当前字典\n类似python代码中的 execfile("test.py", globals, locals)
+!py2Dict.eval() = !pyObject.
+py2.dict() = !py2Dict.
+end intellisense**/

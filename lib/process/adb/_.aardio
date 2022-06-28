@@ -1,0 +1,166 @@
+//adb 安卓设备管理
+import wsock;
+import wsock.tcp.client;
+import process.popen;
+import process.job.limitKill;
+import string.cmdline;
+import process.cmdline;
+
+namespace process;
+
+class adb{
+	ctor( param,... ){
+		this = ..process.popen( "~/lib/process/adb/.res/adb.exe",param,... );
+		this.assignToJobObject(..process.job.limitKill);
+		
+		if( !this ) return;
+		
+		if( param == "shell" && !... ){
+			this.expect("\N+([\$#]) $",3000);
+			this.__close__ = this.close;
+			this.close = function(){
+				if( this.stdIn ){ 
+					this.print('exit');
+					sleep(10);
+					this.__close__();
+				}
+			}
+		} 
+	};
+	
+}
+
+namespace adb{
+	print = ..io.print;
+	
+	shell = function(...){
+		return ..process.adb("shell",...);
+	}
+	
+	push = function(local,remote,...){
+		if(!remote) remote = "/mnt/sdcard/";
+		var adb = ..process.adb("push",..io.fullpath(local),remote,... ) 
+		adb.logResponse( function(all,out,err){ print(all) } ) 
+		adb.close(); 
+	}
+	
+	pull = function(remote,local,...){ 
+		var adb = ..process.adb("pull",remote,..io.fullpath(local),... )
+		
+		adb.logResponse( function(all,out,err){ print(all) } ) 
+		adb.close(); 
+	}
+	
+	install = function(local,...){ 
+		var adb = ..process.adb("install",..io.fullpath(local),... ) 
+		adb.logResponse( function(all,out,err){ print(all) } ) 
+		adb.close(); 
+	}
+	
+	uninstall = function(app,...){ 
+		var adb = ..process.adb("uninstall",app,... ) 
+		adb.logResponse( function(all,out,err){ print(all) } ) 
+		adb.close(); 
+	} 
+	
+	getSerialno = function(){ 
+		var adb = ..process.adb( "get-serialno" )
+		var out  = adb.read(-1);
+		adb.close();
+		if(out) return ..string.trim(out);
+	}
+	
+	getState = function(){ 
+		var adb = ..process.adb( "get-state" )
+		sleep(1000);
+		var out = ..string.concat( adb.peek() );
+		adb.close();
+		if(out) return ..string.trim(out);
+	}
+	
+	devices = function(){ 
+		var adb = ..process.adb( "devices" )
+		var out  = adb.read(-1);
+		adb.close();
+		if(out) return ..string.trim(out);
+	} 
+	
+	waitForDevice = function(){ 
+		var adb = ..process.adb( "wait-for-device" )
+		var out  = adb.read(-1);
+		adb.close();
+		if(out) return ..string.trim(out);
+	}
+	
+	startServer = function(){
+		port = findServerPort();
+		if(port){
+			..string.setenv("ANDROID_ADB_SERVER_PORT",port);
+			return true; 
+		}
+		else {
+			port = "5037";
+			if(..wsock.tcp.client.test("127.0.0.1",5037)){
+				port = tostring(..wsock.getFreePort());
+			} 
+			
+			..string.setenv("ANDROID_ADB_SERVER_PORT",port);
+		} 
+		
+		var adb = ..process.popen( "~/lib/process/adb/.res/adb.exe",param,"start-server"); 
+		var out,err = adb.expect("daemon started successfully",3000)
+		adb.close();
+		
+		if( out ) return true,out;
+		if( err ) return false,err;
+		return true;
+	}
+	
+	killServer = function(){ 
+		var adb = ..process.adb( "kill-server" )
+		adb.waitOne();
+		adb.close(); 
+	}
+	
+	findServerPort = function(){ 
+		for processEntry in ..process.each( "adb\.exe" ) { 
+			var cmdline = ..process.cmdline(processEntry.th32ProcessID);
+			if(cmdline){
+				var argv = ..string.cmdline.argv(cmdline);
+				if(argv.L && argv["reply-fd"] && ..table.indexOf(argv,"fork-server") ){
+					var port = ..string.match(argv.L,"tcp\:(\d+)")
+					if(port){
+						return port;		
+					} 
+				}  
+			} 
+		} 
+	}
+	
+	startServer();
+}
+
+/**intellisense()
+process.adb = 使用管道调用 adb\n[关于 adb](http://developer.android.com/tools/help/adb.html)\n调用 process.adb.startServer 函数启动 adb 服务端，\n该函数会重用已启动的 adb 服务端而不会重复启动。\n该函数启动的 adb 服务端为驻留进程，不会随程序退出，\n\n发送其他 adb 指定则启动 adb 客户端。\n此扩展库启动的所有 adb 客户端在执行结束或程序退出时自动关闭。
+process.adb("-d") = 连接当前接入USB设备
+process.adb("-e") = 连接当前运行的模拟器
+process.adb("-s","串号") = 连接指定设备
+process.adb.shell(__) = 启动 adb 客户端并返回  process.popen 对象,\n指定参数则直接执行参数指定的命令后关闭进程。\n\n不指定参数则进入 shell 命令交互模式,\n交互模式下可使用 expect 函数检测并等待进程输出。\n\n更多用法请参考 process.popen 库函数文档
+process.adb() = !process_popen.
+process.adb.shell() = !process_popen. 
+end intellisense**/
+
+/**intellisense(process.adb)
+print = 设置执行 push,pull,install,uninstall 等命令的回显函数\n默认为 io.print
+push(.("本地路径","/mnt/sdcard/",->->->) = 上传文件到手机,\n如果提示Permission Denied无权限,\n建议请打开手机USB调试模式,尝试root修改目录权限
+pull(.("/mnt/sdcard/my.txt","本地路径",->->->) = 自手机下载文件,\n如果提示Permission Denied无权限,\n建议请打开手机USB调试模式,尝试root修改目录权限
+install(.("apk文件路径",->->->) = 安装应用到手机
+uninstall(.("应用名") = 卸载应用
+uninstall(.("应用名","-k") = 卸载应用,但保留配置和缓存
+getSerialno() = 返回设备串号
+getState() = 返回设备状态,device为连接成功
+waitForDevice() = 等待设备连接
+startServer() = 启动 adb 服务端,成功返回 true ，\n\n此函数如果找到之前已启动的服务端会直接重用该服务并返回 true 。\n 失败返回 false, 错误信息 。\n\nadb 服务端为驻留进程用于接收命令并向手机转发指令\n而 adb 客户端进程在向服务端发送完指令后退出\n\n这个函数会在程序启动时自动调用一次
+killServer() = 停止 adb 服务端,无返回值,\n adb 服务端为驻留进程用于接收命令并向手机转发指令,\n注意所有 adb 客户端共用也只能共用一个服务端
+findServerPort() = 查找已运行的 adb 服务端端口
+end intellisense**/

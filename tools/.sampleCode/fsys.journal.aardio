@@ -1,0 +1,28 @@
+//RUNAS//
+import fsys;
+import fsys.journal;
+import sys.volume;
+import console;
+
+var drives = sys.volume.getLogicalDrives()
+for(idx,drive in drives) {
+	console.log(idx,drive)  //获取所有分区
+}
+
+var drive = fsys.getDrive() //当前分区 
+var journal,err = fsys.journal(drive); //创建USN日志
+assert(journal,"需要管理权限");
+
+console.log("请稍候数分钟，正在分析USN日志......")
+var usnData = journal.getUsnData()
+journal.delete();
+
+console.log("正在测试搜索")
+for(fileReferenceNumber,fileInfo in usnData){
+	if( ..string.find(fileInfo.name,"aardio") ){ 
+		console.log("找到文件:",journal.getFullPath(usnData,fileReferenceNumber) ) 
+	} 
+} 
+ 
+console.log("已完成")
+console.pause()

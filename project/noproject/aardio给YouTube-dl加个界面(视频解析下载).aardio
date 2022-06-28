@@ -1,0 +1,102 @@
+//给youtube-dl.exe 写了一个简陋的界面,练手
+import win.ui;
+import win.clip.viewer;
+import console;
+/*DSG{{*/
+var winform = win.form(text="视频解析下载";right=949;bottom=461;max=false;parent=...)
+winform.add(
+btnWatch={cls="button";text="开始监视";left=783;top=410;right=935;bottom=447;z=1};
+lvChange={cls="listview";left=7;top=6;right=942;bottom=397;acceptfiles=1;ah=1;aw=1;bgcolor=16777215;edge=1;z=2}
+)
+/*}}*/
+
+winform.lvChange.insertColumn("视频网址",300)
+winform.lvChange.insertColumn("文件名",300)
+winform.lvChange.insertColumn("进度状态",300)
+
+winform.btnWatch.oncommand = function(id,event){
+	if( winform.btnWatch.text == "开始监视"){
+		winform.btnWatch.text = "停止监视";
+	}
+	else {
+		winform.btnWatch.text = "开始监视";
+	}
+}
+
+download = function(winform,url){
+	import console;
+	import process.popen;
+	var path = "\res\youtube-dl.exe"
+    if(!#path){
+        return false;
+    }
+    var subprocess = ..process.popen(path,url)
+    for( all,out,err in subprocess.each() ){
+		console.log( out,"error:",err );
+		if(#err>3){
+			var item = winform.lvChange.findItem(url);
+			if( item ){
+				winform.lvChange.setItemText("无法下载",item,3);
+			}
+		}else {
+			if(#out>3){
+				if(string.indexOf(out,"MiB") and !string.indexOf(out,"Destination:") and !string.indexOf(out,"has already been downloaded")){
+					pro=string.replace(out,'@[download]',"")
+					var item = winform.lvChange.findItem(url);
+					if( item ){
+						winform.lvChange.setItemText(pro,item,3);
+					}
+				}elseif(string.indexOf(out,"Destination:")){//开始下载
+					fileinfo=string.split(out,'<[download]>')
+					for(k,v in fileinfo){
+						console.log(k,v)
+						if(string.indexOf(v,"Destination:")){
+							filename=v
+							break
+						}
+					}
+					console.log(filename)
+					filename=string.replace(filename,'@Destination:',"")
+					filename=string.replace(filename,'@[download]',"")
+					console.log(filename)
+					var item = winform.lvChange.findItem(url);
+					if( item ){
+						winform.lvChange.setItemText(filename,item,2);
+					}
+				}elseif(string.indexOf(out,"has already been downloaded")){//文件已存在
+					console.log("文件已存在");
+					filename=string.split(out,'\n')
+					filename=filename[1]
+					filename=string.replace(filename,'@[download]',"")
+					console.log(filename);
+					filename=string.replace(filename,'@has already been downloaded',"")
+					console.log(filename);
+					var item = winform.lvChange.findItem(url);
+					if( item ){
+						winform.lvChange.setItemText(filename,item,2);
+						winform.lvChange.setItemText("已存在",item,3);
+					}
+				}
+			}
+		}
+    }
+    subprocess.close();
+}
+
+/*监视剪贴板，当有新内容时加入listbox*/
+viewer = win.clip.viewer(winform);
+viewer.onDrawClipboard=function(){
+	if(winform.btnWatch.text == "停止监视"){
+    	clip_data = win.clip.read();
+    	if(clip_data and string.indexOf(clip_data,"http")){
+    		url=clip_data
+			winform.lvChange.addItem(url)
+			//thread.invoke(download(winform,url),winform,url)错误示范
+			thread.invoke(download,winform,url)
+		}
+	}
+}
+winform.show();
+return win.loopMessage(); 
+
+//作者：卧似栗球圆 https://www.bilibili.com/read/cv9308127?spm_id_from=333.999.0.0 出处：bilibili

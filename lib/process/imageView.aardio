@@ -1,0 +1,13 @@
+﻿import process;
+
+namespace process;
+
+class imageView{
+	ctor(path){
+		..raw.loadDll("shimgvw.dll").ImageView_FullscreenW(0,_HINSTANSE,..io.fullpath(path),5/*_SW_SHOW*/ );
+	};
+}
+
+/**intellisense()
+process.imageView(__) = 参数输入图像图径,\n调用Windows图片查看器浏览图像
+end intellisense**/

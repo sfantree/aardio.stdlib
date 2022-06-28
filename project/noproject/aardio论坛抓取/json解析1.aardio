@@ -1,0 +1,21 @@
+import console;
+
+import web.json;
+with web.json{
+    _parse = parse;
+    parse = function( json ){
+            return _parse ( ..string.replace(json,'"oid"\\:(\\d+)','"oid":"\\1"') )
+    }
+}
+
+var json = /*
+{"trades_sold_get_response":{"trades":{"trade":[{"orders":{"order":[{"oid":523926038032519,"title":"剑灵辅助\/挂机\/打怪\/全自动\/半自动\/绿色"}]},"total_fee":"10.00"}]},"total_results":1}}
+*/
+
+var data = web.json.parse( json );
+with data.trades_sold_get_response.trades.trade[1] {
+        ..console.dump( orders.order[1].oid )
+        ..console.dump( orders.order[1].title )
+        ..console.dump( total_fee )
+}
+console.pause();

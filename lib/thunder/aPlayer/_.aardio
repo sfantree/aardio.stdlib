@@ -1,0 +1,131 @@
+/*
+迅雷提供的SDK组件使用许可协议请参考迅雷SDK官网 http://aplayer.open.xunlei.com/
+使用迅雷提供的组件其责任或后果概与本扩展库作者无关。
+
+本扩展库遵循快手附带的扩展库开源许可：
+您可以您可以基于任何目的(包括商用、修改及重分发）免费使用本扩展库开源代码,
+您不可以篡改这些开源代码的原始信息，不可以声明您编写最初的版本。
+*/
+import com.lite;
+namespace thunder;
+
+class aPlayer{
+	ctor( winform,trySys ){ {
+	
+		if(!winform[["hwnd"]]) error("请指定创建播放器的窗口对象",2);
+		
+		var aplayer;
+		if( trySys ){
+			try{
+				aplayer = winform.createEmbed("{A9332148-C691-4B9D-91FC-B9C461DBE9DD}");
+			} 
+		}
+		
+		if(!aplayer) {
+			..raw.loadDll("~\lib\thunder\aPlayer\.res\atl71.dll")
+			aplayer = ..com.lite("~\lib\thunder\aPlayer\.res\APlayer.dll").createEmbed(winform,"{A9332148-C691-4B9D-91FC-B9C461DBE9DD}")
+		} 
+		
+		aplayer._object.SetCustomLogo(-1);
+		this = aplayer;
+	} };
+	open = function(url){
+		return this._object.Open(url)
+	};
+	close = function(){
+		return this._object.Close()
+	};
+	pause = function(){
+		return this._object.Pause()
+	};
+	play = function(){
+		return this._object.Play()
+	};
+	getVersion = function(){
+		return this._object.GetVersion()
+	};
+	setCustomLogo = function(logo){
+		return this._object.SetCustomLogo(tonumber(logo))
+	};
+	getState = function(){
+		return this._object.GetState()
+	};
+	getDuration = function(){
+		return this._object.GetDuration()
+	};
+	getVideoWidth = function(){
+		return this._object.GetVideoWidth()
+	};
+	GetVideoHeight = function(){
+		return this._object.GetVideoHeight()
+	};
+	getBufferProgress = function(){
+		return this._object.GetBufferProgress()
+	};
+	getConfig = function(cfgId){
+		return this._object.GetConfig(cfgId)
+	};
+	setConfig = function(cfgId,v){
+		return this._object.SetConfig(cfgId,tostring(v))
+	};
+	getPosition = function(){
+		return this._object.GetPosition()
+	};
+	setPosition = function(pos){
+		return this._object.SetPosition(pos)
+	};
+	getVolume = function(){
+		return this._object.GetVolume()
+	};
+	setVolume = function(v){
+		return this._object.SetVolume(v)
+	};
+	isSeeking = function(){
+		return this._object.IsSeeking()
+	};
+};
+ 
+/**intellisense() 
+thunder.aPlayer = 迅雷播放器组件
+thunder.aPlayer(.(winform) = 创建迅雷播放器组件\n参数可以是窗体或控件窗口,\n参数@2如果为true则优先调用系统已安装注册的迅雷播放器
+thunder.aPlayer() = !thunder_aPlayer.
+end intellisense**/
+
+/**intellisense(!thunder_aPlayer)
+open(.("视频地址") = 打开视频
+close() = 关闭视频
+pause() = 暂停
+play() = 播放
+getVersion() = 播放器版本
+setCustomLogo(-1) = 替换LOGO,\n-1为隐藏LOGO,其他参数参考迅雷SDK文档
+getState() = 返回状态,数值\n参考 _APLAYER_PS_ 前缀常量
+getDuration() = 获取当前播放媒体文件的持续时长
+getVideoWidth() = 获取当前播放媒体文件的视频宽度
+GetVideoHeight() = 获取当前播放媒体文件的视频高度
+getBufferProgress() = 获取播放网络文件时的数据缓冲进度
+getConfig(.(配置ID) = 获取配置值,\n选项较多请参考迅雷SDK文档
+setConfig(.(配置ID,配置值) = 设置配置值,\n选项较多请参考迅雷SDK文档
+getPosition() = 获取当前播放媒体文件的播放进度,单位毫秒(ms)
+setPosition(.(进度) = 设置当前播放媒体文件的播放进度,单位毫秒(ms)
+getVolume() = 获取音量
+setVolume(.(音量) = 100为满音量\n1000为10倍音量
+isSeeking() = 是否处于设置播放进度(Seek)过程中
+OnMessage = @.OnMessage = function(message,wParam,lParam){\n    __\n} 
+OnDownloadCodec = @.OnDownloadCodec =  function(strCodecPath){\n	__/*自行按需下载解码器*/\n}
+OnStateChanged = @.OnStateChanged =  function(oldState,newState){\n    __\n}
+OnOpenSucceeded = @.OnOpenSucceeded =  function(){\n    __\n}
+OnSeekCompleted = @.OnSeekCompleted =  function(position){\n    __	\n}
+OnBuffer = @.OnBuffer =  function(percent){ \n    __\n}
+OnEvent = @.OnEvent =  function(eventCode,eventParam){\n    __\n}
+end intellisense**/ 
+
+ /**intellisense()
+_APLAYER_PS_READY=@0/*_APLAYER_PS_READY*/
+_APLAYER_PS_OPENING=@1/*_APLAYER_PS_OPENING*/
+_APLAYER_PS_PAUSING=@2/*_APLAYER_PS_PAUSING*/
+_APLAYER_PS_PAUSED=@3/*_APLAYER_PS_PAUSED*/
+_APLAYER_PS_PLAYING=@4/*_APLAYER_PS_PLAYING*/
+_APLAYER_PS_PLAY=@5/*_APLAYER_PS_PLAY*/
+_APLAYER_PS_CLOSING=@6/*_APLAYER_PS_CLOSING*/
+end intellisense**/
+ 

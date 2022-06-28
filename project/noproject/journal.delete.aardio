@@ -1,0 +1,70 @@
+import win.ui;
+import console
+
+/*DSG{{*/
+var winform = ..win.form( bottom=382;parent=...;right=958;text="aardio Form" )
+winform.add( 
+edit4={ autohscroll=false;vscroll=1;right=934;left=636;multiline=1;top=16;bottom=104;z=9;text="edit4";edge=1;cls="edit" };
+edit5={ autohscroll=false;vscroll=1;right=934;left=636;multiline=1;top=102;bottom=190;z=10;text="edit5";edge=1;cls="edit" };
+edit1={ autohscroll=false;vscroll=1;right=345;left=47;multiline=1;top=18;bottom=106;z=1;text="edit";edge=1;cls="edit" };
+edit7={ bottom=191;autohscroll=false;right=641;left=343;multiline=1;top=103;vscroll=1;z=7;text="edit7";edge=1;cls="edit" };
+edit8={ bottom=279;autohscroll=false;right=641;left=343;multiline=1;top=191;vscroll=1;z=8;text="edit8";edge=1;cls="edit" };
+btn_so={ bottom=356;right=402;left=293;top=287;z=5;text="秒搜！全盘";cls="button" };
+edit9={ autohscroll=false;vscroll=1;right=934;left=636;multiline=1;top=190;bottom=278;z=11;text="edit9";edge=1;cls="edit" };
+edit3={ autohscroll=false;bottom=280;right=345;left=47;multiline=1;top=192;vscroll=1;z=3;text="edit3";edge=1;cls="edit" };
+edit6={ bottom=105;autohscroll=false;right=641;left=343;multiline=1;top=17;vscroll=1;z=6;text="edit6";edge=1;cls="edit" };
+edt_findstr={ text="搜！关键字";bottom=348;right=291;left=172;multiline=1;top=292;z=4;edge=1;cls="edit" };
+edit2={ autohscroll=false;vscroll=1;right=345;left=47;multiline=1;top=104;bottom=192;z=2;text="edit2";edge=1;cls="edit" }
+)
+/*}}*/
+
+winform.btn_so.oncommand = function(id,event){
+        import sys.volume;
+        var drives = sys.volume.getLogicalDrives()
+        var NTFStab={}
+        //lookForWorks=thread.works(9,fun)
+        for(idx,drive in drives) {
+               driveInfo=sys.volume.getInfo(drive)
+               if(driveInfo){
+                        if(string.indexOf(driveInfo.fsys,"NTFS")) 
+                                NTFStab[idx]=drive
+               }
+        }
+               if(table.count(NTFStab)>9){ 
+                       win.msgbox("对不起，我们只能看9个盘","溢出错误")
+                       return; 
+        }
+        for (i=1;#NTFStab;1){
+                thread.invoke(fun,NTFStab[i],winform.edt_findstr.text,winform["edit"++i].hwnd)
+                
+        }
+        
+        
+                                
+}
+
+fun=function(driveid,findstr,hwnd){
+    import console;
+    import win.ui;
+    import win.ui.ctrl.edit;
+    var edit=win.ui.ctrl.edit()
+    edit.hwnd=hwnd;
+    edit.appendText("请稍候，正在创建"+driveid+"分区的USN日志......" + '\r\n');
+    import fsys;
+        import fsys.journal;
+        var journal,err = fsys.journal(driveid);
+    edit.appendText("请稍候数分钟，正在分析"+driveid+"分区的USN日志......" + '\r\n');
+        var usnData = journal.getUsnData();
+        journal.delete();
+        edit.appendText("正在测试搜索");
+        for(fileReferenceNumber,fileInfo in usnData){
+                if( string.find(fileInfo.name,findstr) ){ 
+                        edit.appendText("找到文件:",journal.getFullPath(usnData,fileReferenceNumber) + '\r\n');
+                } 
+        }          
+        edit.appendText("已完成");
+}
+
+winform.show() 
+win.loopMessage();
+return winform;

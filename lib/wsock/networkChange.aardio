@@ -1,0 +1,69 @@
+﻿//networkChange 网络变更
+import wsock.tcp.client;
+namespace wsock.networkChange;
+
+var waitChanged = function(winform){
+	import wsock;
+	..wsock.open()
+	
+	var q = {
+		INT cbSize;
+		string lpszServiceInstanceName;
+		ptr lpServiceClassId;
+		ptr lpVersion;
+		string lpszComment;
+		INT dwNameSpace;
+		ptr lpNSProviderId;
+		string lpszContext;
+		INT dwNumberOfProtocols;
+		ptr lpafpProtocols;
+		string lpszQueryString;
+		INT dwNumberOfCsAddrs;
+		ptr lpcsaBuffer;
+		INT dwOutputFlags;
+		ptr lpBlob;
+	}
+	
+  	q.cbSize = ..raw.sizeof(q);  
+	q.dwNameSpace = 15/*_NS_NLA*/;  
+	
+  	do{
+		
+		var lookupHandle = {ptr p};  
+		::Ws2_32.WSALookupServiceBegin(q, 0x0FF0/*_LUP_RETURN_ALL*/, lookupHandle);  
+		if(lookupHandle.p){
+			::Ws2_32.WSANSPIoctl(lookupHandle.p, 0x88000019/*_SIO_NSP_NOTIFY_CHANGE*/, ,, ,,{INT bytes}, null);   
+			::Ws2_32.WSALookupServiceEnd(lookupHandle.p); 
+			if(winform) winform.onNetworkChanged(); 	
+		}
+		else {
+			break;
+		}
+		
+  	}while( winform && ::User32.IsWindow(winform.hwnd))
+	
+	..wsock.close();
+}
+
+wait = function(winform){
+	if(!winform) return waitChanged();
+	
+	if( !winform[["hwnd"]] ){
+		error('参数@1必须是窗口或控件对象!')
+	}
+	
+	if(!winform.onNetworkChanged) winform.onNetworkChanged = function(){}
+	..thread.invoke(waitChanged,winform);
+	
+	return winform; 
+}
+
+
+/**intellisense()
+wsock.networkChange = 检测网络变更，例如启用或禁用网卡
+wsock.networkChange.wait() = 等待网络变更，例如启用或禁用网卡。\n\n此函数不能用于获取网络连接状态,\n可使用 inet.http.isAlive,inet.ras.isAlive 等检测网络连接状态\n!wsock_NetworkChange.
+wsock.networkChange.wait(winform) = 等待网络变更，例如启用或禁用网卡。\n\n参数可指定回调窗口或控件对象,\n网络变更时回调窗口或控件的成员函数 onNetworkChanged\n此函数返回参数@1
+!wsock_NetworkChange.onNetworkChanged = @.onNetworkChanged = function(){
+	var ip = wsock.tcp.client.test(); __/*网络已变更，\n获取上网卡 IP 成功则为连接网络，否则为断开网络*/	
+}
+end intellisense**/

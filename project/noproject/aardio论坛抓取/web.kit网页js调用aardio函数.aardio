@@ -1,0 +1,38 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="webkit浏览器简单示例";right=1123;bottom=570)
+/*}}*/
+
+//导入webkit支持库
+import web.kit.form;  
+var wbKitView= web.kit.form(winform); //创建webkit浏览器窗口
+
+//使用external接口定义网页脚本可调用的本地函数
+wbKitView.external = {
+
+    hitCaption = function(){
+        winform.hitCaption();
+    };
+    close = function(){
+        winform.close();
+    };
+    aardioCall = function(str){
+        winform.msgbox(str);
+    };
+}
+
+wbKitView.html = /**
+    <a href='javascript:external.close();'>关闭窗口</a>
+   
+    <div onmousedown='javascript:  
+        external.hitCaption();
+        return false;
+    ' style="-webkit-user-select: none;cursor:default;background:#cce;padding:25px;margin:10px;">拖动窗口</div>
+   
+    <a href='javascript:
+        external.aardioCall("你好,我是webkit");
+    '>调用aardio函数external.aardioCall()</a>
+**/
+
+winform.show()
+win.loopMessage();

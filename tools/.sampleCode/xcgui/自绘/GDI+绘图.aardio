@@ -1,0 +1,39 @@
+import xcgui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469;bgcolor=15245824)
+winform.add(
+closebutton={cls="xcclosebutton";text="r";left=725;top=2;right=749;bottom=28;dr=1;dt=1;font=LOGFONT(name='Marlett');transparent=1;z=1};
+ele={cls="xcele";text=" ";left=41;top=45;right=725;bottom=438;z=2}
+)
+/*}}*/
+
+import xcgui.graphics;
+winform.ele.on("paint",function(hDraw){
+
+	//炫彩自己内部用的GDI+，自绘接口却是GDI，所以这里我们先还原为GDI+画板
+	var graphics = xcgui.graphics(hDraw);
+	
+	//炫彩内部使用GDI+字体，但设置、获取GDI+字体指针都会崩溃，所以下面使用aardio重新创建GDI+字体
+	var fontInfo  = winform.ele.getFont().info();
+	var family = gdip.family(fontInfo.name);
+	var curFont = family.createFont( fontInfo.pt,fontInfo.style,3/*_UnitPoint*/)
+	family.delete();
+	
+	var brush = gdip.solidBrush(0xFFFF0000);
+	var strformat = gdip.stringformat ( ); 
+	strformat.align = 0/*_GdipStringAlignmentNear*/;
+
+	//输出文字区域
+	rclayout = winform.ele.getClientRect().float();
+	graphics.drawString( "Hellow world! 这是我们第一个GDI+文字~!!"  , curFont, rclayout, strformat,brush);
+	
+	brush.delete()
+	strformat.delete();
+	curFont.delete();
+});
+
+winform.show(true);
+
+win.loopMessage();
+return winform;
+

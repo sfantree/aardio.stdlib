@@ -1,0 +1,23 @@
+import gdip;
+import win.cur;
+import winex;
+
+/*
+
+img.fromIcon(hico,xHotspot=0,yHotspot=0) 这只是函数的声明
+函数的声明里参数写 xHotspot=0 是说他的默认参数为0，你调用的时候也写个 xHotspot=0 是没有必要的并且是错误的。
+应当直接写 img.fromIcon(hico)
+*/
+
+var hwnd = win.getForeground();
+winex.attach(hwnd,true);//附加输入线程
+
+//获得输入线程的鼠标指针
+var hico = win.cur.getCur();
+
+if( hico ){
+    var bmp = gdip.bitmap(hico,0x1/*_IMAGE_ICON*/);
+    bmp.save("/test.jpg")
+}
+
+winex.attach(hwnd,false);

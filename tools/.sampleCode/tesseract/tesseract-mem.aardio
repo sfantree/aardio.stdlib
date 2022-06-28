@@ -1,0 +1,35 @@
+import console;
+import tesseract;
+import win;
+
+var ocr = tesseract.ocr();
+if( 0 != ocr.init("eng") ){ //初始化样本语言包 
+	error("没有找到样本 eng.traineddata",2)
+	
+}
+
+//预设字符集可提升识别率，注意要一定在加载样本以后调用此函数
+ocr.setVariable("tessedit_char_whitelist","0123456789");
+
+import gdip;
+var bmp = gdip.bitmap("\test.jpg")//读取图像
+
+//转换为内存图像，必须使用tif格式
+var bin = bmp.saveToBuffer("*.tif"); 
+
+//识别内存图像
+var pix = liblept.pixReadMem(bin,#bin);
+ocr.setImage2( pix ) 
+
+//识别图像
+if( 0 != ocr.recognize() ){
+	console.pause(true,"识别图像出错");
+	return;
+}
+
+var text = ocr.getText()
+console.log("识别结果",text )
+
+liblept.pixDestroy({addr pix = pix}) 
+console.pause();
+

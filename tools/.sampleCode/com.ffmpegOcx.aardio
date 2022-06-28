@@ -1,0 +1,133 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="FFmpegOcx 演示程序";right=1010;bottom=613)
+winform.add(
+btnFullscreen={cls="button";text="全屏";left=892;top=14;right=968;bottom=50;dr=1;dt=1;z=1};
+btnOpenDevice={cls="button";text="打开设备";left=732;top=563;right=856;bottom=596;db=1;dr=1;z=7};
+btnPlay={cls="button";text="播放";left=804;top=14;right=880;bottom=50;dr=1;dt=1;z=10};
+btnSelectFile={cls="button";text="浏览...";left=709;top=14;right=780;bottom=49;dr=1;dt=1;z=9};
+cbAudio={cls="combobox";left=452;top=566;right=709;bottom=592;db=1;dr=1;edge=1;items={};mode="dropdown";z=5};
+cbStyle={cls="combobox";left=880;top=566;right=970;bottom=592;db=1;dr=1;edge=1;items={"拖动";"画笔";"实线";"虚线";"点线";"实线右箭头";"实线左箭头";"实线双箭头";"矩形";"箭头矩形";"椭圆";"箭头椭圆";"三角形";"文本"};mode="dropdown";z=11};
+cbVideo={cls="combobox";left=100;top=566;right=357;bottom=592;db=1;dl=1;edge=1;items={};mode="dropdown";z=3};
+editPath={cls="edit";left=31;top=15;right=709;bottom=48;dl=1;dr=1;dt=1;edge=1;z=8};
+ffWindow={cls="custom";left=31;top=64;right=984;bottom=522;db=1;dl=1;dr=1;dt=1;edge=1;transparent=1;z=2};
+lbAudio={cls="static";text="音频设备";left=367;top=570;right=437;bottom=592;align="right";center=1;db=1;transparent=1;z=6};
+lbVideo={cls="static";text="视频设备:";left=-18;top=570;right=86;bottom=592;align="right";center=1;db=1;dl=1;transparent=1;z=4};
+trackbar={cls="trackbar";left=30;top=530;right=982;bottom=560;db=1;dl=1;dr=1;max=100;min=0;z=12}
+)
+/*}}*/
+
+import com.ffmpegOcx;
+var fm = com.ffmpegOcx(winform.ffWindow);
+
+//枚举视频录制设备
+fm.enumVideoDevices(
+ 	function(name) winform.cbVideo.add(name); 
+); 
+winform.cbVideo.selIndex = 1;
+
+//枚举音频录制设备
+fm.enumAudioDevices(
+ 	function(name) winform.cbAudio.add(name); 
+); 
+winform.cbAudio.selIndex = 1;
+
+//打开视频、音频录制设备
+winform.btnOpenDevice.oncommand = function(id,event){
+	if( winform.btnOpenDevice.text == "打开设备" ){
+		var err = fm.openDevice(winform.cbVideo.selText,winform.cbAudio.selText);
+		if(err == -33 ) winform.msgboxErr("设备已连接")
+		elseif(err == -34 ) winform.msgboxErr("设备未连接")
+		elseif(err == -35 ) winform.msgboxErr("无法连接设备")
+		elseif(err)  winform.msgboxErr("无法打开设备")
+		else {
+			winform.btnOpenDevice.text = "关闭设备";
+		} 
+	}
+	else {
+		fm.closeDevice();
+		winform.btnOpenDevice.text = "打开设备";
+	}
+}
+
+//选择视频文件
+import fsys.dlg;
+winform.btnSelectFile.oncommand = function(id,event){
+	var path = fsys.dlg.open(,"请选择视频文件");
+	if(path){
+		winform.editPath.text = path;
+	 	winform.btnPlay.oncommand();	
+	};
+}
+
+//开始播放视频文件
+winform.btnPlay.oncommand = function(id,event){
+    if( fm.status != "playing" ){
+		var second = fm.start( winform.editPath.text ); 
+		if( second > 0 ) {
+			winform.trackbar.setRange(1,second)
+			winform.trackbar.setFrequency(60)
+		}
+		winform.btnPlay.text = "停止";
+	}
+	else {
+		fm.stop();
+		winform.trackbar.pos = 0;
+		winform.btnPlay.text = "播放";
+	}
+	
+}
+
+//用于显示视频播放进度
+fm.onProgress = function(flag,second,size){
+	fm.progress = second
+	if(!winform.trackbar.dragging) winform.trackbar.pos = second;
+}
+
+//播放视频时修正控件不支持自动缩放问题
+winform.ffWindow.adjust = function( cx,cy,wParam ) {
+	 if( fm.status == "playing" ){
+	 	fm.stop();
+	 	fm.start( fm.filePath )
+	 	fm.seek(fm.progress)
+	 }
+};
+
+//视频播放进度条
+winform.trackbar.oncommand = function(id,event,pos){
+	if( event == 0x8/*_TB_ENDTRACK*/ ){ 
+		fm.seek( winform.trackbar.pos ); 
+		winform.trackbar.dragging = false;
+	}
+	else {
+		winform.trackbar.dragging = true;
+	}
+}
+
+//录制时选择视频编辑工具
+winform.cbStyle.oncommand = function(id,event){
+	if(event == 0x1/*_CBN_SELCHANGE*/ ){
+		fm.putStyle( winform.cbStyle.selIndex ); 
+	} 
+}
+
+//全屏按钮
+winform.btnFullscreen.oncommand = function(id,event){
+	winform.ffWindow.fullscreen(true);
+}
+
+//添加全屏快捷键
+import win.ui.accelerator
+win.ui.accelerator({
+	{ vkey =0x1B/*_VK_ESC*/;oncommand = function(id,event) winform.ffWindow.fullscreen(false) }  
+	{ vkey =0x7A/*_VK_F11*/; oncommand = function(id,event) winform.ffWindow.fullscreen() }  
+},winform);
+
+//关闭窗口前释放资源
+winform.onClose = function(hwnd,message,wParam,lParam){
+    fm.deinitialize();
+}
+
+winform.show() 
+win.loopMessage();
+ 

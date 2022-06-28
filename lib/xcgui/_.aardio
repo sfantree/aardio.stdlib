@@ -1,0 +1,121 @@
+﻿
+namespace xcgui{
+
+	::Xcgui = ..raw.loadDll($"~\lib\xcgui\.res\XCGUI.dll","XCGUI2.dll","stdcall,unicode");
+	::Xcgui.XInitXCGUI("XCGUI.AARDIO");
+	::Xcgui.XC_EnableDebugFile(false);
+	if(!_STUDIO_INVOKED)::Xcgui.XC_EnableErrorMessageBox(false);   
+	
+	..subscribe("beforeUnload",function(){
+		..xcgui.image.clear();
+		::Xcgui.XExitXCGUI();
+	} );
+	
+	getGetObjectType = function(h){
+		return h ? ::Xcgui.XC_GetObjectType(h); 
+	}
+		
+	loadLayout = function(path,hParent){
+		if( ..io.exist(path) )  {
+			return topointer(::Xcgui.XC_LoadLayout((..io.exist(path)),hParent));
+		}
+		else {
+			return topointer(::Xcgui.XC_LoadLayoutFromString(..string.loadBuffer(path),hParent)); 
+		}
+	}
+}
+
+import string.builder;
+import xcgui.window;
+import xcgui.background;
+import xcgui.font;
+import xcgui.image;
+import xcgui.res;
+import xcgui.template;
+import xcgui.state;
+import xcgui.adapter.tree;
+import xcgui.adapter.map;
+import xcgui.adapter.listview;
+import xcgui.adapter.table;
+import xcgui.layoutObject;
+import xcgui.menu;
+
+/**intellisense(xcgui)
+getGetObjectType(__) = 返回对象类型,参数为炫彩UI对象或句柄,返回值为数值
+loadLayout(.(布局文件,父对象) = 加载布局文件
+loadWindow() = !stdxcwnd.
+end intellisense**/
+
+
+/**intellisense(::)
+::Xcgui = 已加载的Xcgui.dll
+end intellisense**/
+
+ /**intellisense()
+_XC_NOTHING=@0/*_XC_NOTHING*/
+_XC_WINDOW=@1/*_XC_WINDOW*/
+_XC_MODALWINDOW=@2/*_XC_MODALWINDOW*/
+_XC_FRAMEWND=@3/*_XC_FRAMEWND*/
+_XC_FLOATWND=@4/*_XC_FLOATWND*/
+_XC_COMBOBOXWINDOW=@0xB/*_XC_COMBOBOXWINDOW*/
+_XC_POPUPMENUWINDOW=@0xC/*_XC_POPUPMENUWINDOW*/
+_XC_POPUPMENUCHILDWINDOW=@0xD/*_XC_POPUPMENUCHILDWINDOW*/
+_XC_OBJECT_UI=@0x14/*_XC_OBJECT_UI*/
+_XC_ELE=@0x15/*_XC_ELE*/
+_XC_BUTTON=@0x16/*_XC_BUTTON*/
+_XC_RICHEDIT=@0x17/*_XC_RICHEDIT*/
+_XC_COMBOBOX=@0x18/*_XC_COMBOBOX*/
+_XC_SCROLLBAR=@0x19/*_XC_SCROLLBAR*/
+_XC_SCROLLVIEW=@0x1A/*_XC_SCROLLVIEW*/
+_XC_LIST=@0x1B/*_XC_LIST*/
+_XC_LISTBOX=@0x1C/*_XC_LISTBOX*/
+_XC_LISTVIEW=@0x1D/*_XC_LISTVIEW*/
+_XC_TREE=@0x1E/*_XC_TREE*/
+_XC_MENUBAR=@0x1F/*_XC_MENUBAR*/
+_XC_SLIDERBAR=@0x20/*_XC_SLIDERBAR*/
+_XC_PROGRESSBAR=@0x21/*_XC_PROGRESSBAR*/
+_XC_TOOLBAR=@0x22/*_XC_TOOLBAR*/
+_XC_MONTHCAL=@0x23/*_XC_MONTHCAL*/
+_XC_DATETIME=@0x24/*_XC_DATETIME*/
+_XC_PROPERTYGRID=@0x25/*_XC_PROPERTYGRID*/
+_XC_RICHEDIT_COLOR=@0x26/*_XC_RICHEDIT_COLOR*/
+_XC_RICHEDIT_SET=@0x27/*_XC_RICHEDIT_SET*/
+_XC_TABBAR=@0x28/*_XC_TABBAR*/
+_XC_TEXTLINK=@0x29/*_XC_TEXTLINK*/
+_XC_PANE=@0x2A/*_XC_PANE*/
+_XC_PANE_SPLIT=@0x2B/*_XC_PANE_SPLIT*/
+_XC_MENUBAR_BUTTON=@0x2C/*_XC_MENUBAR_BUTTON*/
+_XC_RICHEDIT_FILE=@0x32/*_XC_RICHEDIT_FILE*/
+_XC_RICHEDIT_FOLDER=@0x33/*_XC_RICHEDIT_FOLDER*/
+_XC_LIST_HEADER=@0x34/*_XC_LIST_HEADER*/
+_XC_SHAPE=@0x3D/*_XC_SHAPE*/
+_XC_SHAPE_TEXT=@0x3E/*_XC_SHAPE_TEXT*/
+_XC_SHAPE_PICTURE=@0x3F/*_XC_SHAPE_PICTURE*/
+_XC_SHAPE_RECT=@0x40/*_XC_SHAPE_RECT*/
+_XC_SHAPE_ELLIPSE=@0x41/*_XC_SHAPE_ELLIPSE*/
+_XC_SHAPE_LINE=@0x42/*_XC_SHAPE_LINE*/
+_XC_SHAPE_GROUPBOX=@0x43/*_XC_SHAPE_GROUPBOX*/
+_XC_SHAPE_GIF=@0x44/*_XC_SHAPE_GIF*/
+_XC_MENU=@0x51/*_XC_MENU*/
+_XC_IMAGE=@0x52/*_XC_IMAGE*/
+_XC_HDRAW=@0x53/*_XC_HDRAW*/
+_XC_FONT=@0x54/*_XC_FONT*/
+_XC_FLASH=@0x55/*_XC_FLASH*/
+_XC_PANE_CELL=@0x56/*_XC_PANE_CELL*/
+_XC_WEB=@0x57/*_XC_WEB*/
+_XC_LAYOUT_OBJECT=@0x65/*_XC_LAYOUT_OBJECT*/
+_XC_ADAPTER=@0x66/*_XC_ADAPTER*/
+_XC_ADAPTER_TABLE=@0x67/*_XC_ADAPTER_TABLE*/
+_XC_ADAPTER_TREE=@0x68/*_XC_ADAPTER_TREE*/
+_XC_ADAPTER_LISTVIEW=@0x69/*_XC_ADAPTER_LISTVIEW*/
+_XC_ADAPTER_MAP=@0x6A/*_XC_ADAPTER_MAP*/
+_XC_BKINFOM=@0x74/*_XC_BKINFOM*/
+_XC_LAYOUT_LISTVIEW=@0x6F/*_XC_LAYOUT_LISTVIEW*/
+_XC_LAYOUT_LIST=@0x70/*_XC_LAYOUT_LIST*/
+_XC_LAYOUT_OBJECT_GROUP=@0x71/*_XC_LAYOUT_OBJECT_GROUP*/
+_XC_LAYOUT_OBJECT_ITEM=@0x72/*_XC_LAYOUT_OBJECT_ITEM*/
+_XC_LAYOUT_PANEL=@0x73/*_XC_LAYOUT_PANEL*/
+_XC_LIST_ITEM=@0x79/*_XC_LIST_ITEM*/
+_XC_LISTVIEW_GROUP=@0x7A/*_XC_LISTVIEW_GROUP*/
+_XC_LISTVIEW_ITEM=@0x7B/*_XC_LISTVIEW_ITEM*/
+end intellisense**/

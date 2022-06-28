@@ -1,0 +1,154 @@
+import console;
+import fsys.log;
+import win.ui;
+import win.ui.menu;
+import win.util.tray;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add(
+button={cls="button";text="Button";left=680;top=200;right=752;bottom=232;z=4};
+edit={cls="edit";left=16;top=288;right=744;bottom=456;autohscroll=false;bgcolor=0;color=16777215;db=1;dl=1;dr=1;edge=1;multiline=1;vscroll=1;z=2};
+groupbox={cls="groupbox";text="日志输出";left=8;top=256;right=752;bottom=461;ah=1;aw=1;edge=1;z=1};
+tab={cls="tab";left=8;top=8;right=664;bottom=232;edge=1;z=3}
+)
+/*}}*/
+
+/*日志函数{{*/
+log = function(str) {
+	var t = ..time();
+    t.format = "%Y-%m-%d %H:%M:%S";
+    str = tostring(t) + " " +  str;
+    winform.edit.print(str);
+}
+/*}}*/
+
+
+
+var menu = win.ui.menu(winform);//创建主菜单
+menu.addTable( {
+    { "测试菜单"; 
+    		{ 
+    			{   "子菜单";
+    				function(id){
+            			winform.msgbox("测试菜单->子菜单")
+        			} 
+        		};
+        		{   "子菜单2";
+    				function(id){
+            			winform.msgbox("测试菜单->子菜单2")
+        			} 
+        		}   
+    		} 
+    }; 
+    { "测试菜单2"; 
+    		{ 
+    			{   "子菜单";
+    				function(id){
+            			winform.msgbox("测试菜单2->子菜单")
+        			} 
+        		};
+        		{   "子菜单2";
+    				function(id){
+            			winform.msgbox("测试菜单2->子菜单2")
+        			} 
+        		}   
+    		} 
+    }; 
+} )
+
+
+
+
+//添加一个子页面
+var frmTabPage1 = winform.tab.add( text="选项"; bottom=140;right=325 )
+frmTabPage1.add( 
+	button={ bottom=49;text="你好";left=36;right=135;top=21;z=1;cls="button" } 
+) 
+frmTabPage1.button.oncommand = function(id,event){
+	log("frmTabPage1.button.oncommand");
+	frmTabPage1.msgbox( frmTabPage1.button.text,"也可以使用回调函数" ); 
+	
+} 
+
+//添加一个子页面
+var frmTabPage2 = winform.tab.add( text="点这里";bottom=140;right=325  )
+frmTabPage2.add( 
+button={ bottom=49;text="Hello";left=36;right=135;top=21;z=1;cls="button" }
+) 
+frmTabPage2.button.oncommand = function(id,event){
+	log("frmTabPage2.button.oncommand");
+	frmTabPage2.msgbox( frmTabPage2.button.text,"Hello!" ); 
+	
+} 
+
+winform.tab.onnotify = function(id,code,ptr){
+	if(code==0xFFFFFDD9/*_TCN_SELCHANGE*/) { 
+		//winform.msgbox("切换选项卡")  
+	    log("切换选项卡");
+	}
+} 
+
+
+
+/*任务栏图标最小化{{*/
+
+// 1. 启动创建任务栏图标
+winform.tray = win.util.tray(winform);
+winform.tray.tip = winform.text;  //设置鼠标提示
+
+// 2. 关闭最小化到任务栏图标
+winform.onClose = function(hwnd,message,wParam,lParam){
+	if(!winform.tray){
+		winform.tray = win.util.tray(winform);	
+	}
+	else {
+		winform.tray.reset();	
+	}
+	
+	winform.show(false); 
+	return true; 
+}
+
+
+winform.popmenu = win.ui.popmenu(winform); //创建弹出菜单
+winform.popmenu.add('&open',function(id){
+	//在下面输入菜单响应代码
+	
+});
+winform.popmenu.add();//分隔线
+winform.popmenu.add('&exit', function(id){ 
+    win.quitMessage();
+})
+
+
+winform.wndproc = {
+	// 任务栏鼠标右键
+	[0xACCF/*_WM_TRAYMESSAGE*/ ] = function(hwnd,message,wParam,lParam){
+		if( lParam = 0x205/*_WM_RBUTTONUP*/ ){ 
+	    	var pt = ::POINT();
+			::User32.GetCursorPos(pt); 
+	    	
+	    	//弹出托盘菜单以前,一定要前置主窗口中,不然不点击菜单不会消失
+	    	win.setForeground(winform.hwnd)
+	    	winform.popmenu.popup(pt.x,pt.y,true )
+	    }	
+	}
+}
+
+
+/*}}*/
+
+
+
+
+winform.groupbox.wndproc = function(hwnd,message,wParam,lParam){
+	
+	//无返回值则继续调用默认回调函数
+}
+
+winform.button.oncommand = function(id,event){
+	log("winform.button.oncommand");
+}
+
+winform.show();
+win.loopMessage();

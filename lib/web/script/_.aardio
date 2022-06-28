@@ -1,0 +1,163 @@
+﻿//script 微软脚本引擎
+import com;
+namespace web;
+
+class script {
+	ctor(language = 'JScript'){
+		this.msc = ..com.CreateObject("ScriptControl");
+		..com.SetPreferredArrayType(this.msc,0xC/*_VT_VARIANT*/);
+		
+		this.msc.UseSafeSubset = false;
+		this.msc.Language = language;
+		this.msc.AllowUI = true;
+		this.msc.TimeOut = -1;
+		this.msc.siteHwnd = ::User32.GetActiveWindow();
+		
+		this.createArray = function(v){ 
+			if( ..string.cmp(owner.Language,"JavaScript") == 0 || ..string.cmp(owner.Language,"JScript") == 0 ){
+				return owner.msc.CodeObject.fromSafeArray(..com.SafeArrayV(v))
+			}  
+			return ..com.SafeArrayV(v)
+		}
+
+		this.reset = function(){
+			this.msc.Reset();
+			 
+			if(..string.cmp(this.msc.Language,"JavaScript") == 0 || ..string.cmp(this.msc.Language,"JScript") == 0 ){
+				var javascript = /*   
+				fromSafeArray = function(a){ 
+					return new VBArray(a).toArray(); 
+				}
+				
+ 				jsConstructor = function(jsObject) {
+					if(typeof(jsObject) == "string") jsObject = eval(jsObject);
+    				function ctor(args) { return jsObject.apply(this, args); }
+    				ctor.prototype = jsObject.prototype;
+    				return function() { return new ctor(arguments); }
+				}
+				*/
+				this.msc.AddCode(javascript);
+				this.jsConstructor = this.msc.CodeObject.jsConstructor
+			}
+			
+			var lang = ..string.lower(this.msc.Language);
+			for(k,v in self.preload){
+				if(!v.language || v.language[lang]){
+					if(v.code)this.msc.AddCode(v.code);
+					if(v.init)v.init(this.msc);
+				}
+			}	
+		}
+		this.reset();
+		
+		this.doScript = _meta.doScript;
+		this.xcall = this.msc.Run;
+		this.eval = function(s,...){
+			if(...) s = ..string.format(s,...);
+			return this.msc.eval(s);
+		}
+		
+		this.json = {@{
+			_get = function(k,ownerCall){
+				if(ownerCall || type(k)=="string") return function(...){
+					var r = this.eval("JSON.stringify("+k+".apply(" + k + "," +..web.json.stringifyArray({...}) + "))");
+					return ..web.json.tryParse(r);
+				} 
+			}; 
+			_call = function(obj){
+				if(..com.IsObject(obj)){
+					var r = this.script.JSON.stringify(obj);
+					return ..web.json.tryParse(r);
+				}
+				else {
+					return this.eval( ..web.json.stringify(obj) );
+				} 
+			};
+		}}
+		
+	}  
+	@_meta;
+}
+
+script._meta = {
+	
+	_get = function(k){ 
+		if( k == "script" ) return owner.msc.CodeObject;
+		return owner.msc[k]
+	};
+	_set = function(k,v){ 
+		var t = type(v);
+		if( t == type.table ) {
+			if(  #v  && ..table.isArray(v) ){
+				owner.msc[k] = owner.createArray(v); 
+			}
+			else {
+				owner.msc.AddObject(k,v);
+			}
+		}
+		elseif( t == type.function ){
+			owner.msc.AddObject(k,v); 
+		}
+		else{
+			if( k == "script" ) return owner.msc.AddCode(v);
+			owner.msc[k] = v;
+		} 
+	};
+	doScript = function(arg){
+		if( #arg <= 2048 ){
+			
+			if( ..string.startWith(arg,"http",true) 
+				&& ..string.match(arg,"^\w+\:") && ..inet[["http"]] ){
+				arg = ..inet.http.get(arg);
+				if(!arg) return;
+			}
+			elseif(len<= 0x410/*_MAX_PATH_U8*/ ){
+				if( ..io.exist( arg) ) arg = ..string.load(arg);  
+				elseif( ..io.localpath(arg) ) arg = ..string.load(arg) : arg;
+			} 
+			
+			if(!#arg) error("参数不能是空字符串",2);
+		}
+		
+		return owner.msc.AddCode(arg);
+	} 
+}
+
+script.eval = function(s,...){
+	if(!_vm_) _vm_ = ..web.script('JScript');
+	return _vm_.eval(s,...);
+}
+
+/**intellisense()
+!web_script.executeStatement("__") = 执行代码,无返回值
+!web_script.timeOut = 脚本超时时间,以毫秒为单位,默认为-1表示不超时,\n如设置超时脚本运行太久会弹出是否继续运行的对话框
+!web_script.useSafeSubset = 脚本控件是否限制运行未被标记为“脚本安全”的组件
+!web_script.reset() = 重置脚本虚拟机,丢弃所有对象和代码\n并将State属性设为0
+!web_script.jsConstructor("Array__") = 获取JS对象构造函数,\n参数可以是JS对象，或字符串类型的对象名字
+!web_script.doScript("__") = 添加脚本代码\n参数可以是脚本代码、脚本文件路径，\n如果事先引入 inet.http 库，就可以在参数中指定脚本网址
+!web_script.addCode("__") = 添加脚本代码,\n调用这个函数的作用等价于直接对 script 属性赋值
+!web_script.language = 设置或获取正在使用的 Script 语言名称\n 可选值"VBScript","JScript"
+!web_script.eval(__) = 计算并返回参数@1中脚本代码指定的表达式的值,\n如果有多个参数,则调用 string.format 格式化所有参数获取要执行的脚本代码
+!web_script.executeStatement("__") = 执行代码,无返回值
+!web_script.xcall("函数名__",参数) = 运行js函数
+!web_script.modules = 组件模块集合\n可使用 com.each 迭代器遍历 
+!web_script.procedures(__/*序号*/) =  模块中定义函数的集合 
+!web_script.procedures() = !web_script_func.
+!web_script_func.Name = 函数名字
+!web_script_func.NumArgs = 参数数目
+!web_script_func.HasReturnValue = 是否有返回值
+!web_script.siteHwnd = 脚本中显示UI的父窗口句柄
+!web_script.state = 为0不转发事件\n为1则转发事件
+!web_script.error = 发生错误时此属性返回错误对象
+!web_script.allowUi = 是否允许消息框等界面元素
+!web_script.script = 获取属性时返回脚本对象\n通过此对象可直接调用脚本中的函数,\n\n写入属性时应使用字符串指定脚本代码,相当于调用 doScript 函数,\n多次写入此属性是添加脚本不是覆盖替换脚本
+!web_script.script.? = 调用脚本函数并返回值,支持不定个数参数
+!web_script.json = 通过此对象的成员可调用 JScript 脚本中的同名全局函数,\n也可在下标操作符中用一个指向函数对象的 JS 表达式以获取对应的调用函数，\n参数自动转换为 JSON（支持单个参数），返回值自动解析 JSON\n\n也可以将此对象作为函数调用，\n传入 aardio 对象自动转换为 JScript 对象，\n传入 JScript 对象时则返回 aardio 对象。\n\n必须在创建 web.script 对象前导入 web.script.json 库,\n仅适用于 JScript 脚本
+!web_script.createArray(__) = 参数传入 aardio 数组，\n转换为当前脚本支持的数组，\n注意多维 aardio 数组转换为 JScript 会转换为单维数组，\n改用 json 对象调用 JScript 函数可自动支持 JSON 支持的所有对象
+web.script = 脚本解释器支持库
+web.script("JScript") = 创建 JScript 脚本解释器\n参数可省略
+web.script("VBScript") = 创建 VBScript 脚本解释器
+web.script() = 创建 JScript 脚本解释器\n!web_script.
+web.script.eval(__) = 计算并返回参数@1中 JScript 代码指定的表达式的值,\n如果有多个参数,则调用 string.format 格式化所有参数获取要执行的脚本代码
+web.script.preload = 此名字空间下的对象用于添加初始化脚本,\n每个初始化脚本对象必须包含以下字段:\nlanguage 一个表,键为小写的脚本语言名称,值为 true 则支持该语言,\ncode 指定要加载的脚本代码\n\n具体用法请参考 web.script.json 源码
+end intellisense**/

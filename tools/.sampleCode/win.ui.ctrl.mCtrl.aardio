@@ -1,0 +1,35 @@
+import win.ui;
+import win.ui.ctrl.mCtrl;
+/*DSG{{*/
+var winform = win.form(text="mCtrlExample";right=1183;bottom=603)
+winform.add(
+grid={cls="mCtrl.grid";text="自定义控件";left=29;top=11;right=1152;bottom=501;db=1;dl=1;dr=1;dt=1;z=1}
+)
+/*}}*/
+
+/*
+mCtrl 是一个开源控件库，里面提供的控件非常多，
+这里只封装了 grid 供大家参考，有兴趣的可以自行封装其他控件。
+https://github.com/mity/mctrl
+*/
+
+//编辑文本会触发下面的事件
+winform.grid.onEditChanged = function(text,row,col,dispInfo){
+ 	return true;
+}
+
+var geometry = winform.grid.geometry();
+geometry.defRowHeight = geometry.defRowHeight * 1.5;
+geometry.defColumnWidth = geometry.defColumnWidth * 1.2;
+geometry.update();
+
+//初始化表格行总数、列总数
+winform.grid.resizeTable(15,12);
+
+//设置行标题
+for(i=1;15;1){
+	winform.grid.setCellText(i,,i) 
+}
+
+winform.show()
+return win.loopMessage();

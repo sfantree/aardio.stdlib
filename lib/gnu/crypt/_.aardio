@@ -1,0 +1,19 @@
+namespace gnu.crypt;
+
+var dll = ..raw.loadDll($"~\lib\gnu\crypt\.dll\crypt.dll")
+
+crypt_c = dll.api("crypt","string(STRING key,STRING salt)" ,"cdecl") 
+setkey = dll.api("setkey","void(STRING key)" ,"cdecl") 
+encrypt = dll.api("encrypt","void(STRING block,int edflag)" ,"cdecl")
+
+crypt = function(key,salt){
+	if(!salt)salt = "$1$" + ..string.random(10) + "$";
+	return crypt_c(key,salt);
+}
+
+  
+/**intellisense(gnu.crypt)
+crypt(.("密码","$1$随机串$") = 加密,$1表示使用MD5加密\n参数2可省略
+setkey(.("key") = void(string key)
+encrypt(.("block",edflag) = void(string block,int edflag)
+end intellisense**/

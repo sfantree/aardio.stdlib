@@ -1,0 +1,36 @@
+﻿//safepath 安全路径
+namespace fsys;
+
+class safepath{
+	ctor( path ){
+		if(!path) return;
+		path = ..io.localpath(path) : path;
+		if(path[#path]==':'#/*D:*/) path = path + "\"; 
+	
+		//盘符可能有中文、数值
+		if(..string.find(path,"^<[^\\/\:]+\:>")) { 
+			return "\\?\" + path;//完整路径直接返回
+		}
+		
+		var r = ..io.fullpath(path); 
+		if(..string.find(r,"^<[^\\/\:]+\:>")) {
+			if(path[#path]=='\\'# || path[#path]=='/'# ) return "\\?\" + r;
+			
+			//复原 io.fullpath 尾部自动移除的点号
+			var d,f = ..string.match(r,"(.*?)([^/\\]+)$");
+			var d2,f2 = ..string.match(path,"(.*?)([^/\\]+)$");
+			if(!d && (r[#r]=='\\'# ) && f2 && ..string.find(f2,"^\.+$")){
+				r = r ++ f2;
+			}
+			elseif(d&&f2) r = d ++ f2; 
+			
+			return "\\?\" + r;
+		}
+
+		return r;
+	}; 
+}
+
+/**intellisense()
+fsys.safepath(__) = 参数@1指定的文件路径转换为完整路径返回,\n如果完整路径自盘符开始（例如以 C:\ 开始的路径）则返回路径加上 \\?\ 前缀。\n可用于访问畸形路径
+end intellisense**/

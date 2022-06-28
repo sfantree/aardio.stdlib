@@ -1,0 +1,6 @@
+﻿//交互解释器
+import console
+console.setTitle("Ruby 交互解释器");
+
+import process.ruby;
+process.ruby.cmd("irb");

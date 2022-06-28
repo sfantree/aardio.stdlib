@@ -1,0 +1,262 @@
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form( bottom=401;scroll=1;text="Javascript正则表达式测试工具";right=676;parent=...)
+winform.add(  )
+/*}}*/
+
+import web.form;
+var wb = web.form( winform );
+
+wb.html = /**
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+    <title>Javascript 测试工具 </title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script>
+        //本工具原作者：cm4ever
+        
+        if (!document.all) {   
+            //兼容Mozilla的innerText
+            HTMLElement.prototype.__defineSetter__("innerText", function (sText) {
+                this.innerHTML = sText.replace(/\&/g, "&")
+                             .replace(/>/g, ">")
+                             .replace(/</g, "<")
+                             .replace(/ /g, " ")
+                             .replace(/\n/g, "<BR/>");
+            });
+        }
+
+        /**
+        * Method 测试正则表达式函数
+        * @param method 接收到的正则表达式类的方法
+        */
+        function check(method) {
+            // 将用户输入的正则表达式的标志转换为小写
+            document.getElementById("flags").value = document.getElementById("flags").value.toLowerCase();
+
+            // 如果含有不是g、i、m的字符, 则 提示并返回
+            if (document.getElementById("flags").value.search(/[^g|i|m]/g) != -1) {
+                alert("flags only can be g, i, m");
+                return;
+            }
+
+            // 利用用户输入的字符串和标志建立正则表达式
+            var re = new RegExp(document.getElementById("regex").value, document.getElementById("flags").value);
+
+            // 获得并显示生成的正则表达式的字符串形式
+            document.getElementById("destRegex").innerText = re.toString() + ' ';
+
+            // 定义 返回值
+            var cr;
+
+            ex = "new RegExp('" + document.getElementById("regex").value + "', '" + document.getElementById("flags").value + "').";
+
+            // 根据用户选择的方法, 进行相应的调用
+            switch (method) {
+                case '0': // 正则表达式的 exec 方法
+                    cr = re.exec(document.getElementById("string").value);
+                    ex = ex + "exec('" + document.getElementById("string").value + "')";
+                    break;
+
+                case '1': // 正则表达式的 test 方法
+                    cr = re.test(document.getElementById("string").value);
+                    ex = ex + "test('" + document.getElementById("string").value + "')";
+                    break;
+
+                case '2': // 字符串类的 match 方法
+                    cr = document.getElementById("string").value.match(re);
+                    ex = "'" + document.getElementById("string").value + "'.match(" + re.toString() + ")";
+                    break;
+
+                case '3': // 字符串类的 search 方法
+                    cr = document.getElementById("string").value.search(re);
+                    ex = "'" + document.getElementById("string").value + "'.search(" + re.toString() + ")";
+                    break;
+
+                case '4': // 字符串类的 replace 方法
+                    cr = document.getElementById("string").value.replace(re, '<thinkbase.net>');
+                    ex = "'" + document.getElementById("string").value + "'.replace(" + re.toString() + ", '<thinkbase.net>')";
+                    break;
+
+                case '5': // 字符串类的 split 方法
+                    cr = document.getElementById("string").value.split(re);
+                    ex = "'" + document.getElementById("string").value + "'.split(" + re.toString() + ")";
+                    break;
+            }
+
+            // 获得并显示表达式
+            document.getElementById("expression").innerText = ex;
+
+            // 获得并显示计算结果的类型
+            document.getElementById("returnType").innerText = typeof (cr);
+
+            // 定义结果
+            var result = '';
+
+            if (cr != null && typeof (cr) == 'object' && cr.length != null) // 如果计算结果是一个数组, 则取出所有数组的值
+            {
+                for (i = 0; i < cr.length; i++) {
+                    result += "array[" + i + "] = '" + cr[ i ] + "'\n";
+                }
+            }
+            else
+                if (cr != null) // 如果计算结果不为null, 则取出计算结果的值
+                {
+                    result = cr;
+                }
+
+            // 获得并显示结果
+            document.getElementById("matchResult").innerText = result + ' ';
+
+            // 获得并显示正则表达式的lastIndex属性
+            document.getElementById("lastIndex").innerText = re.lastIndex + ' ';
+        }
+    </script>
+    <style>
+        input
+        {
+            background: ffffff;
+            height: 21;
+            padding-left: 3px;
+            font-size: 9pt;
+            font-family: Courier New;
+            border: 1px solid #000000;
+        }
+        textarea
+        {
+            background: ffffff;
+            padding-left: 3px;
+            font-size: 9pt;
+            font-family: Courier New;
+            border: 1px solid #000000;
+        }
+        body
+        {
+            font-family: Verdana;
+            font-size: 9pt;
+            line-height: 170%;
+        }
+    </style>
+</head>
+<body align="CENTER">
+    <form method="post" action="" align="CENTER">
+    <table width="100%" border="1" cellpadding="1" cellspacing="0" bordercolorlight="#C0C0C0"
+        bordercolordark="#FFFFFF" style="font-family: Verdana; font-size: 9pt">
+        <tr>
+            <td colspan="2" align="CENTER" style="font-size: 10.5pt; font-weight: bold">
+                Javascript 正则表达式 测试工具
+            </td>
+        </tr>
+        <tr>
+            <td width="30%">
+                正则表达式:
+            </td>
+            <td>
+                <input name="regex" type="text" size="50" id="regex">
+            </td>
+        </tr>
+        <tr>
+            <td>
+                选项
+            </td>
+            <td>
+                <input name="flags" type="text" size="50" id="flags" id="flags">
+                <script>
+                    function changeFlag(chk) {
+                        var flagsEle = document.getElementById("flags")
+                        var flags = flagsEle.value;
+                        flags = flags.replace(/[^gim]/g, "");
+                        flags = flags.replace(chk.value, "");
+                        if (chk.checked)
+                            flags = flags + chk.value;
+
+                        flagsEle.value = flags;
+                    }
+                </script>
+                <br />
+                <input type="checkbox" name="flags-g" value="g" onclick="changeFlag(this)"/><lable
+                    for="m">全局</lable>
+                <input type="checkbox" name="flags-i" value="i" onclick="changeFlag(this)" /><lable
+                    for="m">忽略大小行</lable>
+                <input type="checkbox" name="flags-m" value="m" onclick="changeFlag(this)" /><lable
+                    for="m">多行匹配</lable>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                测试字符串:
+            </td>
+            <td>
+                <textarea name="string" rows="8" id="string" style="width: 90%"></textarea>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                选择正则函数:
+            </td>
+            <td>
+                <select name="select" id="select" style="font-family: Verdana;">
+                    <option value="0">exec</option>
+                    <option value="1">test</option>
+                    <option value="2">match</option>
+                    <option value="3">search</option>
+                    <option value="4">replace</option>
+                    <option value="5">split</option>
+                </select>
+                <input value='运行测试' type="button" onclick="javascript:check(document.getElementById('select').value);"
+                    style="background: #D6E7EF; border-bottom: 1px solid #104A7B; border-right: 1px solid #104A7B
+                      border-left: 1px solid #AFC4D5; border-top: 1px solid #AFC4D5; color: #000066;
+                    font-family: Verdana; 19px; text-decoration: none; cursor: hand; width: 60px">
+            </td>
+        </tr>
+        <tr>
+            <td>
+                Javascript正则表达式:
+            </td>
+            <td style="color: blue" id="destRegex">
+                 
+            </td>
+        </tr>
+        <tr>
+            <td>
+                生成的测试代码:
+            </td>
+            <td style="color: blue" id="expression">
+                 
+            </td>
+            <tr>
+                <tr>
+                    <td>
+                        返回值类型:
+                    </td>
+                    <td style="color: darkred" id="returnType">
+                        
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        返回值:
+                    </td>
+                    <td style="color: red" id="matchResult">
+                        
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        匹配串结束位置:
+                    </td>
+                    <td style="color: red" id="lastIndex">
+                        
+                    </td>
+                </tr>
+    </table>
+    <a href="http://www.w3school.com.cn/js/jsref_obj_regexp.asp" target="_blank">javascript正则表达式 语法参考 </a>
+    <a href="http://bbs.aardio.com">aardio编程语言</a>
+    </form>
+</body>
+</html>
+**/
+
+winform.show()
+win.loopMessage();

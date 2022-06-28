@@ -1,0 +1,82 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=591;bottom=191)
+winform.add(
+button={cls="button";text="选择目录";left=456;top=40;right=552;bottom=64;z=5};
+button2={cls="button";text="选择目录";left=456;top=96;right=552;bottom=120;z=6};
+button3={cls="button";text="Button";left=456;top=152;right=552;bottom=176;z=7};
+edit={cls="edit";text="";left=128;top=40;right=433;bottom=64;edge=1;z=3};
+edit2={cls="edit";text="";left=128;top=96;right=433;bottom=120;edge=1;z=4};
+static={cls="static";text="准备识别的目录";left=28;top=41;right=118;bottom=62;center=1;transparent=1;z=1};
+static2={cls="static";text="输出结果的目录";left=28;top=98;right=118;bottom=119;center=1;transparent=1;z=2}
+)
+/*}}*/
+
+import fsys.dlg;
+import fsys.path;
+import fsys.dlg.dir;
+import console;
+winform.button.oncommand = function(id,event){
+    var srcPath = fsys.dlg.dir(,winform,'请选择目录')
+	if(srcPath){
+		winform.edit.text = srcPath;
+	}
+}
+
+winform.button2.oncommand = function(id,event){
+	var dstPath = fsys.dlg.dir(,winform,'请选择目录')
+	if(dstPath){
+		winform.edit2.text = dstPath;
+	}
+}
+
+function getAllPath(srcPath, dstPath){
+	if not( fsys.isDir(srcPath) and  fsys.isDir(dstPath) ) {
+	    win.msgboxErr("dstPath和srcPath内容必须目录");
+	    return;
+	}
+	
+	var r = fsys.path.relative(dstPath, srcPath);
+	if(r) {
+	    win.msgboxErr("dstPath不能是srcPath的子目录");
+	    return;
+	}
+	
+	var targetParentDirName = fsys.getFileName(srcPath);
+	
+	// 需要语音识别的所有文件
+	var multimediaFiles = {};
+	fsys.enum( srcPath, "*.mp4|*.mp3|*.flv",
+			function(dir, filename, fullpath, findData){ 
+				if(filename){
+			    	table.push(multimediaFiles, fullpath);
+				}
+	    	},
+		true
+	);
+	
+	var targetPaths = {};
+	for(i=1;#multimediaFiles;1){
+		var relatePath = fsys.path.relative(multimediaFiles[i], srcPath, false);
+		var targetPath = fsys.joinpath(dstPath, targetParentDirName, relatePath + ".txt");
+		table.push(targetPaths, targetPath);
+	}
+	return multimediaFiles, targetPaths
+}
+
+
+winform.button3.oncommand = function(id,event){
+	var srcPath = winform.edit.text;
+	var dstPath = winform.edit2.text;
+	if not (srcPath and dstPath) {
+	    return;
+	}
+	var multimediaFiles, targetPaths = getAllPath(srcPath, dstPath);
+	winform.endModal("123");
+	//winform.endModal({multimediaFiles, targetPaths});
+}
+
+
+winform.show();
+win.loopMessage();
+return winform;

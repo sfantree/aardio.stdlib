@@ -1,0 +1,10 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(parent=...; text="aardio Form";right=349;bottom=249 )
+winform.add(  )
+/*}}*/
+
+winform.show()
+import fsys.dlg
+var str = fsys.dlg.open()
+win.loopMessage();

@@ -1,0 +1,26 @@
+/*
+使用import xcgui; 替换原来的 import win.ui;
+修改标准库的 win.form 指向 xcgui.window, 并保留 win.form的所有功能。
+
+所谓“shape”（形状）其实就是静态控件（不响应事件，只有显示功能）
+在窗体设计器上添加自定义控件，类名修改为 "xc" + "炫彩静态控件类名",
+例如 xcgui.shape.picture, 类名为 "xcpicture"
+*/
+import xcgui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469;bgcolor=15245824)
+winform.add(
+closebutton={cls="xcclosebutton";text="r";left=725;top=2;right=749;bottom=28;dr=1;dt=1;font=LOGFONT(name='Marlett');transparent=1;z=1};
+picture={cls="xcpicture";left=70;top=47;right=688;bottom=426;background="\QQ界面演示\image\btn_MedalWall_Hover.png";bkBottom=3;bkImage="\res\dog.gif";bkLeft=2;bkRight=60;bkTop=60;db=1;dl=1;dr=1;dt=1;repeat="center";transparent=1;z=2}
+)
+/*}}*/
+
+/*
+支持的绘图模式与plus控件用法一样，
+要注意炫彩不支持 repeat-x,repeat-y，并且scale模式只缩小不放大
+*/
+winform.show(true);
+
+win.loopMessage();
+return winform;
+

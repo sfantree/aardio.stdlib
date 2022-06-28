@@ -1,0 +1,52 @@
+﻿//intSegments 整数列表
+namespace string;
+
+class intSegments{
+	ctor( str ){
+		
+		if(type(str)=="number"){
+			return {str}
+		}
+		elseif(type.isString(str) ){
+			var r = {}
+			var a = ..string.split(str,",");
+		 
+			for(i=#a;1;-1){
+				var b,e = ..string.match(a[i],"(\d+)\s*-\s*(\d+)");
+				if(b && e){
+					var p = {}
+					for(i=b;e;b>e?-1:1) ..table.push(p,i); 
+					..table.append(r,p);
+				}
+				else {
+					var n = tonumber(a[i]);
+					if(n) ..table.push(r,n);
+				}
+			} 
+  
+  			..table.sort(r);
+			return r; 
+		}
+		else {
+			return null;
+		} 
+	}; 
+}
+
+intSegments.each = function(str){
+	var a = ..string.intSegments(str); 
+	if(!a) return function(){}
+	
+	return function(i){
+		return ..table.next(a,i);
+	}
+}
+
+
+/**intellisense()
+string.intSegments = 用于解析文本格式的整数列表,支持区间表示法
+string.intSegments(__) = 解析参数@1指定的整数列表,\n并返回数值从小到大排序后的数组,\n\n参数@1可以指定单个数值,或用文本指定多个数值,\n文本中数值用逗号分隔,允许用 - 指定数值区间,\n例如："6881-6889,6999",\n参数@1传入非文本非数值参数返回 null
+string.intSegments.each(str) = @for i,num in ??.each(""){
+	__/*调用 string.intSegments 解析字符串获得数值数组,\n并遍历该数组*/
+}
+end intellisense**/

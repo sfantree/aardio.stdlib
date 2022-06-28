@@ -1,0 +1,21 @@
+﻿//jsonCaiYun 彩云小译
+import web.rest.jsonClient;
+
+namespace web.rest;
+
+class jsonCaiYun{
+	ctor( token ){
+		this = ..web.rest.jsonClient();
+		this.setHeaders({
+			["x-authorization"] = "token " + (token:"3975l6lr5pcbvidl6jl2");
+		});
+		
+		this.defaultUrlTemplate = "http://api.interpreter.caiyunai.com/v1/";
+	};
+}
+
+/**intellisense()
+web.rest.jsonCaiYun = 彩云小译API客户端
+web.rest.jsonCaiYun(.(token) = 创彩云小译API客户端，参数指定token
+web.rest.jsonCaiYun() = !web_restClient.
+end intellisense**/

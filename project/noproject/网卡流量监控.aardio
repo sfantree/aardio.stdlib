@@ -1,0 +1,63 @@
+import win.ui
+import win.timer
+/*DSG{{*/
+var winform = win.form(text="网卡流量监控";right=1004;bottom=591)
+winform.add(
+dtLv={cls="listview";left=2;top=41;right=1001;bottom=563;edge=1;fullRow=1;gridLines=1;z=1}
+)
+/*}}*/
+
+winform.dtLv.insertColumn("名称", 230)
+winform.dtLv.insertColumn("MAC", 130)
+winform.dtLv.insertColumn("总发送", 100)
+winform.dtLv.insertColumn("总接收", 100)
+winform.dtLv.insertColumn("上行", 100)
+winform.dtLv.insertColumn("下行", 100)
+winform.dtLv.insertColumn("描述", 300)
+winform.dtLv.adjust = function(cx,cy){
+    winform.dtLv.fillParent(7/*列序号*/);
+}
+winform.dtLv.setExtended(0x10000/*_LVS_EX_DOUBLEBUFFER*/)
+
+import inet.monitor;
+var prevNetInfo = inet.monitor.getInfo()
+for(i=1;prevNetInfo.NumEntries){
+    var u = prevNetInfo.table[ i ]
+    var mac = ..string.format("%.2X-%.2X-%.2X-%.2X-%.2X-%.2X"
+        ,string.unpack(u.PhysicalAddress)
+    )
+   
+    winform.dtLv.addItem({u.Alias;mac;u.OutOctets;u.InOctets;"";"";u.Description},i)
+}
+
+var round = ..math.round
+var netTimer = win.timer(,500)
+netTimer.onTimer = function(hwnd,msg,id,tick){
+    var netInfo = inet.monitor.getInfo()
+    if(!prevNetInfo){
+        prevNetInfo = ..table.clone(netInfo)
+        return;
+    }
+   
+    for(i=1;netInfo.NumEntries){
+        var a, n = prevNetInfo.table[ i ], netInfo.table[ i ]
+        
+        var aTx, aRx = a.OutOctets, a.InOctets
+        var nTx, nRx = n.OutOctets, n.InOctets
+        
+        aTx ?= round((nTx-aTx)/512, 2) + 'kb/s'
+        aRx ?= round((nRx-aRx)/512, 2) + 'kb/s'
+        
+        winform.dtLv.setItemText(nTx, i, 3)
+        winform.dtLv.setItemText(nRx, i, 4)
+        winform.dtLv.setItemText(aTx, i, 5)
+        winform.dtLv.setItemText(aRx, i, 6)
+        
+        a.InOctets = nRx
+        a.OutOctets = nTx
+    }
+}
+netTimer.enable()
+
+winform.show()
+win.loopMessage()

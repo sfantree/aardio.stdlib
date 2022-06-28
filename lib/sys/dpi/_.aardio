@@ -1,0 +1,24 @@
+﻿namespace sys.dpi;
+	
+scaling = function(dpi){
+	var tab = {100,125,150,175,200,225,250,300,350,400,450,500};
+	var currentIndex = {int value};
+	::User32.SystemParametersInfo(0x9E/*_SPI_GETLOGICALDPIOVERRIDE*/, 0, currentIndex, 1);
+	currentIndex = ..math.abs(currentIndex.value)+1;
+	
+	var newIndex = currentIndex;	
+	if(dpi) {
+		for(i=1;#tab;1){ 
+			if(tab[i]>dpi)break;
+			newIndex = i;
+		}
+	}
+		
+	if( ::User32.SystemParametersInfo(0x9F/*_SPI_SETLOGICALDPIOVERRIDE*/,newIndex-currentIndex,0, 1) ) return dpi;
+}
+
+/**intellisense(sys.dpi)
+scaling(.(dpi) = 设置系统 DPI 缩放,成功返回新的设置值,\n可选值：100,125,150,175,200,225,250,300,350,400,450,500\n不指定参数或参数为 false 恢复默认缩放值
+end intellisense**/
+
+//https://stackoverflow.com/questions/35233182/how-can-i-change-windows-10-display-scaling-programmatically-using-c-sharp

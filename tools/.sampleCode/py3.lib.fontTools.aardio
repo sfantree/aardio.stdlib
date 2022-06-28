@@ -1,0 +1,18 @@
+import py3;
+import py3.lib.fontTools;
+
+var pyCode = /**
+from fontTools.ttLib import TTFont  
+
+def test(inPath):
+	font = TTFont(inPath)
+	return font.keys()
+**/
+py3.exec( pyCode );//运行 Python 代码
+
+var fontPath = io.fullpath("~\lib\fonts\.res\FontAwesome.ttf");
+var pyRet = py3.main.test(fontPath);
+
+import console;
+console.dump( pyRet.parseValue() );
+console.pause(true);

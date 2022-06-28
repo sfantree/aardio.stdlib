@@ -1,0 +1,14 @@
+﻿ 
+//生成 EXE 时 aardio 会自动执行扩展库目录下的 \.build\main.aardio 复制下面的目录到发布目录 
+py3.appendPath("~\lib\py3\lib\fontTools\.py")
+namespace py3.lib{
+    fontTools = ..py3.import("fontTools")
+}
+
+/**intellisense()
+py3.lib.fontTools = fontTools 模块,\n必须先导入 py3 扩展库，支持 Python 3.7 以上。\n!py3Module.
+end intellisense**/
+
+/*
+https://pypi.org/project/fonttools/
+*/

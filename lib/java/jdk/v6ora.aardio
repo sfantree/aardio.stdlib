@@ -1,0 +1,23 @@
+﻿//v6ora 开发包
+import java;
+import inet.installer;
+
+namespace java.jdk.v6ora;
+
+path = ..java.path.jdkHomeFromRegistry(false,"1.6") 
+if(!path) path = ..java.path.jdkHomeFromRegistry(true,"1.6") 
+if(!path) path = ..java.path.jreHomeFromProgramFiles("1.6",false,true);
+if(!path) path = ..java.path.jreHomeFromProgramFiles("1.6",true,true); 
+
+if(!..io.exist(path)){
+	var ok = ..inet.installer("JDK 6","https://javadl.oracle.com/webapps/download/AutoDL?BundleId=49184","/s")
+	path = ..java.path.jdkHomeFromRegistry(false,"1.6");
+	if( !path ) return; 
+}
+
+..java.path.setJdkHome(path);
+
+/**intellisense()
+java.jdk.v6ora = 检测并在必要时自动下载 Oracle JDK 8u202,\n导入此库后，发布不用带 JDK
+java.jdk.v6ora.path = 如果成功下载并设为 JDK 根目录,\n此属性为 JDK 根目录路径,\n否则此属性值为 null
+end intellisense**/

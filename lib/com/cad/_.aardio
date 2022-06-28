@@ -1,0 +1,288 @@
+﻿import fsys.file;
+import com;
+
+namespace com;
+
+class cad{
+	ctor(...){
+		this = ... ? ..com.GetOrCreateObject(...) 
+				: ..com.GetOrCreateObject("AutoCAD.Application","GStarCAD.Application"); 
+	}; 
+	LoadLisp = function(lisp,args,doc){
+
+		if( (#lisp<0x410/*_MAX_PATH_U8*/) && ..io.localpath(lisp) || ..io.exist(lisp) ){
+			if(..string.endWith(lisp,".lsp",true)){
+				return this.LoadLispFile(lisp);
+			}
+			
+			lisp = ..string.load(lisp);			
+		}
+		
+		var lisp,err = self.loadcode("?>"+lisp,args); 
+		if(!lisp) error(err,2)
+
+		var tempFile = ..fsys.file.temp(".lsp",true);
+		tempFile.write(..string.fromto(lisp,65001,0));
+		tempFile.close();
+		 
+		var r = this.LoadLispFile(tempFile.path);
+		tempFile.delete(); 
+		
+		return r;
+	};
+	LoadLispFile = function(path,doc){
+		if(!doc){
+			if ( ! this.Documents.Count ) {this.Documents.Add();}
+			doc = this.ActiveDocument;
+		}
+
+		var secureLoad,cmdecho;
+		try{
+			secureLoad = doc.GetVariable("SECURELOAD");
+			if(secureLoad) doc.SetVariable("SECURELOAD",..com.word(0));
+			
+			cmdecho = doc.GetVariable("CMDECHO");
+			if(cmdecho) doc.SetVariable("CMDECHO",..com.word(0));
+		}
+		catch(e){
+			secureLoad = null;
+			cmdecho = null;
+		}
+		
+ 		path = ..string.replace(..io.fullpath(path),"\\","\\\\");
+		var r = doc.SendCommand('(load "'+path+'")(princ)\r');
+		
+		if(secureLoad) doc.SetVariable("SECURELOAD",..com.word(secureLoad));
+		if(cmdecho) doc.SetVariable("CMDECHO",..com.word(cmdecho));
+		return r;
+	};
+	NetLoad = function(path,doc){
+		if(!doc){
+			if ( ! this.Documents.Count ) {this.Documents.Add();}
+			doc = this.ActiveDocument;
+		}
+
+		var secureLoad,cmdecho;
+		try{
+			secureLoad = doc.GetVariable("SECURELOAD");
+			if(secureLoad) doc.SetVariable("SECURELOAD",..com.word(0));
+			
+			cmdecho = doc.GetVariable("CMDECHO");
+			if(cmdecho) doc.SetVariable("CMDECHO",..com.word(0));
+		}
+		catch(e){
+			secureLoad = null;
+			cmdecho = null;
+		}
+		
+ 		path = ..string.replace(..io.fullpath(path),"\\","\\\\");
+		var r = doc.SendCommand('(command "netload" "'+ path  +'")(princ)\r');
+		
+		if(secureLoad) doc.SetVariable("SECURELOAD",..com.word(secureLoad));
+		if(cmdecho) doc.SetVariable("CMDECHO",..com.word(cmdecho));
+		return r;
+	};
+	SendCommand = function(cmd,args,doc){
+		if(!doc){
+			if ( ! this.Documents.Count ) {this.Documents.Add();}
+			doc = this.ActiveDocument;
+		}
+		
+		if( (#cmd<0x410/*_MAX_PATH_U8*/) && ..io.localpath(cmd) || ..io.exist(cmd) ){
+			cmd = ..string.load(cmd);			
+		}
+		
+		var cmd,err = self.loadcode("?>"+cmd,args); 
+		if(!cmd) error(err,2)
+		
+		var cmdecho;
+		try{ 
+			cmdecho = doc.GetVariable("CMDECHO");
+			if(cmdecho) doc.SetVariable("CMDECHO",..com.word(0));
+		}
+		catch(e){ 
+			cmdecho = null;
+		}
+		
+		var r = doc.SendCommand(..string.crlf(cmd,'\r')+'\r');  
+		
+		if(cmdecho) doc.SetVariable("CMDECHO",..com.word(cmdecho));
+		return r;
+	};
+	PostCommand = function(cmd,args,doc){
+		if(!doc){
+			if ( ! this.Documents.Count ) {this.Documents.Add();}
+			doc = this.ActiveDocument;
+		}
+		
+		if( (#cmd<0x410/*_MAX_PATH_U8*/) && ..io.localpath(cmd) || ..io.exist(cmd) ){
+			cmd = ..string.load(cmd);			
+		}
+		
+		var cmd,err = self.loadcode("?>"+cmd,args); 
+		if(!cmd) error(err,2)
+		
+		var cmdecho;
+		try{ 
+			cmdecho = doc.GetVariable("CMDECHO");
+			if(cmdecho) doc.SetVariable("CMDECHO",..com.word(0));
+		}
+		catch(e){ 
+			cmdecho = null;
+		}
+		
+		var r =  doc.PostCommand(..string.crlf(cmd,'\r')+'\r');  
+		if(cmdecho) doc.SetVariable("CMDECHO",..com.word(cmdecho));
+		return r;
+	};
+	MajorVersion = function(){
+		if(this[["$majorVersion~~~"]]) return this[["$majorVersion~~~"]];
+		
+		var version;
+		try{ version = this.Version; }
+		
+		if(!version){
+			if ( ! this.Documents.Count ) {this.Documents.Add();}
+			this.ActiveDocument.GetVariable("ACADVER")
+		}
+		
+		if(type.isString(version)){
+			this[["$majorVersion~~~"]] = ..string.match(version,"^\d+"); 
+			return this[["$majorVersion~~~"]];
+		}
+	};
+	GetCadInterfaceObject = function(progId){
+		var v = this.MajorVersion();
+		if(#v>2) progId = progId + "." + v;
+		return this.GetInterfaceObject(progId + "." + v);
+	};
+	GetLayerStateManager = lambda() this.GetCadInterfaceObject("AutoCAD.AcadLayerStateManager");
+	GetAcCmColor = lambda( ) this.GetCadInterfaceObject("AutoCAD.AcCmColor");
+	GetSecurityParams = lambda() this.GetCadInterfaceObject("AutoCAD.SecurityParams");
+	SendCopyData = function(data,args,dataType){
+		return sendCopyData(this.HWND,data,args,dataType);
+	};
+	ShowForeground = function(){
+		this.Visible = true;
+		
+		if( ::User32.IsIconic(this.HWND) ) ::User32.ShowWindow(this.HWND,9/*_SW_RESTORE*/ );
+		::User32.SetForegroundWindow(this.HWND);
+	};
+}
+
+cad.loadcode = function(c,...){
+	var f,e = loadcode(c,"=(com.cad.loadcode)");
+	if(!f) return null,e;
+	
+	var p = ..print;
+	var t = {};
+	..print = function(args,...){
+		if(...){
+			args = {args,...}
+		}
+	
+		if( type(args) == type.table && #args ){  
+			
+			for(i=1;#args;1){
+				var v =  args[i];
+				var t  = type(v);
+				if( t = "number" ){
+					v = tostring(v);
+				}
+				elseif( t = "boolean" ){
+					v = tostring(v?1:0);
+				} 	
+				else {
+					v = tostring(v);
+					v = ..string.replace(v,'[\"\e\n\r\t\\\\]',{
+						['\e']="\e"; 
+						['\n']="\n";
+						['\r']="\r";
+						['\t']="\t";
+						['\\']="\\";
+						['\"']='\\"';
+					})
+					v = ..string.concat('"', v, '"');
+				} 
+				
+				args[i] = v;
+			} 
+			args = ..string.join(args," ");
+		}
+		elseif(args!==null) {
+			args = tostring(args)
+		} 
+		
+		if(args!==null) ..table.push(t,args);
+	}
+	
+	var r,e = callex(,f,...,...);
+	..print = p;
+	
+	if(!r) return null,e;
+	return ..string.join(t);
+};
+
+cad.sendCopyData = function(hwnd,data,args,dataType){
+	if(dataType==null) dataType = 1;
+
+	if(dataType==1){
+		data,err = cad.loadcode("?>"+data,args); 
+		if(!data) error(err,2);
+		
+		data = ..string.crlf(data,'\r')+'\r\0';
+		data = ..string.toUnicode(data);
+	}
+		
+    return ::User32.SendMessage(hwnd,0x4A/*_WM_COPYDATA*/,0, {
+        ADDR dataType = dataType : 1;
+        INT cbData = #data;
+        ptr lpData = data;
+    }  )
+} 
+
+/**intellisense()
+com.cad() = 获取已存在的 AutoCAD 实例，或创建新的 AutoCAD 实例\n!stdComCad.
+com.cad.sendCopyData(.(hwnd,data,args,dataType) = 用 _WM_COPYDATA 向 AutoCAD 窗口发送数据。\n@hwnd 为 AutoCAD 主窗口句柄，\n@data 为 需要发送的字符串，发送命令时支持模板语法，\n@args 发送命令时，可选用这个参数指定@data 使用的模板参数，\n@dataType 省略时默认值为1，为 1 表示发送到 AutoCAD 命令窗口并执行该命令。\n发送成功返回1，否则返回0
+com.cad = AutoCAD 支持库
+end intellisense**/
+
+/**intellisense(!stdComCad)
+Visible = 是否显示 AutoCAD 窗口。\n此值建议设置为 true 以显示窗口，\n不显示窗口有些功能可能用不了。
+ShowForeground() = 前置并显示 AutoCAD 窗口。
+Documents = 当前文档数组,不显示窗口可能为 null。\n这是通过 COM 接口访问的类数组对象，起始下标为 0 而不是 1，\n只能使用 Count 获取数组长度，不能用 # 操作符获取数组长度
+Documents.Count = 打开文档总数
+Documents.? = !stdComCadDoc.
+ActiveDocument = 当前活动文档\n!stdComCadDoc.
+LoadLisp( = 加载 LISP 代码\n[参数支持 aardio 模板语法](chm://the%20language/template_syntax.html)
+LoadLisp(.(lisp,args,doc) = 加载 LISP 代码，\n参数@1可以是文件、资源文件、或 LISP代码\n已加载的 lisp 代码无法卸载，\n可通过LIST赋值删除定义的函数，例如 (setq c:hello nil)\n\n支持 aardio 模板语法,模板中非数值、布尔值一律转字符串,\n一次输出多个模板参数或数组参数时,字符串自动加引号,多参数自动以空格分开,\n可选用 @args 参数指定模板 owner 参数，\n可选用参数 @3 自定义执行此函数的文档对象
+LoadLispFile( = 加载 *.lsp 代码文件
+LoadLispFile(.(path,doc) = 加载 *.lsp 代码文件，\n参数@1指定 *.lsp 代码文件路径，\n可选用参数 @2 自定义执行此函数的文档对象
+NetLoad( = 加载 .Net DLL
+NetLoad(.(path,doc) = 加载 .Net DLL，\n参数@1指定 *.dll 文件路径，\n可选用参数 @2 自定义执行此函数的文档对象
+SendCommand( = 同步发送 AutoCAD 命令\n[参数支持 aardio 模板语法](chm://the%20language/template_syntax.html)
+SendCommand(.(cmd,args,doc) = 同步发送 AutoCAD 命令，\n参数@1可以是文件、资源文件、LISP 表达式、命令，\n每句命令应以空格或回车结束,\n尾部的回车可省略\n\n支持 aardio 模板语法,模板中非数值、布尔值一律转字符串,\n一次输出多个模板参数时,字符串自动加引号,多参数自动以空格分开,\n可选用 @args 参数指定模板 owner 参数，\n可选用参数 @3 自定义执行此函数的文档对象
+PostCommand( = 异步发送 AutoCAD 命令\n[参数支持 aardio 模板语法](chm://the%20language/template_syntax.html)
+PostCommand(.(cmd,args,doc) = 异步发送 AutoCAD 命令，\n参数@1可以是文件、资源文件、LISP 表达式、命令，\n每句命令应以空格或回车结束,\n尾部的回车可省略\n\n支持 aardio 模板语法,模板中非数值、布尔值一律转字符串,\n一次输出多个模板参数时,字符串自动加引号,多参数自动以空格分开,\n可选用 @args 参数指定模板 owner 参数，\n可选用参数 @3 自定义执行此函数的文档对象
+GetAcadState().IsQuiescent = AutoCAD 当前是静止状态
+MajorVersion() = AutoCAD 主版本号,\n例如 AutoCAD 2022 主版本号为 24
+GetInterfaceObject(__)  = 使用参数指定的 ProgID 在 AutoCAD 进程内加载 COM 对象
+GetCadInterfaceObject(__) = 使用参数指定的 ProgID 在 AutoCAD 进程内加载 AutoCAD 提供的 COM 对象,\n与 GetInterfaceObject 不同的是 GetCadInterfaceObject 会在参数后自动添加当前主版本号
+GetLayerStateManager() = 获取 AutoCAD 进程内图层管理器对象
+GetAcCmColor() = 获取 AutoCAD 进程内颜色管理对象
+GetSecurityParams = 获取 AutoCAD 进程内安全参数对象
+Eval(__) = 计算 VBA 表达式 
+Quit() = 退出应用程序
+LoadARX(__) = 加载参数@1指定的 ARX 应用程序
+ListARX() =  获取已加载的 ARX 应用程序
+UnloadARX(__) =  卸载参数@1指定的 ARX 应用程序
+Application = 应用程序对象
+SendCopyData(.(data,args,dataType) = 用 _WM_COPYDATA 向 AutoCAD 窗口发送数据。\n@data 为 需要发送的字符串，发送命令时支持模板语法，\n@args 发送命令时，可选用这个参数指定@data 使用的模板参数，\n@dataType 省略时默认值为1，为 1 表示发送到 AutoCAD 命令窗口并执行该命令。\n发送成功返回1，否则返回0
+HWND = 窗口句柄
+Path = AutoCAD 安装目录
+end intellisense**/
+
+/**intellisense(!stdComCadDoc)
+SetVariable(.(name,value) = 设置系统变量值，\n@name 指定变量名，@value 变量值，值的类型一定要匹配，\nVBA里的 Integer 类型 0 在 aardio 中要写为 com.word(0)，\nVBA里的 Double  类型 0 在 aardio 中要写为 com.double(0)  
+GetVariable(.(name) = 获取系统变量值
+end intellisense**/

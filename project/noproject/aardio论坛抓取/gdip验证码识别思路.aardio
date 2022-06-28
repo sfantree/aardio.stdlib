@@ -1,0 +1,78 @@
+import inet.http;
+import soImage;
+import console;
+math.randomize();
+
+//创建图像
+var img1 = soImage();
+var img2 = soImage();
+
+//内存加载图像文件
+img2.setBytes(
+    inet.http().get("http://vote.sun0769.com/include/captcha.asp?s=signup1025&rid="++math.random(100000,999999))
+          ,"*.bmp"
+);
+
+img2.paint();       
+//首先计算出图片的高度宽度
+var w2 = img2.getWidth();
+var h2 = img2.getHeight();
+       
+//遍历图像中的所有点,将验证码字体改为黑色(像素点是从0开始的)
+for(o=0;w2-1;1){
+    for(p=0;h2-1;1){
+        if(img2.getPixel(o,p)!=15527662 and img2.getPixel(o,p)!=14679807) {        
+                  img2.setPixel(o,p,0);//黑色
+        }
+    }
+}
+
+var tab={};
+for(x=0;9;1){       
+        img1.load(io.fullpath("/res/"++x++".bmp"));
+
+        var w1 = img1.getWidth();
+        var h1 = img1.getHeight();
+
+        //将img1中黑色字体位置写入到数组中，便于和img2图像对比
+        var tab1={};
+        for(i=0;w1-1;1){
+                for(j=0;h1-1;1){       
+                        if(img1.getPixel(i,j)==0){
+                        table.push(tab1,{i;j})
+                        }
+                }
+        }
+    //对比黑点，以左上角的坐标点为参考，满足完全重合条件的坐标点记录到tab2中
+        var tab2={};
+        for(m=0;w2-w1;1){
+                for(n=0;h2-h1;1){                       
+                        for(k=1;#tab1;1){
+                                if(img2.getPixel(m+tab1[k][1]-1,n+tab1[k][2]-1)!=0 and k<#tab1){
+                                        break 1;
+                                }
+                                elseif(img2.getPixel(m+tab1[#tab1][1]-1,n+tab1[#tab1][2]-1)==0 and k==#tab1){
+                                    table.push(tab2,{m;n})
+                                }       
+                        }
+                }
+        }
+
+        if(#tab2>=1){
+                for(z=1;#tab2;1){
+                        table.push(tab,{x;tab2[z][1]})
+                }
+        }
+
+}
+//按坐标点的X轴大小重新排序
+table.sort(tab,function(b){
+    return owner[2] < b[2]
+});
+
+var captcha='';
+for(y=1;#tab;1){
+        captcha = captcha ++tab[y][1];
+}
+
+console.log(captcha)

@@ -1,0 +1,44 @@
+import console; 
+
+/*
+1,小圆点 .
+表示 一个 任意单字节字符
+*/
+console.open()
+{
+	var 字符串="ab12"
+	var 匹配1 = "."
+	var 匹配2 = ".."
+	io.print(string.match(字符串,匹配1)) //显示 a
+	io.print(string.match(字符串,匹配2)) //显示 ab
+}
+/*
+2,星号 *
+表示任意个数,使用时，前面需要 <参数>
+*/
+{
+	var 字符串="ab12"
+	var 匹配1=".*" //匹配全部内容，也叫 《贪婪匹配》
+	var 匹配2="*" //
+	io.print(string.match(字符串,匹配1)) //显示 ab12 全部
+	io.print(string.match(字符串,匹配2)) //显示 null  你没给它参数，它不知道要匹配什么字符
+}
+
+/*
+3,字符类 \a 字母(详情请看帮助)
+*/
+{
+	var 字符串="ab12ab"
+	var 匹配1="\a" //匹配以任意字母开头的一个字母
+	var 匹配2="\a*" //匹配以字母开头的任意个字母，直到不是字母的地方
+	io.print(string.match(字符串,匹配1)) //显示 一个字母 a
+	io.print(string.match(字符串,匹配2)) //显示 ab <因为ab后面是数字了>
+}
+
+
+
+
+
+
+
+console.pause(true);

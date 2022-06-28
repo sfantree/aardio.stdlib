@@ -1,0 +1,7 @@
+﻿//Delegate 委托
+import dotNet;
+dotNet.import("System.Delegate","mscorlib")
+
+/**intellisense()
+System.Delegate = .Net System.Delegate 名字空间\n!dotNetNameSpace.
+end intellisense**/

@@ -1,0 +1,20 @@
+﻿//bitmap 网页截图
+import gdip.bitmap;
+namespace web.kit;
+
+class bitmap{
+	ctor( mb ){
+		mb.waitDoc();
+		var bmp = ..gdip.bitmap( mb.document.body.scrollWidth,mb.document.body.scrollHeight ); 
+		var hdc  = bmp.graphics.getDc();
+		mb.print(hdc,1); 
+		bmp.graphics.releaseDc(hdc);
+		return bmp;
+	}; 
+}
+
+/**intellisense()
+web.kit.bitmap = 网页截图
+web.kit.bitmap(__) = 参数指定web.kit.form对象,返回gdip.bitmap对象
+web.kit.bitmap() = !gdipbitmap.
+end intellisense**/

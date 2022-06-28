@@ -1,0 +1,32 @@
+//Java调用aardio
+import console;
+import java;  
+
+//创建 Java 虚拟机
+var jvm = java(); 
+
+//导入 Java 类
+HelloworldApp = jvm.import( "aardio.sample.HelloworldApp");
+
+//为 Java 提供 Native API
+//请先在 Java 类HelloworldApp 中声明 API: static native String aardio(String code);
+HelloworldApp.registerNative(
+	function(env,jobject,jstring){
+		var code = jvm.parseString(jstring) //也可以用 owner.parseString(jstring)
+		var func = loadcode(code) 
+		return jvm.string( func() )
+	},"aardio","string(string)"
+)
+	 
+/*
+创建 Java 类实例,并调用其成员方法,
+Java 会在 CLASSPATH 指定的搜索目录下使用 Java 类名(替换'.'为'\')" 去查找类，
+CLASSPATH 已默认添加 "/java/"以及"/java/*.jar"。
+
+例如 aardio.sample.HelloworldApp 对应的文件是 /java/aardio/sample/HelloworldApp.class 
+aardio.sample.HelloworldApp 与 aardio 中的库类似名字空间与实际的文件路径结构一致 
+*/
+var helloworld = HelloworldApp();
+console.log( "Java 函数返回值",helloworld.test_aardio() );
+
+console.pause()

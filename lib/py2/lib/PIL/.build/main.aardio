@@ -1,0 +1,23 @@
+import fsys;
+import ide; 
+
+//获取生成 EXE 文件所在目录
+var publisDir = ide.getPublisDir();
+if(!#publisDir) return; 
+
+//获取发布后 PIL 存储位置
+var pyLibTarget =  fsys.joinpath(publisDir,"\lib\py2\lib\PIL\.py\PIL\" ); 
+if( ! io.exist(pyLibTarget) ){ 
+	io.createDir( pyLibTarget );
+	
+	//查找扩展库中 Python 模块 PIL 所在目录
+	var libPath,libDir = io.libpath("py2.lib.PIL");
+	var pyLibSrc = fsys.joinpath(libDir,"\.py\PIL\*.*");
+	
+	//清除缓存
+	fsys.delete(fsys.joinpath(libDir,"\.py\PIL\__pycache__"));
+	
+	//复制 PIL 模块到发布目录
+	fsys.copy(pyLibSrc,pyLibTarget,0x10/*_FOF_NOCONFIRMATION*/  | 0x200/*_FOF_NOCONFIRMMKDIR*/); 
+}
+

@@ -1,0 +1,29 @@
+import xcgui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469;bgcolor=15245824)
+winform.add(
+closebutton={cls="xcclosebutton";text="r";left=725;top=2;right=749;bottom=28;dr=1;dt=1;font=LOGFONT(name='Marlett');transparent=1;z=1};
+xcele={cls="xcele";left=31;top=40;right=735;bottom=456;db=1;dl=1;dr=1;dt=1;z=2}
+)
+/*}}*/
+
+xcgui.layoutObject.show(true);
+
+var ltFrame = xcgui.layoutObject();
+ltFrame.setAlignH("right")
+ltFrame.setAlignV("top")
+ltFrame.setPadding(10,10,10,10);
+ltFrame.setSpace(2);
+var button1 = ltFrame.createButton("111",160,20);
+ltFrame.createButton("222",160,20);
+ltFrame.createButton("333",160,20);
+ltFrame.createText("ShapeText",60,20);
+
+winform.xcele.layoutObject = ltFrame;
+
+button1.on("click",function(){
+	winform.msgbox("再点一下试试?!")
+})
+
+winform.show();
+win.loopMessage();

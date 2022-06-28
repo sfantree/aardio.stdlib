@@ -1,0 +1,130 @@
+﻿
+class synCard{
+    ctor( port ){
+        if(!port) port = api.Syn_FindUSBReader();
+        this.port = port;
+    };
+    open = function(){
+        this.opened = api.Syn_OpenPort(this.port) == 0;
+        return this.opened;
+    };
+    close = function(){
+        if( this.opened ){
+            if(  api.Syn_ClosePort(this.port) == 0 ){
+                this.opened = false;
+                return true;
+            }
+        }
+    };
+    setPhotoName = function(iType,name){
+        if( name ) return api.SetPhotoNameEx(iType,..string.fromto(name) );
+        return 0 == api.Syn_SetPhotoName(iType);
+    };
+    setPhotoType = function(iType){
+        return 0 == api.Syn_SetPhotoType(iType);
+    };
+    setPhotoPath = function(path){
+        if(path) ..io.createDir(path);
+        return 0 == api.Syn_SetPhotoPath(2,..string.fromto(..io.fullpath(path),65001,0) );
+    };
+    setSexType = function(iType){
+        return 0 == api.Syn_SetSexType(iType);
+    };
+    setNationType = function(iType){
+        return 0 == api.Syn_SetNationType(iType);
+    };
+    findCard = function(){
+        var iin = {BYTE v[4] }
+        if( 0 == api.Syn_StartFindIDCard(this.port,iin,!this.opened ) ){
+            return iin.v;
+        }
+    };
+    selectCard = function(){
+        var sn = {BYTE v[4] }
+        if( 0 == api.Syn_SelectIDCard(this.port,sn,!this.opened ) ){
+            return sn.v;
+        }
+    };
+    readMsg = function(){ 
+        var cardData = IDCardData();
+        var err = api.Syn_ReadMsg(this.port,!this.opened,cardData);
+        if( err==0 ) || (err==1){
+        
+            for(k,v in cardData) 
+                cardData[k] = ..string.fromto(v,0,65001,-1);
+                
+            cardData.err = err;
+            return cardData;
+        }
+        return null,err;
+    }
+    readFpMsg = function(){ 
+        var cardData = IDCardData();
+        var fingerprint  = ..raw.buffer(0x104/*_MAX_PATH*/);
+        var err = api.Syn_ReadFPMsg(this.port,!this.opened,cardData,fingerprint);
+        if( err==0 ) || (err==1){
+        
+            cardData.fingerprint = fingerprint;
+            for(k,v in cardData) 
+                cardData[k] = ..string.fromto(v,0,65001,-1);
+                
+            cardData.err = err;
+            return cardData;
+        }
+        return null,err;
+    }
+}
+
+namespace synCard{
+    api = ..raw.loadDll("~\lib\synCard\.res\SynIDCardAPI.dll") ;
+    
+    class IDCardData {
+        byte name[32];//姓名 
+        byte sex[6];//性别
+        byte nation[20];//名族
+        byte born[18];//出生日期
+        byte address[72];//住址
+        byte idCardNo[38];//身份证号
+        byte grantDept[32];//发证机关
+        byte userLifeBegin[18];// 有效开始日期
+        byte userLifeEnd[18];// 有效截止日期
+        byte reserved[38];// 保留
+        byte photoFileName[255];// 照片路径
+    }
+}
+
+/**intellisense()
+synCard = 新中新读卡器接口
+synCard(.(端口) = 创建读卡器对象\n不指定端口时自动查找端口
+synCard() = !xzxsynCard.
+end intellisense**/
+
+/**intellisense(!xzxsynCard)
+open() = 打开端口,成功返回true
+close() = 关闭端口,成功返回true
+setPhotoName(.(iType,name) = 设置照片文件名 0=tmp ，1=姓名，2=身份证号，3=姓名_身份证号\n可选用参数@2指定指定文件名（不包括后缀）
+setPhotoType(.(iType) = 设置照片文件存储的格式\n0=bmp ， 1=jpeg，2=base64 ，3=WLT ，4=不生成图片
+setPhotoPath(.(path) = 本函数用于设置照片文件存储的路径
+setSexType(.(iType) = 设置返回性别的格式\n0=卡内存储的数据， 1=解释之后的数据
+setNationType(iType) = 设置返回民族的格式\n0=卡内存储的数据 ， 1=解释之后的数据	，2=解释之后+“族”
+findCard() = 找卡
+selectCard() = 选卡
+readMsg() = 读卡返回IDCardData，出错返回null\xzxsynCarddata.
+readFpMsg() =  读卡返回IDCardData,包含指纹和照片,出错返回null\xzxsynCarddata.
+end intellisense**/
+
+/**intellisense(\xzxsynCarddata)
+name = 姓名 
+sex = 性别
+nation = 名族
+born = 出生日期
+address = 住址
+idCardNo = 身份证号
+grantDept = 发证机关
+userLifeBegin = 有效开始日期
+userLifeEnd = 有效截止日期
+reserved = 保留
+photoFileName = 照片路径
+fingerprint = 指纹路径
+err = 错误代码，1表示解码照片不成功
+end intellisense**/

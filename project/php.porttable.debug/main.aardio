@@ -1,0 +1,125 @@
+// @Author  : popy32
+// @Contact : 74o5o27o8#qq.com
+// @File    : phpruncode.aardio
+// @Comment : PHP代码调试助手 (≡^∇^≡)
+
+/*
+2022年5月2日23:13:47 修改编辑器为microsoft/monaco-editor
+*/
+
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text='PHP代码调试助手 (\u2261^\u2207^\u2261)';right=863;bottom=615)
+winform.add(
+button={cls="button";text="运行代码";left=736;top=0;right=864;bottom=40;z=1};
+button2={cls="button";text="清空日志";left=736;top=40;right=864;bottom=80;z=3};
+button3={cls="button";text="关于";left=736;top=120;right=864;bottom=160;z=4};
+button4={cls="button";text="刷新";left=736;top=80;right=864;bottom=120;z=6};
+custom={cls="custom";text="自定义控件";left=0;top=0;right=736;bottom=456;z=5};
+edit2={cls="edit";left=0;top=456;right=864;bottom=616;edge=1;multiline=1;z=2}
+)
+/*}}*/
+
+import php;
+import console;
+import web.view;
+import wsock.tcp.simpleHttpServer; 
+
+theView  = web.view(winform.custom, ," --disable-site-isolation-trials --disable-web-security"); 
+var url = wsock.tcp.simpleHttpServer.startUrl("\web\index.html");
+
+theView.go(url);
+
+winform.Logd = function(...){
+	import debug;
+	import console;
+	import win.ui;
+    import time;
+    var args = {...};
+    var tm = time.now();
+    tm.format = "[%Y/%m/%d %H:%M:%S] ";
+    //
+    //var debugInfo = debug.queryinfo(2, "select source,function,upvars,name,currentline,activelines") ;
+    //winform.edit2.log(tostring(tm), "line: ", debugInfo[['currentline']], " ", ..string.join(args,' '),'\r\n');
+    
+    winform.edit2.log(tostring(tm), ..string.join(args,' '),'\r\n');
+
+    // 滚动条随光标滚动
+    winform.edit2.scrollCaret();
+}
+
+winform.button.oncommand = function(id,event){
+	
+	//var code = winform.edit.text;
+	var code = theView.xcall("window.editorGetText");
+	
+	//console.log(code);
+	
+	if(code and #code > 0) {
+		winform.code = code;
+	    thread.invoke( 
+	    	function(winform){
+	    		import php;
+                import console;
+                import debug;
+				import win.ui;
+    			import time;
+    			
+                var code = winform.code;
+                //winform.edit2.text = code;
+                var ret;
+                php.begin();
+                php.print = function( msg ) {
+					//winform.edit2.print("echo:", msg);
+					//winform.edit2.print(msg);
+					winform.Logd(msg)
+				}
+                
+                php.exec(code);
+                php.end();
+                //winform.edit2.print("");
+	    	}, winform
+	    )
+	}
+}
+
+winform.button2.oncommand = function(id,event){
+	// 清空日志
+	winform.edit2.text = "";
+}
+
+//winform.edit.text = 
+/***
+// 对象序列化
+class test{             
+  private $flag = "flag{this-is-flag}";             
+  public $a = "snail";             
+  static  $b = "beta";         
+}     
+
+$test = new test;     //建立一个test的对象；
+$data = serialize($test);   //将对象进行序列化；
+echo $data; 
+
+// MD5利用
+$_GET['name'] = "QNKCDZO";
+$_GET['password'] = "240610708";
+echo $_GET['name'] != $_GET['password'];
+echo MD5($_GET['name']) == MD5($_GET['password']);
+
+***/
+
+winform.button3.oncommand = function(id,event){
+	winform.Logd("这是一个可以离线运行PHP代码的工具 可以用作ctf web的调试工具");
+	winform.Logd("Github: https://github.com/sfantree/php.porttable.debug");
+	winform.Logd("Contact Me: popy32 Email: 74o5o27o8#qq.com");
+}
+
+winform.button4.oncommand = function(id,event){
+	theView.go(url);
+}
+
+
+
+winform.show();
+win.loopMessage();

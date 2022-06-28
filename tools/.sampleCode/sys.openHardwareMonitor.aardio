@@ -1,0 +1,25 @@
+//RUNAS//
+import win.ui;
+/*DSG{{*/
+var mainForm = win.form(text="aardio 利用开源库OpenHardwareMonitor获取CPU或显卡温度";right=791;bottom=699)
+mainForm.add(
+edit={cls="edit";left=8;top=4;right=787;bottom=696;db=1;dl=1;dr=1;dt=1;edge=1;hscroll=1;multiline=1;vscroll=1;z=1}
+)
+/*}}*/
+
+import sys.openHardwareMonitor; 
+var computer = sys.openHardwareMonitor.computer();
+
+computer.enumHardware(function(hardwareItem,path,index){
+	hardwareItem.Update()
+	mainForm.edit.print( path + hardwareItem.Name,hardwareItem.HardwareTypeString );
+	
+	for i,sensor in hardwareItem.eachSensors(){       
+		mainForm.edit.print(path+'\t',sensor.Name,sensor.ValueString,sensor.MaxString,sensor.SensorTypeString )
+	}	
+	
+	return path + '\t';	
+},"")
+
+mainForm.show() 
+win.loopMessage();

@@ -1,0 +1,20 @@
+//Color
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="System.Drawing.Color";right=757;bottom=467)
+winform.add(
+plus={cls="plus";left=95;top=95;right=461;bottom=192;z=1}
+)
+/*}}*/
+
+import System.Drawing; //建议右键点库名称 -> 跳转到定义,看看这个库的源代码
+/*
+System.Drawing.Color 是一个 struct 特例，
+System.Drawing.Color 在 aardio 会自动转换为 ARGB 格式的颜色数值。
+调用 .Net 时 ARGB 格式的颜色数值也能自动转换为 System.Drawing.Color 对象。
+注意 GDI+ 使用 ARGB 格式颜色值，与 gdip库，plus 控件等兼容。
+*/
+winform.plus.background = System.Drawing.Color.Blue; //这是一个 .Net 里的枚举值
+
+winform.show();
+win.loopMessage();

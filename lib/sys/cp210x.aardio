@@ -1,0 +1,54 @@
+﻿//cp210x 驱动
+import sys.installed;
+import zlib.installer;
+import win.reg;
+	
+namespace sys.cp210x;
+
+isInstalled = function(){
+	return ..sys.installed.find("@(silabser) Ports");
+}
+
+install = function(){
+	var tempDir = ..io.tmpname("CP210x")
+	var dir = ..zlib.installer("CP210x 驱动"
+		,"https://www.silabs.com/documents/public/software/CP210x_Windows_Drivers.zip"
+		,"/S /Q /SE /SW ",tempDir,"CP210xVCPInstaller_x86.exe","CP210xVCPInstaller_x64.exe")
+		
+	::Kernel32.MoveFileEx(tempDir,null,0x4/*_MOVEFILE_DELAY_UNTIL_REBOOT*/)  
+	return dir && isInstalled(); 	
+}
+
+require = function(){
+	var ret = isInstalled();
+	if(ret){ return ret; }
+	return install();
+}
+
+ignoreHardwareSerialNumber = function(vid,pid){
+	var name = ..string.concat("IgnoreHWSerNum",vid:"10C4",pid:"EA60")
+	var reg = ..win.reg("HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\UsbFlags\");
+	var r = reg.queryValue(name)
+	
+	if(r && r[1]==1){
+		reg.close();
+		return true;
+	}
+	
+	if(!..process.regAs(
+		`add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\UsbFlags" /v `+name+` /t REG_BINARY /d 01 /f`
+		) ) return false;
+	
+	var r = reg.queryValue(name)
+	reg.close();
+	
+	return r && r[1]==1;	
+}
+
+/**intellisense()
+sys.cp210x = CP210X USB 转串口驱动
+sys.cp210x.isInstalled() = 检测并返回 CP210X 驱动是否安装,成功返回驱动路径
+sys.cp210x.install() = 下载并重装CP210X 驱动,成功返回驱动路径
+sys.cp210x.require() = 如果未安装 CP210X 驱动则下载并安装此驱动,\n成功返回驱动路径
+sys.cp210x.ignoreHardwareSerialNumber(.(vid,pid) = 禁止设备串口号不断递增,\n成功返回true
+end intellisense**/

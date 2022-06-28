@@ -1,0 +1,15 @@
+//eval 示例
+import console;
+import py3;
+
+//编译python代码对象
+var code =  py3.compile("1+2");
+
+//运行代码并返回值
+console.log( code.eval() )
+
+var dict = py3.dict() //创建一个自定义的名字空间
+dict.exec("x=123"); //在名字空间下执行代码
+console.log( dict.eval("x")   ) //在自定义的名字空间下执行eval功能
+
+console.pause()

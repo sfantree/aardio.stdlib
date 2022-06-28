@@ -1,0 +1,36 @@
+import com.picture;
+import com.interface.IPicture;
+import fsys.stream;
+
+//抓屏，并获取IPicture静态COM接口
+var picture = com.picture.snap()
+var ipicture = com.interface.IPicture.Query(picture);
+
+//图像写到内存流
+var stream = fsys.stream();
+ipicture.saveAsFile(stream,true);
+
+//从内存流读到图像数据
+var bin = stream.readAll();
+
+/*
+转换为GDI+图像，就可以保存图像的压缩格式到内存了
+*/
+
+import com.picture;
+import gdip.bitmap;
+import fsys.stream;
+
+//抓屏，并获取IPicture静态COM接口
+var picture = com.picture.snap()
+var bmp = gdip.bitmap(picture);
+
+//图像写到内存流
+var stream = fsys.stream();
+bmp.saveToStream(stream,"*.jpg",80);
+
+//内存写到文件
+string.save("/test.jpg", stream.readAll())
+
+import crypt.bin;
+var str  = crypt.bin.encodeBase64( stream.readAll() );

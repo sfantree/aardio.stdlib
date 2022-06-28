@@ -1,0 +1,28 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=497;bottom=416)
+winform.add()
+/*}}*/
+
+var code = `
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=367;bottom=226)
+winform.add()
+/*}}*/
+import console;
+var args = {...};//接收全部参数
+var parent = table.shift(args);
+
+console.log("父窗体",parent);
+console.log("其它参数")
+console.varDump(args)
+
+winform.show()
+win.loopMessage();
+
+`
+
+winform.loadForm(code,"参数1","参数2","参数3")
+winform.show()
+win.loopMessage();

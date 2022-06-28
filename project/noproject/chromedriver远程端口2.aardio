@@ -1,0 +1,24 @@
+import console; 
+import win;
+import chrome.driver;
+
+var chromeDriver = chrome.driver(); 
+var chromeDriverSes = chromeDriver.attach(9222);
+
+
+// console.dump( chromeDriverSes.sessionInfo );
+
+//console.dump( chromeDriverSes.source.get() );
+
+//chromeDriverSes.eachWindow()
+
+win.delay(1000);
+console.dumpJson( chromeDriverSes.cookie.get() );
+
+for( index,window,title,url in chromeDriverSes.eachWindow() ){
+	console.dump( index,window,title,url );
+}
+
+//chromeDriverSes.refresh();
+chromeDriver.close();
+console.pause(true);

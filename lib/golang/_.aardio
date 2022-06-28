@@ -1,0 +1,179 @@
+﻿import win;
+import process;
+import console;
+import zlib.httpFile;
+import win.path;
+import fsys.lnk;
+import fsys;
+assert(!golang,"引用 golang 下面的库以后不能再引用 golang,请先引用 golang。");
+
+class golang{
+	ctor( root,workDir ){
+		
+		this.install = function(version){
+			..zlib.httpFile.preget = true;
+			
+			//go自1.11开始已经放弃支持win xp
+			if(_WINXP){ version = "1.11" }	 
+			
+			var ok,err = ..zlib.httpFile.download("https://golang.google.cn/dl/go"+(version:"1.16.1")
+				+( _WIN_64 ? ".windows-amd64.zip" : ".windows-386.zip" ) ,"正在下载Go编译器（Google服务器响应有点慢）"
+				,"~\lib\golang\.res"
+				,"~\lib\golang\.res") 
+			if( !ok  ){
+				..console.log(err);
+				..fsys.delete("~\lib\golang\.res\go")
+			} 
+		}
+		
+		if(!root){
+			
+			if( ..io.exist("~\lib\golang\.res\go\bin\go.exe") ){
+				root = ..io.fullpath("~\lib\golang\.res\go")
+			}
+			
+			if( ! ..io.exist(root) ){
+				root = ..string.getenv("GOROOT");
+				if( ! ..io.exist(root) ){
+					this.path = ..win.path.search("go.exe");
+					
+					if( this.path ){
+						root = ..fsys.getParentDir(this.path)
+						root = root ? ..fsys.getParentDir(root)
+						if(!root) this.path = null;
+					}
+				}
+			}
+			
+			if( ! ..io.exist(root) ){
+				if(..io.exist("C:\Go\bin\go.exe")){
+					root = "C:\Go"
+				}
+			} 
+			
+			if( ! ..io.exist(root) ){
+				if(!..io.exist("~\lib\golang\.res\go\bin\go.exe") ){
+					this.install("1.16.2");
+				}
+				
+				if(!..io.exist("~\lib\golang\.res\go\bin\go.exe") ){
+					error("未安装Go编译器",2);
+				}
+				
+				root = ..io.fullpath("~\lib\golang\.res\go")
+			}
+		}
+		
+		this.root = ..io.fullpath(root);
+		..string.setenv("GO111MODULE","on");
+		..string.setenv("GOPROXY","https://goproxy.io,direct");
+		..string.setenv("CGO_ENABLED","1");
+    	..string.setenv("GOROOT",this.root);
+    	..string.setenv("GOARCH","386");
+    	..string.setenv("GOOS","windows");
+ 
+    	..win.path.add( ..io.joinpath(this.root,"\bin") );
+    	..string.setenv("GOCACHE",..io.joinpath(this.root,"\.cache") );
+    	this.path = ..io.joinpath(this.root,"\bin\go.exe") 
+    	
+    	import process.gcc;
+    	if(!process.gcc.path){ 
+			..console.debug("未安装 MinGW-W64 或 TDM-GCC，不支持生成 DLL 文件！") 
+		}
+		
+		this.environment = {};
+		this.workDir = workDir : ..io.fullpath("/");
+		
+		this.command = function(...){
+			..console.open() 
+			var prcs =  ..process( this.path,{"go";...} ,{workDir=this.workDir;environment=this.environment} ); 
+			prcs.wait();
+			prcs.free();
+		};
+		
+		this.command("version");
+	};
+	runCode = function(path,code,...){
+		..string.save(path,code)
+		return this.command("run",..io.localpath(path) : path,...);
+	};
+	run = function(path,...){
+		return this.command("run",..io.localpath(path) : path,...);
+	};
+	build = function(path,...){
+		return this.command("build",..io.localpath(path) : path,...);
+	};
+	buildStrip = function(path,...){
+		return this.command("build","-ldflags","-s -w",..io.localpath(path) : path,...);
+	};
+	addPath = function(path){
+		..win.path.add(path);
+	};
+	setProxy = function(proxy){
+		..table.mixin(this.environment,{
+			http_proxy=proxy;
+			https_proxy=proxy;
+		});
+	};
+	buildShared = function(path,outpath,...){
+		if(!outpath){
+			if( ..string.endWith(path,".go",true)){
+				outpath = ..string.left(path,-4) + ".dll"
+			}
+			else {
+				outpath = path + ".dll"
+			} 
+		}
+		return this.command("build","-buildmode=c-shared"
+			,"-ldflags","-s -w" //-s 去掉符号表，-w是去掉DWARF调试信息，可减小生成文件体积
+			,"-o",..io.localpath(outpath) : outpath,..io.localpath(path) : path,...);
+	};
+	buildArchive = function(path,outpath,...){
+		if(!outpath){
+			if( ..string.endWith(path,".go",true)){
+				outpath = ..string.left(path,-4) + ".dll"
+			}
+			else {
+				outpath = path + ".dll"
+			} 
+		}
+		return this.command("build","-buildmode=c-archive","-ldflags","-s -w","-o",..io.localpath(outpath) : outpath,..io.localpath(path) : path,...);
+	};
+	get = function(paths,...){
+		for item in ..string.lines(paths) { 
+			if(#item)this.command("get",item,...);
+		}					 
+	};
+	install = function(path,...){
+		return this.command("install",..io.localpath(path) : path,...);
+	};
+	version = function(){
+		return this.command("version");
+	};
+	env = function(){
+		return this.command("env");
+	}
+}
+
+import golang.string;
+
+/**intellisense()
+golang = go编译器调用程序\n此扩展库可自动下载配置Go编译器\n支持调用系统已安装的git,mingw,编译dll可自动搜索并获取mingw安装位置
+golang(.("go安装目录","go源码目录") = 创建go编译器调用程序,所有参数可选,\n如果不指定go安装目录,自环境变量GOROOT中获取\n如果查找Go编译器失败会自动下载Go编译器\ngo源码目录默认为aardio工程目录
+golang.string() = 创建go语言string对象,返回结构体,\n作为调用go函数的参数使用时,\ngo语言的API参数类型必须声明为*string指针
+golang() = !golang.
+!golang.command(__) = 执行go命令,支持一个或多个命令参数
+!golang.run(__) = 执行go run命令,参数中指定要编译运行的代码
+!golang.runCode(.("代码路径","go代码") = 保存go代码并运行文件
+!golang.build(__) = 执行go build命令生成EXE文件,参数中指定要编译的代码文件\n可增加多个参数
+!golang.buildShared( = 执行go build命令生成DLL动态库
+!golang.buildShared(.("源文件文件路径","输出文件路径") = 执行go build命令生成DLL动态库,\n参数@1必须指定要编译的代码文件,可选指定输出dll文件路径,\n可增加多个参数\n\n编译DLL需要依赖 GCC,如果没找到 GCC 会自动安装,\n64位系统可自行安装Mingw-w64,https://sourceforge.net/projects/mingw-w64 \n32位系统可安装 http://tdm-gcc.tdragon.net/download\n\n注意每个Go导出函数前面都要加上 //export 要导出的函数名 
+!golang.buildArchive(.("源文件文件路径","输出文件路径") = 执行go build -buildmode=c-archive命令
+!golang.buildStrip(__) = 执行go build命令生成体积较小的EXE文件,\n默认添加-ldflags "-s -w"参数移除调试信息\n文件参数中指定要编译的代码文件
+!golang.install(__) = 执行go install命令,参数中指定要编译安装的代码
+!golang.addPath(__) = 添加路径到PATH环境变量
+!golang.setProxy("socks5://127->0->0->1:1080") = 设置代理服务器
+!golang.get(__) = 执行go get命令,安装远程代码包，\n可在参数@1中使用多行字符串指定多个远程包,\n需要先安装git,https://git-scm.com/download/win
+!golang.env() = 执行go env命令，显示环境变量
+!golang.version() = 执行go version命令，显示版本
+end intellisense**/

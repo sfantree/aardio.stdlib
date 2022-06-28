@@ -1,0 +1,45 @@
+﻿ 
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="工程向导 - winform";right=1031;bottom=712;bgcolor=16777215;border="dialog frame")
+winform.add()
+/*}}*/
+
+import web.form; 
+var wb = web.form( winform,5/*_UIFLAG_DIALOG*/|0x4/*_UIFLAG_NO3DBORDER*/ | 0x8/*_UIFLAG_SCROLL_NO*/,,,true);
+wb.html = /**
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8"> 
+</head>
+<body>
+使用标准库 web.view 创建软件界面。<br>
+web.view 基于 WebView2( Edge/Chromium内核 )。<br>
+WebView2 性能强悍、稳定可靠，支持 WIN7，WIN8，WIN10。<br>
+web.view 提供了非常简洁的接口，Javascript 与 aardio 可以方便地互调。<br>
+web.view 库本身的体积非常小，可以生成独立 EXE 文件。<br><br>
+
+WebView2 与 Edge 浏览器各自独立, WebView2 Runtime 需要单独安装。<br>
+运行时可自动安装 WebView2 Runtime, 下载速度非常快，所以体验还不错。<br>
+并且这种公共运行库，应当会较快普及，微软有承诺未来操作系统会自带 WebView2 Runtime<br><br>
+
+此示例简单演示了 Typescript + React Hooks + Ant Design 的用法。<br>
+1、请先安装 Node.js,VS Code,yarn 等前端开发环境。<br><br>
+
+2、然后在此工程内右键点「网页源码」目录，弹出菜单中点击：「用外部编辑器打开」<br>
+默认会在 VS Code 中打开，在 VS Code 中运行命令 yarn 安装依赖。<br><br>
+
+3、然后运行命令 yarn start 启动网页调试服务器即可（修改源码网页可实时刷新）。<br>
+发布 EXE 前在 VS Code 中运行 yarn build 命令即可，可生成独立的 EXE 文件。<br>
+</body>
+</html>
+**/
+
+winform.getTemplatePath = function(){
+	return io.fullpath("/template/web/view/") 
+}
+
+winform.show() 
+win.loopMessage();
+return winform;

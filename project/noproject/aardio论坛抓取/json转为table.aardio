@@ -1,0 +1,81 @@
+import console; 
+
+var jsString = /**
+{
+  "configs": [
+    {
+      "server": "139.59.226.150",
+      "server_port": 8080,
+      "password": "free123123",
+      "method": "chacha20",
+      "remarks": "新加坡节点",
+      "auth": false
+    },
+    {
+      "server": "usa.iss.tf",
+      "server_port": 23456,
+      "password": "02827650",
+      "method": "aes-256-cfb",
+      "remarks": "ISS-A服务器",
+      "auth": false
+    },
+    {
+      "server": "usb.iss.tf",
+      "server_port": 443,
+      "password": "18824281",
+      "method": "aes-256-cfb",
+      "remarks": "ISS-B服务器",
+      "auth": false
+    },
+    {
+      "server": "jpa.iss.tf",
+      "server_port": 10000,
+      "password": "64580463",
+      "method": "aes-256-cfb",
+      "remarks": "ISS-C服务器",
+      "auth": false
+    }
+  ],
+  "strategy": null,
+  "index": 16,
+  "global": false,
+  "enabled": true,
+  "shareOverLan": false,
+  "isDefault": false,
+  "localPort": 1080,
+  "pacUrl": null,
+  "useOnlinePac": false,
+  "availabilityStatistics": false,
+  "autoCheckUpdate": true,
+  "isVerboseLogging": false,
+  "logViewer": {
+    "fontName": "Consolas",
+    "fontSize": 8.25,
+    "bgColor": "Black",
+    "textColor": "White",
+    "topMost": false,
+    "wrapText": false,
+    "toolbarShown": false,
+    "width": 600,
+    "height": 400,
+    "top": 610,
+    "left": 1080,
+    "maximized": false
+  },
+  "useProxy": false,
+  "proxyServer": null,
+  "proxyPort": 0
+}
+**/
+
+//var json = string.load( jsString );
+var json = jsString
+console.log(json);
+console.log("=====================================================");
+var tab  = web.json.parse( json );
+json = web.json.stringify( tab, true );
+console.log(json);
+
+//string.save( "gui-config.test", json );
+console.pause(true);
+ 

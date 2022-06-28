@@ -1,0 +1,175 @@
+﻿import gdip.imageAttributes;
+
+namespace win.ui;
+
+class lcdClock{
+	ctor(plusCtrl){
+		this.plusCtrl = plusCtrl;
+		if(!plusCtrl.fontCharMap){
+			var bmp = ..gdip.bitmap($"~\lib\win\ui\lcdClock\.res\lcd.png"); 
+			plusCtrl.fontCharMap = bmp.split(11).map(
+				["0"] = 1;
+				["1"] = 2;
+				["2"] = 3;
+				["3"] = 4;
+				["4"] = 5;
+				["5"] = 6;
+				["6"] = 7;
+				["7"] = 8;
+				["8"] = 9;
+				["9"] = 10;
+				[":"] = 11;
+			);
+		}
+		
+		if(!plusCtrl.textPadding) plusCtrl.textPadding = {
+			left = 10;
+			top = 10;
+			bottom = 10;
+			right = 10;
+		}
+
+		this.clockFormat = "%H:%M:%S";
+		this.plusCtrl.text = tostring(..time(0),"!%M:%S");
+		
+		this.millisCountDown = 0;
+		this.millisInFuture = 0;
+		this.$initMillisInFuture = 0;
+	};
+	setImageAttributes = function(attr){
+		if(!this.plusCtrl.fontCharMap2){
+			this.plusCtrl.fontCharMap2 = ..table.assign({},this.plusCtrl.fontCharMap);
+		}
+		var bmps = this.plusCtrl.fontCharMap
+		if(bmps){
+			for(k,v in this.plusCtrl.fontCharMap2){
+				bmps[k] = v.copy(attr)
+			} 
+		}
+		this.plusCtrl.redraw();
+	};
+	setColor = function(color){
+		var attr = ..gdip.imageAttributes();
+		attr.setColor(color);
+		this.setImageAttributes(attr);
+		attr.dispose();
+	};
+	startClock = function(){
+		this.plusCtrl.onAnimation = function(){
+			this.plusCtrl.text = tostring(..time(,this.clockFormat));
+			return true;
+		}
+		this.plusCtrl.startAnimation(1000);
+		this.mode = "clock";
+	}; 
+	startTimer = function(){
+		this.plusCtrl.stopAnimation();
+		this.millisCountDown = 0;
+		
+		var start = ..time.tick()- (this.millis : 0);
+		this.plusCtrl.onAnimation = function(state){ 
+			this.millis = ..time.tick()-start;
+			var t =  ..math.floor( this.millis/1000 );
+			this.plusCtrl.text = tostring(..time(t,t>=3600?"!%H:%M:%S":"!%M:%S")); 
+			return true;
+		}
+		
+		this.plusCtrl.startAnimation(1000);
+		this.mode = "timer";
+	};
+	startCountDownTimer = function(millisInFuture,onFinish){
+		this.plusCtrl.stopAnimation();
+		this.millis = 0;
+		
+		if(millisInFuture) {
+			this.resetCountDownTimer(millisInFuture);
+		}
+		elseif(millisInFuture===null){
+			if(this.millisInFuture<=this.millisCountDown){
+				this.resetCountDownTimer(this.$initMillisInFuture);
+			}
+		}
+		
+		if( type(this.millisInFuture)!=type.number) {
+			error("请使用参数@1指定倒计时秒数",2); 
+		}
+		
+		this.millisInFuture = this.millisInFuture - this.millisCountDown ;
+		
+		var secInFuture = this.millisInFuture/1000;
+		this.plusCtrl.text = tostring(..time(secInFuture,secInFuture>=3600?"!%H:%M:%S":"!%M:%S") );
+
+		if(!this.millisInFuture) {
+			if(onFinish) onFinish();
+			return;
+		}
+		
+		var start = ..time.tick();
+		this.plusCtrl.onAnimation = function(state){ 
+			this.millisCountDown = ( ..time.tick()-start );
+			if(this.millisCountDown>=this.millisInFuture){
+				this.millisCountDown = this.millisInFuture;
+				this.plusCtrl.stopAnimation();
+				if(onFinish) onFinish();
+			}
+			
+			var t =  ..math.ceil( (this.millisInFuture - this.millisCountDown) /1000 );
+			this.plusCtrl.text = tostring(..time(t,t>=3600?"!%H:%M:%S":"!%M:%S"));
+			return true;
+		}
+		this.plusCtrl.startAnimation(500);
+		this.mode = "countdown";
+	}; 
+	resetTimer = function(){
+		this.plusCtrl.stopAnimation();
+		this.millis = 0;
+		this.plusCtrl.text = tostring(..time(0,"!%M:%S") );
+	}; 
+	resetCountDownTimer = function(millisInFuture){
+		if( ..time.istime(millisInFuture) ){
+		   millisInFuture = tonumber(millisInFuture) * 1000;
+		}
+		
+		if( type(millisInFuture)!=type.number) error("请使用参数@1指定倒计时秒数",2);
+		
+		this.plusCtrl.stopAnimation();
+		this.millisInFuture = millisInFuture;
+		this.$initMillisInFuture = millisInFuture;
+		this.millisCountDown = 0;
+		var sec = this.millisInFuture/1000;
+		this.plusCtrl.text = tostring(..time(sec,sec>=3600?"!%H:%M:%S":"!%M:%S") );
+	};
+	stop = function(){
+		if(this.mode == "countdown"){
+			this.millis = 0;
+			this.resetCountDownTimer(this.$initMillisInFuture);
+		}
+		else{
+			this.millisCountDown = 0;
+			this.resetTimer();
+		}
+	};
+	pause = function(){
+		this.plusCtrl.stopAnimation();
+	}; 
+}
+
+/**intellisense()
+win.ui.lcdClock = 创建液晶时钟控件
+win.ui.lcdClock(.(plus控件,计时器格式,时钟格式,显示属性) = 参数@1必须指定一个plus控件,\nplus控件可以使用fontCharMap属性自定义字符的输出图像,\n参数@2,参数@3可省略,格式参考time对象说明,\n计时器格式首字符必须为!号\n可选用参数@4指定gdip.imageAttributes对象控制显示属性
+win.ui.lcdClock() = !win_ui_lcdClock.
+!win_ui_lcdClock.startClock() = 启动时钟,用于实时显示当前时间\n不会清零计时器
+!win_ui_lcdClock.startTimer() = 启动计时器,或自暂停状态恢复计时\n调用此函数也会重置倒计时数据
+!win_ui_lcdClock.startCountDownTimer(倒计时毫秒数,结束回调函数) = @.startCountDownTimer(,function(){
+	__/*倒计时结束触发此回调函数,\n也可以使用setCountDownMillisInFuture事先指定倒计时毫秒数\n倒计时毫秒数必须大于0*/
+})
+!win_ui_lcdClock.resetTimer() = 重置计时器
+!win_ui_lcdClock.resetCountDownTimer(__) = 重置倒计时器\n参数可指定倒计时总毫秒数,也可以使用一个time对象指定倒计时的时间
+!win_ui_lcdClock.stop() = 重置清零计时、倒计时数据并停止计时
+!win_ui_lcdClock.pause() = 暂停时钟或计时器
+!win_ui_lcdClock.millisCountDown = 倒计时已经过的毫秒数\n不要直接改动此值
+!win_ui_lcdClock.millisInFuture = 倒计时设定的总毫秒数\n不要直接改动此值
+!win_ui_lcdClock.mode = 当前﻿工作模式\n倒计时为"countdown"\n计时器为"timer"\n时钟为"clock"\n切换到倒计时器、或计时器模式总会重置另一个\n切换到时钟模式不会重置计时器
+!win_ui_lcdClock.setImageAttributes(__) =  使用参数指定的 gdip.imageAttributes 对象调色
+!win_ui_lcdClock.setColor(__) =  替换颜色，\n参数 @1 支持 RGBA 格式颜色数值
+end intellisense**/

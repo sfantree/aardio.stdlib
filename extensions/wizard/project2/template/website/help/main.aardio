@@ -1,0 +1,58 @@
+﻿<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <script type="text/javascript"></script>
+    <title>帮助页面</title>
+</head>
+<body style="font-size:14px;word-wrap: break-word;word-break: normal;"><?
+    if(response) {
+    	response.jsonPrettyPrint = true; 
+    	//response.write(request) //表对象可以直接输出,自动转换为JSON
+    }
+?>
+<div> 
+    <p>一、aardio 代码如果以 HTML 代码开始，或以 &lt? 标记开始则自动启用模板语法。<br>
+        aardio 代码可以是纯 aardio 代码，也可以是纯 HTML，或者是 HTML、aardio 相互混合的模板代码。<br>
+        可直接将 HTML 模板代码复制到 aardio 编辑器中运行并预览网页。</p>
+
+    <br>可在 aardio 开发环境新建一个 aardio 源码文件，复制下面的源代码并粘贴到 aardio 编辑器中：
+    <div class="codeblock"> 
+        <p style="font-family: Consolas"></font><font color="#008000">&lt;!doctype&nbsp;html&gt;<BR>
+            &lt;html&gt;&lt;head&gt;&lt;meta&nbsp;charset="utf-8"&gt;&lt;title&gt;帮助页面&lt;/title&gt;&lt;/head&gt;<BR>
+            &lt;body&gt;当前时间&lt;?</font><font color="#000000">&nbsp;=&nbsp;time()&nbsp;</font><font color="#008000">?&gt;<BR>
+            &lt;/body&gt;&lt;/html&gt;<BR>
+            </font></p>
+            
+    </div>
+然后点【运行】按钮，可以看到立即生成了一个网页。<br>
+
+   <p>二、启用模板语法以后，aardio 代码必须置于 &lt;? ..... ?&gt; 内部。<br>
+    aardio 将不在 &lt;? ..... ?&gt; 之内的部分作为参数调用全局函数 print 函数输出。 <br>
+    aardio 模板语法并不限于输出 HTML 代码 - 而是可用于输出任何文本。</p>
+
+   <p>三、使用 print 函数的规则：
+    <ul>
+    <li>aardio 中全局 print 函数只能用于捕获或修改模板输出，不可用于其他用途。</li>
+    <li>print 允许接收多个参数，并且必须对每个参数调用 tostring() 以转换为字符串。</li>
+    <li>在一个独立 aardio 模板文件解析结束时，print 函数将收到一个 null 参数调用。</li>
+    </ul>
+
+    <br>aardio 提供 string.loadcode() 函数可直接解析 aardio 模板并获取模板输出。 <br>
+请在标准库 preload/string 中查看此函数的源代码，了解如何通过自定义 print 函数捕获或修改模板输出。
+   </p>
+
+   <p>四、模板开始标记  &lt;? 必须独立，不能紧跟英文字母。例如 &lt;?xml.....  不被解析为 aardio 代码段开始标记。 <br>
+    另外，aardio 总是忽略文件开始的空白字符（包含空格、制表符，换行）。</p>
+
+   <p>五、可以使用 &lt?=表达式?&gt; 输出文本 - 作用类似于 print( 表达式 )，可用逗号分隔多个表达式。<br>
+aardio 会忽略表达式前面等号首尾的空白字符 , 下面的写法也是允许的：<br>
+    <p style="font-family: 新宋体"></font><font color="#008000">&lt;?</font><font color="#000000"><BR>
+    =&nbsp;</font><font color="#800000">表达式1,表达式2</font><font color="#000000"><BR>
+    </font><font color="#008000">?&gt;</font></p></p>
+
+
+   <p>六、aardio 文件只能以 UTF-8 编码保存，不建议添加 UTF8 BOM(如果添加了 BOM,aardio 仍然会自动移除)</p>
+
+<!--  可在aardio中直接运行此文件(但只有在服务器中运行才会创建request,response对象) -->

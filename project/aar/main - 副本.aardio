@@ -1,0 +1,16 @@
+
+
+global.onError = function( err,over ){ 
+    if(!over){
+        import debug;
+        var stack = debug.traceback(,"调用栈",3);
+    }
+    
+    return eval('io.print(err)') 
+}
+
+
+arg = _CMDLINE;
+if(arg="") return eval('io.print(">> aardio 欢迎您！\n>>当前代码未被执行！！\n>>请正确保存为aardio文件类型后再试！！")'); 
+if(!string.find(arg,".aardio")) arg+=".aardio";
+loadcodex(string.load(arg));

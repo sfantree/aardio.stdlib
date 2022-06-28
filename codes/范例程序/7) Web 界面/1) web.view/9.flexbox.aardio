@@ -1,0 +1,72 @@
+//CSS 弹性盒布局
+import fonts.fontAwesome;
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="CSS 弹性盒布局工具";right=992;bottom=623;bgcolor=16777215)
+winform.add(
+custom={cls="~\codes\范例程序\7) Web 界面\7) HTMLayout\flex.aardio";left=1;top=0;right=992;bottom=570;db=1;dl=1;dr=1;dt=1;hide=1;transparent=1;z=7};
+nav0={cls="plus";text="教程";left=400;top=573;right=487;bottom=605;border={top=1;color=-16744448};db=1;dr=1;font=LOGFONT(name='FontAwesome');z=9};
+nav1={cls="plus";text="Flexo";left=487;top=573;right=586;bottom=605;border={top=1;color=-16744448};db=1;dr=1;font=LOGFONT(name='FontAwesome');z=1};
+nav2={cls="plus";text="Flexy boxes";left=586;top=573;right=685;bottom=605;border={top=1;color=-16744448};db=1;dr=1;font=LOGFONT(name='FontAwesome');z=2};
+nav3={cls="plus";text="Flexbox playground";left=685;top=573;right=834;bottom=605;border={top=1;color=-16744448};db=1;dr=1;font=LOGFONT(name='FontAwesome');z=3};
+nav4={cls="plus";text="HTMLayout / Sciter";left=834;top=573;right=978;bottom=605;border={top=1;color=-16744448};db=1;dr=1;font=LOGFONT(name='FontAwesome');z=4};
+navBegin={cls="plus";left=140;top=573;right=400;bottom=574;bgcolor=32768;border={color=-16744448};db=1;dl=1;dr=1;forecolor=16777215;linearGradient=180;z=5};
+navEnd={cls="plus";left=978;top=573;right=988;bottom=605;border={top=1;color=-16744448};db=1;dr=1;z=6};
+static={cls="static";left=1;top=0;right=992;bottom=570;db=1;dl=1;dr=1;dt=1;transparent=1;z=8}
+)
+/*}}*/
+
+import win.ui.tabs;
+var tbs = win.ui.tabs(winform.nav0,winform.nav1,winform.nav2,winform.nav3,winform.nav4,winform.nav5)
+tbs.margin = 0;
+
+tbs.skin({
+	foreground={
+		active=0xFFFFFFFF;
+		default=0x00FFFFFF;
+		hover=0xFFCCCCCC;
+	};
+	checked={
+		foreground={ 
+			default=0x00FFFFFF; 
+		};
+		border = { 
+			default = {left=1;right=1;bottom=1;color=0xFF008000} 
+			disabled = {left=1;right=1;bottom=1;color=0xFF008000} 
+		}; 
+	}
+});
+
+import web.view;
+var wb = web.view(winform.static);
+if(_WINXP){ error("本程序基于 WebView2 ，不支持 XP 系统",2) }
+
+var urls = {
+	"https://chinese.freecodecamp.org/learn/responsive-web-design/#css-flexbox";
+	"https://www.flexo.icu/";
+	"https://the-echoplex.net/flexyboxes/";
+	"https://codepen.io/enxaneta/full/adLPwv"
+}
+
+tbs.onSelchange = function(idx,strip,form){
+	var url = urls[idx]
+	if(url){ 
+		winform.custom.show(false);
+		winform.static.show(true)
+		
+		strip.disabledText = {'\uF254';'\uF251';'\uF252';'\uF253';'\uF250'}
+		wb.go(url);
+		
+		win.delay(500);
+		strip.disabledText = null;
+	}
+	else {
+		winform.custom.show(true);
+		winform.static.show(false)
+	}
+}
+	
+tbs.selIndex = 3;
+
+winform.show(3/*_SW_MAXIMIZE*/);
+win.loopMessage();

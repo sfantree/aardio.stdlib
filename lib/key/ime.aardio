@@ -1,0 +1,173 @@
+﻿//ime 输入法
+namespace key.ime;
+
+::Imm32 := ..raw.loadDll("Imm32.dll")   
+
+getList = function() {
+	var hKbList = { pointer array[25] }
+	var len = ::User32.GetKeyboardLayoutList(25, hKbList)
+	return ..table.slice( hKbList.array,1,len );
+}
+
+getCurrent = function(threadId = 0 ){
+	return ::User32.GetKeyboardLayoutP(threadId);
+}
+
+activate = function(hkl,flag= 0x00000101/*_KLF_SETFORPROCESS | _KLF_ACTIVATE */){
+	if( type(hkl)!=type.pointer ) error("参数必须是输入法句柄",2); 
+	return ::User32.ActivateKeyboardLayout(hkl,flag)
+}
+
+loadByName = function(kln,flag = 0x8/*_KLF_REORDER*/){
+	if( type(kln)!=type.string )  error("参数必须是名称字符串",2); 
+	return ::User32.LoadKeyboardLayoutP(kln,flag)
+}
+
+loadActivate = function(kln){ 
+	if( type(kln) == type.pointer ){
+		kln = getName(kln);
+	}
+	
+	if( type(kln)!=type.string ) 
+		error("参数不是有效的输入法句柄或名称",2);
+
+	var hkl = loadByName( kln,0x8/*_KLF_REORDER*/ );
+	activate(hkl);  
+}
+
+getName = function(hkl){ 
+	if(hkl){
+		if( type(hkl)!=type.pointer ) error("参数必须是输入法句柄",2);
+		return ..string.format("%08X",tonumber(hkl) )
+	};
+	
+	var buf = ..raw.buffer(10); 
+	var ok = ::User32.GetKeyboardLayoutNameA(buf) ;
+	if( ok ) return ..raw.str(buf);
+}
+	
+each = function(){ 
+	var i = 1;
+	var keyList = getList();
+	return function(){
+		if( i <= #keyList ){
+			hk = keyList[i];i++;
+			return hk,getLangId(hk),getName(hk),getDescription( hk )
+		} 
+	};  
+} 
+
+getDescription = function(hk){ 
+	if( ::Imm32.ImmIsIME( hk ) ){
+		var size = ::Imm32.ImmGetDescription(hk,null, 0)  
+		if(size){
+			var buf = ..raw.buffer(size*2);
+			var size = ::Imm32.ImmGetDescription(hk, buf, size) 
+			if(size)return ..string.fromUnicode(buf);
+		}
+	} 		
+}
+
+getLangId = function(hkl){
+	return tonumber(hkl) & 0xFFFF;
+}
+
+getDefaultWnd = function(hwnd){
+	if(!hwnd) hwnd = ::User32.GetForegroundWindow();
+	return	::Imm32.ImmGetDefaultIMEWnd(hwnd) 
+}
+
+control = function(hwnd,command,data){
+	if(!hwnd) hwnd = ::User32.GetForegroundWindow();
+	var hIme = ::Imm32.ImmGetDefaultIMEWnd(hwnd);
+	if(hIme){
+		return ::User32.SendMessage(hIme,0x283/*_WM_IME_CONTROL*/,command,data)
+	}
+}
+
+getOpenStatus = function(hwnd){
+	if(!hwnd) hwnd = ::User32.GetForegroundWindow();
+	return !!control(hwnd,5/*_IMC_GETOPENSTATUS*/)
+}
+
+setOpenStatus = function(status,hwnd){
+	if(!hwnd) hwnd = ::User32.GetForegroundWindow();
+	return control(hwnd,6/*_IMC_SETOPENSTATUS*/,status)
+}
+
+getConversionMode = function(hwnd){
+	if(!hwnd) hwnd = ::User32.GetForegroundWindow();
+	return control(hwnd,1/*_IMC_GETCONVERSIONMODE*/)
+}
+
+setConversionMode = function(mode,hwnd){
+	if(!hwnd) hwnd = ::User32.GetForegroundWindow();
+	return control(hwnd,2/*_IMC_SETCONVERSIONMODE*/,mode)
+}
+
+state = function(hwnd){
+	if(!getOpenStatus(hwnd)) return false;
+	var mode = getConversionMode(hwnd);
+	if( mode === null ) return false;
+	
+	var p = 1;
+	if(mode & 0x400/*_IME_CMODE_SYMBOL*/) p = 3;
+	elseif(mode & 8/*_IME_CMODE_FULLSHAPE*/) p = 2;
+	
+	return !!(mode & 3/*_IME_CMODE_LANGUAGE*/),p;
+}
+
+capital = lambda() !!(::User32.GetKeyState(0x14/*_VK_CAPITAL*/ ) & 1);
+
+changeRequest = function(hkl,hwnd,wParam){
+	if(!hwnd) hwnd = ::User32.GetForegroundWindow();
+	return ::User32.PostMessage(hwnd,0x50/*_WM_INPUTLANGCHANGEREQUEST*/,wParam,hkl)
+}
+
+/**intellisense(key.ime)
+control(.(hwnd,command,data) = 发送_WM_IME_CONTROL消息到指定窗口\n@hwnd参数指定目标窗口句柄，省略则默认设为前景窗口,\n其他参数请参考微软文档
+getOpenStatus(.(hwnd) = 当前输入法是否打开中文输入\n@hwnd参数指定要检测的窗口句柄，省略则默认设为前景窗口
+setOpenStatus(.(status,hwnd) = status设为0关闭中文输入\n@hwnd参数指定目标窗口句柄，省略则默认设为前景窗口
+getConversionMode(.(hwnd) = 返回输入法打开状态,\n返回值为数值，可用 _IME_CMODE_ 前缀的常量按位取值。\n@hwnd参数指定要检测的窗口句柄，省略则默认设为前景窗口
+setOpenStatus(.(status,hwnd) = 设置输入法打开状态，\n参数为 _IME_CMODE_ 前缀的常量按位或运算的数值。\n@hwnd参数指定目标窗口句柄，省略则默认设为前景窗口
+state( = 返回输入法状态，\n用法请参考 key.ime.stateBar
+state(.(hwnd) = 返回输入法状态，\n@hwnd 参数指定要检测的窗口句柄，省略则默认设为前景窗口。\n\n第一个返回值表示是否启用中文输入，false 为英文输入状态，\n第二个返回值用一个数值表示标点模式：\n    1 英文半角标点\n    2 英文全角标点\n    3 中文标点\n   null 输入法已关闭
+capital() = 是否大写状态
+changeRequest(.(hkl,hwnd,wParam) = 发送_WM_INPUTLANGCHANGEREQUEST消息通知窗口改变输入法,\nhkl可用数值或指针指定键盘布局,\n@hwnd参数指定要检测的窗口句柄，省略则默认设为前景窗口\n其他参数可省略
+changeRequest(.(0x4090409) = 切换为英文键盘布局
+changeRequest(.(0x8040804) = 切换为中文键盘布局 
+changeRequest(.(0) = 切换为上一个键盘布局
+changeRequest(.(1) = 切换为下一个键盘布局 
+each() = @for(hKey,lang,name,description in ??.each() ){
+	__/*hKey:键盘布局句柄 lang:语言ID name:输入法名 description:描述*/
+}
+loadByName(.("键盘布局名",选项) = 载入指定的键盘布局\n对默认中英文键盘无效\n参数二可省略,使用 _KLF_ 前缀常量指定选项
+activate(.(键盘布局句柄,选项) = 激活指定的键盘布局\n参数二可省略,使用 _KLF_ 前缀常量指定选项
+loadActivate(.("输入法名") = 参数也可以是键盘布局句柄\n加载并激活指定键盘布局
+getCurrent(.(线程ID) = 返回当前键盘布局句柄,\n参数可选,默认参数为当前线程ID
+getList() = 返回键盘布局句柄数组\nWIN10上只会返回键盘语言，不会列出输入法
+getName(.(键盘布局句柄) = 返回键盘布局名称
+getDescription(.(键盘布局句柄) = 返回键盘布局描述\n对默认中英文键盘无效
+getLangId(.(键盘布局句柄) = 返回语言代码
+end intellisense**/
+
+/**intellisense()
+key.ime = 输入法相关操作
+end intellisense**/
+
+ /**intellisense()
+_IME_CMODE_ALPHANUMERIC=@0/*_IME_CMODE_ALPHANUMERIC*/
+_IME_CMODE_NATIVE=@1/*_IME_CMODE_NATIVE*/
+_IME_CMODE_KATAKANA=@2/*_IME_CMODE_KATAKANA*/
+_IME_CMODE_LANGUAGE=@3/*_IME_CMODE_LANGUAGE*/
+_IME_CMODE_FULLSHAPE=@8/*_IME_CMODE_FULLSHAPE*/
+_IME_CMODE_ROMAN=@0x10/*_IME_CMODE_ROMAN*/
+_IME_CMODE_CHARCODE=@0x20/*_IME_CMODE_CHARCODE*/
+_IME_CMODE_HANJACONVERT=@0x40/*_IME_CMODE_HANJACONVERT*/
+_IME_CMODE_SOFTKBD=@0x80/*_IME_CMODE_SOFTKBD*/
+_IME_CMODE_NOCONVERSION=@0x100/*_IME_CMODE_NOCONVERSION*/
+_IME_CMODE_EUDC=@0x200/*_IME_CMODE_EUDC*/
+_IME_CMODE_SYMBOL=@0x400/*_IME_CMODE_SYMBOL*/
+_IME_CMODE_FIXED=@0x800/*_IME_CMODE_FIXED*/
+_IME_CMODE_RESERVED=@0xF0000000/*_IME_CMODE_RESERVED*/
+end intellisense**/

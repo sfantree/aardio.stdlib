@@ -1,0 +1,28 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=487;bottom=407)
+winform.add(
+button={cls="button";text="Button";left=352;top=352;right=464;bottom=392;z=2};
+custom={cls="custom";text="自定义控件";left=24;top=24;right=464;bottom=320;z=1}
+)
+/*}}*/
+
+import gdip;
+
+winform.custom.oncommand = function(id,event){
+	
+}
+
+winform.button.oncommand = function(id,event){
+    var desktopHwmd = win.getDesktop();
+	var graphics = gdip.graphics.fromHwnd(desktopHwmd)
+	var brush = gdip.solidBrush(0x6EFF0000);
+
+	//用刷子填充矩形内部  
+	var cx,cy = win.getScreen();
+	graphics.fillRectangle( brush, 0, 0, cx, cy )
+	brush.delete();
+}
+
+winform.show();
+win.loopMessage();

@@ -1,0 +1,29 @@
+﻿//module 模块
+import julia.lib;
+import julia.value;
+
+namespace julia;
+
+class module{
+	ctor( name,method ){
+	
+		if(#method)::LibJulia.jl_eval_stringP( method + " " + name)
+		
+		var m = ::LibJulia.jl_eval_stringP(name);
+			if(!m) return null;
+			
+		this@ = {
+			_get = function(k){
+				var name = ::LibJulia.jl_symbolP(k);
+				if(!name) return;
+				return parseValue(::LibJulia.jl_get_globalP(m,name) ) 
+			} 
+		} 
+	}; 
+}
+
+module.parseValue = value.parse;
+
+/**intellisense()
+module(__) = 返回 Julia 模块对象,\n可选在参数@2指定导入模块的方法"using"或"import"
+end intellisense**/

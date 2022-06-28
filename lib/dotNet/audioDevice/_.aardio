@@ -1,0 +1,59 @@
+﻿import dotNet;
+namespace dotNet;
+
+namespace audioDevice{
+    
+    //AudioDeviceCmdlets LCENSE: https://github.com/frgnca/AudioDeviceCmdlets/blob/master/LICENSE
+	Cmdlets = ..dotNet.loadFile($"~\lib\dotNet\AudioDevice\.res\AudioDeviceCmdlets.dll");
+	CoreAudioApi = Cmdlets.import("CoreAudioApi"); 
+    
+	each = function(){
+		var mmDeviceEnumerator = CoreAudioApi.MMDeviceEnumerator()
+		var mmDeviceCollection = mmDeviceEnumerator.EnumerateAudioEndPoints(CoreAudioApi.EDataFlow.eAll, CoreAudioApi.EDeviceState.DEVICE_STATE_ACTIVE);
+		
+		var index = -1;
+		return function(){
+			index++;
+			if(index>=mmDeviceCollection.Count) return;
+			
+			var mmDevice = mmDeviceCollection.Item[index]
+			return mmDevice,mmDevice.ID,mmDevice.FriendlyName
+		}
+	};
+	setDefault = function(devId){
+		var policyConfigClient = CoreAudioApi.PolicyConfigClient();
+		policyConfigClient.SetDefaultEndpoint(devId, CoreAudioApi.ERole.eCommunications);
+		policyConfigClient.SetDefaultEndpoint(devId, CoreAudioApi.ERole.eMultimedia);	
+	};
+	getDefaultRender = function(){
+		var dev;
+		var mmDeviceEnumerator = CoreAudioApi.MMDeviceEnumerator()
+		try{ dev = mmDeviceEnumerator.GetDefaultAudioEndpoint(CoreAudioApi.EDataFlow.eRender, CoreAudioApi.ERole.eMultimedia) }	
+		return dev;
+	};
+	getDefaultCapture = function(){
+		var dev;
+		var mmDeviceEnumerator = CoreAudioApi.MMDeviceEnumerator()
+		try{dev = mmDeviceEnumerator.GetDefaultAudioEndpoint(CoreAudioApi.EDataFlow.eCapture, CoreAudioApi.ERole.eMultimedia)}	
+		return dev;
+	};
+	getDefaultRenderId = function(){
+		var dev = getDefaultRender();
+		if(dev) return dev.ID;
+	};
+	getDefaultCaptureId = function(){
+		var dev = getDefaultCapture();
+		if(dev) return dev.ID;
+	};	
+}
+
+/**intellisense(dotNet.audioDevice)
+each() = @for( mmDevice,devId,devName in ??.each() ){\n	__/*遍历所有音频设备,devId 为设备 ID,devName 为友好名称*/\n}
+setDefault(__) = 设置默认设备,\n参数@1必须指定音频设备ID,\n用 dotNet.audioDevice.each 可以遍历所有音频设备 ID
+getDefaultRender() = 获取默认音频输出设备
+getDefaultCapture() = 获取默认录音设备
+getDefaultRenderId() = 获取默认音频输出设备 ID
+getDefaultCaptureId() = 获取默认录音设备 ID
+end intellisense**/
+
+

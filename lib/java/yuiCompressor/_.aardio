@@ -1,0 +1,77 @@
+import fsys;
+import java;
+namespace java.yuiCompressor;
+
+var jrePath = ..io.appData("aardio\std\java\yuicompressor.jar" 
+	, $"~\lib\java\yuiCompressor\.res\yuicompressor.jar") 
+
+compress = function( srcPath,outPath,charset,_type ) { 
+
+	//确认一下源文件是否存在,否则yuicompressor会一直等控制台输入不返回
+	srcPath = srcPath ? ..fsys.shortpath(srcPath);
+	if(!srcPath) return null,"请指定正确的源文件路径"; 
+	
+	outPath = ..io.localpath(outPath) : outPath;
+	if(!charset) charset = "utf-8";
+	
+	var args = { 
+		"-jar"; jrePath; 
+		srcPath
+	};
+	
+	if( nomunge ) { //Minify only, do not obfuscate
+		..table.push(args,"--nomunge");
+	}
+	if( preserveSem ){ //Preserve all semicolons
+		..table.push(args,"--preserve-semi");
+	}
+	if( disableOptimizations ) { //Disable all micro optimizations
+		..table.push(args,"--disable-optimizations");
+	}
+	if( lineBreak ){ 
+		..table.push(args,"--line-break",tostring(lineBreak) );
+	}
+	if( verbose ){
+		..table.push(args,"-v");
+	}
+	if( charset ){
+		..table.push(args,"--charset",charset);
+	} 
+	if( _type && ( _type == "js" || _type == "css") ){
+		..table.push(args,"--type",_type); //使用标准输入写
+	}  
+	..table.push(args,"-o",outPath);
+		
+	/*
+	YUICompressor 在参数错误时直接调用 system.exit()关闭进程.
+	为避免父进程被关闭,使用 java.popenProcess() 创建一个子进程,并用管道读取控制台输出
+	*/
+	var prcs = ..java.popenProcess( args ); 
+	
+	if(prcs){
+		var out,err,exitCode = prcs.readAll();
+		if(#err) return null,err; 
+		return exitCode == 0;
+	}
+}
+
+compressJs = function(srcPath,outPath,charset){
+	if(!outPath)outPath='.js$:-min.js';//will minify all .js files and save them as -min.js
+	return compress(srcPath, outPath,charset,"js");
+}
+
+compressCss = function(srcPath,outPath,charset){
+	if(!outPath)outPath='.css$:-min.css';//will minify all .css files and save them as -min.css
+	return compress(srcPath, outPath,charset,"css");
+}
+
+/**intellisense(java.yuiCompressor)
+nomunge = js压缩选项,设为true仅压缩不混淆
+preserveSem = js压缩选项,设为true保留所有分号
+disableOptimizations = js压缩选项,设为true禁止优化
+lineBreak = 指定列数以自动换行,如果指定为0则按分号换行
+verbose = 显示详细信息
+compress(.("源文件路径","输出路径","编码") = 压缩js或css文件\n编码为可选参数,默认为"utf-8"\n如果未找到java运行时,该函数为空值
+compressJs(.("JS文件路径","输出路径","编码") = 压缩js文件\n编码为可选参数,默认为"utf-8"\n如果未找到java运行时,该函数为空值 
+compressCss(.("CSS文件路径","输出路径","编码") = 压缩css文件\n编码为可选参数,默认为"utf-8"\n如果未找到java运行时,该函数为空值
+end intellisense**/

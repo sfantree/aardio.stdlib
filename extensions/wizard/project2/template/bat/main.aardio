@@ -1,0 +1,56 @@
+﻿import fonts.fontAwesome;
+import win.ui;
+/*DSG{{*/
+var mainForm = win.form(text="aardio工程4";right=875;bottom=625)
+mainForm.add(
+btnExecute={cls="plus";text="执行批处理 1";left=433;top=549;right=605;bottom=594;align="left";bgcolor=-5197169;db=1;dr=1;font=LOGFONT(h=-16);iconStyle={align="left";font=LOGFONT(h=-16;name='FontAwesome');padding={left=20}};iconText='\uF17A';notify=1;textPadding={left=42};z=2};
+btnExecute2={cls="plus";text="执行批处理 2";left=637;top=549;right=809;bottom=594;align="left";bgcolor=-5197169;db=1;dr=1;font=LOGFONT(h=-16);iconStyle={align="left";font=LOGFONT(h=-16;name='FontAwesome');padding={left=20}};iconText='\uF17A';notify=1;textPadding={left=42};z=3};
+editResult={cls="edit";left=15;top=13;right=863;bottom=536;db=1;dl=1;dr=1;dt=1;edge=1;hscroll=1;multiline=1;vscroll=1;z=1}
+)
+/*}}*/
+
+import process.batch;
+mainForm.btnExecute.oncommand = function(id,event){
+	var prcs = process.batch("\bat\bat.aardio",{
+		exepath = ..io._exepath; //传命名参数给批处理内的 aardio 代码，使用 owner.exepath 接收
+		"批处理启动参数1"; //批处理使用 %1 接收第一个参数
+		"批处理启动参数2"; //批处理使用 %2 接收第一个参数
+	})
+	
+	mainForm.btnExecute.disabledText = {'\uF254';'\uF251';'\uF252';'\uF253';'\uF250';text=''}
+	
+	//out 用于接收批处理的标准输出
+	//err 用于接收批处理的错误输出
+	//exitcode 用于接收批处理进程退出代码，批处理调用" EXIT /B 数值"即可指定退出代码
+	var ok,out,err,exitcode = prcs.waitOne()
+	mainForm.editResult.print(out,err);
+	prcs.close();
+	
+	mainForm.btnExecute.disabledText = null;
+}
+	
+mainForm.btnExecute2.oncommand = function(id,event){
+	var prcs = process.batch("\bat\bat2.aardio",{
+		text = "abc,传参数给批处理"; //传命名参数给批处理内的 aardio 代码，使用 owner.text 接收
+		"批处理启动参数1"; //批处理使用 %1 接收第一个参数
+		"批处理启动参数2"; //批处理使用 %2 接收第一个参数
+	})
+	
+	mainForm.btnExecute2.disabledText = {'\uF254';'\uF251';'\uF252';'\uF253';'\uF250';text=''}
+	
+	//out 用于接收批处理的标准输出
+	//err 用于接收批处理的错误输出
+	//exitcode 用于接收批处理进程退出代码，批处理调用" EXIT /B 数值"即可指定退出代码
+	var ok,out,err,exitcode = prcs.waitOne();
+	mainForm.editResult.print(out,err);
+	prcs.close();
+	
+	mainForm.btnExecute2.disabledText = null;	
+}
+
+import style;
+mainForm.btnExecute.skin(style.primaryButton)
+mainForm.btnExecute2.skin(style.primaryButton)
+
+mainForm.show();
+win.loopMessage();

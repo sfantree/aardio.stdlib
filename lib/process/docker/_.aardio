@@ -1,0 +1,521 @@
+﻿import fsys;
+import process.popen;
+import process.plink;
+import inet.http;
+
+namespace process;
+
+class docker{
+	init = function(workDir,registryUrl){
+		this.workDir = ..io.fullpath(workDir);
+		if(!..io.exist(this.workDir)){
+			error("指定了错误的工作目录",2)
+		}
+		
+		this.ssh = {
+			username = "root";password="";
+		};
+		this.tag = "latest";
+		
+		this.registryHost = "registry-1.docker.io"
+		this.registryUrl = registryUrl;
+		if(..string.indexOf(this.registryUrl,"/")){
+			var host = ..string.match(this.registryUrl,"([^\\/\.]+\.[^\\/]+)");
+			if(host){
+				this.registryHost = host;
+			}
+		}
+		
+		this.containerName =  ..string.match(this.registryUrl,"[^\\/]+$");
+		if(..string.indexOf(this.containerName,":") ){
+			this.containerName,this.tag = ..string.match(this.containerName,"([^\:]+)\:([^\:]+)");
+		}
+		else {
+			this.tag = "latest"
+		}
+		
+		this.imageTagName = this.containerName + ":" + this.tag;
+	}
+	setPort = function(hostPort,containerPort){
+		if(!containerPort){
+			containerPort = hostPort;
+		}
+		
+		if(!hostPort){
+			error("参数@1必须指定主机端口",2)
+		}
+		
+		this.hostPort = hostPort;
+		this.containerPort = containerPort;
+	}
+	log = function(...){
+		if( this.logger ){ 
+			if( this.logger.echo) this.logger.echo(...);
+			elseif( this.logger.log) this.logger.log(...);
+			elseif( this.logger.write )  this.logger.write(...);   
+		}	
+	};
+	create = function(){
+		this.stopLog();
+		
+		..fsys.setCurDir(this.workDir);
+		var prcs,err = ..process.popen(`docker`,`build --rm -f "Dockerfile" -t `+this.imageTagName+` .`)
+		if(!prcs){
+			this.log(err); 
+			return null,err;
+		}
+		
+		prcs.codepage = 65001;
+		
+		if(!prcs){
+			this.log(err); 
+			return null,err;
+		}
+		
+		prcs.logger = this.logger;
+		prcs.logResponse(); 
+	};
+	push = function(){
+		this.stopLog();
+		
+		if(! ( this.hostPort && this.containerPort ) ){
+			return error("未指定容器服务端口!",2)
+		} 
+		
+		..fsys.setCurDir(this.workDir);
+		
+		var prcs,err = ..process.popen(`docker`,`login --username ` + this.username + ` --password-stdin ` + this.registryHost) 
+		if(!prcs){
+			this.log(err); 
+			return null,err;
+		}
+		
+		prcs.codepage = 65001;
+		prcs.writeClose( this.password );
+		prcs.logger = this.logger;
+		prcs.logResponse()
+		prcs.close();
+		
+		if(this.registryUrl!=this.imageTagName){
+			var prcs,err = ..process.popen(`docker`,`tag `+this.imageTagName+` `+this.registryUrl)
+			
+			if(!prcs){
+				this.log(err); 
+				return null,err;
+			}
+			
+			prcs.logger = this.logger;
+			prcs.logResponse()
+		}
+		
+		var prcs,err = ..process.popen(`docker`,`push ` + this.registryUrl);
+		if(!prcs){
+			this.log(err); 
+			return null,err;
+		}
+		
+		prcs.codepage = 65001;
+		prcs.logger = this.logger;
+		prcs.logResponse();
+		prcs.close();
+
+		var shell = ..process.plink.shell( this.ssh.host,this.ssh.password,this.ssh.username,this.ssh.port ); 
+		shell.logger = this.logger;
+		shell.verify();
+			
+		var bindVolume = {}
+		if(#this.bindVolume ){
+			for(k,v in this.bindVolume){ 
+				if(type.isString(v) && #v) ..table.push( bindVolume,"-v ",v);
+			}
+		}
+		bindVolume = ..string.join(bindVolume," ")
+		
+		var prcs = shell.open( `
+		echo "` + this.password + `" | docker login --username ` + this.username + ` --password-stdin ` + this.registryHost + `
+		docker stop ` + this.containerName + `
+		docker rm ` + this.containerName + `
+		docker rmi ` + this.registryUrl + `
+		docker pull ` + this.registryUrl + ` 
+		sudo docker run -t -d=true -p ` + this.hostPort + `:` + this.containerPort  
+			+ ` `+ bindVolume +` --name=` + this.containerName + ` --restart=always ` + this.registryUrl + `
+		docker image prune --force --filter label=prune.force
+		docker logout ` + this.registryHost + `
+		` ) 
+		
+		if(!prcs){
+			this.log(err); 
+			return null,err;
+		}
+		
+		prcs.logger = this.logger;
+		prcs.logResponse();
+		prcs.close();
+	};
+	
+	runServer = function(detached){
+		this.stopLog();
+		
+		if(detached){
+			detached = true;
+		}
+		
+		if(! ( this.hostPort && this.containerPort ) ){
+			return error("未指定容器服务端口!",2)
+		} 
+		
+		..fsys.setCurDir(this.workDir);
+		
+		var bindVolume = {}
+		if(#this.bindVolume ){
+			for(k,v in this.bindVolume){ 
+				if(type.isString(v) && #v) ..table.push( bindVolume,"-v ",v);
+			}
+		}
+		bindVolume = ..string.join(bindVolume," ")
+
+		import process.plink;
+		var shell = process.plink.shell( this.ssh.host,this.ssh.password,this.ssh.username,this.ssh.port ); 
+		shell.logger = this.logger;
+		shell.verify() 
+		
+		var prcs = shell.open( `
+		docker stop ` + this.containerName + `
+		docker rm ` + this.containerName + `
+		sudo docker run -t -d=` +(detached?"true":"false")+` -p ` + this.hostPort + `:` + this.containerPort  
+		+ ` `+ bindVolume +` --name=` + this.containerName + ` --restart=always ` + this.registryUrl + `
+		`)
+		
+		if(!prcs){
+			this.log(err); 
+			return null,err;
+		}
+		
+		prcs.logger = this.logger;
+		prcs.logResponse();
+		prcs.close(); 
+	}
+	
+	runLocal = function(detached){
+		this.stopLog();
+		
+		if(detached){
+			detached = true;
+		}
+		
+		if(! ( this.hostPort && this.containerPort ) ){
+			return error("未指定容器服务端口!",2)
+		} 
+		
+		..fsys.setCurDir(this.workDir);
+		
+		var bindVolume = {}
+		if(#this.bindVolumeLocal ){
+			for(k,v in this.bindVolumeLocal){ 
+				if(!..type.isString(v)){ continue; }
+				
+				var a,b = ..string.match(v,"(.+)\:(.+)");
+				if(a && b){
+					a = ..fsys.path.full(a,this.workDir); 
+					..io.createDir(a)
+					
+					var sa = ..fsys.shortpath(a);
+					if(!sa){
+						this.log("错误的目录:",a); 
+						return null,"错误的目录:"+a;
+					}
+					..table.push( bindVolume,"-v ", sa + ":" + b);
+				}
+			}
+		}
+		bindVolume = ..string.join(bindVolume," ")
+
+		var prcs,err = ..process.popen(`docker`,` rm -f ` + this.containerName)
+		if(!prcs){
+			this.log(err); 
+			return null,err;
+		}
+		prcs.waitOne()
+		
+		var prcs = ..process.popen(`docker`,`run -d=` +(detached?"true":"false")+` -p ` + this.hostPort + `:` + this.containerPort 
+		+ ` `+ bindVolume +` --name=` + this.containerName + ` --restart=always  ` + this.imageTagName)
+
+		if(!prcs){
+			this.log(err); 
+			return null,err;
+		}
+		
+		prcs.codepage = 65001;
+		prcs.logger = this.logger;
+		prcs.logResponse();
+		prcs.close();
+	
+	}
+	removeContainerServer = function(tail){ 
+
+		var shell = ..process.plink.shell( this.ssh.host,this.ssh.password,this.ssh.username,this.ssh.port); 
+		shell.logger = this.logger;
+		shell.verify() 
+
+		var prcs = shell.open( `docker rm -f ` + this.containerName ) 
+		if(!prcs){
+			this.log(err); 
+			return null,err;
+		}
+
+		prcs.logger = this.logger;
+		prcs.logResponse();
+		prcs.close(); 	
+	}
+	removeContainerLocal = function(){ 
+		var prcs = ..process.popen(`docker`,` rm -f ` + this.containerName)
+		if(!prcs){
+			this.log(err); 
+			return null,err;
+		}
+		
+		prcs.codepage = 65001;
+		prcs.logger = this.logger;
+		prcs.logResponse();
+		prcs.close(); 
+	}
+	pruneImagesLocal = function(){
+		
+		var prcs = ..process.popen(`docker`,` image prune --force`)
+		if(!prcs){
+			this.log(err); 
+			return null,err;
+		}
+		
+		prcs.codepage = 65001;
+		prcs.logger = this.logger;
+		prcs.logResponse();
+		prcs.close(); 	
+	}
+	stopLog = function(){
+		if(this.logProcess){
+			this.logProcess.ctrlEvent(0);
+			this.logProcess.close();
+			this.logProcess = null;
+		}
+	}
+	startServerLog = function(tail){ 
+		this.stopLog();
+		
+		var shell = ..process.plink.shell( this.ssh.host,this.ssh.password,this.ssh.username,this.ssh.port); 
+		shell.logger = this.logger;
+		shell.verify() 
+	
+		var prcs = shell.open( `
+		docker logs -f -t  --tail=` +tail + ` `+ this.containerName ) 
+	
+		if(!prcs){
+			this.log(err); 
+			return null,err;
+		}
+		
+		this.logProcess = prcs;
+		prcs.logResponse(this.logger);
+		return prcs;
+	}
+	startLocalLog = function(tail){
+		this.stopLog();
+		
+		var prcs = ..process.popen(`docker`,` logs -f -t  --tail=` +tail + ` `+ this.containerName)
+		if(!prcs){
+			this.log(err); 
+			return null,err;
+		}
+		
+		this.logProcess = prcs;
+		prcs.codepage = 65001; 
+		prcs.logResponse(this.logger);
+		return prcs;
+	}		
+	execServer = function(cmd){ 
+		this.stopLog();
+		
+		var shell = ..process.plink.shell( this.ssh.host,this.ssh.password,this.ssh.username,this.ssh.port); 
+		shell.logger = this.logger;
+		shell.verify() 
+		
+		this.log('\r\n\r\n') 
+		var prcs = shell.open( "docker exec -i " + this.containerName + " bash" ) 
+			if( type(cmd) == type.table ){
+				for i,v in ..table.eachIndex(cmd){
+					prcs.write(v,'\n');
+					..thread.delay(100);
+				}
+					
+				prcs.writeClose("")
+			}
+			else {
+				prcs.writeClose(cmd,'\n')
+			}
+			
+		prcs.logger = this.logger;
+		prcs.logResponse();
+		prcs.close();
+	}
+	
+	execLocal = function(cmd){
+		this.stopLog();
+		
+		this.log('\r\n\r\n')
+			
+		//-d :分离模式: 在后台运行 -i :即使没有附加也保持STDIN 打开 -t :分配一个伪终端
+		var prcs,err = ..process.popen(`docker`," exec -i " + this.containerName + " bash" )
+		if(!prcs){
+			this.log(err); 
+			return null,err;
+		}
+		
+		if( type(cmd) == type.table ){
+			for i,v in ..table.eachIndex(cmd){
+				prcs.write(v,'\n');
+				..thread.delay(100);
+			}
+				
+			prcs.writeClose("")
+		}
+		else {
+			prcs.writeClose(cmd,'\n')
+		}
+		
+		prcs.codepage = 65001;
+		prcs.logger = this.logger;
+		prcs.logResponse();
+		prcs.close();
+	} 
+	terminalServer = function(container){
+		import process.putty;
+		var prcs,err = ..process.putty(this.ssh.host,this.ssh.password,this.ssh.username,,this.ssh.port,this.ssh.ppk)
+		if(!prcs){
+			this.log(err); 
+			return null,err;
+		}
+		
+		if(container) prcs.send("docker exec -it  " + this.containerName + " bash")
+	}
+	terminalLocal = function(){
+		var prcs,err = ..process(`docker`," exec -it " + this.containerName + " bash" )
+		if(!prcs){
+			this.log(err); 
+			return null,err;
+		}
+	}
+	sshKeyServer = function(){	
+	
+		var shell = ..process.plink.shell( this.ssh.host,this.ssh.password,this.ssh.username,this.ssh.port); 
+		shell.verify()
+			
+		this.execServer({
+		"rm -rf ~/.ssh/";
+		"mkdir -p ~/.ssh/";
+		"ssh-keygen -t rsa -P '' -f ~/.ssh/id_rsa"
+		})	
+		
+		this.log('\r\n\r\n')  
+		var prcs = shell.open( "docker exec -i " + this.containerName + " bash" );
+		prcs.writeClose('cat ~/.ssh/id_rsa.pub','\n')
+		var ret = prcs.read(-1);
+		prcs.close();
+		return ret;
+	}
+	inspectLocal = function(format,jsonParse){
+		var prcs,err = ..process.popen(`docker`, "inspect " + (format? ("--format '" + format + "' ") : " ") + this.containerName );
+		if(!prcs){
+			this.log(err); 
+			return null,err;
+		}
+		
+		prcs.writeClose()
+		var ret = prcs.read(-1);
+		prcs.close();
+		if((!format) && jsonParse){
+			return ..web.json.parse(ret);
+		}
+		return ret;
+	}
+	inspectServer = function(format,jsonParse){	
+	
+		var shell = ..process.plink.shell( this.ssh.host,this.ssh.password,this.ssh.username,this.ssh.port); 
+		shell.verify()
+		
+		var prcs = shell.open( "docker inspect " + (format? ("--format '" + format + "' ") : " ") + this.containerName );
+		prcs.writeClose()
+		var ret = prcs.read(-1);
+		prcs.close();
+		
+		if((!format) && jsonParse){
+			return ..web.json.parse(ret);
+		}
+		return ret;
+	}
+	sshKeyLocal = function(){
+		this.execLocal({
+		"rm -rf ~/.ssh/";
+		"mkdir -p ~/.ssh/";
+		"ssh-keygen -t rsa -P '' -f ~/.ssh/id_rsa"
+		})
+		
+		var prcs,err = ..process.popen(`docker`," exec -i " + this.containerName + " bash" )
+		if(!prcs){
+			this.log(err); 
+			return null,err;
+		}
+		
+		prcs.writeClose('cat ~/.ssh/id_rsa.pub','\n')
+		var ret = prcs.read(-1);
+		prcs.close();
+		return ret;
+	}
+}
+
+/**intellisense()
+process.docker(.(本地工作目录,远程仓库地址) = 创建 docker 工具
+process.docker() = !processDocker.
+end intellisense**/
+
+/**intellisense(!processDocker)
+init(.(本地工作目录,远程仓库地址) = 指定工作目录、远程仓库地址
+execServer("__") = 在服务端容器中运行命令,\n参数可以是字符串或数组
+execLocal("__") = 在本地容器中运行命令,\n参数可以是字符串或数组
+setPort(.(hostPort,containerPort) = 设置容器端口,\n@containerPort 为容器内部端口\n@hostPort为主机转发端口\n如果2个端口一样,可省略参数@hostPort
+setPort(.("127->0->0->1:80","8080/tcp") = 设置容器端口,\n参数@2 为容器内部端口\n参数@1 为主机转发端口
+setPort(.(80,8080) = 设置容器端口,\n参数@2 为容器内部端口\n参数@1 为主机转发端口\n如果2个端口一样,可省略参数@2
+create() = 本地创建镜像
+push() = 推送到服务器
+runServer(.(detached) =  服务器运行容器,\n参数为true时后台运行
+runLocal(.(detached)  = 本机运行容器,\n参数为true时后台运行
+removeContainerServer() =  服务器移除容器
+removeContainerLocal() =  本机移除容器
+pruneImagesLocal() =  本机清理镜像
+startServerLog(.(tail) = 显示服务器容器日志，参数指定条数\n此函数会一直运行，调到调用stopLog函数,\n此对象的大部分函数执行前会自动调用 stopLog 函数,\n此函数不会阻塞界面
+startLocalLog(.(tail) =  显示本机容器日志，参数指定条数\n此函数会一直运行，调到调用stopLog函数,\n此对象的大部分函数执行前会自动调用 stopLog 函数,\n此函数不会阻塞界面
+startServerLog() = !process_popen.
+startServerLog() = !process_popen.
+stopLog() = 停止显示日志,可重复调用,\n此对象的大部分函数执行前会自动调用 stopLog 函数,		
+execServer(.(cmd) =  服务器容器运行shell脚本
+execLocal(.(cmd)  =  本机容器运行shell脚本
+sshKeyServer()  = 服务器容器获取SSH Key
+sshKeyLocal()  = 本机容器获取SSH Key
+ssh.host = 服务器主机SSH用户名
+ssh.password = 服务器主机SSH密码
+username = 容器仓库登录用户名
+password = 容器仓库登录密码
+logger = 指定logResponse的默认回显对象\n该对象必须有log或write成员函数用于输出回显
+bindVolume = @.bindVolume = {
+	"/localpath:/root/containerPath"
+}
+bindVolumeLocal = @.bindVolumeLocal = {
+	".\localpath:/root/containerPath"
+}
+terminalServer(true) = 打开服务端容器终端,\n输入 exit 退出容器
+terminalServer(false) = 打开服务端终端
+terminalLocal() = 打开本地容器终端,\n输入 exit 退出容器
+inspectLocal('{{ ->NetworkSettings->IPAddress }}') = 获取本地容器信息，返回文本
+inspectServer('{{ ->NetworkSettings->IPAddress }}') = 获取服务器容器信息，返回文本
+inspectLocal(,true) = 获取本地容器信息，返回对象
+inspectServer(,true) = 获取服务器容器信息，返回对象
+end intellisense**/

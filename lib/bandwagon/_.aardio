@@ -1,0 +1,64 @@
+import web.rest.jsonLiteClient;
+
+class bandwagon{
+	ctor( veid,apiKey ){
+		var http = ..web.rest.jsonLiteClient();
+		
+		http.extraParameters ={
+			veid=veid;
+			api_key=apiKey
+		}
+		
+		this = http.api("https://api.64clouds.com/v1/")
+		this["http"] = http; 
+	};
+}
+
+/**intellisense()
+bandwagon(.(veid,apiKey) = 创建bandwagon客户端\n[API文档](https://kiwivm.64clouds.com/main-exec.php?mode=api)
+bandwagon() = !bandwagon.
+end intellisense**/
+
+/**intellisense(!bandwagon)
+start() = 启动主机
+stop() = 停止主机
+restart() = 重启主机
+kill() = 强制关机,会丢失未保存的数据
+getServiceInfo() = 返回服务信息
+getLiveServiceInfo() = 返回服务信息，并且返回主机状态,\n此调用比较慢，可能需要耗时15秒以上
+getAvailableOS() = 返回可用操作系统
+installed: Currently installed Operating System 
+templates: Array of available OS
+reinstallOS(os="__") = 重新安装操作系统,os参数中指定操作系统
+resetRootPassword() = 重置root密码 
+getRawUsageStats() = 返回包含统计信息的二维数组
+setHostname(newHostname="__") = 设置新的主机名
+setPTR(ip="";ptr="__") = 设置反向查询域名
+iso.mount(iso="__") = 挂载ISO镜像，调用前需要先停机
+iso.unmoun() = 弹出ISO镜像，调用前需要先停机
+basicShell.cd(currentDir="";newDir="__") = 模拟改变当前目录\n返回对象中pwd表示当前目录
+basicShell.exec(command="__") = 执行shell命令,\n返回对象中error表示退出代码,message为控制台输出
+error: Exit status code of the executed command 
+message: Console output of the executed command
+shellScript.exec（script="__") = 执行shell脚本,\n返回对象中log表示输出日志文件
+snapshot.create(description="") = 创建快照,参数为可选参数\n返回对象中notificationEmail为操作完成通知邮件列表
+snapshot.list() = 获取快照列表
+snapshot.delete(snapshot="__") = 删除快照
+snapshot.restore(snapshot="__") = 恢复快照
+snapshot.toggleSticky(snapshot="__", sticky=1) = 指定是否粘性快照\n粘性快照不会被自动清除，并且最多只能有2个
+snapshot.export(snapshot="__") = 导出快照，返回一个令牌
+snapshot.import(sourceVeid="", sourceToken="__") = 导入快照 
+backup.list() = 返回自动备份列表
+backup.copyToSnapshot(backup_token="__") = 复制备份到快照
+ipv6.add(ip="__") = 添加IPv6地址
+ipv6.delete(ip="__") = 移除IPv6地址
+migrate.getLocations() = 返回可千迁移的机房列表
+migrate.start(location="__") = 开始移移机房,返回新的IPv4地址
+cloneFromExternalServer(externalServerIP="",externalServerSSHport="",externalServerRootPassword="__") = 复制远程VPS服务器
+getSuspensionDetails() = 返回与服务暂停相关的信息 
+unsuspend(record_id="__") = 清除暂停滥用点,参考getSuspensionDetails
+getRateLimitStatus() = API调用次数过频会暂时限制你的请求,\n此API接口用于查询相关信息
+privateIp.getAvailableIps() = 返回可用IP列表
+privateIp.delete(ip="__") = 移除IP地址
+http = web.rest.jsonLiteClient客户端\n!web_restClient.
+end intellisense**/

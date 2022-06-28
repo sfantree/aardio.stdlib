@@ -1,0 +1,111 @@
+import win.ui;
+/*DSG{{*/
+mainForm = win.form(text="日利率计算";right=759;bottom=469)
+mainForm.add(
+button={cls="button";text="复利";left=472;top=403;right=595;bottom=443;z=5};
+button2={cls="button";text="分期";left=612;top=403;right=735;bottom=443;z=13};
+button3={cls="button";text="清空";left=332;top=403;right=455;bottom=443;z=14};
+checkbox={cls="checkbox";text="手动";left=21;top=240;right=67;bottom=261;z=10};
+datetimepick={cls="datetimepick";left=77;top=284;right=173;bottom=304;edge=1;z=3};
+datetimepick2={cls="datetimepick";left=77;top=327;right=174;bottom=347;edge=1;z=4};
+edit={cls="edit";text="100000";left=77;top=93;right=304;bottom=119;edge=1;multiline=1;z=1};
+edit2={cls="edit";text="0.04";left=77;top=156;right=305;bottom=182;edge=1;multiline=1;z=2};
+edit3={cls="edit";left=77;top=239;right=172;bottom=262;disabled=1;edge=1;multiline=1;z=11};
+edit4={cls="edit";left=330;top=57;right=740;bottom=378;edge=1;multiline=1;z=12};
+static={cls="static";text="开始日:";left=21;top=285;right=73;bottom=305;transparent=1;z=6};
+static2={cls="static";text="结束日:";left=21;top=329;right=73;bottom=349;transparent=1;z=7};
+static3={cls="static";text="总价:";left=28;top=100;right=80;bottom=120;transparent=1;z=8};
+static4={cls="static";text="日利率:";left=20;top=160;right=69;bottom=180;transparent=1;z=9};
+static5={cls="static";text="天(每30天计算一个分期)";left=180;top=242;right=316;bottom=261;transparent=1;z=15}
+)
+/*}}*/
+
+mainForm.datetimepick2.time=time.now().addday(1)
+
+mainForm.button3.oncommand = function(id,event){
+        //mainForm.msgbox( mainForm.button3.text );
+        mainForm.edit4.text=""
+       
+}
+mainForm.checkbox.oncommand = function(id,event){
+        //mainForm.msgbox( mainForm.checkbox.text );
+        if(mainForm.checkbox.checked){
+                mainForm.edit3.disabled=false
+                mainForm.edit3.text=""
+                mainForm.datetimepick2.disabled=true
+                mainForm.datetimepick.disabled=true
+        }else {
+                mainForm.edit3.disabled=true
+                mainForm.edit3.text=""
+                mainForm.datetimepick2.disabled=false
+                mainForm.datetimepick.disabled=false
+        }
+}
+
+mainForm.button2.oncommand = function(id,event){
+        //mainForm.msgbox( mainForm.button2.text );
+       
+        //天数
+        s=(tonumber(mainForm.datetimepick2.time) - tonumber(mainForm.datetimepick.time))/86400
+        if(mainForm.edit3.text != ""){
+                s= tonumber(mainForm.edit3.text)
+        }
+       
+        mon=math.floor(s/30)
+       
+        zj = tonumber(mainForm.edit.text) //总价
+        lv = tonumber(mainForm.edit2.text)/100
+        sumlx=0 //利息合计
+        bak = zj
+       
+        if(s%30 > 0){ mon=mon+1 }
+       
+        smon = math.floor(zj/mon)//每月基数
+       
+        mainForm.edit4.appendText('\r\n每月基数:'+smon)
+
+                if(s%30 > 0){
+                        f=s%30  
+                }else {
+                        f=30
+                }
+               
+                for(i=1;mon;1){
+                        for(i=1;f;1){
+                                zj=math.floor(zj*(1+lv))
+                        }
+                        my = smon+zj-smon*(mon+1-i)
+                        mainForm.edit4.appendText('\r\n第'+i+'月:'+my+' 利息:'+(my-smon))
+                        zj=zj-my
+                        mainForm.edit4.appendText('\t>>>> 剩余:'+zj)
+                        sumlx = sumlx + (my-smon)
+                }
+                mainForm.edit4.appendText('\r\n利息合计:'+sumlx+'\r\n============================')
+}
+
+
+mainForm.button.oncommand = function(id,event){
+        //mainForm.msgbox( mainForm.button.text );
+
+        //天数
+        s=(tonumber(mainForm.datetimepick2.time) - tonumber(mainForm.datetimepick.time))/86400
+        if(mainForm.edit3.text != ""){
+                s= tonumber(mainForm.edit3.text)
+        }
+       
+        zj = tonumber(mainForm.edit.text)
+        lv = tonumber(mainForm.edit2.text)/100
+       
+        bak = zj
+
+        for(i=1;s;1){
+                zj=zj*(1+lv)
+        }
+
+        mainForm.edit4.appendText('\r\n基数:'+bak+'\r\n天数:'+s+'\r\n总价:'+math.floor(zj)+'\r\n利息:'+ math.floor(zj-bak)+'\r\n============================')
+       
+}
+
+
+mainForm.show()
+return win.loopMessage();

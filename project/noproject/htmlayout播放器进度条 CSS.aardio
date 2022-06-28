@@ -1,0 +1,67 @@
+
+import win.ui;
+
+var winform = win.form(text="Htmlayout进度条";right=759;bottom=469;parent=...)
+winform.add()
+import web.layout
+
+var wb = web.layout( winform )
+
+wb.html = /**         
+<!doctype html>
+<html>
+<head>
+/*滑动条*/
+<style>
+        body{background:#000;border:0;margin:0;padding:0;}
+@set std-hslider{
+        :root{width:*;height:8px;cursor: pointer;
+                background: transparent;
+                vertical-align:middle;
+                padding:2 0 2 0; 
+        }        
+        :root > .slider{ 
+                width:20px;height:8px;border-radius:3px;background:#fff;
+        }
+        :root:focus > .slider{}
+        :root > img{display: block;foreground-image:none;background-color:none;}
+        }        
+        .bg{position:absolute;top:0;left:0px;right:0;width:100%;height:12px;
+        background:#16181c;}/*全局背景*/
+        .line{position:absolute;top:4;left:0px;width:80%;height:4px;line-height:4px;background:#222225}/*缓冲条*/
+        .sdbg{position:absolute;top:4;left:0px;height:4px;background:#b82525;
+                
+        }/*滑块背景*/
+        #slider{position:absolute;top:0;left:0px;width:100%;}/*滑块*/
+        #mv_slider{
+                size-changed!:
+                        w = self.value * int($1(.bg).box-border-width()) / self.max, 
+                        $1(#ctimeon):value = length(w)
+                        ,$1(.sdbg)::width = length(w);
+                value-changed!: 
+                        v = self.value * int($1(.bg).box-border-width()) /self.max,
+                        $1(#btimeon):value = length(v)
+                           ,$1(.sdbg)::width = length(v);
+           }
+</style>
+</head>
+<body>
+<div >
+<div .bg></div><!--进度条全局背景--> 
+<div .line></div><!--缓冲条-->
+<div .sdbg></div><!--进度条背景-->
+<div #slider><input #mv_slider type="hslider" buddy="timeon" max=10000 min=-1 step=1 value=100> </div><!--进度-->
+</div>
+<br />
+<div id="timeon"></div><!--进度值-->
+<br />
+<div id="ctimeon" style="color:#fff;">初始宽度</div>
+<div id="btimeon" style="color:#fff;">变动宽度</div>
+</body>
+</html>
+ **/
+
+winform.show() 
+win.loopMessage();
+return winform;
+

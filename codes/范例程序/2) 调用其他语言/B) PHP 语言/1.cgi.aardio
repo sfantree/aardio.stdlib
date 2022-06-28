@@ -1,0 +1,39 @@
+//CGI 调用
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="Hello World / PHP_CGI 服务器";right=759;bottom=469)
+winform.add()
+/*}}*/
+
+var code = /*
+<html>
+<head> 
+<meta charset="utf-8">
+<title>PHP 测试</title>
+</head>
+<body>
+<?php echo '<p>Hello World / PHP_CGI 服务器</p>'; ?>
+</body>
+</html>
+*/
+string.save("/test.php",code);
+
+//配置为使用 PHP 扩展库自带的 php_cgi.exe 路径
+import php.simpleHttpServer;
+
+//不导入 php.simpleHttpServer 则默认搜索搜索系统安装的 PHP,支持任意版本 PHP。
+import process.php.simpleHttpServer;//可选用 process.php.simpleHttpServer.cgiPath 自定义 php_cgi.exe 路径 
+
+/*
+启动 PHP 服务端，并返回首页网址，此服务端默认自动分配空闲端口。
+如果HTTP服务器已启动则直接返回URL而不是重复启动服务器。当前线程结束时,此服务器线程会自动退出。
+*/
+var url = process.php.simpleHttpServer.startUrl("/test.php");
+
+import web.form;
+var wb = web.form( winform);
+ 
+wb.go(url);
+winform.show();
+
+win.loopMessage();

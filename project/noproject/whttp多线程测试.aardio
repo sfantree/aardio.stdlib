@@ -1,0 +1,37 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=447;bottom=271)
+winform.add(
+button={cls="button";text="Button";left=320;top=224;right=432;bottom=256;z=2};
+edit={cls="edit";text="";left=16;top=16;right=432;bottom=216;edge=1;multiline=1;z=1}
+)
+/*}}*/
+
+winform.button.oncommand = function(id,event){
+	winform.edit.appendText(time().getMilliTime());
+	
+	import inet.whttp;
+	import time;
+	winform.http = inet.whttp();
+	
+	for(i=1;10;1){
+			thread.invoke( 
+				function(winform){
+					import time;
+					var http = winform.http;
+					http.get("https://www.baidu.com");
+					thread.lock("临界区名称");
+					winform.edit.appendText(time().getMilliTime() );
+					winform.edit.appendText('\n\r\n\r\n\r');
+					thread.unlock("临界区名称");
+					
+				} ,
+			winform
+		)
+	}
+	
+
+}
+
+winform.show();
+win.loopMessage();

@@ -1,0 +1,29 @@
+import console;
+import web.blink;//必须导入web.blink
+import web.blink.view;
+import win;
+
+console.open();
+
+var wb = web.blink.view();
+
+wb.onDocumentReady = function(isMainFrame){
+    if(isMainFrame){
+        console.dump("页面document准备完毕!")
+    }
+}
+
+wb.onRequestBegin = function(hRequest,url){
+    console.dump("begin: "+url)
+        wb.hookOnRequestEnd(hRequest);
+}
+
+wb.onRequestEnd = function(hRequest,url,responseDataPtr,size){
+    var str = raw.str(responseDataPtr)
+    console.dump("end: "+url+"  数据长度："+size)
+}
+
+wb.go("http://www.baidu.com")
+
+//虽然是无窗口的，但是也要loopMessage才会影响事件
+win.loopMessage()

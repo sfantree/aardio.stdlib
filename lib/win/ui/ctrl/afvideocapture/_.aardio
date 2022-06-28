@@ -1,0 +1,473 @@
+/*
+Author: lujjjh
+Date:   2011-9-4
+*/
+
+import win.ui.ctrl.static;
+
+namespace win.ui.ctrl; 
+
+class afvideocapture { 
+	ctor(parent,tvalue) {
+		tvalue.cls = "static";
+		this = ..win.ui.ctrl.static(parent, tvalue);
+	}
+	
+	onCreate = function () {
+		this.hwndControl = capCreateCaptureWindow(, 0x10000000 | 0x40000000/*_WS_VISIBLE | _WS_CHILD*/, 0, 0, this.clientRect.right, this.clientRect.bottom, this.hwnd, 1);
+		this.wndproc = function (hwnd, message, wParam, lParam) {
+			if (message == 0x5/*_WM_SIZE*/) {
+				..win.setPos(this.hwndControl, 0, 0, this.clientRect.right, this.clientRect.bottom);
+			}
+		}
+	}
+	
+	onDestroy = function () {
+		::DestroyWindow(this.hwndControl);
+	}
+	
+	// Basic Capture Operations
+	abort = function () {
+		return ::SendMessageInt(this.hwndControl, 0x445/*_WM_CAP_ABORT*/, 0, 0);
+	}
+	
+	driverConnect = function (index = 0) {
+		return ::SendMessageInt(this.hwndControl, 0x40A/*_WM_CAP_DRIVER_CONNECT*/, index, 0);
+	}
+	
+	sequence = function () {
+		return ::SendMessageInt(this.hwndControl, 0x43E/*_WM_CAP_SEQUENCE*/, 0, 0);
+	}
+	
+	stop = function () {
+		return ::SendMessageInt(this.hwndControl, 0x444/*_WM_CAP_STOP*/, 0, 0);
+	}
+	
+	// Capture Windows
+	getDriverDescription = function (index) {
+		var re, name, ver = capGetDriverDescription(index, 128, 128, 128, 128);
+		if (re) {
+			return ..string.str(name), ..string.str(ver);
+		}
+		else {
+			return null, null, ..lasterr();
+		}
+	}
+	
+	driverDisconnect = function () {
+		return ::SendMessageInt(this.hwndControl, 0x40B/*_WM_CAP_DRIVER_DISCONNECT*/, 0, 0);
+	}
+	
+	getStatus = function () {
+		var status = CAPSTATUS();
+		::SendMessageByStruct(this.hwndControl, 0x436/*_WM_CAP_GET_STATUS*/, ..raw.sizeof(status), status);
+		return status;
+	}
+	
+	// Capture Drivers
+	driverGetCaps = function () {
+		var driverCaps = CAPDRIVERCAPS();
+		::SendMessageByStruct(this.hwndControl, 0x40E/*_WM_CAP_DRIVER_GET_CAPS*/, ..raw.sizeof(driverCaps), driverCaps);
+		return driverCaps;
+	}
+	
+	driverGetName = function () {
+		var re, name = ::SendMessageByString(this.hwndControl, 0x40C/*_WM_CAP_DRIVER_GET_NAME*/, 128, 128);
+		if (re) {
+			return ..string.str(name);
+		}
+		else {
+			return null, ..lasterr();
+		}
+	}
+	
+	driverGetVersion = function () {
+		var re, ver = ::SendMessageByString(this.hwndControl, 0x40D/*_WM_CAP_DRIVER_GET_VERSION*/, 128, 128);
+		if (re) {
+			return ..string.str(ver);
+		}
+		else {
+			return null, ..lasterr();
+		}
+	}
+	
+	driverGetAudioFormat = function () {
+		var format = WAVEFORMATEX();
+		::SendMessageByStruct(this.hwndControl, 0x424/*_WM_CAP_GET_AUDIOFORMAT*/, ..raw.sizeof(format), format);
+		return format;
+	}
+	
+	driverGetVideoFormat = function () {
+		var format = BITMAPINFO();
+		::SendMessageByStruct(this.hwndControl, 0x42C/*_WM_CAP_GET_VIDEOFORMAT*/, ..raw.sizeof(format), format);
+		return format;
+	}
+	
+	driverSetAudioFormat = function (format) {
+		return ::SendMessageByStruct(this.hwndControl, 0x423/*_WM_CAP_SET_AUDIOFORMAT*/, ..raw.sizeof(format), format);
+	}
+	
+	driverSetVideoFormat = function (format) {
+		return ::SendMessageByStruct(this.hwndControl, 0x42D/*_WM_CAP_SET_VIDEOFORMAT*/, ..raw.sizeof(format), format);
+	}
+	
+	// Capture Driver Preview and Overlay Modes
+	setOverlay = function (bOverlay) {
+		return ::SendMessageInt(this.hwndControl, 0x433/*_WM_CAP_SET_OVERLAY*/, bOverlay ? 1 : 0, 0);
+	}
+	
+	setPreview = function (bPreview) {
+		return ::SendMessageInt(this.hwndControl, 0x432/*_WM_CAP_SET_PREVIEW*/, bPreview ? 1 : 0, 0);
+	}
+	
+	setPreviewRate = function (rate) {
+		return ::SendMessageInt(this.hwndControl, 0x434/*_WM_CAP_SET_PREVIEWRATE*/, rate, 0);
+	}
+	
+	setScale = function (bScale) {
+		return ::SendMessageInt(this.hwndControl, 0x435/*_WM_CAP_SET_SCALE*/, bScale ? 1 : 0, 0);
+	}
+	
+	setScroll = function (x, y) {
+		var pt = ::POINT(x, y);
+		return ::SendMessageByStruct(this.hwndControl, 0x437/*_WM_CAP_SET_SCROLL*/, 0, pt);
+	}
+	
+	// Capture Driver Video Dialog Boxes
+	dlgVideoCompression = function () {
+		return ::SendMessageInt(this.hwndControl, 0x42E/*_WM_CAP_DLG_VIDEOCOMPRESSION*/, 0, 0);
+	}
+	
+	dlgVideoDisplay = function () {
+		return ::SendMessageInt(this.hwndControl, 0x42B/*_WM_CAP_DLG_VIDEODISPLAY*/, 0, 0);
+	}
+	
+	dlgVideoFormat = function () {
+		return ::SendMessageInt(this.hwndControl, 0x429/*_WM_CAP_DLG_VIDEOFORMAT*/, 0, 0);
+	}
+	
+	dlgVideoSource = function () {
+		return ::SendMessageInt(this.hwndControl, 0x42A/*_WM_CAP_DLG_VIDEOSOURCE*/, 0, 0);
+	}
+	
+	// Video Capture Settings
+	getSequenceSetup = function () {
+		var params = CAPTUREPARMS();
+		::SendMessageByStruct(this.hwndControl, 0x441/*_WM_CAP_GET_SEQUENCE_SETUP*/, ..raw.sizeof(params), params);
+		return params;
+	}
+	
+	setSequenceSetup = function (params) {
+		return ::SendMessageByStruct(this.hwndControl, 0x440/*_WM_CAP_SET_SEQUENCE_SETUP*/, ..raw.sizeof(params), params);
+	}
+	
+	// Capture File and Buffers
+	fileAllocate = function (size) {
+		return ::SendMessageInt(this.hwndControl, 0x416/*_WM_CAP_FILE_ALLOCATE*/, 0, size);
+	}
+	
+	fileGetCaptureFile = function () {
+		var re, name = ::SendMessageByString(this.hwndControl, 0x415/*_WM_CAP_FILE_GET_CAPTURE_FILE*/, 0x104/*_MAX_PATH*/, 0x104/*_MAX_PATH*/);
+		if (re) {
+			return ..string.str(name);
+		}
+		else {
+			return null, ..lasterr();
+		}
+	}
+	
+	fileSaveAs = function (name) {
+		return ::SendMessage(this.hwndControl, 0x417/*_WM_CAP_FILE_SAVEAS*/, null, name);
+	}
+	
+	fileSetCaptureFile = function (name) {
+		return ::SendMessage(this.hwndControl, 0x414/*_WM_CAP_FILE_SET_CAPTURE_FILE*/, null, name);
+	}
+	
+	// Directly Using Capture Data
+	sequenceNoFile = function () {
+		return ::SendMessageInt(this.hwndControl, 0x43F/*_WM_CAP_SEQUENCE_NOFILE*/, 0, 0);
+	}
+	
+	setMCIDevice = function (name) {
+		return ::SendMessage(this.hwndControl, 0x442/*_WM_CAP_SET_MCI_DEVICE*/, null, name);
+	}
+	
+	// Manual Frame Capture
+	singleFrame = function () {
+		return ::SendMessageInt(this.hwndControl, 0x448/*_WM_CAP_SINGLE_FRAME*/, 0, 0);
+	}
+	
+	singleFrameClose = function () {
+		return ::SendMessageInt(this.hwndControl, 0x447/*_WM_CAP_SINGLE_FRAME_CLOSE*/, 0, 0);
+	}
+	
+	singleFrameOpen = function () {
+		return ::SendMessageInt(this.hwndControl, 0x446/*_WM_CAP_SINGLE_FRAME_OPEN*/, 0, 0);
+	}
+	
+	// Still-Image Capture
+	editCopy = function () {
+		return ::SendMessageInt(this.hwndControl, 0x41E/*_WM_CAP_EDIT_COPY*/, 0, 0);
+	}
+	
+	fileSaveDIB = function (name) {
+		return ::SendMessage(this.hwndControl, 0x419/*_WM_CAP_FILE_SAVEDIB*/, null, name);
+	}
+	
+	grabFrame = function () {
+		return ::SendMessageInt(this.hwndControl, 0x43C/*_WM_CAP_GRAB_FRAME*/, 0, 0);
+	}
+	
+	grabFrameNoStop = function () {
+		return ::SendMessageInt(this.hwndControl, 0x43D/*_WM_CAP_GRAB_FRAME_NOSTOP*/, 0, 0);
+	}
+	
+	// Advanced Capture Options
+	// ...
+	
+	// Working with Palettes
+	// ...
+	
+	// Yielding to Other Applications
+	// ...
+	
+	// AVICap Callback Functions
+	// ...
+	
+	// More Information: http://msdn.microsoft.com/en-us/library/dd757696(v=vs.85).aspx
+}
+
+namespace afvideocapture {
+	var avicap32 = ..raw.loadDll("Avicap32.dll");
+	capCreateCaptureWindow = avicap32.api("capCreateCaptureWindowA", "int(string,INT,int,int,int,int,int,int)");
+	capGetDriverDescription = avicap32.api("capGetDriverDescriptionA", "int(word,string&,int,string&,int)");
+	
+	CAPSTATUS = class {
+		INT uiImageWidth;
+		INT uiImageHeight;
+		int fLiveWindow;
+		int fOverlayWindow;
+		int fScale;
+		struct ptScroll = ::POINT();
+		int fUsingDefaultPalette;
+		int fAudioHardware;
+		int fCapFileExists;
+		INT dwCurrentVideoFrame;
+		INT dwCurrentVideoFramesDropped;
+		INT dwCurrentWaveSamples;
+		INT dwCurrentTimeElapsedMS;
+		pointer hPalCurrent;
+		int fCapturingNow;
+		INT dwReturn;
+		INT wNumVideoAllocated;
+		INT wNumAudioAllocated;
+	}
+	
+	CAPDRIVERCAPS = class {
+		INT wDeviceIndex;
+		int fHasOverlay;
+		int fHasDlgVideoSource;
+		int fHasDlgVideoFormat;
+		int fHasDlgVideoDisplay;
+		int fCaptureInitialized;
+		int fDriverSuppliesPalettes;
+		int hVideoIn;
+		int hVideoOut;
+		int hVideoExtIn;
+		int hVideoExtOut;
+	}
+	
+	WAVEFORMATEX = class {
+		WORD wFormatTag;
+		WORD nChannels;
+		INT nSamplesPerSec;
+		INT nAvgBytesPerSec;
+		WORD nBlockAlign;
+		WORD wBitsPerSample;
+		WORD cbSize;
+	}
+	
+	BITMAPINFOHEADER = class {
+		INT biSize;
+		int biWidth;
+		int biHeight;
+		WORD biPlanes;
+		WORD biBitCount;
+		INT biCompression;
+		INT biSizeImage;
+		int biXPelsPerMeter;
+		int biYPelsPerMeter;
+		INT biClrUsed;
+		INT biClrImportant;
+	}
+	
+	RGBQUAD = class {
+		BYTE rgbBlue;
+		BYTE rgbGreen;
+		BYTE rgbRed;
+		BYTE rgbReserved;
+	}
+	
+	BITMAPINFO = class {
+ 		struct bmiHeader = ..win.ui.ctrl.afvideocapture.BITMAPINFOHEADER();
+ 		struct bmiColors[1] = { ..win.ui.ctrl.afvideocapture.RGBQUAD() };
+	}
+	
+	CAPTUREPARMS = class {
+		INT dwRequestMicroSecPerFrame;
+		int fMakeUserHitOKToCapture;
+		INT wPercentDropForError;
+		int fYield;
+		INT dwIndexSize;
+		INT wChunkGranularity;
+		int fUsingDOSMemory;
+		INT wNumVideoRequested;
+		int fCaptureAudio;
+		INT wNumAudioRequested;
+		INT vKeyAbort;
+		int fAbortLeftMouse;
+		int fAbortRightMouse;
+		int fLimitEnabled;
+		INT wTimeLimit;
+		int fMCIControl;
+		int fStepMCIDevice;
+		INT dwMCIStartTime;
+		INT dwMCIStopTime;
+		int fStepCaptureAt2x;
+		INT wStepCaptureAverageFrames;
+		INT dwAudioBufferSize;
+		int fDisableWriteCache;
+		INT AVStreamMaster;
+	}
+}
+
+/**intellisense()
+win.ui.ctrl.afcapture = 视频捕获控件
+?win.ui.ctrl.afcapture = !afcapture.
+
+!afcapture.abort() = 
+!afcapture.driverConnect(__/*设备索引*/) = 连接设备
+!afcapture.sequence() = 
+!afcapture.stop() = 
+!afcapture.getDriverDescription(__/*设备索引*/) = 
+!afcapture.driverDisconnect() = 断开连接设备
+!afcapture.getStatus() = 
+!afcapture.driverGetCaps() = 
+!afcapture.driverGetName() = 
+!afcapture.driverGetVersion() = 
+!afcapture.driverGetAudioFormat() = 
+!afcapture.driverGetVideoFormat() = 
+!afcapture.driverSetAudioFormat(__/*音频格式*/) = 
+!afcapture.driverSetVideoFormat(__/*视频格式*/) = 
+!afcapture.setOverlay(__/*是否开启覆盖模式*/) = 
+!afcapture.setPreview(__/*是否开启预览模式*/) = 
+!afcapture.setPreviewRate(__/*预览频率*/) = 
+!afcapture.setScale(__/*是否自动缩放*/) = 
+!afcapture.setScroll(.(x,y) = 
+!afcapture.dlgVideoCompression() = 
+!afcapture.dlgVideoDisplay() = 
+!afcapture.dlgVideoFormat() = 
+!afcapture.dlgVideoSource() = 
+!afcapture.getSequenceSetup() = 
+!afcapture.setSequenceSetup(__/*参数*/) = 
+!afcapture.fileAllocate(__/*预分配大小*/) = 
+!afcapture.fileGetCaptureFile() = 
+!afcapture.fileSaveAs(__/*文件名*/) = 
+!afcapture.fileSetCaptureFile(__/*文件名*/) = 
+!afcapture.sequenceNoFile() = 
+!afcapture.setMCIDevice(__/*设备名称*/) = 
+!afcapture.singleFrame() = 
+!afcapture.singleFrameClose() = 
+!afcapture.singleFrameOpen() = 
+!afcapture.editCopy() = 
+!afcapture.fileSaveDIB(__/*文件名*/) = 
+!afcapture.grabFrame() = 
+!afcapture.grabFrameNoStop() = 
+end intellisense**/
+
+
+ /**intellisense()
+_WM_CAP_START=@0x400/*_WM_CAP_START*/
+_WM_CAP_UNICODE_START=@0x464/*_WM_CAP_UNICODE_START*/
+_WM_CAP_GET_CAPSTREAMPTR=@0x401/*_WM_CAP_GET_CAPSTREAMPTR*/
+_WM_CAP_SET_CALLBACK_ERRORW=@0x466/*_WM_CAP_SET_CALLBACK_ERRORW*/
+_WM_CAP_SET_CALLBACK_STATUSW=@0x467/*_WM_CAP_SET_CALLBACK_STATUSW*/
+_WM_CAP_SET_CALLBACK_ERRORA=@0x402/*_WM_CAP_SET_CALLBACK_ERRORA*/
+_WM_CAP_SET_CALLBACK_STATUSA=@0x403/*_WM_CAP_SET_CALLBACK_STATUSA*/
+_WM_CAP_SET_CALLBACK_ERROR=@0x402/*_WM_CAP_SET_CALLBACK_ERROR*/
+_WM_CAP_SET_CALLBACK_STATUS=@0x403/*_WM_CAP_SET_CALLBACK_STATUS*/
+_WM_CAP_SET_CALLBACK_YIELD=@0x404/*_WM_CAP_SET_CALLBACK_YIELD*/
+_WM_CAP_SET_CALLBACK_FRAME=@0x405/*_WM_CAP_SET_CALLBACK_FRAME*/
+_WM_CAP_SET_CALLBACK_VIDEOSTREAM=@0x406/*_WM_CAP_SET_CALLBACK_VIDEOSTREAM*/
+_WM_CAP_SET_CALLBACK_WAVESTREAM=@0x407/*_WM_CAP_SET_CALLBACK_WAVESTREAM*/
+_WM_CAP_GET_USER_DATA=@0x408/*_WM_CAP_GET_USER_DATA*/
+_WM_CAP_SET_USER_DATA=@0x409/*_WM_CAP_SET_USER_DATA*/
+_WM_CAP_DRIVER_CONNECT=@0x40A/*_WM_CAP_DRIVER_CONNECT*/
+_WM_CAP_DRIVER_DISCONNECT=@0x40B/*_WM_CAP_DRIVER_DISCONNECT*/
+_WM_CAP_DRIVER_GET_NAMEA=@0x40C/*_WM_CAP_DRIVER_GET_NAMEA*/
+_WM_CAP_DRIVER_GET_VERSIONA=@0x40D/*_WM_CAP_DRIVER_GET_VERSIONA*/
+_WM_CAP_DRIVER_GET_NAMEW=@0x470/*_WM_CAP_DRIVER_GET_NAMEW*/
+_WM_CAP_DRIVER_GET_VERSIONW=@0x471/*_WM_CAP_DRIVER_GET_VERSIONW*/
+_WM_CAP_DRIVER_GET_NAME=@0x40C/*_WM_CAP_DRIVER_GET_NAME*/
+_WM_CAP_DRIVER_GET_VERSION=@0x40D/*_WM_CAP_DRIVER_GET_VERSION*/
+_WM_CAP_DRIVER_GET_CAPS=@0x40E/*_WM_CAP_DRIVER_GET_CAPS*/
+_WM_CAP_FILE_SET_CAPTURE_FILEA=@0x414/*_WM_CAP_FILE_SET_CAPTURE_FILEA*/
+_WM_CAP_FILE_GET_CAPTURE_FILEA=@0x415/*_WM_CAP_FILE_GET_CAPTURE_FILEA*/
+_WM_CAP_FILE_SAVEASA=@0x417/*_WM_CAP_FILE_SAVEASA*/
+_WM_CAP_FILE_SAVEDIBA=@0x419/*_WM_CAP_FILE_SAVEDIBA*/
+_WM_CAP_FILE_SET_CAPTURE_FILEW=@0x478/*_WM_CAP_FILE_SET_CAPTURE_FILEW*/
+_WM_CAP_FILE_GET_CAPTURE_FILEW=@0x479/*_WM_CAP_FILE_GET_CAPTURE_FILEW*/
+_WM_CAP_FILE_SAVEASW=@0x47B/*_WM_CAP_FILE_SAVEASW*/
+_WM_CAP_FILE_SAVEDIBW=@0x47D/*_WM_CAP_FILE_SAVEDIBW*/
+_WM_CAP_FILE_SAVEAS=@0x417/*_WM_CAP_FILE_SAVEAS*/
+_WM_CAP_FILE_SAVEDIB=@0x419/*_WM_CAP_FILE_SAVEDIB*/
+_WM_CAP_FILE_SET_CAPTURE_FILE=@0x414/*_WM_CAP_FILE_SET_CAPTURE_FILE*/
+_WM_CAP_FILE_GET_CAPTURE_FILE=@0x415/*_WM_CAP_FILE_GET_CAPTURE_FILE*/
+_WM_CAP_FILE_ALLOCATE=@0x416/*_WM_CAP_FILE_ALLOCATE*/
+_WM_CAP_FILE_SET_INFOCHUNK=@0x418/*_WM_CAP_FILE_SET_INFOCHUNK*/
+_WM_CAP_EDIT_COPY=@0x41E/*_WM_CAP_EDIT_COPY*/
+_WM_CAP_SET_AUDIOFORMAT=@0x423/*_WM_CAP_SET_AUDIOFORMAT*/
+_WM_CAP_GET_AUDIOFORMAT=@0x424/*_WM_CAP_GET_AUDIOFORMAT*/
+_WM_CAP_DLG_VIDEOFORMAT=@0x429/*_WM_CAP_DLG_VIDEOFORMAT*/
+_WM_CAP_DLG_VIDEOSOURCE=@0x42A/*_WM_CAP_DLG_VIDEOSOURCE*/
+_WM_CAP_DLG_VIDEODISPLAY=@0x42B/*_WM_CAP_DLG_VIDEODISPLAY*/
+_WM_CAP_GET_VIDEOFORMAT=@0x42C/*_WM_CAP_GET_VIDEOFORMAT*/
+_WM_CAP_SET_VIDEOFORMAT=@0x42D/*_WM_CAP_SET_VIDEOFORMAT*/
+_WM_CAP_DLG_VIDEOCOMPRESSION=@0x42E/*_WM_CAP_DLG_VIDEOCOMPRESSION*/
+_WM_CAP_SET_PREVIEW=@0x432/*_WM_CAP_SET_PREVIEW*/
+_WM_CAP_SET_OVERLAY=@0x433/*_WM_CAP_SET_OVERLAY*/
+_WM_CAP_SET_PREVIEWRATE=@0x434/*_WM_CAP_SET_PREVIEWRATE*/
+_WM_CAP_SET_SCALE=@0x435/*_WM_CAP_SET_SCALE*/
+_WM_CAP_GET_STATUS=@0x436/*_WM_CAP_GET_STATUS*/
+_WM_CAP_SET_SCROLL=@0x437/*_WM_CAP_SET_SCROLL*/
+_WM_CAP_GRAB_FRAME=@0x43C/*_WM_CAP_GRAB_FRAME*/
+_WM_CAP_GRAB_FRAME_NOSTOP=@0x43D/*_WM_CAP_GRAB_FRAME_NOSTOP*/
+_WM_CAP_SEQUENCE=@0x43E/*_WM_CAP_SEQUENCE*/
+_WM_CAP_SEQUENCE_NOFILE=@0x43F/*_WM_CAP_SEQUENCE_NOFILE*/
+_WM_CAP_SET_SEQUENCE_SETUP=@0x440/*_WM_CAP_SET_SEQUENCE_SETUP*/
+_WM_CAP_GET_SEQUENCE_SETUP=@0x441/*_WM_CAP_GET_SEQUENCE_SETUP*/
+_WM_CAP_SET_MCI_DEVICEA=@0x442/*_WM_CAP_SET_MCI_DEVICEA*/
+_WM_CAP_GET_MCI_DEVICEA=@0x443/*_WM_CAP_GET_MCI_DEVICEA*/
+_WM_CAP_SET_MCI_DEVICEW=@0x4A6/*_WM_CAP_SET_MCI_DEVICEW*/
+_WM_CAP_GET_MCI_DEVICEW=@0x4A7/*_WM_CAP_GET_MCI_DEVICEW*/
+_WM_CAP_SET_MCI_DEVICE=@0x442/*_WM_CAP_SET_MCI_DEVICE*/
+_WM_CAP_GET_MCI_DEVICE=@0x443/*_WM_CAP_GET_MCI_DEVICE*/
+_WM_CAP_STOP=@0x444/*_WM_CAP_STOP*/
+_WM_CAP_ABORT=@0x445/*_WM_CAP_ABORT*/
+_WM_CAP_SINGLE_FRAME_OPEN=@0x446/*_WM_CAP_SINGLE_FRAME_OPEN*/
+_WM_CAP_SINGLE_FRAME_CLOSE=@0x447/*_WM_CAP_SINGLE_FRAME_CLOSE*/
+_WM_CAP_SINGLE_FRAME=@0x448/*_WM_CAP_SINGLE_FRAME*/
+_WM_CAP_PAL_OPENA=@0x450/*_WM_CAP_PAL_OPENA*/
+_WM_CAP_PAL_SAVEA=@0x451/*_WM_CAP_PAL_SAVEA*/
+_WM_CAP_PAL_OPENW=@0x4B4/*_WM_CAP_PAL_OPENW*/
+_WM_CAP_PAL_SAVEW=@0x4B5/*_WM_CAP_PAL_SAVEW*/
+_WM_CAP_PAL_OPEN=@0x450/*_WM_CAP_PAL_OPEN*/
+_WM_CAP_PAL_SAVE=@0x451/*_WM_CAP_PAL_SAVE*/
+_WM_CAP_PAL_PASTE=@0x452/*_WM_CAP_PAL_PASTE*/
+_WM_CAP_PAL_AUTOCREATE=@0x453/*_WM_CAP_PAL_AUTOCREATE*/
+_WM_CAP_PAL_MANUALCREATE=@0x454/*_WM_CAP_PAL_MANUALCREATE*/
+_WM_CAP_SET_CALLBACK_CAPCONTROL=@0x455/*_WM_CAP_SET_CALLBACK_CAPCONTROL*/
+_WM_CAP_UNICODE_END=@0x4B5/*_WM_CAP_UNICODE_END*/
+_WM_CAP_END=@0x4B5/*_WM_CAP_END*/
+end intellisense**/

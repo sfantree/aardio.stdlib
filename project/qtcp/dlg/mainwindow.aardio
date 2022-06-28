@@ -1,0 +1,298 @@
+import win.ui;
+/*DSG{{*/
+var MainWindow = win.form(text="TCP调试工具";right=640;bottom=535)
+MainWindow.add(
+btnClearRecv={cls="button";text="清空接收";left=472;top=288;right=543;bottom=311;z=1};
+btnClearSend={cls="button";text="清空发送";left=560;top=288;right=631;bottom=311;z=2};
+btnConnect={cls="button";text="连接";left=8;top=320;right=128;bottom=352;z=17};
+btnOpen={cls="button";text="监听端口";left=8;top=168;right=128;bottom=200;z=11};
+btnSend={cls="button";text="发送";left=16;top=472;right=136;bottom=504;z=22};
+cbRemoteIP={cls="combobox";left=8;top=232;right=128;bottom=252;edge=1;items={};mode="dropdown";z=14};
+cbRemotePort={cls="combobox";left=8;top=288;right=128;bottom=308;edge=1;items={};mode="dropdown";z=16};
+chSendHex={cls="checkbox";text="十六进制发送";left=16;top=360;right=136;bottom=379;z=18};
+chSendNewline={cls="checkbox";text="发送回车换行";left=16;top=384;right=136;bottom=403;z=19};
+ckRecvHex={cls="checkbox";text="十六进制显示";left=16;top=120;right=136;bottom=139;z=9};
+ckSendTimer={cls="checkbox";text="定时发送";left=16;top=408;right=136;bottom=427;z=20};
+ckTimestamp={cls="checkbox";text="时间戳";left=16;top=144;right=136;bottom=163;z=10};
+combobox={cls="combobox";left=8;top=32;right=128;bottom=52;edge=1;items={};mode="dropdown";z=6};
+combobox2={cls="combobox";left=8;top=88;right=128;bottom=108;edge=1;items={};mode="dropdown";z=8};
+edit3={cls="edit";left=64;top=432;right=136;bottom=456;edge=1;font=LOGFONT(name='SimSun-ExtB');z=12};
+static={cls="static";text="本地主机IP";left=8;top=8;right=80;bottom=24;center=1;font=LOGFONT(name='SimSun-ExtB');transparent=1;z=5};
+static2={cls="static";text="端口";left=8;top=64;right=80;bottom=80;center=1;font=LOGFONT(name='SimSun-ExtB');transparent=1;z=7};
+static7={cls="static";text="远程主机IP";left=8;top=208;right=80;bottom=224;center=1;font=LOGFONT(name='SimSun-ExtB');transparent=1;z=13};
+static8={cls="static";text="端口";left=8;top=264;right=80;bottom=280;center=1;font=LOGFONT(name='SimSun-ExtB');transparent=1;z=15};
+static9={cls="static";text="周期(ms)";left=8;top=432;right=64;bottom=456;center=1;font=LOGFONT(name='SimSun-ExtB');transparent=1;z=21};
+txtRecv={cls="edit";left=152;top=8;right=632;bottom=278;edge=1;font=LOGFONT(h=-13);multiline=1;z=4};
+txtSend={cls="edit";left=152;top=320;right=632;bottom=448;edge=1;font=LOGFONT(h=-13);multiline=1;z=3}
+)
+/*}}*/
+
+import time;
+import console;
+import win.ui.statusbar;
+import wsock.tcp.asynClient;
+import fsys.config;
+
+config = fsys.config( io.appData("/aardio/tools/qtcp") );
+
+MainWindow.bindConfig( config.MainWindow, {
+	cbRemoteIP = "text";
+	cbRemotePort = "text";
+	
+	ckRecvHex = "checked";
+	ckTimestamp = "checked";
+	chSendHex = "checked";
+	chSendNewline = "checked";
+	
+} );
+
+MainWindow.onClose = function(hwnd,message,wParam,lParam){
+    config.saveAll()
+}
+
+MainWindow.initStatusBar = function() {
+    win.ui.statusbar( MainWindow );
+	MainWindow.statusbar.addItem("Welcome", (MainWindow.width) / 2);
+	MainWindow.statusbar.addItem("RX: 0", 80/*宽度*/);
+	MainWindow.statusbar.addItem("TX: 0", 80);
+	m_txCnt = 0;
+	m_rxCnt = 0;
+	//MainWindow.statusbar.addItem("中国", 200);
+}
+MainWindow.initStatusBar();
+
+MainWindow.printDebugInfo = function(str /* type.string */) {
+    MainWindow.statusbar.setText(str, 1);
+}
+//MainWindow.printDebugInfo("printDebugInfo");
+
+// 20 20 20 转为 "\x20\x20\x20"
+hexStringToString = function(hexStr)
+{
+    var ret = 0;
+    var str = "";
+    
+    if(type(hexStr) != type.string) {
+        ret = -2;
+        return ret, str;
+    }
+    
+    var retByte = "";
+    hexStr = ..string.trim(hexStr);
+    var sl = ..string.split(hexStr, " ");
+
+    for(i=1;#sl;1){
+        var each = sl[i];
+        if(#each) {
+            var eachascii = tonumber(each, 16);
+            
+            if(eachascii == null) {
+                ret = -1;
+            } else {
+                var c = (eachascii & 0xFF) ;
+                retByte = retByte ++ ..string.pack(c);
+            }
+        } 
+    }
+    str = retByte;
+    return str, ret;
+}
+
+/*
+var ret, str= hexStringToString("2 34 44");
+console.log(string.hex(str));
+*/
+
+MainWindow.sendData = function(){
+	var sendStr = MainWindow.txtSend.text;
+	//console.log("sendStr", sendStr)
+	sendStr = ..string.lower(sendStr);
+	
+	var sendData;
+    var showStr;
+	
+	if (m_sendHex == 1) {
+        sendData = hexStringToString(sendStr);
+    } 
+    else /*if (m_sendHex == 0)*/ {
+        sendData = sendStr;
+    }
+    
+	if (m_sendNewline == 1)
+    {
+        sendData = sendData ++ '\x0d';
+        sendData = sendData ++ '\x0a';
+    }
+    
+    var tmpSocket;
+    if(m_cliConnected) {
+        //console.log("m_cliConnected")
+        tmpSocket = m_tcpClient;
+    }
+    
+    if(tmpSocket == null) {
+        return ; 
+    }
+    
+    tmpSocket.write(sendData);
+    
+    m_txCnt += #sendData;
+	MainWindow.statusbar.setText("TX: " ++ tostring(m_txCnt), 3);
+}
+
+//显示收到的数据
+MainWindow.showRecvData = function
+	(tips /* type.string */,  buffer /* type.buffer */) {
+    
+    var info = "";
+    var timeStr = "";
+    m_rxCnt = m_rxCnt + #buffer;
+    MainWindow.statusbar.setText("TX: " ++ tostring(m_rxCnt), 2);
+    
+    // 是否显示时间戳
+    if (m_showTimestamp)
+    {
+        var dateTime = ..time.now();
+        dateTime.format = "%Y/%m/%d %H:%M:%S";
+        //dateTime.locale = "enu";
+        timeStr = " [ " ++ tostring(dateTime) ++ " ] ";
+    }
+    
+    // 是否显示十六进制
+    if (m_recvHex == 1)
+    {
+        //info = buffer.toHex(' ').data();
+        info = ..string.hex(buffer, " ",);
+        //info = ..string.trimleft(info);
+    }
+    else
+    {
+        //info = QString(buffer);
+        info = tostring(buffer);
+    }
+    
+    MainWindow.txtRecv.print(timeStr ++ tips ++ '');
+    MainWindow.txtRecv.print(info);
+    //MainWindow.txtRecv.print("");
+}
+
+ 
+MainWindow.wndproc = function(hwnd,message,wParam,lParam){
+     select(message) {
+         case 0x201/*_WM_LBUTTONDOWN*/{
+             MainWindow.hitCaption();
+         }
+         
+     }
+ }
+
+tcpClientBindCallback = function(tcpClient){
+	
+	tcpClient.onConnect = function(err){
+        MainWindow.printDebugInfo("m_tcpClient.onConnect");
+	}
+	
+	tcpClient.onClose = function(err){
+		MainWindow.printDebugInfo("m_tcpClient.onClose");
+    }
+    
+    tcpClient.onRead = function(err){
+        MainWindow.printDebugInfo("m_tcpClient.onRead");
+ 		var buffer = tcpClient.readAll();
+ 		if( #buffer ) {
+ 		    MainWindow.showRecvData("SERVER>", buffer);
+ 		}   
+	}
+	
+	tcpClient.onSend = function(err){
+	    MainWindow.printDebugInfo("m_tcpClient.onSend");
+	
+	}	
+}
+
+m_tcpClient = ..wsock.tcp.asynClient();
+
+MainWindow.btnConnect.oncommand = function(id,event){
+	if(MainWindow.btnConnect.text = "连接") {
+	    var serverIp = MainWindow.cbRemoteIP.text;
+	    var port = tonumber(MainWindow.cbRemotePort.text);
+	    
+	    if(m_cliConnected == 1) {
+	        m_tcpClient.close();
+	    }
+	    
+	    m_tcpClient = ..wsock.tcp.asynClient();
+	    tcpClientBindCallback(m_tcpClient);
+	    m_tcpClient.connect(serverIp, port);
+	    var connectResult = m_tcpClient.connectTimeout(serverIp, port, 1);
+	    //console.dump(serverIp, port);
+	    if(connectResult != true)
+	    {
+            MainWindow.printDebugInfo("connect failed");
+            return;
+        } else 
+        {
+            MainWindow.printDebugInfo("connect sucess");
+            //m_tcpClient.connect(serverIp, port);
+        }
+        
+	    m_cliConnected = 1;
+	    MainWindow.btnConnect.text = "关闭连接";
+	} else if (MainWindow.btnConnect.text = "关闭连接") {
+	    if(m_tcpClient and m_cliConnected == 1) {
+	        m_tcpClient.close();
+	        m_cliConnected = 0;
+	    }
+	    MainWindow.btnConnect.text = "连接";
+	}
+}
+
+MainWindow.btnSend.oncommand = function(id,event){
+	if(m_tcpClient and m_cliConnected == 1) {
+		//console.log("MainWindow.sendData()");
+	    MainWindow.sendData();
+	}
+}
+
+MainWindow.chSendHex.oncommand = function(id,event){
+	if(MainWindow.chSendHex.checked) {
+	    m_sendHex = 1;
+	} else {
+	    m_sendHex = 0;
+	}
+}
+
+MainWindow.ckRecvHex.oncommand = function(id,event){
+	if(MainWindow.ckRecvHex.checked) {
+	    m_recvHex = 1;
+	} else {
+	    m_recvHex = 0;
+	}
+}
+
+MainWindow.btnClearRecv.oncommand = function(id,event){
+	MainWindow.txtRecv.text = "";
+}
+
+MainWindow.btnClearSend.oncommand = function(id,event){
+	MainWindow.txtSend.text = "";
+}
+
+MainWindow.chSendNewline.oncommand = function(id,event){
+	if(MainWindow.chSendHex.checked) {
+	    m_sendNewline = 1;
+	} else {
+	    m_sendNewline = 0;
+	}
+}
+
+MainWindow.ckTimestamp.oncommand = function(id,event){
+	if(MainWindow.ckTimestamp.checked) {
+	    m_showTimestamp = 1;
+	} else {
+	    m_showTimestamp = 0;
+	}
+}
+
+MainWindow.show();
+win.loopMessage();

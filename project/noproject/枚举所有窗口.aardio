@@ -1,0 +1,15 @@
+
+// 枚举所有窗口
+import console; 
+import winex;
+
+winex.enum( 
+
+	function(hwnd,depth){
+		console.log( depth/*深度*/,hwnd/*窗口*/,win.getText(hwnd)/*标题*/ )
+		/*return false*/
+	} 
+	
+)
+
+console.pause(true);

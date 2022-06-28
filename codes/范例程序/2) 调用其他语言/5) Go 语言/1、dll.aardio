@@ -1,0 +1,66 @@
+//DLL交互
+import process.gcc;
+process.gcc.check();//Go语言调用C代码依赖GCC
+
+import golang;
+var go = golang();//创建Go编译器
+
+/*
+Go语言快速入门 https://quickref.me/golang
+go 官方提供的编译器可能会被杀毒软件误报病毒阻止运行或自动删除，
+如果 go编译器无法正常运行，请尝试删除~\lib\golang\.res 下的文件，
+然后重新安装 go 编译器试试，golang 扩展库支持系统已安装的 go 编译器。
+*/
+
+//Go源码与字符串都是UTF-8编码，跟aardio一样很方便
+string.save("/hello.go",`
+package main
+
+import "C"
+import "fmt"
+
+//export SayHello
+func SayHello(name *string,p *C.char) {
+    fmt.Printf("Go says: %s!\n", *name)
+    *name = "Go语言修改了字符串：" + C.GoString((*C.char)(p))
+}
+
+//初始化函数,可以重复写多个
+func init() {
+   
+}
+
+//入口函数没有也要写个空的,实际不执行
+func main() {} 
+`)
+
+//编译Go源码生成DLL文件
+go.buildShared("/hello.go","/hello.dll");
+
+//加载Go编译的DLL，注意要指定cdecl调用约定
+var goDll = raw.loadDll("/hello.dll",,"cdecl");
+/*
+1、如果已经生成DLL，上面可以改为 $"/hello.dll" 将DLL文件嵌入代码并通过内存直接加载
+2、如果在子线程中调用 Go 编写的 DLL，线程如果退出太快，DLL 会崩溃。
+解决办法是在主线程先用 raw.loadDll() 加载同一个DLL（不可用内存加载的方法），
+然后在子线程中再用 raw.loadDll() 加载同一个DLL（不是指把DLL对象作为线程参数传过去 - 这是错误的）。
+只有 Go 写的 DLL 会有这个问题，其他语言写的 DLL 不用这么搞。
+ */
+
+//直接就可以调用DLL里的函数，不用声明
+console.open();
+
+import golang.string;
+var goString = golang.string( "必须在Go函数名前面加上 export 函数名的注释才能导出函数");
+
+/*
+相关文档：《 aardio 用户手册 / 函数库 / 核心库 / raw 库 / 不声明调用API 》
+相关范例：「 aardio 范例 / 调用其他语言 / C语言 」
+*/
+goDll.SayHello( goString ,"这是普通字符串");
+
+//console.log( tostring(goString) );
+console.log(goString);
+
+console.pause();
+   

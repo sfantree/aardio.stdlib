@@ -1,0 +1,15 @@
+import console; 
+//var num = console.getNumber( "请输入数值:" )
+
+var t = {1, 3, 5, 7, 9};
+for(k,v in t){
+	console.log(k,v)
+}
+
+var h = {["a"] = 12;["b"] = 3;["c"] = 4};
+for(k,v in h){
+	console.log(k,v)
+}
+
+//console.log("您输入的是" ,num );
+console.pause(true);

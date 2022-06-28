@@ -1,0 +1,63 @@
+import chrome.driver;
+import console;
+
+// https://www.cnblogs.com/new-june/p/14509601.html
+
+var driver = chrome.driver(); 
+
+var appState = /***
+{
+    "recentDestinations": [
+        {
+            "id": "Save as PDF",
+            "origin": "local",
+            "account": ""
+        }
+    ],
+    "selectedDestinationId": "Save as PDF",
+    "version": 2,
+    "isHeaderFooterEnabled": false,
+    "isLandscapeEnabled": true,
+    "isCssBackgroundEnabled": true,
+    "mediaSize": {
+        "height_microns": 297000,
+        "name": "ISO_A4",
+        "width_microns": 210000,
+        "custom_display_name": "A4 210 x 297 mm"
+    }
+}
+***/
+
+//profile = {"printing.print_preview_sticky_settings.appState": json.dumps(appState)}
+
+var prefsValue = {
+    ["printing.print_preview_sticky_settings.appState"] = appState,
+    ['savefile.default_directory'] = "G:\"
+}
+
+driver.addArguments("--kiosk-printing");
+driver.addArguments("--enable-print-browser");
+
+driver.setOptions(
+     excludeSwitches = {"enable-logging"} ,
+     //extensions = {crxBufferBase64},    
+      prefs = prefsValue,
+) 
+ 
+//创建会话，打开chrome浏览器，Chrome新版会强制显示控制台
+var browser = driver.startBrowser();
+
+//打开网页
+browser.go("https://www.cnblogs.com/new-june/p/14509601.html")
+
+sleep(2000)
+
+var jsStr = /***
+document.title="my_test_file1.pdf";
+window.print();
+***/
+browser.doScript(jsStr);
+
+sleep(1000)
+
+browser.closeAll();

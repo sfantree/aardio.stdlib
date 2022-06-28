@@ -1,0 +1,402 @@
+﻿//callback 回调事件
+if(! web[["blink"]] ){ error("web.blink.callback 不能单独导入",2) }
+
+namespace web.blink.callback;
+
+var wke = ..web.blink._dll;
+
+onTitleChanged = {
+    "wkeOnTitleChanged";
+    "void(ptr v,ptr prm,ptr title)";
+    function(p,param,title){
+		if( owner[["onTitleChanged__"]] ) { 
+			owner.onTitleChanged__( title ? ..raw.str(wke.wkeGetStringP(title)) );
+		}
+	} 
+}
+
+onAlertBox = {
+    "wkeOnAlertBox";
+    "void(ptr v,ptr prm,ptr s)";
+	function(p,param,s){
+		if( owner[["onAlertBox__"]] ) {  
+			owner.onAlertBox__( ..raw.str(wke.wkeGetStringP(s)) );
+		}
+	}  
+}
+
+onConfirmBox = {
+    "wkeOnConfirmBox";
+    "void(ptr v,ptr prm,ptr s)";
+	function(p,param,s){
+		if( owner[["onConfirmBox__"]] ) {  
+			owner.onConfirmBox__( ..raw.str(wke.wkeGetStringP(s)) );
+		}
+	}  
+}
+
+onPromptBox = {
+    "wkeOnPromptBox";
+    "void(ptr v,ptr prm,ptr s,ptr defalut,ptr result)";
+	function(p,param,s,default,result){
+		if( owner[["onPromptBox__"]] ) {  
+			var r = owner.onPromptBox__( ..raw.str(wke.wkeGetStringP(s)),..raw.str(wke.wkeGetStringP(default)) );
+			if(r) {
+				wke.wkeSetString(result,r,#r);
+				return true;
+			}
+		}
+	}  
+}
+
+onUrlChanged = {
+    "wkeOnURLChanged";
+    "void(ptr v,ptr prm,ptr url)";
+	function(p,param,s){
+		if( owner[["onUrlChanged__"]] ) {  
+			owner.onUrlChanged__( ..raw.str(wke.wkeGetStringP(s)) );
+		}
+	}  
+}
+
+onFrameUrlChanged = {
+    "wkeOnURLChanged2";
+    "void(ptr v,ptr prm,ptr hFrame,ptr url)";
+	function(p,param,hFrame,s){
+		if( owner[["onFrameUrlChanged__"]] ) {
+			owner.onFrameUrlChanged__( hFrame,..raw.str(wke.wkeGetStringP(s)) );
+		}
+	}  
+}
+	
+onNavigation = {
+	"wkeOnNavigation"; 
+	"bool(ptr v,ptr prm,int navigationType,ptr url)";
+	function(p,param,navigationType,s){
+		var url = ..raw.str(wke.wkeGetStringP(s));
+		
+		if( owner[["onNavigation__"]] ) {  
+			var r = owner.onNavigation__( url,navigationType );
+			if(!r) return r;
+		}
+		
+		if(owner[["onDownload__"]]){
+			return !owner.onDownload__( url );
+		} 
+		
+		return true;
+	}   
+}
+
+onDownload = {
+	"wkeOnDownload"; 
+	"bool(ptr v,ptr prm,str url)";
+	function(p,param,url){
+		if( owner[["onDownload__"]] ) {  
+			return owner.onDownload__( url );
+		}
+	}   
+}
+
+onDownloadBegin = {
+	"wkeOnDownload2"; 
+	"bool(ptr v,ptr prm,INT expectedContentLength,str url,str mime,str disposition,ptr job,ptr dataBind)";
+	function(p,param,url,mime,disposition,job,pBind){
+		if( owner[["onDownloadBegin__"]] ) { 
+			//这个回调不目前存在问题，请勿使用
+			owner.onDownloadBegin__(url,mime,disposition,job); 
+			return 0;
+		}
+	}   
+}
+
+onDocumentReady = {
+	"wkeOnDocumentReady2";
+	"bool(ptr v,ptr prm,ptr hFrame)";
+	function(p,param,hFrame){
+		if( owner[["onDocumentReady__"]] ) { 
+			return owner.onDocumentReady__( wke.wkeIsMainFrameB(owner,hFrame),hFrame );
+		}
+		return true;
+	}  
+}
+
+onRequestBegin = {
+	"wkeOnLoadUrlBegin";
+	"bool(ptr v,ptr prm,string url,ptr hRequest)"; 
+    function(p,param,url,hRequest){
+            if( owner[["onRequestBegin__"]] ) {
+                    return owner.onRequestBegin__( hRequest,url );
+            }
+    }  
+}        
+
+onRequestEnd = {
+	"wkeOnLoadUrlEnd";
+	"void(ptr v,ptr prm,string url,ptr hRequest,ptr dataPtr,INT dataSize)";
+    function(p,param,url,hRequest,dataPtr,dataSize){
+            if( owner[["onRequestEnd__"]] ) {  
+                var data,len = owner.onRequestEnd__( hRequest,url,dataPtr,dataSize );
+                if(data){
+                    if( len === null ) len = #data;
+                    if( !len ) return;
+                    
+                    if( len > dataSize ) {
+                        owner.requestSetData(hRequest,data,len);
+                        return;
+                    }
+                    else{
+                        ..raw.copy(dataPtr,data,len);
+                        if( len < dataSize ) ::Kernel32.RtlZeroMemory(topointer(dataPtr,len),dataSize-len);
+                    }	
+                }
+            }
+    }   
+}       
+ 
+onRequestFinish = { 
+    "wkeOnLoadingFinish";
+	"void(ptr v,ptr prm,ptr url,int errCode,ptr errMessage)";
+    function(p,param,url,errCode, errMessage){
+        if( owner[["onRequestFinish__"]] ) { 
+                return owner.onRequestFinish__(  
+                    ..raw.str(wke.wkeGetStringP(url)), errCode, errMessage ? ..raw.str(wke.wkeGetStringP(errMessage)) 
+                );
+        }
+    }  
+}	
+ 
+onResponse = { 
+    "wkeNetOnResponse";
+	"void(ptr v,ptr prm,str url,ptr hRequest)";
+    function(p,param,url,hRequest){
+        if( owner[["onResponse__"]] ) { 
+                return owner.onResponse__( hRequest,url);
+        }
+    }  
+}
+
+onCreateView = { 
+    "wkeOnCreateView";
+	"void(ptr v,ptr prm,int navType,ptr url,ptr wndFeatures)";
+    function(p,param,navType,url,wndFeatures){
+        if( owner[["onCreateView__"]] ) { 
+            wndFeatures = ..raw.convert( wndFeatures,{
+    			int x;
+    			int y;
+    			int width;
+    			int height;
+    			byte menuBarVisible;
+    			byte statusBarVisible;
+    			byte toolBarVisible;
+    			byte locationBarVisible;
+    			byte scrollbarsVisible;
+    			byte resizable;
+    			byte fullscreen;
+			});
+
+            return owner.onCreateView__(  ..raw.str(wke.wkeGetStringP(url)),navType,wndFeatures);
+        }
+    }  
+}
+
+onConsole = { 
+    "wkeOnConsole";
+	"void(ptr v,ptr prm,int level,ptr message,ptr sourceName,int sourceLine,ptr stackTrace)";
+    function(v,prm,level,message,sourceName,sourceLine,stackTrace){
+        if( owner[["onConsole__"]] ) {
+            return owner.onConsole__( 
+            	consoleLevel[level], 
+                ..raw.str(wke.wkeGetStringP(message)),
+                ..raw.str(wke.wkeGetStringP(sourceName)),
+                sourceLine,
+                ..raw.str(wke.wkeGetStringP(stackTrace)),
+                ) 
+            );
+        }
+    }  
+}
+
+consoleLevel ={
+	"log";"warning";"error";"debug";"info";"revokedError" 
+}  
+
+onCreateScriptContext = { 
+    "wkeOnDidCreateScriptContext";
+	"void(ptr v,ptr prm,ptr hFrame,ptr context,int extensionGroup, int worldId)";
+    function(v,prm,hFrame, context,extensionGroup, worldId){   
+        if( owner[["(initScript)"]] ) {
+        	owner.doScript(owner[["(initScript)"]]); 
+        }
+        
+        if( owner[["onCreateScriptContext__"]] ) {
+            return owner.onCreateScriptContext__(hFrame, context,extensionGroup, worldId);
+        }
+    }  
+}
+
+onReleaseScriptContext = { 
+    "wkeWillReleaseScriptContextCallback";
+	"void(ptr v,ptr prm,ptr hFrame,ptr context,int worldId)";
+    function(v,prm,hFrame,context, worldId){
+        if( owner[["onReleaseScriptContext__"]] ) {
+            return owner.onCreateScriptContext__(hFrame,context, worldId) 
+        }
+    }  
+}
+
+onMediaLoading  = { 
+    "wkeOnWillMediaLoad";
+	"void(ptr v,ptr prm,str url,ptr pInfo)";
+    function(v,prm,url,pInfo){
+        var info = ..raw.convert(pInfo,{
+    		int size;
+    		int width;
+    		int height;
+    		double duration;
+		});
+		
+        if( owner[["onMediaLoading__"]] ) {
+            var info = owner.onMediaLoading__(url,info); 
+            if(info) ..raw.copy(pInfo,info);
+        }
+    }  
+}
+
+onMouseMove = {
+    "wkeOnMouseOverUrlChanged";
+    "void(ptr v,ptr prm,ptr url)";
+    function(p,param,href){
+		if( owner[["onMouseMove__"]] ) { 
+			owner.onMouseMove__( href ? ..raw.str(wke.wkeGetStringP(href)) );
+		}
+	} 
+}
+
+onPaintUpdated = {
+    "wkeOnPaintUpdated";
+    "void(ptr v,ptr prm,ptr hdc, int x, int y, int cx, int cy)";
+    function(p,param,hdc,x,y,cx,cy){
+		if( owner[["onPaintUpdated__"]] ) { 
+			owner.onPaintUpdated__( hdc,x,y,cx,cy );
+		}
+	} 
+}
+
+onPaintBitUpdated = {
+    "wkeOnPaintBitUpdated";
+    "void(ptr v,ptr prm,ptr buffer,{int x;int y;int width;int height} rect, int width, int height)";
+    function(p,param,buffer,rect,width,height){
+		if( owner[["onPaintBitUpdated__"]] ) { 
+			owner.onPaintBitUpdated__( buffer,wkeRect,width,height );
+		}
+	} 
+}
+
+/***intellisense(!web_blink_view)
+
+onUrlChanged = @.onUrlChanged = function(url){ 
+	__/*网址变更时触发此事件*/
+}
+
+onFrameUrlChanged = @.onFrameUrlChanged = function(url,hFrame){ 
+	__/*框架网址变更时触发此事件\n文档还没有准备就绪,在这里不要调用frameEval等函数*/
+}
+
+onTitleChanged = @.onTitleChanged = function(title){ 
+	__/*页面标题更改时触发此事件*/
+}
+
+onNavigation = @.onNavigation = function(url,navigationType){ 
+	if( navigationType == _WKE_NAVIGATION_TYPE__/*打开链接时触发此事件,这里可以判断导航类型,返回false取消导航*/ ){
+		return false;
+	}
+	
+	return true;
+}
+
+onDocumentReady = @.onDocumentReady = function(isMainFrame,hFrame){
+	__/*页面加载完成触发此事件*/
+}
+
+onDownload = @.onDownload = function(url){
+    __/*下载触发此事件,根据文档是返回true取消默认处理,但实际上返回true会取消当前所有网络连接,例如正在下载的图像会消失,而返回false反而可以正常取消下载*/
+    return false;
+}
+	
+onAlertBox = @.onAlertBox = function(str){
+    owner._form.msgbox(str);__/*alert对话框触发此事件,\n定义此事件后不再显示对话框*/
+}
+
+onConfirmBox = @.onConfirmBox = function(str){
+    __/*确认对话框触发此事件,\n定义此事件后不再显示确认对话框,可在这里修改返回值*/	
+   return result; 
+}
+   
+onPromptBox = @.onPromptBox = function(title, default){ 
+     var inputbox = win.inputBox(owner._form)
+     inputbox.text = title;
+     inputbox.input.text = default;
+     return inputbox.doModal();  __/*输入对话框,可选返回输入的字符串\ntitle为标题,default为默认显示在输入框的文本\n注意请先导入win.inputBox*/
+}
+ 
+onRequestBegin = @.onRequestBegin = function(hRequest,url){
+    if (url== "需要在请求前修改数据的网址") {
+    	??.requestSetMimeType(hRequest, "text/html");
+		??.requestSetUrl(hRequest, url); 
+    	??.requestSetData(hRequest,'<html><body>撤消HTTP请求并直接返回页面数据</body></html>')
+    	return true;
+    }
+    elseif (url== "需要在请求后修改数据的网址") {
+    	??.hookOnRequestEnd(hRequest);
+    }
+    __/*准备发送网络请求,可调用request前缀的系列函数自定义请求\n返回true取消默认的网络请求操作*/
+}
+
+onRequestEnd = @.onRequestEnd = function(hRequest,url,dataPtr,size){
+	var buffer = raw.buffer(size,dataPtr);
+	mb.requestSetData(hRequest,buffer);__/*网络请求已结束,\nhRequest为请求句柄,url为请求网址\ndataPtr是一个指针,指向服务器返回的数据\n而size是该数据的内存长度,\n\n可以在这里修改dataPtr指向的内存数据\n也可以返回使用字符串或buffer返回新的数据,可选在返回值2中返回新数据的长度\n必须在onRequestBegin事件中调用hookOnRequestEnd(hRequest)才能触发此事件*/  
+}       
+
+onRequestFinish = @.onRequestFinish = function(url,errCode, errMessage){
+    __/*网络请求的所有操作已完成\nerrCode为错误代码,0为无错误,\nerrCode 为 0 表示请求成功,为1表示请求失败,为2表示取消请求,\nerrMessage为错误信息,\n这里只判断请求是否发送成功，不检测服务器回应的 HTTP 状态码。\n目前没有获取 HTTP 状态码的接口*/
+}
+
+onResponse = @.onResponse = function(hRequest,url){
+    __/*服务器已应答\nhRequest为请求句柄\nurl为网址\n此事件中可使用 responseGetMimeType 函数获取MIME,\n可使用 responseGetHeader 获取 HTTP 响为头,\n目前没有获取 HTTP 状态码的接口*/
+}	
+
+onCreateView = @.onCreateView = function(url,navType,wndFeatures){
+    __/*拦截弹出窗口自定义创建新网页的操作，\n定义了此事件就不会再弹出窗口，改为调用此事件，\n\n参数url为要打开的网址,\n参数navType为类型,可使用_WKE_NAVIGATION_TYPE_前缀的常量表示\n参数wndFeatures是一个结构体(请参考web.blink.callback源码)*/ 
+}
+
+onConsole = @.onConsole = function(level,message,sourceName,sourceLine,stackTrace){
+     __/*响应JS中console输出\nlevel为字符串，值为"log";"warning";"error";"debug";"info"之一\nmessage为输出信息,\nsourceName为源文件名\nsourceLine为行号\nstackTrace为栈跟踪信息*/ 
+}
+
+onCreateScriptContext = @.onCreateScriptContext = function(hFrame,context,extensionGroup, worldId){ 
+	__/*创建JS环境触发\nhFrame为框架句柄,context为JS环境指针*/
+}
+
+onReleaseScriptContext = @.onReleaseScriptContext = function(hFrame,context, worldId){ 
+	__/*释放JS环境以前触发\nhFrame为框架句柄,context为JS环境指针*/
+}
+
+onMouseMove = @.onMouseMove = function(href){ 
+	__/*鼠标移动触发\n移动到超链接上，参数中为该节点的href属性*/
+}
+
+onPaintUpdated = @.onPaintUpdated = function(hdc,x,y,cx,cy){
+    __/*网页重绘网页时触发此回调,指定此事件时必须自己负责网页重绘*/
+    var hwnd = owner._form.hwnd;
+	var hdcWnd = ::GetDC(hwnd);
+	if( hdcWnd ){
+		::BitBlt(hdcWnd, x, y, cx,cy, hdc, x, y, 0xCC0020/*_SRCCOPY*/  );
+		::ReleaseDC(hwnd,hdcWnd);
+	} 
+}
+
+onPaintBitUpdated = @.onPaintBitUpdated = function(buffer,wkeRect,width,heigh){
+    __/*网页重绘网页时触发此回调,参数@1为填充好像素的buffer\n可用于离屏渲染*/
+}
+end intellisense***/

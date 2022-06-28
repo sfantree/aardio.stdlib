@@ -1,0 +1,98 @@
+//结构体
+import console;
+import dotNet; 
+
+var compiler = dotNet.createCompiler("C#");
+compiler.Source = /***
+using System;
+using System.Runtime.InteropServices;
+
+namespace CSharpLibrary  
+{  
+	[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+	public struct TestStruct
+	{
+		public TestStruct(string n, double v)
+    	{
+        	Name = n;
+        	Value = v;
+    	}
+    	
+    	[MarshalAs(UnmanagedType.ByValTStr, SizeConst = 20)]
+   		public string Name;
+   		public double Value;
+	};  
+
+    public class Object  
+    {     
+        public static TestStruct BytesToStruct(byte[] bytes){   
+            int size = Marshal.SizeOf(typeof(TestStruct));
+       		IntPtr buffer = Marshal.AllocHGlobal(size);
+       		try
+       		{
+           		Marshal.Copy(bytes, 0, buffer, size);
+           		return (TestStruct)Marshal.PtrToStructure(buffer, typeof(TestStruct));
+       		}
+       		finally
+       		{
+           		Marshal.FreeHGlobal(buffer);
+       		}
+        }
+        
+ 		public static byte[] StructToBytes(TestStruct testStruct)
+   		{
+       		int size = Marshal.SizeOf(testStruct);
+       		IntPtr buffer = Marshal.AllocHGlobal(size);
+       		try
+       		{
+           		Marshal.StructureToPtr(testStruct, buffer, false);
+           		byte[] bytes = new byte[size];
+           		Marshal.Copy(buffer, bytes, 0, size);
+           		return bytes;
+       		}
+       		finally
+       		{
+           		Marshal.FreeHGlobal(buffer);
+       		}
+   		}
+    }   
+} 
+***/
+
+//编译生成程序集，导入 C# 名字空间  
+compiler.import("CSharpLibrary"); 
+
+//调用 C# 创建结构体
+var testStruct = CSharpLibrary.TestStruct("测试",12345);
+
+//输出值看一下
+console.log(testStruct.Name,testStruct.Value);
+
+/*
+aardio 结构体更简洁，与 C 结构体完全兼容，不用像 C# MarshalAs …… UnmanagedType …… 搞得晕头转向,
+当然不同语言目标不一样，C# 结构体如果不用做这种原生内存转换，MarshalAs …… UnmanagedType …… 这些不必写。
+*/
+class TestStruct{
+	ctor( name,value ){
+		this.name = name;
+		this.value = value;
+	};
+	WORD name[20];
+	double value;
+}
+
+//转为字节数组
+var bytes = raw.buffer( TestStruct("测试456",96.2) );
+
+//调用 C# 将字节数组（buffer）转为 C# 结构体
+var testStruct = CSharpLibrary.Object.BytesToStruct(bytes);
+console.log(testStruct.Name,testStruct.Value);
+
+//C# 结构体转为 字节数组（buffer）
+var bytes = CSharpLibrary.Object.StructToBytes(testStruct);
+
+//内存字节数组转 aardio 结构体，aardio 做这种事简单得多
+var testStruct = raw.convert(bytes,TestStruct());
+console.log(testStruct.name,testStruct.value);//一个字节不差，成功转换
+
+console.pause();

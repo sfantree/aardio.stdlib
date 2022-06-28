@@ -1,0 +1,136 @@
+﻿import fsys;
+import fsys.stream;
+class brotli{
+	ctor(){ {
+		var state = {ptr value}
+		if( _dll.CreateState(state))return null;
+		this.state=state.value;
+		
+		..table.gc(this,"destroy");
+	} };
+	destroy = function(){
+		if(this.state){
+			_dll.DestroyState(this.state);
+			this.state = null;
+		}
+	};
+	compress = function(str,quality,mode,lgwin,lgblock){ 
+		var input = ..fsys.stream(str);
+		var output = ..fsys.stream();
+		if( this.compressStream(input,output,quality,mode,lgwin,lgbloc) ){ 
+			return output.readAll();
+		}
+	};
+	compressUtf8  = function(str,quality,lgwin,lgblock){ 
+		var input = ..fsys.stream(str);
+		var output = ..fsys.stream();
+		if( this.compressStream(input,output,quality,1,lgwin,lgbloc) ){ 
+			return output.readAll();
+		}
+	};
+	compressFile = function(inPath,outPath,quality,mode,lgwin,lgblock){ 
+		var input = ..fsys.stream(inPath,"r");
+		var output = ..fsys.stream(outPath,"w");
+		if( input && output && this.compressStream(input,output,quality,mode,lgwin,lgbloc) ){ 
+			return true;
+		}
+	};
+	compressStream = function(input,output,quality,mode,lgwin,lgblock){
+		var brotliParams  = { 
+				int mode = mode : 0 ;//0标准,1为UTF-8文本,2为WOFF 2.0
+				int quality = quality : 11; //压缩质量0~11，质量越好速越慢
+				int lgwin = lgwin : 22; //窗口大小,10~24,对于大文件，可以将窗口大小参数设为24位（16MB）
+				int lgblock = lgblock : 0; //块大小 16~24
+				byte enable_dictionary = 1;
+				byte enable_transforms =0;
+				byte greedy_block_split=0;
+				byte enable_context_modeling = 1;
+		}	 
+		
+		var streamOutOffset = output.seek("set");
+		if(  _dll.CompressStream(brotliParams,input ,output ) ){
+			output.seek("set",streamOutOffset);
+			return true;
+		}
+	};
+	decompress = function(str,bufLen){
+		var input = ..fsys.stream(str);
+		var output = ..fsys.stream();
+		if( this.decompressStream(input,output,bufLen) ){ 
+			return output.readAll();
+		}
+	};
+	decompressFile = function(inPath,outPath,bufLen){ 
+		var input = ..fsys.stream(inPath,"r");
+		var output = ..fsys.stream(outPath,"w");
+		if( input && output && this.decompressStream(input,output,bufLen) ){ 
+			return true;
+		}
+	};
+	decompressStream = function(input,output,bufLen){
+		bufLen = bufLen : 65536;
+		var inputBuffer;
+		var outputBuffer = ..raw.malloc(bufLen); 
+		var streamOutOffset = output.seek("set");
+			var availableOut = bufLen;
+		var availableIn = 0;
+		var totalOut = 0;
+		var offsetIn  = 0;
+		var offsetOut = 0;
+		var result = 2/*_BROTLI_RESULT_NEEDS_MORE_INPUT*/;
+		
+		while (true)  {
+			if (result == 0/*_BROTLI_RESULT_ERROR*/)  return;  
+			if (result == 2/*_BROTLI_RESULT_NEEDS_MORE_INPUT*/){
+				inputBuffer = input.read(bufLen);
+				availableIn = #inputBuffer;
+				if (!availableIn)  break;
+			}
+			else if (result == 3/*_BROTLI_RESULT_NEEDS_MORE_OUTPUT*/){
+				output.write(outputBuffer, 0, bufLen);
+				availableOut = bufLen;
+			}
+			else{
+				break;
+			}
+			
+			result,availableIn,offsetIn,availableOut,offsetOut,totalOut = DecompressStream(
+					availableIn, inputBuffer,offsetIn, availableOut, outputBuffer,offsetOut,totalOut,this.state);
+		}
+
+		if (offsetOut != 0){
+			output.write(outputBuffer,offsetOut);
+		} 
+		output.seek("set",streamOutOffset);
+		return true; 
+	}	
+}
+
+namespace brotli{
+	_dllPath = ..fsys.getSpecial( 0x1c /*_CSIDL_LOCAL_APPDATA*/  ,"aardio/std/WinBrotli.x86.dll");
+	if(!..io.exist(_dllPath)){
+		..string.save(_dllPath,$"~\lib\brotli\.res\WinBrotli.x86.dll") 
+	}
+	_dll = ..raw.loadDll(_dllPath,"WinBrotli.x86.dll");
+	
+	DecompressStream = _dll.api("DecompressStream","int(INT& availableIn, pointer nextIn, INT& offsetIn,INT& availableOut, pointer nextOut, INT& offsetOut,INT& totalOut, pointer pState)")
+}
+
+/**intellisense()
+brotli = Google新开源压缩算法Brotli\n对于0.5-1MB的小文件速度快压缩比高
+brotli() = !stdbrotli.
+end intellisense**/
+
+
+/**intellisense(!stdbrotli) 
+decompressStream(.(输入流,输出流,缓冲区大小) = 解压缩\n输入输出流都必须是fsys.stream对象\n缓冲区大小可省略
+decompressFile(.(输入文件路径,输出文件路径,缓冲区大小) = 解压缩文件\n缓冲区大小可省略
+decompress(.(输入字符串,缓冲区大小) = 解压缩字符串\n缓冲区大小可省略
+compressStream(.(输入流,输出流,质量,模式) = 压缩\n输入输出流都必须是fsys.stream对象\n压缩质量0~11，质量越好速越慢\n模式不必指定
+compressFile(.(输入文件路径,输出文件路径,质量,模式) = 压缩文件\n压缩质量0~11，质量越好速越慢\n模式不必指定
+compress(.(输入字符串,质量,模式) = 压缩并返回任意字符串,失败返回null\n压缩质量0~11，质量越好速越慢\n模式不必指定
+compressUtf8(.(输入字符串,输出流,质量,模式) = 压缩并返回UTF8编码字符串,失败返回null\n压缩质量0~11，质量越好速越慢\n模式不必指定
+destroy() = 释放对象
+end intellisense**/
+
+//DLL组件出处：https://github.com/smourier/brotli

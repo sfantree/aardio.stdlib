@@ -1,0 +1,21 @@
+﻿
+namespace web.npPlugin.flash;
+..io.appData("aardio\std\np-plugin\plugins\NPSWF32.dll"
+	,$"~\lib\web\npPlugin\flash\.res\NPSWF32.dll")
+
+/**details(必读)
+Flash 太新的版本兼容性不是很好，在 web.kit,web.blink 中切换 swf 时都会导致严重的卡顿。
+经测试降级 Flash 组件后运行流畅稳定，体积也小了很多。
+
+我们用这个本来就是用于跑一些古老的 Flash 程序，求新求完美是无意义的。
+现在几乎所有浏览器都运行不了 Flash，更何况编写桌面软件并非浏览器运行环境，
+加载的都是经过选择的内容，顾虑有人能在这种苛刻的条件下去利用旧版 Flash 的安全漏洞无任何意义。
+
+所以综合考虑，此扩展库选择了较旧的 Flash 版本 v20.0.0.267
+end details**/
+
+/**intellisense()
+web.npPlugin.flash = Flash 播放器 NPAPI 插件\n支持 web.blink,web.kit 等扩展库\n\n此扩展库提供的 NPSWF32.dll 仅供技术研究和测试,\n分发 NPSWF32.dll 请遵守厂商要求
+end intellisense**/
+
+

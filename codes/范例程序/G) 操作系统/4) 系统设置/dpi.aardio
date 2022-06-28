@@ -1,0 +1,13 @@
+//缩放 / 分辨率
+import sys.dpi;
+import sys.monitor;
+import gdi;
+
+//获取系统默认缩放（表示百分比的小数）
+var dpiScale = gdi.getDpiScale();
+
+//切换系统缩放，参数为表地百分比的整数，参数为 false 恢复默认值
+sys.dpi.scaling(dpiScale!=1.25 ? 125);
+
+//修改显示器分辨率
+sys.monitor.changeMode(pelsWidth=1920,pelsHeight=1080);

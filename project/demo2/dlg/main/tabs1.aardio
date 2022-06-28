@@ -1,0 +1,52 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="基础知识";right=759;bottom=469)
+winform.add()
+/*}}*/
+
+import web.form;
+var wb = web.form( winform,5/*_UIFLAG_DIALOG*/,,,true);
+
+wb.html = /**
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+</head>
+<body>
+    <pre>
+<b>一、理解窗口应用程序执行流程：</b>
+
+1、窗口程序的主消息循环由 win.loopMessage 启动,
+窗口应用程序有且只能有一个win.loopMessage(),使用win.loadForm() 或者 winform.loadForm() 
+加载窗体代码文件时会自动忽略 win.loopMessage()。
+
+2、最后一个普通窗口关闭时窗口应用程序会终止 win.loopMessage 并退出程序,
+如果窗口是..mainForm窗口、模态窗口、messageOnly窗口、子窗口时不会执行此操作。
+
+3、使用winform.doModal()会创建模态窗口,
+模态窗口创建自己的消息循环阻塞执行直到该模态窗口退出,
+而调用winform.show() 显示的非模态窗口不会阻塞代码向后执行。
+
+<b>二、aardio工程内如何加载代码文件：</b>
+
+1、在工程中加载其他代码文件时可使用 loadcodex 函数,例如：loadcodex("/res/x.aardio") 
+在工程中加载aardio代码文件时 - 路径应当总是使用斜杠字符开始的应用程序根目录相对路径。
+可以在工程管理器中右键点击代码文件,在弹出菜单中点击【复制路径】。
+
+2、如果加载窗体代码文件可以使用 win.loadForm("/dlg/winform.aardio") 
+win.loadForm 会忽略 win.loopMessage() ,并且返回该代码文件中创建的窗体对象。
+
+3、也可以使用窗体对象加载另一个窗体,例如 winfrom.loadForm("/dlg/frmChild.aardio") 
+其作用与win.loadForm 相同,且会自动把当前窗体指定为被加载窗体的父窗口(或所有者窗口)。
+在工程管理器中拖动窗体文件到父窗口代码内会自动生成此代码。
+
+4、可以在标准库、用户库中创建名字空间、类、窗口类，并使用import语句加载。
+    </pre>
+</body>
+</html>
+**/
+
+winform.show();
+win.loopMessage();

@@ -1,0 +1,40 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add()
+/*}}*/
+ 
+//导入库
+import win.ui.menu;  
+import win.image;
+ 
+winform.wndproc = function(hwnd,message,wParam,lParam){
+    select( message ) { 
+        case 0x205/*_WM_RBUTTONUP*/{
+            var x,y = win.getMessagePos(lParam);
+            var hIcon = win.image.extractIcon("shell32.dll", 67, false)
+            popmenu = win.ui.popmenu(winform) 
+ 
+            var num1 = popmenu.add(
+                text = "新建";
+                bitmap = gdip.bitmap( hIcon , 1).copyHandle();
+                 
+                proc = function(id){
+                    win.msgbox(id)
+                }; 
+            )
+            popmenu.add()
+            popmenu.add("退出",function(){
+                winform.close()
+            })
+            popmenu.popup(x,y,false);
+            ::DestroyIcon(hIcon)
+        }
+        else{   
+        }
+    }
+    //无返回值则继续调用默认回调函数
+}
+ 
+winform.show();
+win.loopMessage();

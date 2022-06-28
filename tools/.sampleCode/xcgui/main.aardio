@@ -1,0 +1,86 @@
+/*
+使用import xcgui; 替换原来的 import win.ui;
+修改标准库的 win.form 指向 xcgui.window, 并保留 win.form的所有功能。
+在窗体设计器上添加自定义控件，类名修改为 "xc" + "炫彩控件类名",
+例如 xcgui.ctrl.listview, 类名为 "xclistview"
+*/
+import xcgui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469;bgcolor=15245824)
+winform.add(
+closebutton={cls="xcclosebutton";text="r";left=725;top=2;right=749;bottom=28;dr=1;dt=1;font=LOGFONT(name='Marlett');transparent=1;z=1};
+hlStatic={cls="static";left=31;top=77;right=735;bottom=456;bgcolor=16777215;db=1;dl=1;dr=1;dt=1;z=4};
+static={cls="xctext";text="   ";left=27;top=12;right=693;bottom=31;dl=1;dr=1;dt=1;z=3};
+xcbutton={cls="xcbutton";left=534;top=22;right=648;bottom=58;bkBottom=7;bkImage="\控件使用\image\button_leave.png";bkLeft=11;bkRight=11;bkTop=6;dr=1;dt=1;transparent=1;z=2}
+)
+/*}}*/
+
+/*
+指定各种交互状态下变换的图像，所有可用的状态参考 xcgui.state库源码。
+在下面可以指定图像文件，也可以指定背景颜色（RGB数值，最高位为透明度）
+*/
+winform.xcbutton.skin(
+	background = { 
+		hover = "\控件使用\image\button_hover.png";
+		active = "\控件使用\image\button_down.png";
+		leave = "\控件使用\image\button_leave.png"; 
+	}
+)
+
+/*
+直接双击控件，或在编辑器中输入  winform.xcbutton.onClick 并回车生成下面的代码。
+点击按钮时触发下面的函数：
+*/
+winform.xcbutton.on("click",function(handled){
+	winform.msgbox("点击")
+})
+
+/*
+同样可以兼容传统控件,下面使用static控件嵌入HTMLayout界面控件
+*/
+import web.layout;
+var wbLayout = web.layout(winform.hlStatic)
+wbLayout.html = /**
+<!doctype html>
+<html>
+<head>
+    <style type="text/css">
+    html,body{ height:100%; margin:0; } 
+    body widget { size:*; }
+    </style>
+</head>
+<body>
+    <widget #dd type="tree" treelines>
+    <option expanded >Metals
+      <option>Alkaline Metals
+        <option>Lithium <code>Li</code></option>
+        <option>Sodium <code>Na</code></option>
+        <option>Potassium <code>K</code></option>
+      </option>
+      <option expanded>Transition Metals
+        <option>Scandium <code>Sc</code></option>
+        <option>Titanium <code>Ti</code></option>
+        <option>Vanadium <code>V</code></option>
+      </option>
+    </option>
+    <option expanded>Halogens
+        <option>Fluorine <code>F</code></option>
+        <option>Chlorine <code>Cl</code></option>
+        <option>Bromine <code>Br</code></option>
+    </option>
+  </widget> 
+</body>
+</html>
+**/
+
+
+winform.show();
+
+/*
+炫彩的阴影窗口需要把窗口改为分层窗口，严重影响性能窗口反应迟钝。
+建议使用下面的 xcgui.shadow（ 即 win.ui.shadow ） 实现阴影窗口。
+*/
+import xcgui.shadow;
+xcgui.shadow(winform);
+
+win.loopMessage();

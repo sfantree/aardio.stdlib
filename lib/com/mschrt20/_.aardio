@@ -1,0 +1,459 @@
+import win.reg;
+import com.lite;
+import com.activeX;
+
+namespace com;
+
+class mschrt20{
+	ctor( winform ){
+		try{
+			_dll.createEmbed(winform,"{3A2B370C-BA0A-11D1-B137-0000F8753F5D}",,this)
+		}
+		catch(e){
+			var reg = ..win.reg("HKEY_CURRENT_USER\Software\Classes\Licenses\12B142A4-BD51-11d1-8C08-0000F8754DA1");
+			reg.setSzValue("","aadhgafabafajhchnbchehfambfbbachmfmb");
+			
+			..com.activeX.regsvr32("~\lib\com\mschrt20\.res\MSCHRT20.ocx")
+			_dll.createEmbed(winform,"{3A2B370C-BA0A-11D1-B137-0000F8753F5D}",,this)
+		}
+	};
+	@_metaProperty;
+}
+
+namespace mschrt20{ 
+
+	_dll = ..com.lite("~\lib\com\mschrt20\.res\MSCHRT20.ocx"); 
+	
+	_metaProperty = ..util.metaProperty( 
+	 	oleDragMode = {
+			_get = function(){  
+				return owner._object.OLEDragMode;
+			}
+			_set = function( value ){
+				owner._object.OLEDragMode = value
+			} 	
+		};
+		oleDropMode = {
+			_get = function(){  
+				return owner._object.OLEDropMode;
+			}
+			_set = function( value ){
+				owner._object.OLEDropMode = value
+			} 	
+		}; 
+		dataSource = {
+			_get = function(){  
+				return owner._object.DataSource;
+			}
+			_set = function( value ){
+				owner._object.DataSource = value
+			} 	
+		};
+		dataMember = {
+			_get = function(){  
+				return owner._object.DataMember;
+			}
+			_set = function( value ){
+				owner._object.DataMember = value
+			} 	
+		};
+		autoIncrement = {
+			_get = function(){  
+				return owner._object.AutoIncrement;
+			}
+			_set = function( value ){
+				owner._object.AutoIncrement = value
+			} 	
+		};
+		randomFill = {
+			_get = function(){  
+				return owner._object.RandomFill;
+			}
+			_set = function( value ){
+				owner._object.RandomFill = value
+			} 	
+		};
+		chartType = {
+			_get = function(){  
+				return owner._object.chartType;
+			}
+			_set = function( value ){
+				owner._object.chartType = value
+			} 	
+		};
+		column = {
+			_get = function(){  
+				return owner._object.Column;
+			}
+			_set = function( value ){
+				owner._object.Column = value
+			} 	
+		};
+		columnCount = {
+			_get = function(){  
+				return owner._object.ColumnCount;
+			}
+			_set = function( value ){
+				owner._object.ColumnCount = value
+			} 	
+		};
+		columnLabel = {
+			_get = function(){  
+				return owner._object.ColumnLabel;
+			}
+			_set = function( value ){
+				owner._object.ColumnLabel = value
+			} 	
+		};
+		columnLabelCount = {
+			_get = function(){  
+				return owner._object.ColumnLabelCount;
+			}
+			_set = function( value ){
+				owner._object.ColumnLabelCount = value
+			} 	
+		};
+		columnLabelIndex = {
+			_get = function(){  
+				return owner._object.ColumnLabelIndex;
+			}
+			_set = function( value ){
+				owner._object.ColumnLabelIndex = value
+			} 	
+		};
+		data = {
+			_get = function(){  
+				return owner._object.Data;
+			}
+			_set = function( value ){
+				owner._object.Data = value
+			} 	
+		};
+		footnoteText = {
+			_get = function(){  
+				return owner._object.FootnoteText;
+			}
+			_set = function( value ){
+				owner._object.FootnoteText = value
+			} 	
+		};
+		repaint = {
+			_get = function(){  
+				return owner._object.Repaint;
+			}
+			_set = function( value ){
+				owner._object.Repaint = value
+			} 	
+		};
+		row = {
+			_get = function(){  
+				return owner._object.Row;
+			}
+			_set = function( value ){
+				owner._object.Row = value
+			} 	
+		};
+		rowCount = {
+			_get = function(){  
+				return owner._object.RowCount;
+			}
+			_set = function( value ){
+				owner._object.RowCount = value
+			} 	
+		};
+		rowLabel = {
+			_get = function(){  
+				return owner._object.RowLabel;
+			}
+			_set = function( value ){
+				owner._object.RowLabel = value
+			} 	
+		};
+		rowLabelCount = {
+			_get = function(){  
+				return owner._object.RowLabelCount;
+			}
+			_set = function( value ){
+				owner._object.RowLabelCount = value
+			} 	
+		};
+		rowLabelIndex = {
+			_get = function(){  
+				return owner._object.RowLabelIndex;
+			}
+			_set = function( value ){
+				owner._object.RowLabelIndex = value
+			} 	
+		};
+		seriesColumn = {
+			_get = function(){  
+				return owner._object.SeriesColumn;
+			}
+			_set = function( value ){
+				owner._object.SeriesColumn = value
+			} 	
+		};
+		seriesType = {
+			_get = function(){  
+				return owner._object.SeriesType;
+			}
+			_set = function( value ){
+				owner._object.SeriesType = value
+			} 	
+		};
+		showLegend = {
+			_get = function(){  
+				return owner._object.ShowLegend;
+			}
+			_set = function( value ){
+				owner._object.ShowLegend = value
+			} 	
+		};
+		drawMode = {
+			_get = function(){  
+				return owner._object.DrawMode;
+			}
+			_set = function( value ){
+				owner._object.DrawMode = value
+			} 	
+		};
+		borderStyle = {
+			_get = function(){  
+				return owner._object.BorderStyle;
+			}
+			_set = function( value ){
+				owner._object.BorderStyle = value
+			} 	
+		};
+		enabled = {
+			_get = function(){  
+				return owner._object.Enabled;
+			}
+			_set = function( value ){
+				owner._object.Enabled = value
+			} 	
+		};
+ 		hwnd = {
+			_get = function(){  
+				return owner._object.hWnd;
+			} 	
+		};
+		title = {
+			_get = function(){  
+				return owner._object.Title;
+			} 	
+		};
+		footnote = {
+			_get = function(){  
+				return owner._object.Footnote;
+			} 	
+		};
+		titleText = {
+			_get = function(){  
+				return owner._object.TitleText;
+			}
+			_set = function( value ){
+				owner._object.TitleText = value
+			} 	
+		};
+		stacking = {
+			_get = function(){  
+				return owner._object.Stacking;
+			}
+			_set = function( value ){
+				owner._object.Stacking = value
+			} 	
+		};
+		textLengthType = {
+			_get = function(){  
+				return owner._object.TextLengthType;
+			}
+			_set = function( value ){
+				owner._object.TextLengthType = value
+			} 	
+		};
+		allowSelections = {
+			_get = function(){  
+				return owner._object.AllowSelections;
+			}
+			_set = function( value ){
+				owner._object.AllowSelections = value
+			} 	
+		};
+		allowSeriesSelection = {
+			_get = function(){  
+				return owner._object.AllowSeriesSelection;
+			}
+			_set = function( value ){
+				owner._object.AllowSeriesSelection = value
+			} 	
+		};
+		allowDynamicRotation = {
+			_get = function(){  
+				return owner._object.AllowDynamicRotation;
+			}
+			_set = function( value ){
+				owner._object.AllowDynamicRotation = value
+			} 	
+		};
+		allowDithering = {
+			_get = function(){  
+				return owner._object.AllowDithering;
+			}
+			_set = function( value ){
+				owner._object.AllowDithering = value
+			} 	
+		};
+		doSetCursor = {
+			_get = function(){  
+				return owner._object.DoSetCursor;
+			}
+			_set = function( value ){
+				owner._object.DoSetCursor = value
+			} 	
+		};
+		chartData = {
+			_get = function(){  
+				return owner._object.ChartData;
+			}
+			_set = function( value ){
+				owner._object.ChartData = value
+			} 	
+		};
+		mousePointer = {
+			_get = function(){  
+				return owner._object.MousePointer;
+			}
+			_set = function( value ){
+				owner._object.MousePointer = value
+			} 	
+		};
+		activeSeriesCount = {
+			_get = function(){  
+				return owner._object.ActiveSeriesCount;
+			} 	
+		};
+		backdrop = {
+			_get = function(){  
+				return owner._object.Backdrop;
+			} 	
+		};
+		legend = {
+			_get = function(){  
+				return owner._object.Legend;
+			} 	
+		};
+		dataGrid = {
+			_get = function(){  
+				return owner._object.DataGrid;
+			} 	
+		};
+		plot = {
+			_get = function(){  
+				return owner._object.Plot;
+			} 	
+		};
+		chart3d = {
+			_get = function(){  
+				return owner._object.Chart3d;
+			} 	
+		};
+		chart = {
+			_get = function(){  
+				return owner._object.Chart;
+			} 	
+		};  
+		oleDrag = function(){
+			return owner._object.OLEDrag();
+		};
+		refresh = function(){
+			return owner._object.Refresh();
+		};
+		editPaste = function(){
+			return owner._object.EditPaste();
+		};
+		editCopy = function(){
+			return owner._object.EditCopy();
+		};
+		layout = function(){
+			return owner._object.Layout();
+		};
+		toDefaults = function(){
+			return owner._object.ToDefaults();
+		};
+		twipsToChartPart = function(...){
+			return owner._object.TwipsToChartPart(...);
+		};
+		getSelectedPart = function(...){
+			return owner._object.GetSelectedPart(...);
+		};
+		selectPart = function(...){
+			return owner._object.SelectPart(...);
+		};
+		oleDrag = function(...){
+			return owner._object.OLEDrag(...);
+		};
+	)
+}
+
+/**intellisense()
+com.mschrt20 = VB中的图表控件
+com.mschrt20(.(winform) = 参数是窗体或控件对象
+com.mschrt20() = !commschrt20.
+!commschrt20.oleDragMode = oleDragMode
+!commschrt20.oleDropMode = oleDropMode
+!commschrt20.dataSource = dataSource 
+!commschrt20.dataMember = dataMember
+!commschrt20.autoIncrement = autoIncrement
+!commschrt20.randomFill = randomFill
+!commschrt20.chartType = chartType
+!commschrt20.column = column
+!commschrt20.columnCount = columnCount
+!commschrt20.columnLabel = columnLabel
+!commschrt20.columnLabelCount = columnLabelCount
+!commschrt20.columnLabelIndex = columnLabelIndex
+!commschrt20.data = data
+!commschrt20.footnoteText = footnoteText
+!commschrt20.repaint = repaint
+!commschrt20.row = row
+!commschrt20.rowCount = rowCount
+!commschrt20.rowLabel = rowLabel
+!commschrt20.rowLabelCount = rowLabelCount
+!commschrt20.rowLabelIndex = rowLabelIndex
+!commschrt20.seriesColumn = seriesColumn
+!commschrt20.seriesType = seriesType
+!commschrt20.showLegend = showLegend
+!commschrt20.drawMode = drawMode
+!commschrt20.borderStyle = borderStyle
+!commschrt20.enabled = enabled
+!commschrt20.hwnd = hwnd
+!commschrt20.title = title
+!commschrt20.footnote = footnote
+!commschrt20.titleText = titleText
+!commschrt20.stacking = stacking
+!commschrt20.textLengthType = textLengthType
+!commschrt20.allowSelections = allowSelections
+!commschrt20.allowSeriesSelection = allowSeriesSelection
+!commschrt20.allowDynamicRotation = allowDynamicRotation
+!commschrt20.allowDithering = allowDithering
+!commschrt20.doSetCursor = doSetCursor
+!commschrt20.chartData = chartData
+!commschrt20.mousePointer = mousePointer
+!commschrt20.activeSeriesCount = activeSeriesCount
+!commschrt20.backdrop = backdrop
+!commschrt20.legend = legend
+!commschrt20.dataGrid = dataGrid
+!commschrt20.plot = plot
+!commschrt20.chart3d = chart3d
+!commschrt20.chart = chart
+!commschrt20.oleDrag() = oleDrag 
+!commschrt20.refresh() = refresh 
+!commschrt20.editPaste() = editPaste
+!commschrt20.editCopy() = editCopy
+!commschrt20.layout() = layout
+!commschrt20.toDefaults() = toDefaults
+!commschrt20.twipsToChartPart(.(->->->) = twipsToChartPart
+!commschrt20.getSelectedPart(.(->->->) = getSelectedPart
+!commschrt20.selectPart(.(->->->) = selectPart
+!commschrt20.oleDrag(.(->->->) = oleDrag
+end intellisense**/

@@ -1,0 +1,100 @@
+
+// 模拟按住某键和取消按住
+
+import win; //必须首先导入win窗口支持库
+import win.ui;
+import key;
+import mouse;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add(
+button={cls="button";text="开始";left=49;top=370;right=173;bottom=418;z=5};
+button2={cls="button";text="继续";left=229;top=369;right=364;bottom=415;z=6};
+button3={cls="button";text="暂停";left=424;top=368;right=580;bottom=416;z=10};
+edit={cls="edit";text="w";left=47;top=67;right=132;bottom=103;edge=1;z=1};
+edit2={cls="edit";text="10";left=181;top=69;right=267;bottom=106;edge=1;multiline=1;z=2};
+edit3={cls="edit";text="100";left=331;top=68;right=434;bottom=103;edge=1;z=8};
+edit4={cls="edit";text="edit4";left=46;top=118;right=655;bottom=331;autohscroll=false;edge=1;multiline=1;vscroll=1;z=7};
+static={cls="static";text="按键";left=56;top=33;right=110;bottom=52;transparent=1;z=3};
+static2={cls="static";text="次数";left=197;top=34;right=247;bottom=57;transparent=1;z=4};
+static3={cls="static";text="延时";left=340;top=33;right=410;bottom=55;transparent=1;z=9};
+static4={cls="static";text="退出程序F3";left=62;top=345;right=166;bottom=366;transparent=1;z=11};
+static5={cls="static";text="快捷键F10";left=247;top=344;right=367;bottom=363;transparent=1;z=12};
+static6={cls="static";text="快捷键F11";left=440;top=342;right=566;bottom=362;transparent=1;z=13}
+)
+/*}}*/
+
+var 按键=winform.edit.text  //选择按键
+var 次数= winform.edit2.text //次数
+var 延时=winform.edit3.text //延时
+
+
+var 程序 = "暂停"
+hkid = winform.reghotkey(function(id,mod,vk){
+    程序 = "暂停"
+}
+,0,0x7A/*_VK_F11*/);
+
+hkid = winform.reghotkey(function(id,mod,vk){
+    程序 = "继续"
+}
+,0,0x79/*_VK_F10*/);
+
+hkid = winform.reghotkey(function(id,mod,vk){
+    程序 = "次数"
+}
+,0,0x72/*_VK_F3*/);
+
+
+winform.button2.oncommand = function(id,event){
+程序 = "继续"        
+}
+
+winform.button3.oncommand = function(id,event){
+程序 = "暂停"        
+}
+
+
+
+
+function 模拟按键(){
+   
+    key.press(按键);
+    win.delay(延时);
+    winform.edit4.text=key.press(按键);
+   
+
+    return;
+}
+
+
+
+
+winform.button.oncommand = function(id,event){
+io.open()
+io.print("F11暂停,F10继续,F3退出")
+io.print("请按相应的功能键继续...")
+while( 程序 != "次数" ) {
+  
+   //程序继续
+  while( 程序 == "继续" ) {  
+     
+  模拟按键();
+  win.delay(200);
+
+  }
+
+  //程序暂停
+  while( 程序 == "暂停" ) {  
+    win.delay(1) //我暂停
+  }
+  
+  
+}
+io.print("退出程序")
+
+
+}
+
+winform.show()
+win.loopMessage();

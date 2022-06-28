@@ -1,0 +1,24 @@
+import win.ui;
+import key;
+/*DSG{{*/
+mainForm = win.form(text="aardio form";right=239;bottom=151)
+mainForm.add()
+/*}}*/
+
+var hkid;
+mainForm.unreghotkey(hkid);
+hkid = mainForm.reghotkey( function(id,mod,vk){
+    //winex.attach()等
+        //key.down('w')
+        //按住w键 直到被取消
+},0x2/*_MOD_CONTROL*/,'W'#);
+
+var hkidc;
+hkidc = mainForm.reghotkey( function(id,mod,vk){
+        //取消按住w键
+},0x2/*_MOD_CONTROL*/,'S'#)
+
+mainForm.enableDpiScaling();
+mainForm.show();
+
+return win.loopMessage();

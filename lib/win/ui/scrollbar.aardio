@@ -1,0 +1,121 @@
+//scrollbar 窗口滚动条
+import win.ui.ctrl.scrollbar
+namespace win.ui
+
+class scrollbar{
+	ctor( hwnd,vert){
+		this = ..win.ui.ctrl.scrollbar();
+		this.hwnd = hwnd[["hwnd"]] : hwnd;
+		this._bar = vert ? 1/*_SB_VERT*/ :  0/*_SB_HORZ*/
+		this.scrollMessage = vert ? 0x115/*_WM_VSCROLL*/ : 0x114/*_WM_HSCROLL*/; 
+		this.wheelLines = this.updateWheelLines();
+		
+		if(..win.ui.isForm(hwnd)){
+			var form = hwnd;
+			
+			if(vert){
+				form.$vScrollBar = this;
+				form.wndproc = {
+						[0x115/*_WM_VSCROLL*/] = function(hwnd,message,wParam,lParam){
+							return onScroll(this,hwnd,message,wParam,lParam);
+						};
+						[0x20A/*_WM_MOUSEWHEEL*/]  = function(hwnd,message,wParam,lParam){
+							var delta = wParam >> 16; 
+							return onMouseWhell(this,hwnd,message,delta,lParam);
+						};
+				}	
+			}
+			else {
+				form.$hScrollBar = this;
+				form.wndproc = {
+						[0x114/*_WM_HSCROLL*/] = function(hwnd,message,wParam,lParam){
+							return onScroll(this,hwnd,message,wParam,lParam);
+						};
+						[0x20E/*_WM_MOUSEHWHEEL */]  = function(hwnd,message,wParam,lParam){
+							var delta = wParam >> 16; 
+							return onMouseWhell(this,hwnd,message,-delta,lParam);
+						};
+				}
+			}
+			
+			if(!form._adjustScrollBar){
+				form._adjustScrollBar = true;
+				form.adjust = function(cx,cy,wParam){
+					if(form.$vScrollBar && form.$vScrollBar.adjust__) form.$vScrollBar.adjust__(cx,cy,wParam);
+					if(form.$hScrollBar && form.$hScrollBar.adjust__) form.$hScrollBar.adjust__(cx,cy,wParam);
+					
+					var x,y = ::User32.GetScrollPos(owner.hwnd,0/*_SB_HORZ*/),::User32.GetScrollPos(owner.hwnd,1/*_SB_VERT*/);
+					::User32.ScrollWindow(owner.hwnd,-x, -y,null,null); 
+				}
+			}
+		}
+		
+		this.show(true);
+	}; 
+}
+
+namespace scrollbar{
+	
+	onScroll = function(this,hwnd,message,wParam,lParam){ 
+
+		var event = ::LOWORD (wParam) ; 
+		var min,max,page,current = this.getRange();  
+		max = max - page + 1;
+		
+		select(event) {
+			case 0x5/*_SB_THUMBTRACK*/{
+				pos = ::HIWORD(wParam); 
+			}
+			case 4/*_SB_THUMBPOSITION*/{
+				pos = ::HIWORD(wParam);
+			}
+			case 0/*_SB_LINEUP*/  {
+				pos = ..math.max(current - this.line, min);
+			}
+			case 1/*_SB_LINEDOWN*/{ 
+				pos = ..math.min(current + this.line, max); 
+			}
+			case 0x2/*_SB_PAGEUP*/{
+				pos = ..math.max(current - page, min);
+			}
+			case 0x3/*_SB_PAGEDOWN*/{
+				
+				pos = ..math.min(current + page, max);
+			} 
+			case 6/*_SB_TOP*/{
+				pos = min;
+			}
+			case 7/*_SB_BOTTOM*/{
+				pos = max;
+			}
+			case 8/*_SB_ENDSCROLL*/ {
+				return;
+			}
+		}
+	
+		this.scrollWindowTo( pos );
+	} 
+	
+	onMouseWhell = function(this,hwnd,message,delta,lParam){
+		 
+		var unit = (120 / this.wheelLines); 
+
+		while (delta >= unit){
+			::User32.SendMessage(hwnd,this.scrollMessage,0/*_SB_LINEUP*/,0);
+			delta -= unit;
+		}
+
+		while (delta <= -unit){
+			::User32.SendMessage(hwnd,this.scrollMessage,1/*_SB_LINEDOWN*/,0);
+			delta += unit;
+		}
+		
+		return 0;	
+	}
+}
+
+/**intellisense()
+scrollbar = 窗口滚动条
+win.ui.scrollbar(.(winform,vert) = 在目标窗口创建滚动条,\n@winform 参数指定窗体对象,此时添加滚动条消息处理函数\n@winform 参数如果指定窗口句柄,则不添加滚动条消息处理函数,\n@vert 参数为 true 在窗口上创建垂直滚动条,\n否则创建水平滚动条
+win.ui.scrollbar() = !scrollbar.
+end intellisense**/

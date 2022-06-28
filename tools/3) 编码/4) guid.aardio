@@ -1,0 +1,127 @@
+//GUID生成器
+import win.ui;
+import win.guid;
+import win.clip;
+/*DSG{{*/
+var winform = win.form(text="GUID 生成器 / 格式转换工具";right=560;bottom=308;border="dialog frame";exmode="none";max=false;parent=...)
+winform.add(
+btnCpy={cls="button";text="复制到剪贴板";left=436;top=21;right=529;bottom=47;z=3};
+btnGenerant={cls="button";text="生成GUID";left=339;top=21;right=432;bottom=47;z=2};
+lbTip={cls="static";text="GUID理论上能产生全球唯一的值";left=31;top=279;right=537;bottom=296;transparent=1;z=4};
+txtGuid={cls="edit";left=31;top=22;right=327;bottom=48;edge=1;multiline=1;z=1};
+txtGuid2={cls="edit";left=31;top=62;right=529;bottom=270;edge=1;multiline=1;z=5}
+)
+/*}}*/
+
+winform.btnCpy.oncommand = function(id,event){
+	winform.btnCpy.disabledText = "已复制 ......";
+	
+	var str = #winform.txtGuid2.selText ? winform.txtGuid2.selText : winform.txtGuid.text;
+	winform.lbTip.text = str;
+	win.clip.write( str );
+	win.delay(600);
+	
+	winform.lbTip.text = "已复制" ;
+	winform.btnCpy.disabledText = null;
+} 
+
+winform.btnGenerant.oncommand = function(id,event){
+	var guid = win.guid.create(); 
+	winform.txtGuid.text = guid;
+	winform.txtGuid.onChange();
+	
+	if(winform.lbTip.text=="GUID理论上能产生全球唯一的值"){
+		winform.lbTip.text = "按住 Ctrl 键 + 鼠标单击文本可以快速复制选中行"
+	}
+	else {
+		winform.lbTip.text = "GUID理论上能产生全球唯一的值"
+	}
+}
+
+winform.txtGuid.onChange = function(){  
+	var guid = win.guid(winform.txtGuid.text); 
+	if(guid){ 
+		if(tostring(guid)!=winform.txtGuid.text )winform.txtGuid.text = guid; 
+		winform.txtGuid2.text = guid.toString("%08X%04X%04X%02X%02X%02X%02X%02X%02X%02X%02X")
+			+ '\r\n' + guid.toString()
+			+ '\r\n' + guid.toString(,true)
+			+ '\r\n\'' + guid.hex() + "'" 
+			+ '\r\n' + guid.toString("{ 0x%X, 0x%X, 0x%X, { 0x%02X, 0x%02X, 0x%02X, 0x%02X, 0x%02X, 0x%02X, 0x%02X, 0x%02X } }")
+			+ '\r\n' + guid.toString("0x%X, 0x%X, 0x%X, 0x%02X, 0x%02X, 0x%02X, 0x%02X, 0x%02X, 0x%02X, 0x%02X, 0x%02X")
+			+ '\r\n---------------------------------------------------------------------------'
+			+ '\r\nwin.guid("' + guid.toString() + '")'
+			+ '\r\nwin.guid("' + guid.toString(,true) + '")' 
+			+ '\r\n' + guid.toString("win.guid(0x%X, 0x%X, 0x%X, { 0x%02X, 0x%02X, 0x%02X, 0x%02X, 0x%02X, 0x%02X, 0x%02X, 0x%02X})")
+			+ '\r\n' + guid.toString("win.guid(0x%X, 0x%X, 0x%X, 0x%02X, 0x%02X, 0x%02X, 0x%02X, 0x%02X, 0x%02X, 0x%02X, 0x%02X)")
+			+ '\r\n' + guid.toString("win.guid(0x%X, 0x%X, 0x%X,'\x%02X\x%02X\x%02X\x%02X\x%02X\x%02X\x%02X\x%02X')")
+	}
+	else {
+		var txtGuid = winform.txtGuid.text;
+		if( #txtGuid == 32){
+			var guid,count = ..string.replace(txtGuid,"(\x{8})(\x{4})(\x{4})(\x{4})(\x{12})","\1-\2-\3-\4-\5")
+			if(count){
+				guid = ..win.guid.fromString(guid);
+				if(guid){
+					winform.txtGuid.text = guid; 
+					winform.txtGuid.onChange();
+					return;
+				}
+			}
+		}
+		else{
+			var args = { string.match(txtGuid,"\s*\{?\s*(0x\x+)\s*,\s*(0x\x+)\s*,\s*(0x\x+)\s*,\s*\{?\s*(0x\x\x?)\s*,\s*(0x\x\x?)\s*,\s*(0x\x\x?)\s*,\s*(0x\x\x?)\s*,\s*(0x\x\x?)\s*,\s*(0x\x\x?)\s*,\s*(0x\x\x?)\s*,\s*(0x\x\x?)\s*\}?\s*")}
+			if(#args==11){
+				args = ..table.map(args,lambda(v) tonumber(v) );
+				var guid = ..win.guid( ..table.unpack(args));
+				if(guid){
+					if(tostring(guid)!= txtGuid )winform.txtGuid.text = guid; 
+					winform.txtGuid.onChange();
+					return;
+				}
+			}
+		}
+		
+		winform.txtGuid2.text = "";
+		if(#winform.txtGuid.text)winform.txtGuid.showErrorTip("错误","GUID 格式错误")
+	}
+}
+
+winform.txtGuid.oncommand = function(id,event){
+	if(event==0x100/*_EN_SETFOCUS*/){
+		winform.txtGuid2.setsel(-1);
+	}
+}
+
+winform.txtGuid2.oncommand = function(id,event){
+	if(event==0x100/*_EN_SETFOCUS*/){
+		winform.txtGuid.setsel(-1);
+	}
+}
+
+var autoSel = function(hwnd,message,wParam,lParam){
+	if(message==0x201/*_WM_LBUTTONDOWN*/){
+		if(::GetKeyState(0x11/*_VK_CTRL*/)&0x8000){
+			
+			//先调用默认回调函数,这样才能切换到鼠标点击行
+			owner._defWindowProc(hwnd,message,wParam,lParam);
+			
+			var line = owner.selLine;
+			if(line){
+				var b = owner.lineToChar(line);
+				var e = b + owner.lineLength(line)		
+				owner.setsel(b,e);	
+				
+				winform.btnCpy.oncommand();
+			}
+			
+			//返回非null 值,避免再次调用 owner._defWindowProc
+			return 0;
+		}
+	}
+}
+winform.txtGuid2.wndproc = autoSel;
+winform.txtGuid.wndproc = autoSel;
+winform.btnGenerant.oncommand();
+
+winform.show(true); 
+win.loopMessage();

@@ -1,0 +1,70 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add()
+/*}}*/
+ 
+ 
+ 
+import console;
+console.open();
+import dotNet;
+ 
+ 
+var dll = dotNet.load("res\Aspose.Cells.dll"); //调用dll
+var wb = dll.new("Aspose.Cells.Workbook"); //用于新建
+ 
+//两种方法写入单元格内容
+wb.Worksheets[1].Cells.Item(1,1).Value = "hello, world"; 
+ 
+// 创建sheet
+var sheet = wb.Worksheets[1];
+ 
+// 填值
+var cell = sheet.Cells.Item["A1"];
+cell.PutValue("Hello World!");
+//具体计算公式
+sheet.Cells.Item["A10"].PutValue(1);
+sheet.Cells.Item["B10"].PutValue(1);
+sheet.Cells.Item["C10"].Formula = "SUM(A10:B10)";
+ 
+// 保存文件
+ 
+wb.Save(io.fullpath("res\test.xlsx"))
+wb.Save(io.fullpath("res\我是xls文件.xls")) //保存xls文件
+ 
+ 
+ 
+ 
+winform.show();
+win.loopMessage();
+return winform;
+
+/*
+读取excel数据到dataTable
+ var tim = time.tick();
+    import System.Windows.Forms;
+    var Forms = System.Windows.Forms;
+    var dataGridView = Forms.CreateEmbed("DataGridView", winform.custom);
+    dataGridView.ColumnHeadersHeightSizeMode = 2; //避免在高分屏下错乱 
+      
+    import System.Type;
+    import System.Data;
+      
+    var dataTable = System.Data.DataTable("DT");
+      
+    //添加数据
+      
+    var dll = dotNet.load("res\Aspose.Cells.dll"); //
+    var workbook = dll.new("Aspose.Cells.Workbook", "res\示例数据.xlsx");
+    var cells = workbook.Worksheets[1].Cells;
+      
+    var dataTable1 = cells.ExportDataTable(1, 0, cells.MaxDataRow, cells.MaxColumn + 1); //noneTitle
+    var dataTable2 = cells.ExportDataTable(0, 0, cells.MaxDataRow + 1, cells.MaxColumn + 1, true); //showTitle
+      
+    //显示数据
+    var dataView = System.Data.DataView(dataTable1);
+    dataGridView.DataSource = dataView;
+    dataGridView.EditMode = 2;
+    console.log("使用aspose花费时间:", (time.tick() - tim) / 1000)
+*/

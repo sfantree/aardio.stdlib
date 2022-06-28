@@ -1,0 +1,172 @@
+global.import("(debug)");
+debug = global["(debug)"];
+
+namespace debug; 
+
+debug = function(){
+
+	if( ! _STUDIO_INVOKED ) return;
+	if( self.breaking ) return;
+	self.breaking = true;
+	
+	global.import("console");
+	var dbg = ..debug.hook()
+	dbg.callcount = ..debug.callcount();
+	
+	dbg.line = function(line){
+	
+		var callcount = ..debug.callcount()
+		if( callcount > dbg.callcount && (!dbg.stepInto) ){ 
+			return;
+		} 
+		dbg.callcount =  callcount;
+		dbg.stepInto = null;
+		if( dbg.ignoreLines ){
+			dbg.ignoreLines = dbg.ignoreLines - 1;
+			return;
+		}
+		
+		if(!dbg.breakTitle){
+			..console.log("输入'c'继续, 'n' 单步执行,'t' 显示调用栈,'p' 显示局部变量");  
+			dbg.breakTitle = true;
+		}
+		while(true){
+				
+				..console.stderr.write("aardio debug> ");
+				var code = ..console.getText();
+				var token = ..string.splitEx(code,"\s+",2);
+				if( token[1] == "n" || token[1] == "step"  ){
+					var info = ..debug.queryinfo(2,"select source");
+					var srcLine = 0;
+						
+					if(info.source.code){
+						for lineCode in ..string.lines(info.source.code) { 
+							srcLine++;
+							if( srcLine == line  ){
+								..console.stderr.write("aardio debug> #",line,":",..string.trim(lineCode),'\n');
+								break ;
+							}
+						}
+					}
+					elseif(info.source.file  && ..io.exist(info.source.file) ) {
+							if( dbg.currentFile != info.source.file ){
+								..console.stderr.write("aardio debug> ",info.source.file ,'\n');
+								dbg.currentFile = info.source.file;
+							}
+						for lineCode in ..io.lines(info.source.file) { 
+							srcLine++;
+							if( srcLine == line  ){
+								..console.stderr.write("aardio debug> #",line,":",..string.trim(lineCode),'\n');
+								break ;
+							}
+						} 
+					}
+					
+					
+					if(token[2] && tonumber(token[2])){
+						dbg.ignoreLines = tonumber(token[2])
+					}
+					
+					if( token[1] == "step" ){
+						dbg.stepInto = true;
+						return;
+					}
+					return;
+				} 
+				elseif( token[1] == "finish" ){
+					dbg.callcount = dbg.callcount -1;
+					return;
+				}
+				elseif( token[1] == "c" ){
+					dbg.line = null;
+					dbg.close();
+					return;
+				}
+				elseif( token[1] == "info" ){
+					var info = ..debug.queryinfo(2,"select source");
+					..console.dump(info.source);
+					return;
+				}
+				elseif( token[1] == "t" ){
+					code = "io.print( debug.traceback(,,3) );";
+				}  
+				elseif( token[1] == "p" ){
+					var i,k,v = 1;
+					var name = token[2] ? tostring(token[2]);
+					do{
+						k,v = ..debug.getlocalvar(2,i);
+						if( !k ) break;
+						if( k=="(temporary)" ) { i++;continue;}
+						if( name && k!= name ) { i++;continue;}
+						if(type(v)==type.table ) v = ..table.tostring(v);
+						else v = tostring(v);
+						
+						..console.stderr.write(k,'\t=\t',v,'\n' );
+						i++;
+					}while(1) 
+					continue ;
+				} 
+				
+				var f,e = loadcode(code,"=(debug command)")
+				while(!f && ..string.endWith(e,"'<eof>'") ){ 
+					code = code ++ ..console.getText();
+					f,e = loadcode(code,"=(debug command)")
+				}
+				
+				if(!f ){
+					..console.stderr.write(e,'\n');
+					continue; 
+				}
+				f();
+			}   
+	}
+}
+	
+
+/**intellisense(debug)
+callcount() = 函数调用栈深度
+getnamespace(__/*对象*/) =  返回对象的名字空间
+getfunction(__/*调用级*/) =  返回函数对象
+getlocalvar(.(调用级,索引) = 返回局部变量名,变量值
+getlocalvar(.(纤程,调用级,索引) = 返回局部变量名,变量值
+setlocalvar(.(调用级,索引,新值) = 修改局部变量值
+setlocalvar(.(纤程,调用级,索引,新值) = 修改局部变量值
+getupvar(.(函数对象,索引) =  返回函数闭包局部变量,变量值\n注意只有该函数引用的外层函数局部变量才能获取
+setupvar(.(函数对象,索引,值)  =  设置函数闭包局部变量,变量值
+hook(__/*可选参数：可在此输入协程对象*/)  = 创建调试钩子
+debug() = 插入断点\n执行到该位置时打开控制台进入调试环境,\n发布后程序忽略此函数不执行
+traceback( = 返回活动栈跟踪信息\n通常用于global.onError函数或catch语句中
+traceback(.(纤程,"标题",调用级别) = 返回活动栈跟踪信息\n所有参数为可选参数,\n调用级别为1指当前函数,2为调用当前函数的函数,数值越大调用级别越高
+queryinfo(2,"select source,function,upvars,name,currentline,activelines") = 查询调用椎栈信息\n参数一可以是函数名、或调用级别\n1表示当前函数,2表示调用当前函数的函数
+queryinfo(2,"select source") =  = 查询调用椎栈源码相关信息\n参数一可以是函数名、或调用级别\n1表示当前函数,2表示调用当前函数的函数
+end intellisense**/
+
+/**intellisense()
+debug = 调试函数库,\ndebug 属于内核库,但必须使用 import debug 导入才能使用
+debug.hook() = !debugHook.
+debug.queryinfo() = !debugInfo.
+end intellisense**/
+
+/**intellisense(!debugHook)
+line = @.line=function(line){\n__/*每行代码触发此回调*/\n}
+call = @.call=function(){\n__/*调用函数触发此回调*/\n}
+return = @.return=function(line){\n__/*return 语句触发此回调*/\n}
+tailreturn = @.tailreturn=function(line){\n__/*尾定义触发此回调,\n必须同时定义 return 语句回调函数,\n如果仅指定 tailreturn 则不会被触发*/\n}
+close() = 关闭调试钩子
+end intellisense**/
+
+/**intellisense(!debugInfo)
+source = 源码相关信息
+source.file = 文件名
+source.code = 源码
+source.src = 源码或文件名缩略信息
+source.beginline = 开始定义行
+source.endline = 结束;定义行
+source.kind = 类型\n"kernel"表示内核函数\n"function"\n表示普通函数\n"main"主函数\n"tail"尾调用
+name =  函数名字
+name_where =  global(全局变量)、\nself(当前名字空间成员变量)、\nvar(局部变量)、\nupvar(上层语句块局部闭包变量)
+activelines =  函数的有效代码行列表\n无效行指的是空行或注释等
+function =  当前函数对象
+upvars = 引用的上层函数闭包变量数目
+currentline =  当前行
+end intellisense**/

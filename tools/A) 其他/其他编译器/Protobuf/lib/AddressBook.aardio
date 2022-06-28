@@ -1,0 +1,49 @@
+import protobuf.message;
+import util.metaProperty;
+
+import Person;
+class AddressBook {
+	ctor(reader){
+		this = ..protobuf.message(reader) 
+		
+    	this.fields[1] = "..Person";
+    	this.values[1] = { is_array = true; };
+       
+	} 
+	@_metaProperty ;
+}
+
+namespace AddressBook {
+  
+  
+	_metaProperty  = ..util.metaProperty( 
+		_tostring = function(){
+			return owner.serializeToString();
+		};
+		
+    	person =  function(index){ 
+    		return owner._getArrayValue(1,index); 
+    	};
+    	personLength = {
+    		_get = function(){ 
+    				return owner._getArraySize(1);
+    		} 	
+    	}; 
+    	personArray = {
+    		_get = function(){ 
+    				return owner._getArray(1);
+    		} 	
+    	};  
+        
+	)
+}
+/**intellisense()
+AddressBook = protobuf消息对象
+AddressBook() = 创建protobuf消息对象\n!AddressBook.
+!AddressBook.parseFromString(__/*字符串*/) = 二进制数据反序列化到消息对象\n此函数自动清空所有数组值,但不会重置其他非数组字段值.\n因此应对新创建的对象调用此函数.
+!AddressBook.serializeToString() = 序列化消息对象,返回二进制字符串
+!AddressBook.personLength = 返回数组长度
+!AddressBook.personArray = 返回原始数组
+!AddressBook.person() = !Person.
+!AddressBook.person(1__/*索引*/) = Person
+end intellisense**/

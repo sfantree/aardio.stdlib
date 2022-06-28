@@ -1,0 +1,102 @@
+﻿import util.metaProperty;
+import com.interface.IAudioMeterInformation;
+
+namespace sys;
+
+class audioVolume {
+	ctor(){
+		this.handle = _dll.CreateVolumeCtrlP();
+		..table.gc(this,"delete")
+	};
+	delete = function(){
+		if(this.handle){
+			_dll.DeleteVolumeCtrl(this.handle);
+			this.handle = null;
+		}
+	};
+	@_metaProperty;
+}
+
+namespace audioVolume {
+   
+    
+    _dll = ..raw.loadDll($"~\lib\sys\audioVolume\.res\Release\volumeCtrl2.dll",,"cdecl");
+    _metaProperty = ..util.metaProperty(
+    
+    	volume = {
+    		_get = function(){ 
+    			if(owner.handle) return _dll.GetVolume(owner.handle);
+    		}
+    		_set = function(v){
+    			if(owner.handle)return _dll.SetVolume(owner.handle,v);
+    		} 	
+    	};
+    	
+    	mute = {
+    		_get = function(){ 
+    			if(owner.handle) return _dll.GetMuteB(owner.handle);
+    		}
+    		_set = function(v){
+    			if(owner.handle)return _dll.SetMute(owner.handle,v);
+    		} 	
+    	};
+    	
+    	getMeterInfomation = function(){
+    		if(owner.handle){
+    			if(owner["#MeterInfomation"] ) return owner["#MeterInfomation"] ;
+    			
+    			var pMeter = _dll.GetMeterInfomationP(owner.handle,v);
+    			if(pMeter){
+    				var meter = ..com.interface(pMeter,"IAudioMeterInformation");
+    				..com.Release(pMeter);
+    				
+    				owner["#MeterInfomation"] = {
+    						getPeakValue = function() {
+    							var hr,v = meter.GetPeakValue(0); 
+    							if( hr >= 0/*_SUCCEEDED*/){
+    								return v;
+    							}
+    						};
+    						getMeteringChannelCount = function() {
+    							var hr,v = meter.GetMeteringChannelCount(0); 
+    							if( hr >= 0/*_SUCCEEDED*/){
+    								return v;
+    							}
+    						}
+    						getChannelsPeakValues = function(count) {
+    							if(!count) count = owner.channelCount;
+    							if(!count) return;
+    							
+    							var hr,values = meter.GetChannelsPeakValues(count,{float v[]={length=count}}); 
+    							if( hr >= 0/*_SUCCEEDED*/){
+    								return values.v;
+    							}
+    						}
+    						queryHardwareSupport = function() {
+    							var hr,v = meter.QueryHardwareSupport(0); 
+    							if( hr >= 0/*_SUCCEEDED*/){
+    								return v;
+    							}
+    						}
+    				}; 
+    				owner["#MeterInfomation"].channelCount = owner["#MeterInfomation"].getMeteringChannelCount();
+    				
+    				return owner["#MeterInfomation"];
+    			}
+    		} 
+    	}
+    	
+    )
+}
+
+/**intellisense()
+sys.audioVolume = 系统音量控制
+sys.audioVolume() = 创建音量控制对象\n!stdSysAudioVolume.
+!stdSysAudioVolume.volume = 获取或设置系统音量,\n最小值为0,最大值为100
+!stdSysAudioVolume.mute = 获取或设置是否静音
+!stdSysAudioVolume.getMeterInfomation() = 获取实时音量信息\n!stdAudioMeterInfomation.
+!stdAudioMeterInfomation.getPeakValue() = 得到实时主音量百分比,\n最小值为0,最大值为1
+!stdAudioMeterInfomation.getMeteringChannelCount() = 返回声道数
+!stdAudioMeterInfomation.getChannelsPeakValues(.(count) = 返回@count参数指定数目声道的音量数组,\n音量最小值为0,最大值为1,\n参数必须与实际的声道数一致,\n可省略参数自动获取声道数
+!stdAudioMeterInfomation.queryHardwareSupport() = 是否硬件支持
+end intellisense**/

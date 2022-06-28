@@ -1,0 +1,43 @@
+import console; 
+import process;
+import fsys;
+
+	var vadBin = "G:\Program Files (x86)\aardio\project\百度语音识别\dist\vad-demo.exe";
+	
+	var filename = "C:\Users\lin\AppData\Local\Temp\aardio_asr\当王冰冰出现在央视一套晚间新闻之后…… CCTV1HD 2020.11.7 【今日立冬·各地图景】 - 1.出镜画面 - 含新闻导语(Av330126728,P1).mp3.pcm";
+	var filename_ansi = string.fromto( filename );
+	
+	var output_filename_prefix = "16k_1.pcm";
+	var output_filename_prefix_ansi = string.fromto( output_filename_prefix );
+	
+	var vadOutputDir = "C:\Users\lin\AppData\Local\Temp\20210723_223207";
+	if(not io.exist(vadOutputDir)) {
+	    fsys.createDir(vadOutputDir, true)
+	}
+	var output_dir = vadOutputDir;
+	var output_dir_ansi = string.fromto( output_dir );
+	
+	var cutOption = "1,0,500,300,3000,20000,16000,100";
+	var cut_settings = cutOption;
+	var cut_settings_ansi = string.fromto( cut_settings );
+	
+	var parameterString2 = string.format(' "%s" "%s" "%s" "%s"', filename_ansi, output_filename_prefix_ansi, output_dir_ansi, cut_settings_ansi);
+    
+    //fsys.log.print(tostring(time.now()), "mainForm.cutVadSegment:", vadBin, parameterString2);
+    //var pid2 = process.executeWaitInput(vadBin, parameterString2);
+    //var pid2 = process.executeWait(vadBin );
+    var pid2 = process.executeWait(vadBin, parameterString2);
+    console.log("pid2:" ,pid2 );
+    //fsys.log.print(tostring(time.now()), "mainForm.cutVadSegment:", "pid2", tostring(pid2));
+    
+/*
+    if(not pid2) {
+	    //console.log("FFmpeg error");
+	    return nil;
+	} else {
+	    return vadOutputDir;
+	}
+*/
+
+//console.log("您输入的是" ,num );
+console.pause(true);

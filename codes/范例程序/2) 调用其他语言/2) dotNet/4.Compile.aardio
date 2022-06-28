@@ -1,0 +1,110 @@
+//编译 / 类型
+import console;
+import dotNet; 
+var compiler = dotNet.createCompiler("C#");//创建C#语言编译器
+compiler.Reference("System.dll");//DLL 程序集要提前引入，System.dll 默认已引入，注意这函数不支持内存 DLL
+
+//设置待编译C#源码（ 注释可赋值为字符串，注释标记首尾星号数目要一致 ）
+compiler.Source = /******  
+<? console.log("如果代码开始为 aardio 模板标记，则启用 aardio 模板语法") ?>
+namespace CSharpLibrary  
+{  
+    public class Object  
+    {     
+    	public static string StaticMember = "StaticTest";
+        public string Member = "Test";
+        
+        public int [] Test(double a, int [] b){   
+            b[0] = b[0] + (int)a;
+            return b; 
+        }
+    }   
+} 
+******/
+
+/*
+注意在 aardio 中编译，调用的是 CLR，而 CLR 只有 2.0 / 4.0 的区别，只支持这两个版本的语法。
+例如安装了 .Net 3.5 但没有安装 .Net 4.x ，那么 CLR 2.0 下编译器不支持 var ，lambda 这些语法 (但是能运行编译后的 DLL)。
+这时候也可以用 VS 编译成 DLL，运行仍然可以支持 CLR  2.0 / 4.0。
+*/
+var assembly = compiler.CompileOrFail(/*"/output.dll"*/); //编译并返回程序集，可选在参数中指定输出 DLL文件，不指定则编译为内存程序集。 
+assembly.import("CSharpLibrary"); //自程序集导入名字空间  
+
+//使用 C# 编写的类构造对象实例 
+var netObj = CSharpLibrary.Object();
+
+//调用实时编译的C#函数，数值、数值数组可自动兼容不同的类型
+var ret = netObj.Test(12,{2,3}); 
+
+//也可以用 dotNet.double 等函数显式类型
+var ret = netObj.Test(dotNet.double(12),dotNet.int({2,3})); 
+console.dump(ret);
+
+console.log( netObj.Member,netObj.StaticMember );//直接访问对象静态属性
+console.pause();
+
+/*
+一) .Net / aardio 对象封包、解包原理
+--------------------------------------------------------
+所有原生 .Net 中的值在 aardio 中分为两类：
+null值、数值、字符串、枚举、 System.Drawing.Color 等简单值类型，以及这些值类型的数组可以直接交换。
+aardio 中的 buffer 在 .Net 中对应字节数组。
+
+其他原生 .Net 对象在 aardio 中存为 com.NetObject 对象（对应 .Net 中的 System.__ComObject 类型），
+
+com.NetObject 分为：
+1、普通 .Net 对象，传入 com.IsNetObject() 返回1 
+2、封包其他原始 .Net 对象的 DispatchableObject 对象，传入 com.IsNetObject() 返回2
+一些特殊的 .Net 对象（例如 struct,ValueTuple）会被自动封包到 DispatchableObject 内 (在传回 .Net 时会自动解包)。
+
+上面 2 种 .Net 对象在 aardio 中都会被封装为 dotNet.object 对象，用法没有区别。
+DispatchableObject 对象如果存储的是 Primitive,enum,string 类型或这些类型的普通数组则可使用 Value 属性读写原始值
+
+二) .Net / aardio 参数类型转换规则
+--------------------------------------------------------
+.Net / aardio 交换数据底层基于 COM，调用 COM 函数传参时，
+如果 COM 函数支持参数自动类型识别 —— 则 aardio 优先使用 COM 函数需要的类型。
+
+但 .Net 并不会通过 COM 接口提供参数类型，在此情况下：
+COM 函数参数中的整数默认处理为 32 位整型(int,int32)，小数默认处理为64位浮点数(double)。
+如果是 aardio 数组，纯数值数组一律转为 double 类型 COM 数组，纯字符串数组一律转为 BSTR 数组,
+其他数组转为 Variant 变体类型数组。
+
+.Net 使用静态类型，只要参数类型不正确就会报错找不到函数，
+但是 aardio 中的 dotNet.object 基于 .Net 类型反射支持了更强大的类型非动识别与转换功能。 
+所以大多时候我们不需要自己处理这些问题。
+
+.Net 中的 enum 枚举会自动转换为 aardio 中的数值(支持双向自动转换类型)，
+.Net 中的 struct,tuple 由 .Net 对象 DispatchableObject 封包后再返回 aardio 。
+aardio 函数则自动转换为委托、事件所需要的委托类型。
+
+.Net 中的 System.IntPtr,System.UIntPtr 类型在 aardio 中会自动转换为整数值，
+aardio 中的指针类型（pointer）必须使用 tonumber() 函数转换为数值才能传入 .Net。
+HWND 在 aardio 以整数值表示，可以直接传入 .Net。
+
+System.Drawing.Color 在 aardio 则会自动转换为 ARGB 格式的颜色数值。
+调用 .Net 时 ARGB 格式的颜色数值也能自动转换为 System.Drawing.Color 对象。
+注意 GDI+ 使用 ARGB 格式颜色值，与 gdip库，plus 控件等兼容。
+
+三) 在 aardio 中创建 dotNet.object 对象
+--------------------------------------------------------
+
+在 aaardio 中可调用以下函数创建 dotNet.object 对象：
+dotNet.object(value,byRef) 将参数 @value 指定值或数组转换为 .Net 对象。@byRef 参数值为 true 则支持.Net 输出或引用参数。
+dotNet.byte(value,byRef) 将参数 @value 指定的数值或数组转换为 8 位整型数值。@byRef 参数值为 true 则支持.Net 输出或引用参数。
+dotNet.ubyte(value,byRef) 将参数 @value 指定的数值或数组转换为 8 位无符号整型数值。@byRef 参数值为 true 则支持.Net 输出或引用参数。
+dotNet.word(value,byRef) 将参数 @value 指定的数值或数组转换为 16 位整型数值。@byRef 参数值为 true 则支持.Net 输出或引用参数。
+dotNet.uword(value,byRef) 将参数 @value 指定的数值或数组转换为 16 位无符号整型数值。@byRef 参数值为 true 则支持.Net 输出或引用参数。
+dotNet.int(value,byRef) 将参数 @value 指定的数值或数组转换为 32 位整型数值。@byRef 参数值为 true 则支持.Net 输出或引用参数。
+dotNet.uint(value,byRef) 将参数 @value 指定的数值或数组转换为 32 位无符号整型数值。@byRef 参数值为 true 则支持.Net 输出或引用参数。
+dotNet.long(value,byRef) 将参数 @value 指定的数值或数组转换为 64 位整型数值。@byRef 参数值为 true 则支持.Net 输出或引用参数。
+dotNet.ulong(value,byRef) 将参数 @value 指定的数值或数组转换为 64 位无符号整型数值。@byRef 参数值为 true 则支持.Net 输出或引用参数。
+dotNet.float(value,byRef) 将参数 @value 指定的数值或数组转换为 32 位浮点数值。@byRef 参数值为 true 则支持.Net 输出或引用参数。
+dotNet.double(value,byRef) 将参数 @value 指定的数值或数组转换为 64 位浮点数值。@byRef 参数值为 true 则支持.Net 输出或引用参数。
+
+以上函数会将所有对应的参数值存为 .Net 对象 DispatchableObject 封包后再返回 dotNet.object 对象，
+即使简单的值类型也会转换为 dotNet.object 对象，这可以让 aardio 直接引用 .Net 中的对象，方便实现 ref,out 等输出参数。
+
+基于 DispatchableObject 的 dotNet.object 对象都有一个特殊的 Value 属性用于读写解包的值。
+不是所有对象都能解包，例如 struct,ValueTuple 等 .Net 对象无法解包。
+*/

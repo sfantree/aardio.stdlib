@@ -1,0 +1,32 @@
+import win.ui;
+
+// http://jianma123.com/viewthread.aardio?threadid=102
+
+/*DSG{{*/
+var winform = win.form(text="简码编程 www.jianma123.com";right=324;bottom=90)
+winform.add(
+button={cls="button";text="添加项";left=220;top=18;right=299;bottom=42;z=2};
+button2={cls="button";text="消息方式";left=219;top=51;right=298;bottom=75;z=4};
+combobox={cls="combobox";left=30;top=19;right=204;bottom=45;edge=1;items={};mode="dropdown";z=1};
+static={cls="static";text="提示:";left=31;top=54;right=200;bottom=72;transparent=1;z=3}
+)
+/*}}*/
+
+var n = 0;
+
+//方法1 直接调用现成封装好的函数添加项
+winform.button.oncommand = function(id,event){
+    n = n+1;
+    winform.combobox.add("第" ++ n ++ "项");//默认添加到尾部
+    winform.static.text = "提示:添加第" ++ n ++ "项成功!";
+}
+
+//方法2 发系统消息给指定下拉列表框控件添加项 (参考标准库)
+winform.button2.oncommand = function(id,event){
+    n = n+1;
+    ::User32.SendMessage(winform.combobox.hwnd/*句柄*/, 0x143/*_CB_ADDSTRING*/, ,"第" ++ n ++ "项"/*项文本*/)
+    winform.static.text = "提示:添加第" ++ n ++ "项成功!";
+}
+
+winform.show() 
+win.loopMessage();

@@ -1,0 +1,22 @@
+﻿//connView 连接视图
+import web.form;
+namespace inet;
+
+class connView{
+	ctor(winform){ 
+		this = ..web.form( winform,5/*_UIFLAG_DIALOG*/);
+		this.goDirectory("shell:::{7007ACC7-3202-11D1-AAD2-00805FC1270E}")
+		this.document.currentViewMode = 1;
+		
+		if(!_WINXP){
+			this.document.FolderFlags = this.document.FolderFlags | 0x800000/*FWF_NOCOLUMNHEADER*/
+		}
+	};
+}
+
+/**intellisense()
+inet.connView = 网络连接视图
+inet.connView( = 创建网络连接视图,\n支持 shellFolderSelectionChanged 事件
+inet.connView(.(winform) = 参数指定窗口或控件对象,返回 web.form 对象
+inet.connView() = !wb.
+end intellisense**/

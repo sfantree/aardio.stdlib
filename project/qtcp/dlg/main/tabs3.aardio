@@ -1,0 +1,53 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="如何加载子窗口";right=759;bottom=469)
+winform.add()
+/*}}*/
+
+import web.form;
+var wb = web.form( winform,5/*_UIFLAG_DIALOG*/,,,true);
+
+wb.html = /**
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+</head>
+<body>
+    <pre>
+<b>一、使用winform.loadForm函数加载子窗口：</b>
+例如 mainForm是父窗口，“/dlg/frmChild.aardio”是要加载的子窗口。
+我们只要在工程中将“/dlg/frmChild.aardio”往mainForm的源代码一拖就可以生成下面的加载代码了：
+<span style="font-family: 新宋体"></font><font color="#0000ff">var</font><font color="#000000">&nbsp;frmChild&nbsp;=&nbsp;mainForm.loadForm(</font><font color="#800000">"/dlg/frmChild.aardio"</font><font color="#000000">)</font></span>
+
+这时候如果子窗口frmChild指定了child样式就会作为嵌入式子窗口显示在父窗口内部。
+否则就会作为独立的下属窗口(外部子窗口)显示在所有者窗口外部。
+
+下属窗口(外部子窗口)有两种显示模式
+1)、调用 winform.show() 显示的是非模态窗口，不阻塞代码向后执行。
+2)、调用 winform.doModal() 显示的是模态窗口，
+模态窗口会创建独立的消息循环并禁用上级所有者窗口,阻塞代码向后执行直到窗口关闭。
+
+<b>二、使用tab选项卡控件可以加载并管理多个子窗口：</b>
+例如我们窗口上有名为 winform.tab 的选项卡控件，则使用 
+winform.tab.loadForm("/dlg/tab-page1.aardio") 加载子窗口。
+使用这种方式加载的是嵌入式子窗口,会自动把窗口修改为child样式。
+
+<b>三、使用custom控件加载子窗口，有3种方法：</b>
+1)、使用custom控件直接加载嵌入式子窗口，在custom的类名中输入子窗口的代码文件路径即可。
+2)、使用custom控件的loadForm函数载并管理多个嵌入式子窗口，可以结合高级选项卡(win.ui.tabs)使用。
+3)、在win.ui.ctrl名字空间下创建控件类库（参考win.ui.ctrl.custom等控件的源码），
+使用import语句导入自定义的控件类，拖动custom控件到界面上并且把类名改为对应的自定义控件类名就可以了。
+
+<b>四、使用窗口类库加载窗口：</b>
+这种窗口类使用import导入，通过类构造函数创建窗口。
+如果窗口指定了child样式并指定了父窗口则显示为嵌入式子窗口，
+否则显示为独立窗口（指定父窗口参数时则将其设置为所有者窗口）
+</pre>
+</body>
+</html>
+**/
+
+winform.show();
+win.loopMessage();

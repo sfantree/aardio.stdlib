@@ -1,0 +1,81 @@
+import console; 
+import process.r;
+//教程: https://mp.weixin.qq.com/s/QSJUraefFctJYN_cudesZw
+
+//执行 R 代码，支持 aardio 模板语法
+process.r.code = /*
+write("<?="这是 aardio 代码"?>",file=".data.txt");
+*/
+
+//执行 R 代码，支持 aardio 模板语法
+var out = process.r.loadcode(`write("<?="这是 aardio 代码"?>",file=".data.txt");`)
+ 
+//执行纯 R 代码，参数 @1 可以指定 R代码或 R 文件。
+var out = process.r.exec(`
+args=commandArgs(T);
+write(args[1],file=".data.txt");
+
+# list 有点像 aardio 中的表(table)，可以包含各种数据类型， 
+a <- list(hello = 1, world = "字符串" ) # <- 相当于 aardio 中的等号,  R的等号一般用于分隔键值对
+print ( a[["world"]] ); # aardio 里的直接下标也是这么写
+print ( a$world ); # 相当于 aardio 里的  a.world
+print ( a[1] ); # 这个返回的是键值对 hello = 1，不像 aadio 中 a[1] 与 a.hello 是指向不同的元素。
+print ( mode(a[1]) ); # 数据类型还是显示为 list
+
+b <- TRUE #布尔值必须全大写
+print( b ) 
+
+# 向量
+a = c(10, 20, 30, 40, 50)
+print( a[1] ) #起始下标为 1 ,这跟 aardio 一样
+print( a[1:4] ) # 取出第 1 项到第 4 项
+
+# 定义函数，与 aardio 语法类似
+new.function <- function(a,b,c) {
+   result <- a * b + c # 类似 aardio 中的 return a * b + c #
+   print(result) # 指定返回值以后，还能继续执行后面的代码，不像 aardio 函数 return 后面的代码被忽略。
+}
+
+print( new.function(2,3,1) )
+`,"测试一下"); //可以添加不定个数的启动参数
+console.log( out );
+console.more(,true);
+
+console.showLoading(" 正在安装 rjson 包");
+process.r.require("rjson","https://mirrors.ustc.edu.cn/CRAN/");//不会重复安装
+
+var out  = process.r.exec( `
+library("rjson") # 载入 rjson 包
+
+args <- commandArgs(T);
+tab <- fromJSON(args[1], simplify=FALSE);
+
+#不要用 print ，cat 不会加一堆不必要的东西
+cat( toJSON(tab) )
+`, {
+  name1 = "测试一下，传对象给 R 语言";
+  name2 = "这是一个 aardio 对象"
+})
+
+console.dump(out);
+
+var rCode = /*
+testabc <- function(a,b,c) {
+   result <- a * b + c # 类似 aardio 中的 return a * b + c #
+   print(result) # 指定返回值以后，还能继续执行后面的代码，不像 aardio 函数 return 后面的代码被忽略。
+}
+*/
+
+//启动 R 
+var r = process.r.startRpc(rCode);
+ 
+//调用 R 函数
+var ret  = r.testabc(2,3,1)
+
+//打印 R 函数返回值
+if(ret[["result"]]){
+	console.log("R 函数返回值",ret[["result"]])
+} 
+console.pause(true);
+
+ 

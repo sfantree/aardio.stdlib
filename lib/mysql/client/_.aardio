@@ -1,0 +1,864 @@
+/*
+本程序引用的DLL组件是mariadb提供的mysql、mariadb兼容客户端
+该DLL组件基于LGPL协议在开源接口代码（本扩展库已开源符合该条件）的基础上可免费自由使用
+DLL源码出处：https://code.launchpad.net/mariadb-native-client
+*/
+import util.metaProperty;
+namespace mysql;
+	
+class client{
+	ctor ( tParam ) { 
+	
+		tParam = ..table.mixin( {
+			server = "localhost";
+			uid = "root"; 
+			flags = 0;
+		},tParam)
+		
+		if( tParam.port === null ){
+			var s,p = ..string.match( tParam.server,"(.+)\:(\d+)$" );
+			if( s && p ) {
+				tParam.server = s;
+				tParam.port = p;
+			}
+			else {
+				tParam.port = 3306;
+			}
+		}
+		
+		var mysqlDb = mysql_init(); 
+		this.mysqlDb = mysqlDb;
+		if (!mysqlDb) return;
+		
+		this.defaultCharset = tParam.charset or "utf8" 
+		::MySql.mysql_options(mysqlDb,7/*_MYSQL_SET_CHARSET_NAME*/,this.defaultCharset );
+		::MySql.mysql_options(mysqlDb,0x14/*_MYSQL_OPT_RECONNECT*/,{int v = 1 } ); //自动重连 
+		tParam.charset = null;
+		 
+		this.open = function(tParam){ 
+			var conn = mysql_real_connect(mysqlDb,tParam.server,tParam.uid, tParam.pwd
+		 		,tParam.database,tParam.port,tParam.socket,tParam.flags); 
+
+			if (!conn) return null, mysql_error(mysqlDb);
+			
+			mysql_set_character_set(conn,this.defaultCharset);
+			if( tParam.database ){
+				if( 0 != mysql_select_db(conn, tParam.database) ){
+					mysql_close(conn);
+					return null, mysql_error(mysqlDb);;
+				} 
+			} 
+			
+			this.connection = conn;
+			return true;
+		}
+		
+		if( tParam  ){
+			var h,e,c = this.open(tParam);
+			if(!h) return null,e,c;
+		};
+		..table.add_gc(this, "close");
+	};
+	lasterr = function () {
+		return mysql_error(mysqlDb),mysql_errno(mysqlDb);
+	};
+	setOption = function (k, v) {
+		var t = type(v);
+		if( t == "string" ){
+			return 0 == mysql_options(mysqlDb,k,{BYTE v[] = v } );
+		}
+		elseif( t == "number" ){
+			return 0 == mysql_options(mysqlDb,k,{int v = v } );
+		}
+		elseif( t == "boolean" ){
+			return 0 == mysql_options(mysqlDb,k,{byte v = v});
+		}
+		elseif( t[["_struct"]] ){
+			return 0 == mysql_options(mysqlDb,k,v);
+		} 
+		error("参数类型错误",2)
+	}
+	close = function () {
+		if (this[["connection"]]) {
+			mysql_close(this.connection);
+			this[["connection"]] = null;
+		}
+	};
+	shutdown = function( lev ){
+		mysql_shutdown( this.connection,lev : 0 )
+	};
+	refresh = function(opt){
+		mysql_refresh( this.connection,opt : 1/*REFRESH_GRANT*/ )
+	};  
+	getThreadId = function () {
+		return mysql_thread_id(this.connection);
+	};
+	kill = function (tid) {
+		if(!tid) tid = this.getThreadId();
+		return mysql_kill(this.connection,tid);
+	};
+	ping = function () {
+		return mysql_ping(this.connection);
+	};
+	changeUser = function (user,password,database) {
+		return mysql_change_user(this.connection, user, password, database);
+	};
+	createDb = function(db) {
+ 		var sql = ..string.format("CREATE DATABASE IF NOT EXISTS %s",this.escapeId(db) )
+ 		if ( 0 == mysql_real_query( this.connection, sql,#sql) ){
+ 			return  0 == mysql_select_db(this.connection,db);
+ 		}
+	};
+	dropDb = function(db) {
+ 		var sql = ..string.format("DROP DATABASE IF EXISTS %s",this.escapeId(db) )
+ 		return ( 0 == mysql_real_query( this.connection, sql,#sql) );
+	};
+	selectDb = function ( db ) {
+		return mysql_select_db(this.connection,db) == 0;
+	};
+	listDbs = function (wild) {
+		var sql = !wild ? "SHOW DATABASES" : 
+			..string.format("SHOW DATABASES LIKE '%s'",this.escapeString(wild) );
+			
+		return this.query(sql); 
+	};
+	listTables = function (wild) {
+		var sql = !wild ? "SHOW TABLES" : 
+			..string.format("SHOW TABLES LIKE '%s'",this.escapeString(wild) );
+		return this.query(sql); 
+	};
+	listFields = function (tbl,wild) {
+		if(!tbl) error("表名不能为空",2)
+		var sql = ..string.concat("SHOW COLUMNS FROM `",this.escapeString(tbl),"`");
+		if(wild) sql = sql +  " LIKE '" + this.escapeString(wild) + "'";
+		return this.query(sql); 
+	};
+	listProcesses = function () { 
+		return this.query( "SHOW PROCESSLIST" ); 
+	};
+	getAffectedRows = function(){
+		return mysql_affected_rows(owner.mysqlDb);//EXEC影响的行数
+	}; 
+	lastInsertId = function () {
+		return mysql_insert_id(this.connection);
+	} 
+	useResult = function () {
+		var result = mysql_use_result(this.connection)
+		return result ? recordSet(result);
+	};
+	storeResult = function () {
+		var result = mysql_store_result(this.connection)
+		return result ? recordSet(result);
+	};
+	moreResults = function () {
+		return mysql_more_results(this.connection)
+	};
+	nextResult = function () {
+		return 0 == mysql_next_result(this.connection);
+	};
+	useNextResult = function () {
+		if( 0 != mysql_next_result(this.connection) ) return;
+		var result = mysql_use_result(this.connection)
+		return result ? recordSet(result);
+	};
+	storeNextResult = function () {
+		if( 0 != mysql_next_result(this.connection) ) return;
+		var result = mysql_store_result(this.connection)
+		return result ? recordSet(result);
+	};
+	clearResult=function(){ 
+		while(0 == mysql_next_result(this.connection)){
+			var result = mysql_use_result(this.connection)
+			if(result){
+				::MySql.mysql_free_result(result);
+			}
+		}
+	};
+	exec = function(sql,...){
+		if(...)sql = this.format(sql,...); 
+		if( mysql_real_query(this.connection, sql,#sql) == 0 ){
+			return {
+				affectedRows = mysql_affected_rows(owner.mysqlDb);
+				insertId  = mysql_insert_id(this.connection);
+			};;
+		}
+		return null,mysql_error(mysqlDb);
+	};
+	query = function (sql,...) {
+		if(...)sql = this.format(sql,...); 
+		
+		if (mysql_real_query(this.connection, sql,#sql) == 0) {
+			var res =  mysql_store_result(this.connection);
+			if( !res ){
+				if(mysql_field_count(this.connection) == 0){
+					return {
+						affectedRows = mysql_affected_rows(owner.mysqlDb);
+						insertId  = mysql_insert_id(this.connection);
+					};
+				}
+				return null,mysql_error(mysqlDb);
+			}
+			return recordSet(res);
+		} 
+		else {
+			return null,mysql_error(mysqlDb);
+		}
+	};
+	stepQuery = function(sql,...){
+		if(...)sql = this.format(sql,...); 
+		
+		if (mysql_real_query(this.connection, sql,#sql) == 0) { 
+			var res =  mysql_use_result(this.connection);
+			if( !res ){ 
+				if(mysql_field_count(this.connection) == 0){
+					return; //EXEC
+				}
+				return null,mysql_error(mysqlDb);
+			}
+			res = recordSet( res );
+			var row = res.fetchObject();
+			res.free();
+			
+			this.clearResult();
+			return row;
+		}
+		else {
+			return null,mysql_error(mysqlDb);
+		}
+	};
+	each = function(sql,...){
+		if(...)sql = this.format(sql,...); 
+		
+		if (mysql_real_query(this.connection, sql,#sql) == 0) { 
+			var res =  mysql_use_result(this.connection);
+			if( !res ){ 
+				if(mysql_field_count(this.connection) == 0){
+					return; //EXEC
+				}
+				return null,mysql_error(mysqlDb);
+			}
+			res = recordSet( res );
+			return res.each(),function(){
+				res.free();
+				this.clearResult();
+			} 
+		}
+		else {
+			return null,mysql_error(mysqlDb);
+		}
+	};
+	getTable = function(sql,...){
+		if(...)sql = this.format(sql,...); 
+		if (mysql_real_query(this.connection, sql,#sql) == 0) { 
+			var res =  mysql_use_result(this.connection);
+			if( !res ){ 
+				if(mysql_field_count(this.connection) == 0){
+					return {
+						affectedRows = mysql_affected_rows(owner.mysqlDb);
+						insertId  = mysql_insert_id(this.connection);
+					};
+				}
+				return null,mysql_error(mysqlDb);
+			}
+			res = recordSet( res );
+			var tab = res.getTable();
+			res.free();
+			
+			this.clearResult();
+			return tab;
+		}
+		else {
+			return null,mysql_error(mysqlDb);
+		}
+	};
+	escapeId = function(id){
+		if(type(id)==="table"){
+			if(#id){
+				var ret = {}
+				for(i=1;#id;1){
+					..table.push(ret,this.escapeId(id[i])); 
+				}
+				return ..string.join(ret,",");  
+			}
+			else {
+				var ret = {}
+				for(k,v in id){
+					if(type(v)!="table")
+						..table.push(ret,escapeId(k) + " = " + this.escape(v));
+					else
+						..table.push(ret,escapeId(k) + " IN " + this.escape(v,true));
+				} 
+				return ..string.join(ret," AND ");
+			}
+		}
+		
+		id = ..string.replace(tostring(id),"\`", '``');
+		return '`' + ..string.replace(id,"\.", '`.`')+ '`' 
+	};
+	escapeString = function (str) {
+		if(!this.connection) error("必须连接到MYSQL服务端才能调用escapeString()函数",2)
+		if(!#str) return str;
+		var re, str = mysql_real_escape_string(this.connection, #str*2 + 1, str, #str);
+		if( re > 0 )return str;
+	}; 
+	escape = function(v,nested){
+		var t  = type(v);	
+		
+		if( t=="string"){
+			return ..string.concat("'", this.escapeString(v), "'");
+		}  
+		elseif( t = "number" ){
+			return tostring(v,10,'.'#);
+		}
+		elseif( ( t = "table" ) ) {
+			if(..time.istime(v)){
+				var f = v.format;
+				v.format = "%Y-%m-%d %H:%M:%S";
+				var ret  = "'" +  tostring(v) + "'";
+				v.format = f;
+				return ret;	
+			}
+			elseif(#v){
+				var ret = {}
+				for(i=1;#v;1){
+					..table.push(ret,this.escape(v[i],true)); 
+				}
+				ret = ..string.join(ret,",");
+				if(nested) ret = "(" + ret + ")";
+				return ret;
+			} 
+			elseif( v@[["_toSqlString"]] ){
+				return invoke(v@[["_toSqlString"]],v,'mysql')
+			}
+			else {
+				var ret = {}
+				for(k,vv in v){
+					..table.push(ret,this.escapeId(k) + " = " + this.escape(vv));
+				} 
+				return ..string.join(ret,",");
+			}
+		} 
+		elseif( t=='buffer'){
+			return ..string.concat("X'",..string.hex(v,""), "'");
+		}
+		return ..string.replace(tostring(v),"\p","");
+	};
+	format = function(sql,...) { 
+		if( type( ... ) == "table" ){
+			var param = ...;
+			if(#param){
+				var i = 0;
+				sql = ..string.replace(sql,"\?\?*",
+					function(name) {
+						i++;
+						if( name == "?" ) return this.escape(param[i]);
+						else return this.escapeId(param[i])
+					}
+				);
+			}
+				
+			return ( ..string.replace(sql,"\@(<:+>|<\w+>)",
+				lambda(name) this.escape(param[name])
+			) ); 	 
+		}
+		return ..string.format(sql,...);
+	}
+	beginTrans = function(){
+		return !mysql_autocommit(this.connection, false);//SQL("START TRANSACTION")
+	};
+	commitTrans = function(){
+		if( mysql_commit(this.connection) ){
+			return null, mysql_error(mysqlDb);;
+		}
+		return !mysql_autocommit(this.connection, true);
+	};
+	rollbackTrans = function () {
+		return !mysql_rollback(this.connection);
+	};
+	getInfo = function () {
+		return mysql_info(this.connection);
+	};
+	getClientVersion = function () {
+		return mysql_get_client_version();
+	}; 
+	getServerVersion = function () {
+		return mysql_get_server_version(mysqlDb);
+	};
+	stat = function () {
+		return mysql_stat(this.connection);
+	};
+	debug = function (message) {
+		mysql_debug(message);
+	};
+	dumpDebugInfo = function () {
+		return 0 == mysql_dump_debug_info(mysqlDb);
+	};
+	getSqlstate = function () {
+		return 0 == mysql_sqlstate(mysqlDb);
+	}; 
+	sslSet = function (key,cert,ca,capath,cipher) {
+		return 0 == mysql_ssl_set(mysqlDb,key,cert,ca,capath,cipher);//任何未使用的SSL参数，可为其给定NULL
+	};
+	@_metaProperty;
+}
+
+::MySql  = ..raw.loadDll($"~/lib/mysql/client/.res/libmariadb.dll","mysql.client.libmariadb.dll");
+
+namespace client { 
+
+	begin
+		import ..thread.shareHandle;
+		
+		var mysql_thread_init = ::MySql.api("mysql_thread_init", "int()"); 
+		var mysql_server_init = ::MySql.api("mysql_server_init", "int(INT argc,pointer argv,pointer groups)"); 
+		
+		..thread.shareHandle.create("mysql_embed_server{BB6E2DA3-9EC2-495F-978C-4C91151897E4}",mysql_server_init,0);
+		mysql_thread_init();
+		
+		..table.add_gc(self,function(){
+		
+			var mysql_thread_end = ::MySql.api("mysql_thread_end", "void()");  
+			var mysql_server_end = ::MySql.api("mysql_server_end", "void()"); 
+			 
+			mysql_thread_end();
+			..thread.shareHandle.delete("mysql_embed_server{BB6E2DA3-9EC2-495F-978C-4C91151897E4}",mysql_server_end);
+		});
+	end;
+	 
+	_metaProperty = ..util.metaProperty(
+	
+		charset = {
+			_set = function(value){ 
+				if( 0 != mysql_set_character_set(owner.connection,value) )
+					error( owner.lasterr() ,2);
+					
+				owner.defaultCharset = value;
+			}
+			_get = function(){
+				return mysql_character_set_name(owner.connection));
+			} 	
+		}; 
+		
+		errno = {
+			_get = function () {
+				return mysql_errno(owner.mysqlDb);
+			}; 
+		};
+		
+		warningCount = {
+			_get = function () {
+				return mysql_warning_count(owner.mysqlDb);
+			}; 
+		}; 
+	)
+	
+	mysql_init = ::MySql.api("mysql_init", "pointer(pointer m)");
+	mysql_close = ::MySql.api("mysql_close", "void(POINTER m)");
+	mysql_shutdown = ::MySql.api("mysql_shutdown", "int(POINTER m,int lev)");
+	mysql_refresh = ::MySql.api("mysql_refresh", "int(POINTER m,INT opt)");
+	mysql_thread_id = ::MySql.api("mysql_thread_id", "INT(POINTER m)");
+	mysql_kill = ::MySql.api("mysql_kill", "int(POINTER m, INT pid)");
+	mysql_ping = ::MySql.api("mysql_ping", "int(POINTER m)");
+	mysql_options = ::MySql.api("mysql_options", "int(POINTER m,int name,struct v)");
+	mysql_character_set_name = ::MySql.api("mysql_character_set_name", "str(POINTER m)");
+	mysql_set_character_set = ::MySql.api("mysql_set_character_set", "int(POINTER m,STRING charset)");
+	mysql_ssl_set = ::MySql.api("mysql_ssl_set", "int(POINTER m, STRING key, STRING cert, STRING ca, STRING capath, STRING cipher)"); 
+	mysql_change_user = ::MySql.api("mysql_change_user", "int(POINTER m,str uid,str pwd,str db)");
+	mysql_real_connect = ::MySql.api("mysql_real_connect", "pointer(POINTER m,str host, string uid,str pwd,string db, INT port,string socket,INT client_flag)");
+	mysql_select_db = ::MySql.api("mysql_select_db", "int(POINTER m,str db)"); 
+	mysql_real_escape_string = ::MySql.api("mysql_real_escape_string", "INT(POINTER m,str&to,string from,INT len)");
+	mysql_real_query = ::MySql.api("mysql_real_query", "int(POINTER m,STRING sql,INT len)");
+	mysql_field_count = ::MySql.api("mysql_field_count", "INT(POINTER m)");
+	mysql_affected_rows = ::MySql.api("mysql_affected_rows", "INT(POINTER m)");
+	mysql_insert_id = ::MySql.api("mysql_insert_id", "INT(POINTER m)");
+	mysql_store_result = ::MySql.api("mysql_store_result", "pointer(POINTER m)");
+	mysql_use_result = ::MySql.api("mysql_use_result", "pointer(POINTER m)");
+	mysql_more_results = ::MySql.api("mysql_more_results", "bool(POINTER m)");
+	mysql_next_result = ::MySql.api("mysql_next_result", "int(POINTER m)");
+	mysql_autocommit = ::MySql.api("mysql_autocommit", "bool(POINTER m,bool mode)");
+	mysql_commit = ::MySql.api("mysql_commit", "int(POINTER m)");
+	mysql_rollback = ::MySql.api("mysql_rollback", "int(POINTER m)"); 
+	mysql_errno = ::MySql.api("mysql_errno", "INT(POINTER m)");
+	mysql_error = ::MySql.api("mysql_error", "string(POINTER m)");
+	mysql_sqlstate = ::MySql.api("mysql_sqlstate", "string(POINTER m)");
+	mysql_warning_count = ::MySql.api("mysql_warning_count", "INT(POINTER m)");
+	mysql_info = ::MySql.api("mysql_info", "string(POINTER m)");
+	mysql_get_client_version = ::MySql.api("mysql_get_client_version", "INT()"); 
+	mysql_get_server_version = ::MySql.api("mysql_get_server_version", "INT(POINTER m)");
+	mysql_stat = ::MySql.api("mysql_stat", "string(POINTER m)");
+	mysql_debug = ::MySql.api("mysql_debug", "void(string debug)");
+	mysql_dump_debug_info = ::MySql.api("mysql_dump_debug_info", "int(POINTER m)");
+} 
+
+class client.recordSet {
+
+	ctor (res) {
+		this.result = res; 
+		if (!this[["result"]]) {
+			return false;
+		}
+		
+		var raw_tostring = ..raw.tostring;
+		var raw_convert = ..raw.convert;
+		var raw_toarray = ..raw.toarray;
+		
+		this.fieldGetters = {}
+		this.fetchFieldTypes = function () { 
+			if( this.fields ) return this.fields;
+			
+			var p = mysql_fetch_fields(res);
+			if (p) {
+				var ft;
+				var ret = {};
+				for (i = 1; this.fieldCount ) { 
+					ret[i] = raw_convert(p, MYSQL_FIELD() ); 
+					this.fieldGetters[i] = findFieldGetter( ret[i].field_type,ret[i].flag  ); 
+					p = topointer(p,84/* ..raw.sizeof(MYSQL_FIELD() )*/ );
+				}
+				this.fields = ret;
+				return ret;
+			} 
+		}
+		this.fieldCount = mysql_num_fields( res );  
+		this.fieldTypes = this.fetchFieldTypes();
+		
+		..table.add_gc(this,"free"); 
+	};
+	free = function () {
+		if (this[["result"]]) {
+			mysql_free_result(res);
+			this[["result"]] = null;
+			res = null;
+		}
+	};
+	numFields = function () {
+		return mysql_num_fields(res)
+	} 
+	numRows = function () {
+       return  mysql_num_rows(res);
+    }
+    rowTell = function (offset) {
+		return mysql_row_tell(res,offset);
+	};
+	rowSeek = function (offset) {
+		return mysql_row_seek(res,offset);
+	};
+	dataSeek = function (offset) {
+		return mysql_data_seek(res, offset);
+	};
+	fetchObject = function () {
+		var p =  mysql_fetch_row(res);
+		var pl = mysql_fetch_lengths(res);
+		var fieldCount = this.fieldCount;
+		var fieldTypes = this.fieldTypes;
+		var fieldGetters = this.fieldGetters;
+		var fieldNames = owner.getColumns();
+		
+		if ( p  && pl ) {
+			var data =  raw_convert(p, raw_toarray( fieldCount,"pointer","fields" ) ).fields; 
+			var dataSize = raw_convert(pl,  raw_toarray( fieldCount,"INT","fields" ) ).fields; 
+			var resultObject = {};
+			for(i=1;fieldCount;1){
+				if( !data[i] ) continue;
+				if( dataSize[i]==0 ) { resultObject[fieldNames[i]] = ""; continue ;} 
+				resultObject[fieldNames[i]] = fieldGetters[i]( data[i],1,dataSize[i] );
+			}
+			return resultObject;
+		}	
+	};
+	fetchRow = function () {
+		var p =  mysql_fetch_row(res);
+		var pl = mysql_fetch_lengths(res);
+		var fieldCount = this.fieldCount;
+		var fieldTypes = this.fieldTypes;
+		var fieldGetters = this.fieldGetters;
+		
+		if ( p  && pl ) {
+			var data =  raw_convert(p, raw_toarray( fieldCount,"pointer","fields" ) ).fields; 
+			var dataSize = raw_convert(pl,  raw_toarray( fieldCount,"INT","fields" ) ).fields; 
+			for(i=1;fieldCount;1){
+				if( !data[i] ) continue;
+				if( dataSize[i]==0 ) { data[i] = ""; continue ;}
+				data[i] = fieldGetters[i]( data[i],1,dataSize[i] );
+			}
+			return data;
+		}	
+	};
+	getColumns = function(){
+		var fieldCount = this.fieldCount;
+		var fieldTypes = this.fieldTypes;
+		
+		var names = {};
+		for(i=1;fieldCount){ 
+			names[i] = fieldTypes[i].name;
+		}
+		return names;
+	};
+	getTable = function () {
+		
+		var fieldCount = this.fieldCount;
+		var fieldTypes = this.fieldTypes;
+		var fieldGetters = this.fieldGetters;
+		var fieldNames = owner.getColumns();
+		var tab = {fields = fieldNames};
+		
+		var p =  mysql_fetch_row(res);
+		var pl = mysql_fetch_lengths(res);
+		var push = ..table.push;
+		
+		while ( p  && pl ) {
+			var data =  raw_convert(p, raw_toarray( fieldCount,"pointer","fields" ) ).fields; 
+			var dataSize = raw_convert(pl,  raw_toarray( fieldCount,"INT","fields" ) ).fields; 
+			var row = {};
+			for(i=1;fieldCount;1){
+				if( !data[i] ) continue;
+				if( dataSize[i]==0 ) { row[fieldNames[i]] = ""; continue ;} 
+				row[fieldNames[i]] = fieldGetters[i]( data[i],1,dataSize[i] );;
+			}
+			push(tab,row);
+			
+			p =  mysql_fetch_row(res);
+			pl = mysql_fetch_lengths(res);
+		}
+		
+		return tab;	
+	}; 
+	each = function(){
+		var data_c = raw_toarray( this.fieldCount,"pointer","fields" );
+		var dataSize_c = raw_toarray( this.fieldCount,"INT","fields" );
+		var data,dataSize; 
+		 
+		var unpack = ..table.unpack; 
+		var fieldCount = this.fieldCount;
+		var fieldTypes = this.fieldTypes;
+		var fieldGetters = this.fieldGetters; 
+		
+		return function(){
+			var p =  mysql_fetch_row(res);  
+			var pl = mysql_fetch_lengths(res)
+			if (p && pl ) { 
+				data = raw_convert(p, data_c ).fields;
+				dataSize = raw_convert(pl, dataSize_c ).fields; 
+
+				for(i=1;fieldCount;1){
+					if(!data[i]) continue;
+					if( dataSize[i]==0 ) { data[i] = ""; continue ;}
+					data[i] = fieldGetters[i]( data[i],1,dataSize[i] );
+				}
+				return unpack( data,1, fieldCount); 
+			}	
+		} 
+	};
+	fetchFieldLengths = function(){
+		var dataSize_c = raw_toarray( this.fieldCount,"INT","fields" );
+		var pl = mysql_fetch_lengths(res);
+		if( pl ) return raw_convert(pl, dataSize_c ).fields; 
+	};
+	eof = function(){
+		return mysql_eof(res);
+	};
+} 
+
+namespace client.recordSet {
+
+	mysql_num_fields = ::MySql.api("mysql_num_fields", "INT(POINTER res)");
+	mysql_fetch_fields = ::MySql.api("mysql_fetch_fields", "pointer(POINTER res)"); 
+	mysql_row_tell = ::MySql.api("mysql_row_tell", "INT(POINTER res)"); 
+	mysql_num_rows = ::MySql.api("mysql_num_rows", "INT(POINTER res)");
+	mysql_data_seek = ::MySql.api("mysql_data_seek", "void(POINTER result,INT offset)");
+	mysql_row_seek = ::MySql.api("mysql_row_seek", "INT(POINTER result,INT offset)"); 
+	mysql_fetch_row = ::MySql.api("mysql_fetch_row", "pointer(POINTER res)");
+	mysql_fetch_lengths = ::MySql.api("mysql_fetch_lengths", "pointer(POINTER res)"); 
+	mysql_eof = ::MySql.api("mysql_eof", "int(POINTER res)"); 
+	mysql_free_result = ::MySql.api("mysql_free_result", "void(POINTER res)");
+
+	class MYSQL_FIELD {
+		string name;
+		string org_name;
+		string table;
+		string org_table;
+		string db;
+		string catalog;
+		string def_value;
+		INT length;
+		INT max_length;
+		INT name_length;
+		INT org_name_length;
+		INT table_length;
+		INT org_table_length;
+		INT db_length;
+		INT catalog_length;
+		INT def_length;
+		INT flag;
+		INT decimals;
+		INT charsetnr;
+		int field_type;
+		pointer extension;
+	}
+	
+	var raw_tostring = ..raw.tostring;
+	var fieldValueToNumber = function(p,b,e){
+		return tonumber( raw_tostring( p,b,e ),,,'.'# )
+	}
+	
+	var math_size64 = ..math.size64;
+	var fieldValueToSize64 = function(p,b,e){
+		return math_size64( raw_tostring( p,b,e ) )
+	} 
+	
+	var raw_buffer = ..raw.buffer; 
+	var fieldValueToBuffer = function(p,b,e){
+		return raw_buffer(e-b+1,p);
+	} 
+	 
+	findFieldGetter = function(ft,flag){
+		if( ft <= 5/*MYSQL_TYPE_DOUBLE*/  || ft = 9/*MYSQL_TYPE_INT24*/ 
+			|| ft = 16 /*MYSQL_TYPE_BIT*/
+			||ft = 246 /*MYSQL_TYPE_DECIMAL*/){ 
+			return fieldValueToNumber;
+		}
+		elseif( ft = 8/*MYSQL_TYPE_LONGLONG*/ ){ 
+			if(flag & 32/*_UNSIGNED_FLAG*/ ){
+				return fieldValueToSize64;
+			}
+			return fieldValueToNumber;
+		}
+		elseif(  (flag&128/*BINARY_FLAG*/) 
+			&& (ft >= 249/*MYSQL_TYPE_TINY_BLOB*/) 
+			&& (ft <= 252/*MYSQL_TYPE_BLOB*/ ) ){
+			return fieldValueToBuffer;
+		} 
+			
+		return raw_tostring;		
+	} 
+}
+
+/**intellisense(mysql)
+client = mysql客户端
+client( 连接参数表 ） = @.client(\n	server = "localhost";\n	database = "数据库名";\n	uid = "用户名";\n	pwd = "密码";\n);
+client() = !mysql_client.
+end intellisense**/
+
+/**intellisense(!mysql_client)
+connection = 数据库连接句柄\n不要修改该属性
+mysqlDb = 数据库对象句柄\n不要修改该属性
+warningCount = 返回执行前一个SQL语句期间生成的告警数目
+errno = 返回错误代码
+lasterr() = 返回错误信息,错误代码
+charset = 连接的默认字符集，默认为UTF8,\n不建议更改此值
+setOption(.(选项,值) = 可用于设置额外的连接选项，并影响连接的行为,\n值可以是字符串,整数,布尔值或结构体
+sslSet(.(key文件路径名,证书文件路径,授权文件路径,包含受信任CA证书目录,允许密码的列表) = 该函数必须在调用open函数打开连接前调用
+open( 连接参数表 ） = @.open(\n	server = ".";\n	database = "数据库名";\n	uid = "用户名";\n	pwd = "密码";\n);
+close() = 关闭服务器连接
+kill(__) = 杀死线程,参数指定线程ID
+ping() = 检查与服务器的连接是否工作，如有必要重新连接
+refresh() = 刷新表或高速缓冲或复位复制服务器信息,\n用户必须具有RELOAD权限
+shutdown() = 关闭SQL服务器
+dropDb(.("数据库名") = 如果存在该数据库则删除
+createDb(.("数据库名") = 如果数据库不存在则创建数据库,\n如果成功创建数据库则调用selectDb函数选择数据库\n所有操作成功返回true
+selectDb(.("数据库名") = 设置当前默认数据库,成功返回true,\n类似sql中的 use 数据库名
+listDbs(.("查找数据库名") = 查找数据库并返回记录集\n数据库名允许使用SQL通配符%或下划线\n不指定数据库名则返回所有数据库
+listTables(.("查找表名") = 查找表名并返回记录集\n表名允许使用SQL通配符%或下划线\n不指定表名则返回所有表
+listFields(.("表名","查找字段") = 查找字段并返回记录集\n字段名允许使用SQL通配符%或下划线\n不指定字段名则返回全部字段
+listDbs() = !mysql_recordset.
+listTables() = !mysql_recordset.
+listFields() = !mysql_recordset.
+listProcesses() = 返回描述当前服务器线程的结果集\n!mysql_recordset.
+changeUser(.("用户名","密码","数据库名") = 修改登录用户
+getAffectedRows() = sql语句执行后影响的记录行数
+lastInsertId() = 最后插入记录的ID
+clearResult() = 清空查询返回值\n如果下次查询报错"Commands out of sync; you can't run this command now"\n则应在查询前调用此函数
+useResult() = 获取返回值,在SQL服务器上缓存记录集\n!mysql_recordset.
+storeResult() = 获取返回值,在客户端缓存记录集\n!mysql_recordset.
+moreResults() = 是否有其他返回值,\n使用useNextResult或storeNextResult返回下一个返回值
+useNextResult() = 如果有其他返回值,获取下一个返回值\n在SQL服务器上缓存记录集\n!mysql_recordset.
+storeNextResult() = 如果有其他返回值,获取下一个返回值\n在客户端缓存记录集\n!mysql_recordset.
+nextResult() = 如果还有下一个返回值,返回真
+escape(__) = 转义参数指定值为用于 MySQL 查询语句的参数化值
+escapeId(__) = 如果传入参数是文本则转换为 SQL 标识符,\n返回文本首尾会添加反引号,\n\n如果传入参数是表, 则格式化为 SQL 键值对并以 AND 为分隔符,\n如果表中的值为数组,则格式化为 IN 语句
+escapeString(__) = 转义参数指定值为用于 MySQL 查询语句参数化字符串\n返回文本不会在首尾添加单引号
+format(.(SQL语句,格式化参数->->->) = 格式化 SQL 查询语句。\n所有需要格式化 SQL 语句的函数调用此函数格式化 SQL语句,\n如果格式化参数不是表则调用 string.format 格式化,否则按以下规则格式化:\n\nSQL语句中?或??占位符使用表的数组元素格式化,\n@字符开始的命名参数使用表的名值对元素格式化,\n其中??格式化为标识符,其他占位符格式化为参数值。\n\n字符串转为SQL安全转义字符串,buffer转为X'4D7953514C'格式,\n数组则自动展开为列表,例如{'a', 'b'}格式化为'a', 'b'\n嵌套数组则格式化为分组列表,例如{{'a', 'b'}, {'c', 'd'}} 格式化为 ('a', 'b'), ('c', 'd')\n非数组的命名表，则格式化为 SQL 键值对,默认以逗号为分隔符,\n??占位符格式化 SQL 键值对则以 AND 为分隔符,并将数组值转换为IN语句
+
+query( =  = 执行SQL并调用 storeResult 函数返回值,\n无返回记录的SQL执行成功返回包含字段 affectedRows（影响记录行数）,insertId（最后插入ID）的表对象,\n如果SQL查询出错返回空值以及错误信息
+query(.("SELECT * FROM `表名`",格式化参数) = 执行参数 @1 指定的SQL语句, \n可选指定格式化参数,格式化规则请参考 format 函数说明,\n格式化参数可以是一个表参数,用于替换SQL中占位符指定的参数,\n如果参数表不是数组,SQL语句用@前缀标明命名参数,\n如果格式化参数是数组,请使用?或??占位符
+query() = !mysql_recordset.
+stepQuery(.("SELECT * FROM `表名`",格式化参数) = 用法与query函数类似,\n但直接返回首行数据库并关闭结果集\n格式化参数规则请参考 format 函数说明,\n格式化参数也可以是一个表参数,用于替换SQL中占位符指定的参数,\n如果参数表不是数组,SQL语句用@前缀标明命名参数,\n如果格式化参数是数组,请使用?或??占位符
+getTable(.("SELECT * FROM `表名`",格式化参数) = 执行SQL返回包含行记录组成的table数组对象,\n每行是由列名、值组成的table表对象\n格式化参数规则请参考 format 函数说明,\n格式化参数也可以是一个表参数,用于替换SQL中占位符指定的参数,\n如果参数表不是数组,SQL语句用@前缀标明命名参数,\n如果格式化参数是数组,请使用?或??占位符
+each() = @for 字段名,,__/*注意首字段必须为非空值*/字段名2 in ??.each("SELECT * FROM 'MYTABLE'"){\n\n	\n}
+escapeString() = 将字符串编码为合法的转义SQL字符串,\n格式化命名参数时,字符串会自动调用该函数转义为安全的字符串
+beginTrans() = 开始事务
+commitTrans() = 提交事务
+rollbackTrans() = 回滚事务
+getInfo（) = 返回最近执行查询信息的文本描述
+getClientVersion() = 客户端版本 
+getServerVersion() = 服务端版本
+stat() = 以字符串形式返回服务器状态
+getProtoInfo() = 返回当前连接所使用的协议版本
+characterSetName() = 当前连接的默认字符集
+getThreadId() = 返回连接的线程ID，可传入kill函数以杀死线程
+debug(.(调试信息) = 用给定的字符串执行DBUG_PUSH
+dumpDebugInfo() = 让服务器将调试信息写入日志 
+getSqlstate() = 返回关于上一个错误的SQLSTATE错误代码
+end intellisense**/
+
+/**intellisense(!mysql_recordset)
+free() = 释放记录集,\n释放后不能再调用其他使用该记录集的函数
+dataSeek(.(行号) = 在查询结果集中寻找任意行。偏移值为行号，范围从0到numRows-1
+rowSeek(.(行偏移量) = 将行光标置于查询结果集中的任意行,并返回当前行号\n偏移值相对于rowTellb函数返回的当前行号\n该函数要求在客户端包含全部结果,即使用storeResult创建结果集
+rowTell() = 返回当前行号\n该函数要求在客户端包含全部结果,即使用storeResult创建结果集
+numRows() = 返回行数\n使用useResult创建的结果集必须在调用fetchRow获取所有行后才能调用该函数
+fetchFieldTypes() = 返回所有字段类型描述
+numFields() = 返回字段总数
+eof() = 是否已到结果集尾部
+fetchFieldLengths() = 返回当前行所有数据列的的长度数组\n仅对当前行有效
+fetchObject() = stepQuery 函数的别名,\n返回下一行记录的以字段名为键的关联数组
+stepQuery() = fetchObject 函数的别名,\n返回下一行记录的以字段名为键的关联数组
+fetchRow() = 返回下一行记录列数组
+getColumns() = 返回所有列名数组
+getTable() = 返回包含行记录组成的table数组对象,\n每行是由列名、值组成的table表对象
+each() = @for 字段名,__/*注意首字段必须为非空值*/字段名2 in ??.each(){\n\n	\n}
+affectedRows = 影响记录行数,\n执行无返回数据的 SQL 此字段才会有值
+insertId = 最后插入 ID,\n执行无返回数据的 SQL 此字段才会有值
+end intellisense**/ 
+
+ /**intellisense()
+ ::MySql = !dllModule.
+_MYSQL_OPT_CONNECT_TIMEOUT=@0/*_MYSQL_OPT_CONNECT_TIMEOUT*/
+_MYSQL_OPT_COMPRESS=@1/*_MYSQL_OPT_COMPRESS*/
+_MYSQL_INIT_COMMAND=@2/*_MYSQL_INIT_COMMAND*/
+_MYSQL_READ_DEFAULT_FILE=@3/*_MYSQL_READ_DEFAULT_FILE*/
+_MYSQL_READ_DEFAULT_GROUP=@4/*_MYSQL_READ_DEFAULT_GROUP*/
+_MYSQL_SET_CHARSET_DIR=@5/*_MYSQL_SET_CHARSET_DIR*/
+_MYSQL_OPT_NAMED_PIPE=@6/*_MYSQL_OPT_NAMED_PIPE*/
+_MYSQL_SET_CHARSET_NAME=@7/*_MYSQL_SET_CHARSET_NAME*/
+_MYSQL_OPT_LOCAL_INFILE=@8/*_MYSQL_OPT_LOCAL_INFILE*/
+_MYSQL_OPT_PROTOCOL=@9/*_MYSQL_OPT_PROTOCOL*/
+_MYSQL_SHARED_MEMORY_BASE_NAME=@0xA/*_MYSQL_SHARED_MEMORY_BASE_NAME*/
+_MYSQL_OPT_READ_TIMEOUT=@0xB/*_MYSQL_OPT_READ_TIMEOUT*/
+_MYSQL_OPT_WRITE_TIMEOUT=@0xC/*_MYSQL_OPT_WRITE_TIMEOUT*/
+_MYSQL_OPT_USE_RESULT=@0xD/*_MYSQL_OPT_USE_RESULT*/
+_MYSQL_OPT_USE_REMOTE_CONNECTION=@0xE/*_MYSQL_OPT_USE_REMOTE_CONNECTION*/
+_MYSQL_OPT_USE_EMBEDDED_CONNECTION=@0xF/*_MYSQL_OPT_USE_EMBEDDED_CONNECTION*/
+_MYSQL_OPT_GUESS_CONNECTION=@0x10/*_MYSQL_OPT_GUESS_CONNECTION*/
+_MYSQL_SET_CLIENT_IP=@0x11/*_MYSQL_SET_CLIENT_IP*/
+_MYSQL_SECURE_AUTH=@0x12/*_MYSQL_SECURE_AUTH*/
+_MYSQL_REPORT_DATA_TRUNCATION=@0x13/*_MYSQL_REPORT_DATA_TRUNCATION*/
+_MYSQL_OPT_RECONNECT=@0x14/*_MYSQL_OPT_RECONNECT*/
+_MYSQL_OPT_SSL_VERIFY_SERVER_CERT=@0x15/*_MYSQL_OPT_SSL_VERIFY_SERVER_CERT*/
+_MYSQL_PLUGIN_DIR=@0x16/*_MYSQL_PLUGIN_DIR*/
+_MYSQL_DEFAULT_AUTH=@0x17/*_MYSQL_DEFAULT_AUTH*/
+_MYSQL_OPT_BIND=@0x18/*_MYSQL_OPT_BIND*/
+_MYSQL_OPT_SSL_KEY=@0x19/*_MYSQL_OPT_SSL_KEY*/
+_MYSQL_OPT_SSL_CERT=@0x1A/*_MYSQL_OPT_SSL_CERT*/
+_MYSQL_OPT_SSL_CA=@0x1B/*_MYSQL_OPT_SSL_CA*/
+_MYSQL_OPT_SSL_CAPATH=@0x1C/*_MYSQL_OPT_SSL_CAPATH*/
+_MYSQL_OPT_SSL_CIPHER=@0x1D/*_MYSQL_OPT_SSL_CIPHER*/
+_MYSQL_OPT_SSL_CRL=@0x1E/*_MYSQL_OPT_SSL_CRL*/
+_MYSQL_OPT_SSL_CRLPATH=@0x1F/*_MYSQL_OPT_SSL_CRLPATH*/
+_MYSQL_OPT_CONNECT_ATTR_RESET=@0x20/*_MYSQL_OPT_CONNECT_ATTR_RESET*/
+_MYSQL_OPT_CONNECT_ATTR_ADD=@0x21/*_MYSQL_OPT_CONNECT_ATTR_ADD*/
+_MYSQL_OPT_CONNECT_ATTR_DELETE=@0x22/*_MYSQL_OPT_CONNECT_ATTR_DELETE*/
+_MYSQL_PROGRESS_CALLBACK=@0x176F/*_MYSQL_PROGRESS_CALLBACK*/
+_MYSQL_OPT_NONBLOCK=@0x1770/*_MYSQL_OPT_NONBLOCK*/
+_MYSQL_DATABASE_DRIVER=@0x1B58/*_MYSQL_DATABASE_DRIVER*/
+end intellisense**/

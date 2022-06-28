@@ -1,0 +1,18 @@
+import win.ui;
+if( ! win.loadForm("\dlg\login\login.aardio").doModal() ){
+	return;
+}
+/*DSG{{*/
+mainForm = win.form(text="${PROJECTNAME}";right=959;bottom=591)
+mainForm.add(
+custom={cls="\dlg\main\userInfo.aardio";text="custom";left=568;top=544;right=944;bottom=584;db=1;dr=1;z=1};
+tab={cls="tab";left=8;top=16;right=944;bottom=536;db=1;dl=1;dr=1;dt=1;edge=1;z=2}
+)
+/*}}*/
+
+mainForm.tab.loadForm("\dlg\main\tabs1.aardio");
+mainForm.tab.loadForm("\dlg\main\tabs2.aardio");
+mainForm.tab.loadForm("\dlg\main\tabs3.aardio");
+
+mainForm.show();
+return win.loopMessage();

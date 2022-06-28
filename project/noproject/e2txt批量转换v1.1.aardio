@@ -1,0 +1,108 @@
+import console; 
+import process;
+import fsys;
+import console; 
+import fsys.dlg;
+import fsys.path;
+import fsys.dlg.dir;
+import win;
+import debug;
+//debug.debug();
+
+
+// 含*.e的原始路径 递归遍历
+//var srcPath = "D:\Program Files (x86)\e\samples";
+// 生成目录
+//var dstPath = "E:\自带sample"
+
+
+
+
+/*
+var eFiles = {};
+fsys.enum( srcPath, "*.e",
+		function(dir, filename, fullpath, findData){ 
+			if(filename){
+			    table.push(eFiles, fullpath);
+			}
+	    },
+	true
+);
+*/
+
+// 保持目录结构 生成 {".e(file)" -> ".txt(dir)"}
+function mirrorTxt(srcPath, dstPath){
+	if not( fsys.isDir(srcPath) and  fsys.isDir(dstPath) ) {
+	    win.msgboxErr("dstPath和srcPath均为目录");
+	    return;
+	}
+	
+	var r = fsys.path.relative(dstPath, srcPath);
+	if(r) {
+	    win.msgboxErr("dstPath不能是srcPath的子目录");
+	    return;
+	}
+	
+	var targetParentDirName = fsys.getFileName(srcPath);
+	
+	// 需要语音识别的所有文件
+	var multimediaFiles = {};
+	fsys.enum( srcPath, {"*.e"},
+			function(dir, filename, fullpath, findData){ 
+				if(filename){
+			    	table.push(multimediaFiles, fullpath);
+				}
+	    	},
+		true
+	);
+	//console.dump(multimediaFiles)
+	var targetPaths = {};
+	for(i=1;#multimediaFiles;1){
+		
+		var relatePath = fsys.path.relative(multimediaFiles[i], srcPath, false);
+		//var targetPath = fsys.joinpath(dstPath, targetParentDirName, relatePath + ".代码");
+		var targetPath = fsys.joinpath(dstPath, targetParentDirName);
+		table.push(targetPaths, targetPath);
+	}
+	
+	
+	return multimediaFiles, targetPaths;
+}
+
+
+var e2txt = function(src, dstPath){
+	var exeFile = "/e2txt.exe";
+	// G:\chromedl\易代码转换html代码\易代码转换html代码.代码
+	var filename = fsys.getFileName(src);
+	var targetPath = fsys.joinpath(dstPath, filename + ".代码");
+	
+	if(io.exist(targetPath)) {
+	    return;
+	} else {
+	    fsys.createDir(targetPath, true);
+	}
+	
+	var paraString = string.format(' -mode e2t -src \"%s\" -dst \"%s\" -ns 2 -enc UTF-8 -level 9 -log', src, targetPath);
+	console.log(exeFile, paraString)
+	var r = process.executeWait(exeFile, paraString);
+	return r;
+}
+
+
+function Main(){
+	// 含*.e的原始路径 递归遍历
+	var srcPath = "D:\Program Files (x86)\e\samples";
+	// 生成目录
+	var dstPath = "E:\自带sample"
+	var multimediaFiles, targetPaths ;
+	multimediaFiles, targetPaths = mirrorTxt(srcPath, dstPath);
+	
+	for(i=1; #multimediaFiles;1){
+		e2txt(multimediaFiles[i], targetPaths[i]);
+	}
+}
+
+Main();
+
+console.pause(true);
+

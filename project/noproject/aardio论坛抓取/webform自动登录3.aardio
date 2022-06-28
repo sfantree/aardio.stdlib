@@ -1,0 +1,170 @@
+import web.form;
+import inet.http;
+import web.form.util;
+import sqlite;
+import string.base64;
+/*DSG{{*/
+mainForm = ..win.form( right=1120;scroll=1;bottom=613;max=false;text="快速领取淘金币 - 由aardio语言编写";parent=...)
+mainForm.add(
+listview={ bottom=441;bgcolor=16777215;vscroll=1;right=1107;left=933;fullRow=1;top=8;z=12;gridLines=1;edge=1;cls="listview" };
+static6={ bottom=543;right=984;left=945;top=518;z=15;transparent=1;text="密码";cls="static" };
+userId={ z=2;bottom=590;right=173;left=95;top=568;tabstop=1;edge=1;cls="edit" };
+button3={ bottom=594;right=591;left=526;top=566;z=10;tabstop=1;text="换验证码";cls="button" };
+static5={ bottom=589;color=0;right=83;left=24;top=570;transparent=1;align="right";text="淘宝ID：";z=8;cls="static" };
+static3={ bottom=592;align="right";right=672;left=614;top=571;z=11;text="验证码：";transparent=1;cls="static" };
+edit3={ z=5;bottom=593;right=771;left=679;top=565;tabstop=1;edge=1;cls="edit" };
+button={ bottom=593;text="登录";left=343;top=566;z=6;tabstop=1;right=403;cls="button" };
+picturebox={ notify=1;color=0;right=512;left=417;top=561;font=LOGFONT( h=-16 );z=4;bottom=598;border=1;cls="picturebox" };
+groupbox={ bottom=593;text="添加账号密码";left=934;top=471;z=13;right=1106;edge=1;cls="groupbox" };
+button2={ bottom=591;text="领取淘金币";left=788;top=563;z=7;tabstop=1;right=880;cls="button" };
+delete={ bottom=468;text="删除选中账号";left=991;top=445;z=19;right=1105;cls="button" };
+add_password={ bottom=537;right=1083;left=993;top=518;z=17;tabstop=1;password=1;edge=1;cls="edit" };
+static={ z=1;notify=1;right=926;left=17;top=10;transparent=1;bottom=520;cls="static" };
+static2={ bottom=597;align="right";right=231;left=183;top=572;transparent=1;text="密码：";z=9;cls="static" };
+password={ bottom=591;right=330;left=239;top=567;tabstop=1;z=3;password=1;edge=1;cls="edit" };
+static7={ bottom=561;right=879;left=36;top=533;transparent=1;z=20;text="注意：添加账号、密码到右边列表后，双击列表中的账号可以自动添加到淘宝ID、密码登录框";cls="static" };
+add_userID={ z=16;bottom=509;right=1084;left=993;top=487;tabstop=1;edge=1;cls="edit" };
+addID={ bottom=578;right=1083;left=998;top=545;z=18;tabstop=1;text="添加";cls="button" };
+static4={ bottom=512;right=993;left=946;top=492;transparent=1;z=14;text="账号";cls="static" }
+)
+/*}}*/
+
+if(!io.exist("\tjb.db")){
+        sqlConn  = sqlite("\tjb.db");
+        sqlConn.exec("CREATE TABLE tjb( ID INTEGER PRIMARY KEY AUTOINCREMENT,  userId TEXT, password TEXT,UNIQUE (ID) );")
+}else{
+        sqlConn  = sqlite("\tjb.db");
+}
+
+function refresh(){
+        var listID = sqlConn.getTable("SELECT * FROM tjb");
+        mainForm.listview.clear()
+        for(k,v in listID){
+                mainForm.listview.addItem(
+                {
+                tostring(v['ID']);
+                tostring(v['userId']);
+                tostring(v['password']);
+                }
+            )
+        }
+}
+
+mainForm.addID.oncommand = function(id,event){
+        var userId = mainForm.add_userID.text;
+        var password = string.base64.encode(mainForm.add_password.text);
+        sqlConn.exec("insert into tjb(userId,password) values('"++ userId ++"','"++ password ++"')");
+        refresh();
+}
+
+mainForm.listview.setExtended(0x4/*_LVS_EX_CHECKBOXES*/);
+mainForm.listview.insertColumn("序号",45)
+mainForm.listview.insertColumn("账号",125)
+mainForm.listview.insertColumn("密码",0)
+
+mainForm.listview.onnotify = function(id,code,ptr){
+        if(code == 0xFFFFFFFD/*_NM_DBLCLK*/ && mainForm.listview.selIndex){
+                mainForm.userId.text = mainForm.listview.getItemText(mainForm.listview.selIndex,2);
+                mainForm.password.text = string.base64.decode( mainForm.listview.getItemText(mainForm.listview.selIndex,3)）;
+                mainForm.button.oncommand();
+        }       
+}
+
+mainForm.delete.oncommand = function(id,event){
+        for(i=1;mainForm.listview.count;1){        
+       if(mainForm.listview.getChecked(i)){
+       var id = mainForm.listview.getItemText(i,1)
+       sqlConn.exec("DELETE FROM tjb WHERE ID = "++id++"")
+       }
+        }
+refresh();
+win.msgbox("删除成功","系统提示");
+}
+
+var wb = web.form( mainForm.static );
+web.form.util.crossDomain();
+wb.noScriptErr=true;
+mainForm.show();
+mainForm.userId.setFocus();
+
+//回车执行命令
+mainForm.password.wndproc = function(hwnd,message,wparam,lparam){
+    if(message == 0x101/*_WM_KEYUP*/){
+       if(wparam == 0xD/*_VK_RETURN*/){
+           mainForm.button.oncommand();
+       }
+     }
+}
+mainForm.edit3.wndproc = function(hwnd,message,wparam,lparam){
+   if(message == 0x101/*_WM_KEYUP*/){
+       if(wparam == 0xD/*_VK_RETURN*/){
+           mainForm.button2.oncommand();
+       }
+    }
+}
+
+mainForm.button.oncommand = function(id,event){
+        wb.go("http://login.taobao.com/member/login.jhtml?redirectURL=http%3A%2F%2Ftaojinbi.taobao.com%2Fhome%2Fhome_new.htm")
+        wb.wait("");
+
+        var ele = wb.getEle("J_SafeLoginCheck")
+        ele.checked = false //取消安全控件登录模式
+        ele.fireEvent("onclick");
+       
+        var userId = mainForm.userId.text;
+        var password = mainForm.password.text;
+        var ele = wb.getEle("TPL_username_1");
+        ele.setAttribute("value",userId);
+        var ele = wb.getEle("TPL_password");
+        ele.setAttribute("value",password);
+        ele.form.submit();
+
+        win.delay(1000);
+        wb.wait("http://taojinbi.taobao.com/home/home_new.htm",2000)
+       
+        var ele = wb.waitQueryEles(innerHTML='@<DIV class=personal-info-pic><A href="http://jiang';tagName="DIV";className="personal-info");
+        if(ele){
+                var ele = wb.queryEles(innerHTML="@领取<SPAN class=yellow>";
+                tagName="^A$";
+                href="@http://taojinbi.taobao.com/home/home_new.htm#";
+                className="getcoin-btn J_CoinGrantBtn"
+                ).click();
+        }       
+
+        var ele = wb.queryEles(innerHTML="输入以下验证码领取当日淘金币";tagName="^P$";className="code-title");
+        if(ele){
+                var ele = wb.queryEles(tagName="IMG";className="J_CodeImg code-img");
+                var verifyCode = ele["src"];
+                mainForm.picturebox.image = inet.http().get(verifyCode,,"http://checkcode.taobao.com/");
+        }
+}
+
+mainForm.button3.oncommand = function(id,event){
+        var ele = wb.queryEles(innerHTML="换一张";
+                tagName="^A$";
+                href="@http://taojinbi.taobao.com/home/home_new.htm#";
+                className="J_CodeRefresh code-refresh";
+        ).click();
+       
+        var ele = wb.queryEles(tagName="IMG";className="J_CodeImg code-img");
+        var verifyCode = ele["src"];
+        mainForm.picturebox.image = inet.http().get(verifyCode,,"http://checkcode.taobao.com/");
+       
+        mainForm.button3.text = "再换一下";
+}
+
+mainForm.button2.oncommand = function(id,event){
+        var ele = wb.getEle("checkCode")  
+        ele.value = mainForm.edit3.text;
+        mainForm.edit3.text = "";
+       
+        var ele = wb.queryEles(
+                innerHTML="知道";
+                tagName="^A$";
+                href="@javascript:;";
+                className="know take-coin J_Confirm";
+        ).click();       
+}
+
+refresh();
+win.loopMessage();

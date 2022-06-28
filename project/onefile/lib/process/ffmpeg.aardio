@@ -1,0 +1,31 @@
+import process.popen;;
+import process.job.limitKill;
+import zlib.httpFile;
+import web.json;
+
+namespace process;
+
+class ffmpeg {
+	ctor( argv ){{
+		var path = ..io.appData( "aardio/ffmpeg/ffmpeg.exe");
+		if(!..io.exist(path)){
+			var url;
+			url = "https://hub.fastgit.org/ffbinaries/ffbinaries-prebuilt/releases/download/v4.2.1/ffmpeg-4.2.1-win-32.zip";
+			if( !..zlib.httpFile.download(url,"正在下载 ffmpeg",..io.appData("aardio/ffmpeg/down"),..io.appData("aardio/ffmpeg")) ){
+				return;
+			}	
+		}
+	    //this = ..process.popen(path,{path,"-authtoken="+(authtoken:""),"-log=stdout","-loglevel="+(logLevel:"INFO")});
+		this = ..process.popen(path,  ..table.concat({}, argv) );
+		//this.codepage = 65001;
+		this.writeClose()
+		this.assignToJobObject(..process.job.limitKill);
+		
+		return this;
+	}}; 
+	
+}
+	
+/**intellisense()
+
+end intellisense**/

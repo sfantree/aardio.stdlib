@@ -1,0 +1,13 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="miniblink - ES6检测";right=1123;bottom=570)
+winform.add()
+/*}}*/
+
+import web.blink.form; //导入miniblink支持库
+var mb = web.blink.form(winform); //创建miniblink浏览器窗口
+
+mb.go("http://ruanyf.github.io/es-checker/index.cn.html")
+
+winform.show(3/*_SW_MAXIMIZE*/) 
+win.loopMessage();

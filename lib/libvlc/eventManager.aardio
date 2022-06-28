@@ -1,0 +1,256 @@
+assert( type(libvlc) == type.class,"请直接导入libvlc" )
+var dll = libvlc._dll;
+
+import win.ui;
+import util.metaProperty;
+namespace libvlc;
+	
+class eventManager{
+	ctor(object,handle){
+		this._form  = ..win.form({});
+		this._form.messageOnly(); 
+		this.handle = handle;
+		this.object = object; 
+		this.engine = object.engine;  
+		this.__callback_userdata__ = {};
+	}; 
+	attach = function(typename){
+		var typeId = eventIds[typename];
+		var eventType = eventTypes[typename] 
+		if( ! ( typeId && eventType) ) return;
+		
+		this.detach(typename); 
+		var userdata = ..raw.malloc( { 
+			BYTE proto[128] = ..string.format("%s({%s})",typename,eventType._struct );
+			addr hwnd = this._form.hwnd  
+		} )
+		this.__callback_userdata__[typename] = userdata;
+		if( 0 == dll.libvlc_event_attach(handle,typeId,__libVclEventRouter,userdata) )
+			return true;
+	} 
+	detach = function(typename){
+		var userdata = this.__callback_userdata__[typename];
+		if( userdata ){
+			dll.libvlc_event_detach(handle,typeId,__libVclEventRouter,userdata);
+			this.__callback_userdata__[typename] = null;
+			return true; 
+		}
+	}
+	@_meta; 
+}
+
+namespace eventManager{
+	_meta = {
+		_set = function(k,v){
+			if( !eventIds[k] ){
+				owner[[k]] = v;
+				return;
+			}
+			if( type(v) == type.function ){
+				if(  owner.attach(k) ){
+					owner._form[k] = v;
+				}
+				return;
+			}
+			elseif( v === null ){
+				owner.detach(k);
+			} 
+			else {
+				error("事件必须指定为函数对象或空值",2)
+			}
+			
+		} 
+		_get = function(k){
+			if( eventIds[k] ) return owner._form[k];
+		} 
+	}
+	
+	var dll = ..raw.loadDll( "~\lib\libvlc\.res\eventRouter.dll",, "cdecl" );  
+	__libVclEventRouter = dll.api( "libVclEventRouter","void(ptr event,ptr userdata)" ); 
+ 	 
+	namespace eventIds{ 
+		mediaMetaChanged = 0 
+		mediaSubItemAdded = 1 
+		mediaDurationChanged = 2 
+		mediaParsedChanged = 3 
+		mediaFreed = 4  
+		mediaStateChanged = 5 
+		mediaSubItemTreeAdded = 6 
+		mediaPlayerMediaChanged = 0x100 
+		mediaPlayerNothingSpecial = 0x101 
+		mediaPlayerOpening = 0x102 
+		mediaPlayerBuffering = 0x103 
+		mediaPlayerPlaying = 0x104 
+		mediaPlayerPaused = 0x105 
+		mediaPlayerStopped = 0x106 
+		mediaPlayerForward = 0x107 
+		mediaPlayerBackward = 0x108 
+		mediaPlayerEndReached = 0x109 
+		mediaPlayerEncounteredError = 0x10A 
+		mediaPlayerTimeChanged = 0x10B 
+		mediaPlayerPositionChanged = 0x10C 
+		mediaPlayerSeekableChanged = 0x10D 
+		mediaPlayerPausableChanged = 0x10E 
+		mediaPlayerTitleChanged = 0x10F 
+		mediaPlayerSnapshotTaken = 0x110 
+		mediaPlayerLengthChanged = 0x111 
+		mediaPlayerVout = 0x112 
+		mediaPlayerScrambledChanged = 0x113 
+		mediaPlayerESAdded = 0x114 
+		mediaPlayerESDeleted = 0x115 
+		mediaPlayerESSelected = 0x116 
+		mediaListItemAdded = 0x200 
+		mediaListWillAddItem = 0x201 
+		mediaListItemDeleted = 0x202 
+		mediaListWillDeleteItem = 0x203 
+		mediaListEndReached = 0x204 
+		mediaListViewItemAdded = 0x300 
+		mediaListViewWillAddItem = 0x301 
+		mediaListViewItemDeleted = 0x302 
+		mediaListViewWillDeleteItem = 0x303 
+		mediaListPlayerPlayed = 0x400 
+		mediaListPlayerNextItemSet = 0x401 
+		mediaListPlayerStopped = 0x402 
+		mediaDiscovererStarted = 0x500 
+		mediaDiscovererEnded = 0x501 
+		vlmMediaAdded = 0x600 
+		vlmMediaRemoved = 0x601 
+		vlmMediaChanged = 0x602 
+		vlmMediaInstanceStarted = 0x603 
+		vlmMediaInstanceStopped = 0x604 
+		vlmMediaInstanceStatusInit = 0x605 
+		vlmMediaInstanceStatusOpening = 0x606 
+		vlmMediaInstanceStatusPlaying = 0x607 
+		vlmMediaInstanceStatusPause = 0x608 
+		vlmMediaInstanceStatusEnd = 0x609 
+	} 
+	namespace eventTypes{ 
+		mediaMetaChanged = {int type;ptr pObj;int metaType}
+		mediaSubItemAdded  = {int type;ptr pObj;ptr newChild}
+		mediaDurationChanged = {int type;ptr pObj;LONG duration}
+		mediaParsedChanged = {int type;ptr pObj;LONG newStatus}
+		mediaFreed = {int type;ptr pObj;ptr md}
+		mediaStateChanged = {int type;ptr pObj;int newState}
+		mediaSubItemTreeAdded = {int type;ptr pObj;pointer item}
+		mediaPlayerMediaChanged = {int type;ptr pObj;pointer newMedia}
+		mediaPlayerNothingSpecial = {int type;ptr pObj;int metaType}
+		mediaPlayerOpening = {int type;ptr pObj}
+		mediaPlayerBuffering = {int type;ptr pObj;float newCache}
+		mediaPlayerPlaying = {int type;ptr pObj}
+		mediaPlayerPaused = {int type;ptr pObj}
+		mediaPlayerStopped = {int type;ptr pObj}
+		mediaPlayerForward = {int type;ptr pObj}
+		mediaPlayerBackward = {int type;ptr pObj}
+		mediaPlayerEndReached = {int type;ptr pObj}
+		mediaPlayerEncounteredError = {int type;ptr pObj}
+		mediaPlayerTimeChanged = {int type;ptr pObj;LONG newTime}
+		mediaPlayerPositionChanged = {int type;ptr pObj;float newPosition}
+		mediaPlayerSeekableChanged = {int type;ptr pObj;int newSeekable}
+		mediaPlayerPausableChanged = {int type;ptr pObj;int metaType}
+		mediaPlayerTitleChanged = {int type;ptr pObj;int newTitle}
+		mediaPlayerSnapshotTaken = {int type;ptr pObj;pointer pUtfFilename}
+		mediaPlayerLengthChanged = {int type;ptr pObj;LONG newLength} 
+		mediaPlayerVout = {int type;ptr pObj;int newCount} 
+		mediaPlayerScrambledChanged = {int type;ptr pObj;int newScrambled} 
+		mediaPlayerESAdded = {int type;ptr pObj;int type;int id} 
+		mediaPlayerESDeleted = {int type;ptr pObj;int type;int id} 
+		mediaPlayerESSelected = {int type;ptr pObj;int type;int id} 
+		mediaListItemAdded = {int type;ptr pObj;pointer item;int index} 
+		mediaListWillAddItem = {int type;ptr pObj;pointer item;int index} 
+		mediaListItemDeleted = {int type;ptr pObj;pointer item;int index} 
+		mediaListWillDeleteItem = {int type;ptr pObj;pointer item;int index} 
+		mediaListEndReached = {int type;ptr pObj} 
+		mediaListViewItemAdded = {int type;ptr pObj} 
+		mediaListViewWillAddItem = {int type;ptr pObj} 
+		mediaListViewItemDeleted = {int type;ptr pObj} 
+		mediaListViewWillDeleteItem = {int type;ptr pObj} 
+		mediaListPlayerPlayed = {int type;ptr pObj} 
+		mediaListPlayerNextItemSet = {int type;ptr pObj;ptr item} 
+		mediaListPlayerStopped = {int type;ptr pObj} 
+		mediaDiscovererStarted = {int type;ptr pObj} 
+		mediaDiscovererEnded = {int type;ptr pObj} 
+		vlmMediaAdded = {int type;ptr pObj} 
+		vlmMediaRemoved = {int type;ptr pObj} 
+		vlmMediaChanged = {int type;ptr pObj} 
+		vlmMediaInstanceStarted = {int type;ptr pObj;pointer mediaName;pointer instanceName} 
+		vlmMediaInstanceStopped = {int type;ptr pObj;pointer mediaName;pointer instanceName} 
+		vlmMediaInstanceStatusInit = {int type;ptr pObj;pointer mediaName;pointer instanceName} 
+		vlmMediaInstanceStatusOpening = {int type;ptr pObj;pointer mediaName;pointer instanceName} 
+		vlmMediaInstanceStatusPlaying = {int type;ptr pObj;pointer mediaName;pointer instanceName} 
+		vlmMediaInstanceStatusPause = {int type;ptr pObj;pointer mediaName;pointer instanceName} 
+		vlmMediaInstanceStatusEnd = {int type;ptr pObj;pointer mediaName;pointer instanceName} 
+	}
+} 
+
+/**intellisense(!vlcEventManager)
+mediaPlayerMediaChanged = @.mediaPlayerMediaChanged = function(event){
+	io.print("mediaPlayerPositionChanged",event.newMedia)
+}
+mediaPlayerNothingSpecial = @.mediaPlayerNothingSpecial = function(event){
+	io.print("mediaPlayerNothingSpecial",event.metaType)
+}
+mediaPlayerOpening = @.mediaPlayerOpening = function(event){
+	io.print("mediaPlayerOpening",event.newPosition)
+}
+mediaPlayerBuffering = @.mediaPlayerBuffering = function(event){
+	io.print("mediaPlayerBuffering",event.newCache)
+}
+mediaPlayerPlaying = @.mediaPlayerPlaying = function(event){
+	io.print("mediaPlayerPlaying")
+}
+mediaPlayerPaused = @.mediaPlayerPaused = function(event){
+	io.print("mediaPlayerPaused")
+}
+mediaPlayerStopped = @.mediaPlayerStopped = function(event){
+	io.print("mediaPlayerStopped")
+}
+mediaPlayerForward = @.mediaPlayerForward = function(event){
+	io.print("mediaPlayerForward")
+}
+mediaPlayerBackward = @.mediaPlayerBackward = function(event){
+	io.print("mediaPlayerBackward")
+}
+mediaPlayerEndReached = @.mediaPlayerEndReached = function(event){
+	io.print("mediaPlayerEndReached")
+}
+mediaPlayerEncounteredError = @.mediaPlayerEncounteredError = function(event){
+	io.print("mediaPlayerEncounteredError")
+}
+mediaPlayerTimeChanged = @.mediaPlayerTimeChanged = function(event){
+	io.print("mediaPlayerPositionChanged",event.newTime)
+}
+mediaPlayerPositionChanged = @.mediaPlayerPositionChanged = function(event){
+	io.print("mediaPlayerPositionChanged",event.newPosition)
+}
+mediaPlayerSeekableChanged = @.mediaPlayerSeekableChanged = function(event){
+	io.print("mediaPlayerSeekableChanged",event.newSeekable)
+}
+mediaPlayerPausableChanged = @.mediaPlayerPausableChanged = function(event){
+	io.print("mediaPlayerPausableChanged",event.metaType)
+}
+mediaPlayerTitleChanged = @.mediaPlayerTitleChanged = function(event){
+	io.print("mediaPlayerTitleChanged",event.newTitle)
+}
+mediaPlayerSnapshotTaken = @.mediaPlayerSnapshotTaken = function(event){
+	var filename = ..string.fromto(event.pUtfFilename,65001,0,true);
+	io.print("mediaPlayerSnapshotTaken",filename)
+}
+mediaPlayerLengthChanged = @.mediaPlayerLengthChanged = function(event){
+	io.print("mediaPlayerSnapshotTaken",event.newLength)
+}
+mediaPlayerVout = @.mediaPlayerVout = function(event){
+	io.print("mediaPlayerVout",event.newCount)
+}
+mediaPlayerScrambledChanged = @.mediaPlayerScrambledChanged = function(event){
+	io.print("mediaPlayerScrambledChanged",event.newScrambled)
+}
+mediaPlayerESAdded = @.mediaPlayerESAdded = function(event){
+	io.print("mediaPlayerESAdded",event.newScrambled)
+}
+mediaPlayerESDeleted = @.mediaPlayerESDeleted = function(event){
+	io.print("mediaPlayerESDeleted",event.newScrambled)
+}
+mediaPlayerESSelected = @.mediaPlayerESSelected = function(event){
+	io.print("mediaPlayerESSelected",event.newScrambled)
+}
+end intellisense**/ 

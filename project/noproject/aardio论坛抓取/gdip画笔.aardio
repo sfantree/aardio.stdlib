@@ -1,0 +1,30 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add(
+plus={cls="plus";left=68;top=94;right=599;bottom=382;notify=1;z=1}
+)
+/*}}*/
+
+import gdip.pen;
+winform.plus.onDrawContent = function(graphics,rc){
+
+    //创建画笔,画笔pen只能画一个轮廓(画线)
+    var pen = gdip.pen( 0xFFFF0000, 1 );
+   
+    //设置为虚线
+    pen.dashStyle = 2/*_DashStyleDot*/;
+
+    //画一条线 - 需要指定画笔(Pen)
+    graphics.drawLine( pen, 10, 10, 200, 10)
+    
+    graphics.drawLine( pen, 10, 20, 200, 10)
+    
+    graphics.drawLine( pen, 30, 20, 200, 10)
+  
+    //删除创建的GDI对象
+    pen.delete()  
+}
+
+winform.show()
+win.loopMessage();

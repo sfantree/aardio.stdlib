@@ -1,0 +1,132 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add(
+button={cls="button";text="刷新";left=24;top=392;right=128;bottom=432;z=2};
+button2={cls="button";text="添加";left=184;top=392;right=288;bottom=432;z=3};
+listview={cls="listview";left=24;top=24;right=736;bottom=368;edge=1;z=1}
+)
+/*}}*/
+
+var isLoginValid = function(inputString){
+	import sqlite;
+	if(not io.exist("\run.db")) {
+	    return false;
+	}
+	var db = sqlite("\run.db");
+	if(not db) {
+	    return false;
+	}
+	
+	if (not db.existsTable("login")) {
+		db.close();
+	    return false;
+	}
+	
+	var result = db.stepQuery("SELECT password FROM [login]");
+	
+	if(not result  || not result[["password"]]) {
+		db.close();
+	    return false;
+	}
+	//win.msgbox(result[["password"]]);
+	if(result[["password"]] != inputString) {
+		db.close();
+	    return false;
+	}
+	db.close();
+	return true;
+}
+
+// __启动窗口_创建完毕
+import win.inputBox;
+var passwdInput = win.inputBox(winform.hwnd, true);
+passwdInput.text = "请输入访问密码";
+var inputString = passwdInput.doModal();
+
+//win.msgbox(tostring(isLoginValid(inputString)));
+
+if(isLoginValid(inputString)) {
+    winform.show();
+} else {
+    win.msgbox("password error!");
+    win.quitMessage();
+}
+
+winform.listview.insertColumn("平台名称",70) 
+winform.listview.insertColumn("链接地址",70) 
+winform.listview.insertColumn("账号",70)  
+winform.listview.insertColumn("密码",-1) 
+
+
+var refreshList = function(){
+	import sqlite;
+	if(not io.exist("\run.db")) {
+	    return false;
+	}
+	var db = sqlite("\run.db");
+	if(not db) {
+	    return false;
+	}
+	
+	if (not db.existsTable("accountInfo")) {
+		db.close();
+	    return false;
+	}
+	
+	//var result = db.stepQuery("SELECT password FROM [login]");
+	winform.listview.clear();
+	
+	for rowid, platform, linkname, account, password in db.each("SELECT * FROM accountInfo") {
+	    //console.log( rowid, platform, linkname, account, password  ) 
+	    winform.listview.addItem({platform, linkname, account, password});
+    }
+    
+    db.close();
+}
+
+winform.button.oncommand = function(id,event){
+	refreshList();
+}
+
+winform.button2.oncommand = function(id,event){
+	import sqlite;
+	if(not io.exist("\run.db")) {
+	    return false;
+	}
+	var db = sqlite("\run.db");
+	if(not db) {
+	    return false;
+	}
+	
+	if (not db.existsTable("accountInfo")) {
+		db.close();
+	    return false;
+	}
+	
+    var editWinform = win.loadForm("/sqlite3密码备忘录_输入.aardio");
+    var r = editWinform.doModal();
+    if(not r){
+		db.close();
+	    return false;
+	}
+    
+    var command = db.prepare("INSERT INTO accountInfo VALUES ( @rowid, @platform, @linkname, @account, @password);" ) 
+	command.step(  
+	    rowid = null;
+		platform = r[1];
+		linkname = r[2];
+		account = r[3];
+		password = r[4];
+	)  
+    
+    
+    db.close();
+    
+    refreshList();
+}
+
+refreshList();
+
+//winform.show();
+win.loopMessage();

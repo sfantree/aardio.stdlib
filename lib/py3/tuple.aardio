@@ -1,0 +1,134 @@
+//tuple 元组
+import util.metaProperty;
+namespace py3;
+	
+class tuple {
+
+	ctor( object ){ 
+	
+		var tt = type(object) 
+		select(tt) {
+			case type.table{ 
+			
+				if(object[["pyObject"]] ){
+					this[["pyObject"]] = object[["pyObject"]];
+					..py3.IncRef(this.pyObject);
+				}
+			  	else{
+					var len = #object;
+					this.pyObject = pyTuple_New(len); 
+					
+					for(i=1;len;1){
+						if( type(object[i]) == "pointer" ){
+							..py3.IncRef(object[i]);
+							pyTuple_SetItem(this.pyObject,i-1,object[i] );  
+						}
+						else{
+							pyTuple_SetItem(this.pyObject,i-1,..py3.object(object[i]).stealPtr() );  
+						}
+					};
+				}
+			}
+			case type.pointer{
+				this.pyObject = object;
+			}
+			case type.number{ 
+				this.pyObject = pyTuple_New(object);
+			} 
+			case type.null{
+				this.pyObject = pyTuple_New(0);
+			}
+			else { 	
+				error("py3.tuple 构造参数不支持此数据类型:" + tt ,2) 
+			} 
+		}
+		
+		..table.add_gc(this,"release");
+	}
+	@_metaProperty
+}
+
+namespace tuple {
+
+	_metaProperty = ..util.metaProperty(   
+	
+		_topointer = function(){
+			if(!owner.pyObject) error("Python Tuple已销毁",2);
+			return owner.pyObject;
+		}  
+		parseValue = function(){
+			var result = {}; 
+			var len = pyTuple_Size(owner.pyObject);
+			for(i=0;len-1;1){
+				var item = pyTuple_GetItem(owner.pyObject,i);
+				if(item){
+					item = ..py3.object(  item,true );
+					result[i+1] = item.parseValue();
+					item.stealPtr();//因为item是借用，所以盗用还回去
+				}
+			}
+			return result; 
+		}
+		getItem = function(k){
+			return owner[k]
+		}; 
+		setItem = function(k,v){
+			owner[k] = v;
+		};  
+		__get = function(k,ownerCall){ 
+			if( type(k) != type.number ) {
+				return owner.getAttr(k); 
+			}
+			
+			var item = pyTuple_GetItem(owner.pyObject,k);
+			if(item){
+				..py3.IncRef(item);//特例 borrow reference
+				return ..py3.object(  item,true ) ;
+			} 
+		} 
+		__set = function(k,v){
+			if( type(k) != type.number ) {
+				return;
+			}
+			
+			if(v!==null) {
+				if( type(v) == "pointer" ){
+					..py3.IncRef(v);
+					pyTuple_SetItem(this.pyObject,k,v );  
+				}
+				else{
+					pyTuple_SetItem(owner.pyObject,k,..py3.object(v).stealPtr() ); 
+				} 
+			} 
+		}
+		len = function(){
+			return pyTuple_Size(owner.pyObject);
+		} 
+		_type = "py3.tuple";
+	);
+	..table.mix(_metaProperty,..py3.object._metaProperty); 
+	
+	pyTuple_New = ::Python3.api("PyTuple_New","pyObject(INT len)")  
+	pyTuple_GetItem = ::Python3.api("PyTuple_GetItem","pyObject(PyObject dp,INT key)")  
+	pyTuple_SetItem = ::Python3.api("PyTuple_SetItem","pyObject(PyObject dp,INT key,pyObject item)") 
+	pyTuple_Size = ::Python3.api("PyTuple_Size","INT(PyObject dp)") 
+	
+	buildValueByNumber =  ..py3._buildValueByNumber;
+	buildValueByString =  ..py3._buildValueByString;
+}
+
+
+/**intellisense()
+py3.tuple( = 元数组是只读的序列数组,数组元素不可变更\n此对象继承自pyObject(py3.object)\n一般不需要手动创建此对象,aardio会在传参数时自动转换
+py3.tuple(.(长度) = 创建新的元数组
+py3.tuple(.(pyObject指针) = 创建新的元数组,\n不会添加引用计数,但对象销毁时负责释放引用计数
+py3.tuple(.(pyObject对象) = 创建新的元数组,\n复制对象副本,添加引用计数,对象销毁时负责释放引用计数
+py3.tuple(.(aardio数组) = 创建新的元数组,\n如果数组成员中包含pointer类型指针,必须是pyObject指针,保持引用计数不变
+!py3Tuple.stealPtr() =  接管此对象的指针并盗用一次引用计数\n原对象的内部指针被清空,并不再负责释放引用计数\n steal references
+!py3Tuple.parseValue() = 转换为aardio数组
+!py3Tuple.setItem("键名",) = 写字典中的元素的值，也可以直接用下标操作符赋值\n在aardio中也可以用成员操作符代替下标赋元素值
+!py3Tuple.getItem("键名") = 返回字典中的元素的值，也可以直接用下标操作符取值\n在aardio中也可以用成员操作符代替下标取元素值,\n成员操作后后面是一个函数调用,则返回成员函数而不是返回字典中的元素
+!py3Tuple.getItem() = !py3Object.
+!py3Tuple.? = !py3Object.
+py3.tuple() = !py3Tuple.
+end intellisense**/

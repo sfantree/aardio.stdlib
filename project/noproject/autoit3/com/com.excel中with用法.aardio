@@ -1,0 +1,20 @@
+import com.excel;
+
+var excel = com.excel(false) // 先打开EXCEL
+excel.Visible = true;
+excel.Workbooks.Add();
+
+var sh = excel.ActiveWorkbook.Sheets(1);// 获取sheet 对象
+myRange = sh.range("A1:D5")
+with myRange{
+    Clear()
+    Value2 = 100      
+    with Font {
+         Bold = true
+         ColorIndex = 5
+         Italic = true
+         Size = 22   
+    }
+    BorderAround(1,4,3)
+    Columns.AutoFit()
+}

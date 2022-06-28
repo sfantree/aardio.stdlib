@@ -1,0 +1,44 @@
+﻿import com.activeX;
+
+namespace com.soap
+
+class client{
+	ctor(){
+		this = ..com.TryCreateObject("MSSOAP.SoapClient30")
+		if(!this){
+			install();
+			
+			..thread.delay(100);
+			this = ..com.TryCreateObject("MSSOAP.SoapClient30")
+		}
+	}; 
+}
+
+
+namespace client{
+
+	install = function(){
+		..com.activeX.regsvr32As(..io.appData("aardio/soap3/MSSOAP30.dll",$"~\lib\com\soap\.mssoap3.0\MSSOAP30.dll") )
+		..com.activeX.regsvr32As(..io.appData("aardio/soap3/MSSOAPR3.dll",$"~\lib\com\soap\.mssoap3.0\MSSOAPR3.dll") )
+		..com.activeX.regsvr32As(..io.appData("aardio/soap3/WISC30.dll",$"~\lib\com\soap\.mssoap3.0\WISC30.dll") )
+		..com.activeX.regsvr32As(..io.appData("aardio/soap3/msxml4.dll",$"~\lib\com\soap\.mssoap3.0\msxml4.dll") )
+		..com.activeX.regsvr32As(..io.appData("aardio/soap3/msxml4r.dll",$"~\lib\com\soap\.mssoap3.0\msxml4r.dll") )
+	}
+	
+	uninstall = function(){
+		..com.activeX.regsvr32As(..io.appData("aardio/soap3/MSSOAP30.dll") ,false)
+		..com.activeX.regsvr32As(..io.appData("aardio/soap3/MSSOAPR3.dll") ,false)
+		..com.activeX.regsvr32As(..io.appData("aardio/soap3/WISC30.dll"),false )
+		..com.activeX.regsvr32As(..io.appData("aardio/soap3/msxml4.dll"),false )
+		..com.activeX.regsvr32As(..io.appData("aardio/soap3/msxml4r.dll"),false )
+	} 
+}
+
+/**intellisense()
+com.soap = MSSOAP3.0支持库\n这个库需要以管理权限注册一堆 DLL, 建议改用 aardio 标准库提供的 web.soapClient 更轻量,\n实际上如果服务端是自己实现的,建议改用 web.rest 更简洁
+com.soap.client() = 创建SOAP客户端\n!comSoapClient.
+com.soap.client.install() = 安装SOAP3.0,需要管理权限
+com.soap.client.uninstall() = 卸载SOAP3.0,需要管理权限
+!comSoapClient.MsSoapInit("__/*WSDL网址*/") = 指定服务说明地址
+!comSoapClient.函数名(__/*参数*/) = 调用Web Service函数
+end intellisense**/

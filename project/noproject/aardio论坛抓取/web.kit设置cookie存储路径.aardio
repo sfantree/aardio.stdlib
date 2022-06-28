@@ -1,0 +1,12 @@
+//创建web窗体
+import web.kit.form
+
+//web.kit设置cookie存储路径
+web.kit.configure({
+    cookieFilePath = "/cookie";
+})
+
+var wk = web.kit.form( winform );
+
+//启用cookie
+wk.cookieEnabled = true;

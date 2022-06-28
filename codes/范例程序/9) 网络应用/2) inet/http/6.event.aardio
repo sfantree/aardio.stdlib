@@ -1,0 +1,32 @@
+//事件回调
+
+import console;
+import inet.http;
+
+//首先创建 HTTP 客户端对象
+var http = inet.http();
+
+//准备向服务器发送数据时执行此回调
+http.beforeSend = function(){
+	 
+}
+
+//发送请求以后，获取数据以前执行此回调
+http.afterSend = function(statusCode,contentLength){
+	
+	/*
+	如果在这里不带参数读取了所有 HTTP 头，
+	则 aardio 会缓存所有 HTTP 头，即使请求结束仍然可以使用 http.readHeader 函数。
+	*/
+	http.readHeader();  
+}
+
+//发送 GET 请求并获取数据
+var data = http.get("http://www.aardio.com")
+console.log(data);
+
+/*
+如果在请求前读取过全部 HTTP 头，即使请求结束仍然可以使用 http.readHeader 函数。
+*/
+console.log(http.readHeader());
+console.pause()

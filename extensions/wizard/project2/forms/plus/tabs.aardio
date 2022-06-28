@@ -1,0 +1,119 @@
+import fonts.fontAwesome;
+import win.ui;
+/*DSG{{*/
+frmTabs = win.form(cls="AARDIO_WUBI_FORM";text="wubiLex ( Win10 五笔助手 )";right=1040;bottom=642;bgcolor=15793151;border="none")
+frmTabs.add(
+caption={cls="bkplus";text="我的软件 1.0";left=35;top=12;right=160;bottom=30;color=15780518;dl=1;dt=1;font=LOGFONT(h=-16);z=5};
+custom={cls="custom";left=0;top=40;right=1040;bottom=643;bgcolor=16777215;db=1;dl=1;dr=1;dt=1;z=1};
+logo={cls="bkplus";text='\uF0AD';left=6;top=9;right=35;bottom=34;color=15780518;dl=1;dt=1;font=LOGFONT(h=-18;name='FontAwesome');z=4};
+navFirst={cls="plus";text="主页";left=166;top=5;right=260;bottom=40;align="left";color=16777215;dl=1;dt=1;font=LOGFONT(h=-16);iconStyle={align="left";font=LOGFONT(h=-19;name='FontAwesome');padding={left=12;top=4}};iconText='\uF00A';notify=1;paddingLeft=1;paddingRight=1;paddingTop=3;textPadding={left=39;bottom=1};x=0.5;y=0.2;z=3};
+navHelp={cls="plus";text="帮助";left=462;top=5;right=556;bottom=40;align="left";color=16777215;dl=1;dt=1;font=LOGFONT(h=-16);iconStyle={align="left";font=LOGFONT(h=-19;name='FontAwesome');padding={left=12;top=4}};iconText='\uF06A';notify=1;paddingLeft=1;paddingRight=1;paddingTop=3;textPadding={left=39;bottom=1};x=0.5;y=0.2;z=7};
+navHotkey={cls="plus";text="热键";left=265;top=5;right=359;bottom=40;align="left";color=16777215;dl=1;dt=1;font=LOGFONT(h=-16);iconStyle={align="left";font=LOGFONT(h=-19;name='FontAwesome');padding={left=12;top=4}};iconText='\uF11C ';notify=1;paddingLeft=1;paddingRight=1;paddingTop=3;textPadding={left=39;bottom=1};x=0.5;y=0.2;z=8};
+navSetting={cls="plus";text="设置";left=363;top=5;right=457;bottom=40;align="left";color=16777215;dl=1;dt=1;font=LOGFONT(h=-16);iconStyle={align="left";font=LOGFONT(h=-19;name='FontAwesome');padding={left=12;top=4}};iconText='\uF0AD';notify=1;paddingLeft=1;paddingRight=1;paddingTop=3;textPadding={left=39;bottom=1};x=0.5;y=0.2;z=6};
+titleBar={cls="bkplus";left=0;top=0;right=1042;bottom=41;bgcolor=14977280;dl=1;dr=1;dt=1;z=2}
+)
+/*}}*/
+
+import win.ui.tabs;
+var tbs = win.ui.tabs( 
+	frmTabs.navFirst,
+	frmTabs.navHotkey,
+	frmTabs.navSetting,
+	frmTabs.navHelp
+);
+	
+tbs.skin({
+	foreground={
+		active=0xFFFFFFFF;
+		default=0x00FFFFFF;
+		hover=0x38FFFFFF
+	};
+	color={
+		default=0xFFFFFFFF; 
+	};
+	checked={
+		foreground={default=0xFFFFFFFF;};
+		color={default=0xFF42A875;};
+	}
+})
+
+import win.ui; 
+var frmPage1 = win.form(text="纯文字界面示例";right=684;bottom=469;bgcolor=16777215;border="none";exmode="none";)
+frmPage1.add(
+btnSetLogoColor={cls="plus";text="定制左上角图标颜色";left=11;top=410;right=170;bottom=448;db=1;dl=1;z=4};
+btnSetCaptionColor={cls="plus";text="定制窗口标题颜色";left=346;top=410;right=481;bottom=448;db=1;dl=1;z=1};
+btnSetNavIconColor={cls="plus";text="定制导航图标颜色";left=499;top=410;right=636;bottom=448;db=1;dl=1;z=3};
+btnSetTitleBarColor={cls="plus";text="定制标题栏背景色";left=188;top=410;right=328;bottom=448;db=1;dl=1;z=2}
+)
+import style.main;
+for(hwnd,ctrl in frmPage1.eachControlEx("plus") ){
+	ctrl.skin(style.main.button);
+} 
+
+frmPage1.show() 
+tbs.loadForm(1,frmPage1); 
+
+var templateConfig = {
+	templateColor_logo_color = "15780518";
+	templateColor_caption_color = "15780518";
+	templateColor_titleBar_bgcolor = "14977280";
+	templateColor_navButton_color = "0xFF42A875";
+}
+
+import win.dlg.ctrlColor;
+frmPage1.btnSetCaptionColor.oncommand = function(id,event){
+    var argb =  win.dlg.ctrlColor(frmTabs.caption,"argbColor");
+    templateConfig.templateColor_caption_color = tostring(gdi.rgbReverse(argb)) 
+}
+
+frmPage1.btnSetTitleBarColor.oncommand = function(id,event){
+    var argb = win.dlg.ctrlColor(frmTabs.titleBar)
+	templateConfig.templateColor_titleBar_bgcolor = tostring(gdi.rgbReverse( argb )) 
+}
+
+frmPage1.btnSetLogoColor.oncommand = function(id,event){
+    var argb =  win.dlg.ctrlColor(frmTabs.logo,"argbColor");
+    templateConfig.templateColor_logo_color = tostring(gdi.rgbReverse(argb))  
+}
+
+frmPage1.btnSetNavIconColor.oncommand = function(id,event){
+	import win.ui.ctrl.pick;
+	var picker = win.ui.ctrl.pick(frmTabs);
+	picker.setColor(tbs.selStrip.color) 
+	
+	picker.onColorChange = function(argb){
+		templateConfig.templateColor_navButton_color = string.format("0x%08x", argb)  
+		
+		tbs.skin({
+			background={
+				active=0xFFFFFFFF;
+				default=0x00FFFFFF;
+				hover=0x38FFFFFF
+			};
+			color={
+				default=0xFFFFFFFF; 
+			};
+			checked={
+				background={default=0xFFFFFFFF;};
+				color={default=argb;};
+			}
+		})
+	}
+	picker.doModal(frmTabs) 
+}
+
+tbs.selIndex = 1;
+ 
+frmTabs.getTemplatePath = function(){
+	return io.fullpath("/template/plus/tabs/") 
+}
+
+frmTabs.getTemplateConfig = function(){
+	return templateConfig 
+}
+
+frmTabs.enableDpiScaling();
+frmTabs.show();
+
+win.loopMessage();
+return frmTabs;

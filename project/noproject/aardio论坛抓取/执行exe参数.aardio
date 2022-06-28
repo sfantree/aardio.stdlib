@@ -1,0 +1,10 @@
+import process;
+process.execute("iexplore.exe", "http://example.com");
+
+import process;
+process.execute("/mysql-5.5.32-win32.msi"
+    ,"INSTALLDIR=D:\Program Files"
+    ,"/quiet"
+    ,"/passive"
+    ,"/norestart"
+)

@@ -1,0 +1,303 @@
+import gmp.BigInteger;
+
+namespace gmp;
+
+class Random {
+	// 构造函数
+	ctor(num) {
+		var tmpmpz = mpz_t();
+		this.mpz = mpz_init(tmpmpz);
+		tmpmpz = null;
+		
+		this@ = _meta;
+		
+		// 构造函数 传入字符串
+		if( type(num) == type.string ){	
+			// 转换16进制
+			var ret, tmpmpz;
+			if(..string.startWith(num, "0x", true) ){
+			    num = ..string.right(num,-3);
+				ret, tmpmpz = mpz_set_str(this.mpz, num, 16);	
+			} else {
+			    ret, tmpmpz = mpz_set_str(this.mpz, num, 10);
+			}
+			// 转换失败 默认为0
+			if( ret  !=  0) {
+				var tmpmpz = mpz_set_si(this.mpz, 0);
+				this.mpz = tmpmpz;
+				tmpmpz = null;
+			    
+			} else {
+			    this.mpz = tmpmpz;
+			    tmpmpz = null;
+			}
+		}
+		elseif(num !== null){
+			// 构造函数 复制构造函数 参数为对象
+			if( num@ ==_meta  ){
+				if(num.mpz != null) {
+					var tmp1 = this.mpz;
+					
+					var tmp2 = mpz_t();
+					var tmp3 = mpz_init_set(tmp2, num.mpz);
+					
+					this.mpz = tmp3;
+					
+					// 释放内存
+					mpz_clear(tmp1);
+				}
+					
+			}
+			else {
+				// 构造函数传入数字
+				//_dll.bignum_from_int(this.bigNumber,..math.size64(num) );
+				
+				var tmpmpz = mpz_set_d(this.mpz, num);
+				this.mpz = tmpmpz;
+				tmpmpz = null;
+				
+			}
+		}
+		// 构造函数传入空 默认为0
+		else {
+			//_dll.bignum_init(this.bigNumber)
+			var tmpmpz = mpz_set_si(this.mpz, 0);
+			this.mpz = tmpmpz;
+			tmpmpz = null;
+		}
+		
+		// 定义析构函数
+		..table.gc(this, "free");
+	};
+	free = function(){
+		if(this.mpz != null) {
+		    mpz_clear(this.mpz);
+		    this.mpz = null;
+		}
+	}
+}
+
+namespace BigInteger {
+	
+	class gmp_randstate_t {
+		byte b[64];
+	};
+	
+	
+	// https://github.com/sethtroisi/libgmp/blob/master/gmp-h.in
+	
+    _dll = ..raw.loadDll("G:\chromedl\libgmp-6.1.2-2-mingw32-dll-10\bin\libgmp-10.dll", "libgmp", "cdecl");
+    mpz_init = _dll.api("__gmpz_init","void(struct&)" ,"cdcel");
+	mpz_clear = _dll.api("__gmpz_clear","void(struct&)" ,"cdcel");
+	mpz_set_si= _dll.api("__gmpz_set_si","void(struct&, int)","cdcel");
+    mpz_set_str= _dll.api("__gmpz_set_str","int(struct&, string , int)","cdcel");
+    mpz_init_set= _dll.api("__gmpz_init_set","void(struct&, struct)","cdcel");
+    mpz_set_d = _dll.api("__gmpz_set_d","void(struct&, double)","cdcel");
+    
+    mpz_get_str =  _dll.api("__gmpz_get_str","int(string, int, struct)","cdcel");
+    mpz_get_si = _dll.api("__gmpz_get_si","long(struct)","cdcel");
+    mpz_get_d = _dll.api("__gmpz_get_d","double(struct)","cdcel");
+    
+    
+    mpz_sizeinbase = _dll.api("__gmpz_sizeinbase","INT(struct, int)","cdcel");
+    
+    mpz_add = _dll.api("__gmpz_add","void(struct&, struct, struct)" ,"cdcel");
+    mpz_sub = _dll.api("__gmpz_sub","void(struct&, struct, struct)","cdcel");
+    mpz_mul = _dll.api("__gmpz_mul","void(struct&, struct, struct)","cdcel");
+    
+    // 除法 向下取整
+    mpz_fdiv_q = _dll.api("__gmpz_fdiv_q","void(struct&, struct, struct)","cdcel");
+    mpz_fdiv_r = _dll.api("__gmpz_fdiv_r","void(struct&, struct, struct)","cdcel");
+    
+    // 逆元
+    mpz_invert = _dll.api("__gmpz_invert","void(struct&, struct, struct)","cdcel");
+    
+    // 幂取余
+    mpz_powm = _dll.api("__gmpz_powm","void(struct&, struct, struct, struct)","cdcel");
+    
+    // 比较大小
+    mpz_cmp = _dll.api("__gmpz_cmp","int(struct, struct)","cdcel");
+    
+    
+    
+    
+    _meta = {
+		_get = {
+			add = function(n){
+				var op1 = ..gmp.BigInteger(owner);
+				var op2 = ..gmp.BigInteger(n);
+				var tmp = ..gmp.BigInteger(0);
+				var rv = ..gmp.BigInteger(0);
+				rv.mpz = mpz_add(tmp.mpz, op1.mpz, op2.mpz);
+				return rv;
+			};
+			
+			sub = function(n){
+				var op1 = ..gmp.BigInteger(owner);
+				var op2 = ..gmp.BigInteger(n);
+				var tmp = ..gmp.BigInteger(0);
+				var rv = ..gmp.BigInteger(0);
+				rv.mpz = mpz_sub(tmp.mpz, op1.mpz, op2.mpz);
+				return rv;
+			};
+			
+			mul = function(n){
+				var op1 = ..gmp.BigInteger(owner);
+				var op2 = ..gmp.BigInteger(n);
+				var tmp = ..gmp.BigInteger(0);
+				var rv = ..gmp.BigInteger(0);
+				rv.mpz = mpz_mul(tmp.mpz, op1.mpz, op2.mpz);
+				return rv;
+			};
+			
+			div = function(n){
+				var op1 = ..gmp.BigInteger(owner);
+				var op2 = ..gmp.BigInteger(n);
+				var tmp = ..gmp.BigInteger(0);
+				var rv = ..gmp.BigInteger(0);
+				rv.mpz = mpz_fdiv_q(tmp.mpz, op1.mpz, op2.mpz);
+				return rv;
+			};
+			
+			mod = function(n){
+				var op1 = ..gmp.BigInteger(owner);
+				var op2 = ..gmp.BigInteger(n);
+				var tmp = ..gmp.BigInteger(0);
+				var rv = ..gmp.BigInteger(0);
+				rv.mpz = mpz_fdiv_r(tmp.mpz, op1.mpz, op2.mpz);
+				return rv;
+			};
+			
+			isPrime = function(n){
+				
+			};
+			
+		};
+		
+		// 打印元方法，使class libgmp具有字符串的特性
+		_tostring = function(radix){
+			if(radix == null) {
+			    radix = 10;
+			}
+			
+			if(radix and (radix != 16)) {
+			    radix = 10;
+			}
+			
+			if(radix == 10) {
+			    var size = mpz_sizeinbase(owner.mpz, 10);
+				var ptr = ..raw.realloc(size + 2);
+				
+				//var out = ..raw.buffer(alloc_num + 2);
+				mpz_get_str(ptr, 10, owner.mpz );
+				
+				var s = ..raw.str(ptr); 
+				//var s = "123";
+				..raw.realloc(0, ptr);
+				return s;
+			}
+			
+			if(radix == 16) {
+			    var size = mpz_sizeinbase(owner.mpz, 16);
+				var ptr = ..raw.realloc(size + 2);
+				
+				//var out = ..raw.buffer(alloc_num + 2);
+				mpz_get_str(ptr, 16, owner.mpz );
+				
+				var s = ..raw.str(ptr); 
+				//var s = "123";
+				..raw.realloc(0, ptr);
+				return "0x" + s;
+			}
+			
+			return "";
+		}
+		
+		// 数值元方法，使class libgmp具有数值的特性
+		_tonumber = function(){
+			var n = mpz_get_d( owner.mpz );
+			return n;
+		}
+		
+		// 指针元方法，使class libgmp具有指针的特性
+		_topointer = function(){ 
+		    return owner.mpz;
+		};
+		
+		// 运算符重载 +
+		_add = function(b){
+			return owner.add(b);
+		};
+		
+		// 运算符重载 -
+		_sub = function(b){
+			return owner.sub(b);
+		};
+		
+		// 运算符重载 *
+		_mul = function(b){
+			return owner.mul(b);
+		};
+		
+		// 运算符重载 \
+		_div = function(b){
+			return owner.div(b);
+		};
+		
+		_mod = function(b){
+			return owner.mod(b);
+		};
+		
+		// 比较是否相等
+		_eq = function(n){
+			var op1 = ..gmp.BigInteger(owner);
+			var op2 = ..gmp.BigInteger(n);
+			return 0 == mpz_cmp( op1.mpz, op2.mpz )
+		};
+		
+		// 大于
+		_le = function(n){
+			var op1 = ..gmp.BigInteger(owner);
+			var op2 = ..gmp.BigInteger(n);
+			return 0 < mpz_cmp( op1.mpz, op2.mpz )
+		};
+		
+		// 小于
+		_lt = function(n){
+			var op1 = ..gmp.BigInteger(owner);
+			var op2 = ..gmp.BigInteger(n);
+			return 0 > mpz_cmp( op1.mpz, op2.mpz )
+		};
+	}
+}
+
+
+// namespace gmp
+
+// 乘法逆元
+invert = function(a, b){
+	var op1 = ..gmp.BigInteger(a);
+	var op2 = ..gmp.BigInteger(b);
+	var tmp = ..gmp.BigInteger(0);
+	var rv = ..gmp.BigInteger(0);
+	rv.mpz = mpz_invert(tmp.mpz, op1.mpz, op2.mpz);
+	return rv;
+};
+
+powm = function(a, b, c){
+	var op1 = ..gmp.BigInteger(a);
+	var op2 = ..gmp.BigInteger(b);
+	
+	var op3 = ..gmp.BigInteger(c);
+	
+	var tmp = ..gmp.BigInteger(0);
+	var rv = ..gmp.BigInteger(0);
+	rv.mpz = mpz_powm(tmp.mpz, op1.mpz, op2.mpz, op3.mpz);
+	return rv;
+}
+
+/*
+isBigInteger = function(v){
+	return v@===..gmp.BigInteger._metaProperty;
+}
+*/

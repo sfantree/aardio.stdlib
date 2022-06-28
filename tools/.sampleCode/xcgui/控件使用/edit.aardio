@@ -1,0 +1,40 @@
+/*
+使用import xcgui; 替换原来的 import win.ui;
+修改标准库的 win.form 指向 xcgui.window, 并保留 win.form的所有功能。
+在窗体设计器上添加自定义控件，类名修改为 "xc" + "炫彩控件类名",
+例如 xcgui.ctrl.listview, 类名为 "xclistview"
+*/
+import xcgui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469;bgcolor=15245824)
+winform.add(
+closebutton={cls="xcclosebutton";text="r";left=725;top=2;right=749;bottom=28;dr=1;dt=1;font=LOGFONT(name='Marlett');transparent=1;z=1};
+edit={cls="xcedit";text=" ";left=62;top=95;right=719;bottom=433;border=1;db=1;dl=1;dr=1;dt=1;edge=1;z=4};
+static={cls="xctext";text="   ";left=27;top=12;right=693;bottom=31;dl=1;dr=1;dt=1;z=3};
+xcbutton={cls="xcbutton";left=534;top=22;right=648;bottom=58;bkBottom=7;bkImage="\控件使用\image\button_leave.png";bkLeft=11;bkRight=11;bkTop=6;db=1;dl=1;dr=1;dt=1;transparent=1;z=2}
+)
+/*}}*/
+
+winform.xcbutton.skin(
+	background = { 
+		hover = "\控件使用\image\button_hover.png";
+		active = "\控件使用\image\button_down.png";
+		leave = "\控件使用\image\button_leave.png"; 
+	}
+)
+
+/*
+直接双击控件，或在编辑器中输入  winform.xcbutton.onClick并回车生成下面的代码。
+点击按钮时触发下面的函数：
+*/
+winform.xcbutton.on("click",function(handled){
+	winform.edit.insertString("插入文本试试")
+	winform.edit.insertGif("\res\dog.gif")
+})
+
+//不启用自动换行，文本框就没有滚动条
+winform.edit.wrap = true;
+
+
+winform.show();
+win.loopMessage();

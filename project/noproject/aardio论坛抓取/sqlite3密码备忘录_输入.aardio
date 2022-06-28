@@ -1,0 +1,50 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=351;bottom=287)
+winform.add(
+button={cls="button";text="确定";left=40;top=224;right=136;bottom=264;z=1};
+button2={cls="button";text="取消";left=200;top=224;right=296;bottom=264;z=2};
+edit={cls="edit";left=40;top=24;right=296;bottom=56;edge=1;z=3};
+edit2={cls="edit";left=40;top=72;right=296;bottom=104;edge=1;z=4};
+edit3={cls="edit";left=40;top=120;right=296;bottom=152;edge=1;z=5};
+edit4={cls="edit";left=40;top=168;right=296;bottom=200;edge=1;z=6}
+)
+/*}}*/
+
+winform.button2.oncommand = function(id,event){
+	win.close(winform.hwnd);
+}
+
+winform.button.oncommand = function(id,event){
+    var r1, r2, r3, r4;
+    if(#winform.edit.text) {
+        r1 = winform.edit.text;
+    } else {
+        r1 = "";
+    }
+    
+    if(#winform.edit2.text) {
+        r2 = winform.edit2.text;
+    } else {
+        r2 = "";
+    }
+    
+    if(#winform.edit3.text) {
+        r3 = winform.edit3.text;
+    } else {
+        r3 = "";
+    }
+    
+    if(#winform.edit4.text) {
+        r4 = winform.edit4.text;
+    } else {
+        r4 = "";
+    }
+    var r = {};
+    table.push(r, r1, r2, r3, r4);
+    winform.endModal(r);
+	//return 
+}
+
+winform.show();
+win.loopMessage();

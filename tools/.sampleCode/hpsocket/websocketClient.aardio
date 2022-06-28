@@ -1,0 +1,66 @@
+import win.ui;
+/*DSG{{*/
+mainForm = win.form(text="WebSocket服务器";right=759;bottom=469)
+mainForm.add(
+edit={cls="edit";left=18;top=19;right=739;bottom=444;db=1;dl=1;dr=1;dt=1;edge=1;multiline=1;z=1}
+)
+/*}}*/
+
+import hpsocket.httpClient;
+var hpHttpClient = hpsocket.httpClient();
+
+mainForm.edit.threadCallable();
+hpHttpClient.threadGlobal = {
+	mainForm = mainForm;
+}
+
+//监听线程被创建后触发
+hpHttpClient.onThreadCreated = function(){}
+
+//监听线程退出前触发此事件
+hpHttpClient.onThreadEnd = function(){}
+
+//允许升级为WebSocket协议
+hpHttpClient.onUpgrade = function(hpHttpClient,connId,upgradeType){
+	if(upgradeType!=1) return -1;
+	
+	if( ! hpHttpClient.checkWsUpgradeResponse() )
+		return -1;//验证密钥错误
+		
+	//升级协议成功，向服务端发送消息试试
+	hpHttpClient.sendWsMessage("我是客户端，早上好呀");
+}
+ 
+//接收到WebSocket请求头
+hpHttpClient.onWsMessageHeader = function(hpHttpClient,connId,final,reserved,opCode,mask,bodyLen){ 
+	hpHttpClient.reallocString(bodyLen);//初始化缓冲区
+}
+
+//接收到WebSocket请求数据
+hpHttpClient.onWsMessageBody = function(hpHttpClient,connId,pData,len){ 
+	hpHttpClient.appendString(pData,len);
+}
+
+//WebSocket请求数据接收完成
+hpHttpClient.onWsMessageComplete = function(hpHttpClient){
+	var data = hpHttpClient.getString(); 
+	if( data ){
+		mainForm.edit.printf("收到服务端消息:%s",data)
+	}
+}
+
+hpHttpClient.onConnect = function(hpHttpClient){
+	hpHttpClient.sendWsUpgradeRequest("/");
+}
+
+hpHttpClient.onClose = function(hpHttpClient,connId,enOperation,errCode){
+	hpHttpClient.reallocString(0);
+}
+
+hpHttpClient.start("localhost",7511);
+mainForm.onClose = function(hwnd,message,wParam,lParam){
+    hpHttpClient.stop();
+}
+
+mainForm.show() 
+win.loopMessage();

@@ -1,0 +1,62 @@
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form(cls="PING_FORM";text="PING测试";right=599;bottom=399)
+winform.add(
+listbox={cls="listbox";left=115;top=70;right=521;bottom=331;bgcolor=16777215;edge=1;items={};ownerDraw=true;z=1}
+)
+/*}}*/
+
+//设定自绘每行的高度
+winform.listbox.onMeasureItem = function(measureItem){
+    measureItem.itemHeight = 16;  
+}
+
+//自绘列表项
+winform.listbox.onDrawItem = function(drawItem){
+    var text = winform.listbox.getItemText( drawItem.itemID + 1 )
+    ::SetTextColor(drawItem.hDC,winform.listbox.ipColors[drawItem.itemID + 1] ) ;
+    ::DrawText(drawItem.hDC,text,#text,drawItem.rcItem,0x20/*_DT_SINGLELINE*/)
+}
+winform.show()
+  
+//显示PING结果
+import thread.command;
+winform.listbox.ipColors = {};
+thread.command().ping = function(ip,reply){
+    if( reply ){
+        winform.listbox.add(ip)
+        winform.listbox.ipColors[winform.listbox.count] = 0xF00
+    }
+    else {
+       winform.listbox.add(ip)
+       winform.listbox.ipColors[winform.listbox.count] = 0x0f0
+    }
+}
+
+//创建PING线程
+import thread.works;
+var work = thread.works( 2,
+    function( ip ) {
+        import icmp.ping;
+        import thread.command;
+        var ping = icmp.ping();
+        
+        for(i=1;4;1){
+            if( ping.perform(ip) ){
+                thread.command.post("ping",ip, string.format( "Reply from %s: bytes=%d time=%dms TTL=%d"
+                    , ping.ip , #ping.requestData  , ping.echoReply.roundTripTime , ping.echoReply.options.ttl )  )
+                return;
+            }  
+            sleep(10)
+        }  
+        thread.command.post("ping",ip );
+    }
+);
+
+//添加PING任务
+work.push("bbs.aardio.com");
+work.push("www.baidu.com");
+work.push("www.qq.com");
+work.waitClose();
+
+win.loopMessage();

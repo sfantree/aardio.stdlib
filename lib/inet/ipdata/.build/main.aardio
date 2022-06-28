@@ -1,0 +1,12 @@
+import ide;
+import fsys;
+
+var publisDir = ide.getPublisDir();
+if(!#publisDir)return; 
+
+var pubDir =  fsys.joinpath(publisDir,"\lib\inet\ipdata\.res\" ); 
+if( ! io.exist(pubDir) ){ 
+	..fsys.createDir(pubDir);
+	var libPath,libDir = io.libpath("inet.ipdata")
+	..fsys.copy( fsys.joinpath(libDir,"\.res\qqwry.dat") ,pubDir,0x10/*_FOF_NOCONFIRMATION*/  | 0x200/*_FOF_NOCONFIRMMKDIR*/); 
+}

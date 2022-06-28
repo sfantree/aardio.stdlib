@@ -1,0 +1,16 @@
+﻿
+import chrome.app;
+var theApp  = chrome.app(); 
+ 
+// 导出为Javascript中的 aardio 对象
+theApp.external = {
+    onCounterUpdate = function(name,value){
+        if(name!==null && value!==null){
+        	return "aardio 返回的值：网页中 React 状态值改变了：value:"+value;
+        } 
+    }; 
+}
+ 
+theApp.start("/web/index.html",36153);
+ 
+win.loopMessage();

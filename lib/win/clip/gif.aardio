@@ -1,0 +1,30 @@
+﻿//gif 动画
+import win.clip;
+import win.clip.file;
+import win.clip.html;
+import gdip.bitmap;
+import crypt;
+
+namespace win.clip.gif;
+
+write = function(path){ 
+	
+	path = ..io.fullpath(path);
+	..win.clip.file.write(path,"copy",true)
+	
+	var bmp = ..gdip.bitmap(path);
+	if(bmp){
+		..win.clip.writeBitmap(bmp.copyHandle(),true,false);
+		bmp.dispose();
+	}
+	
+	var html = ..win.clip.html();
+	var dataUrl = ..string.format('data:image/gif;base64,%s'
+		,..crypt.encodeBin( ..string.loadBuffer(path),,0x40000001/*_CRYPT_STRING_BASE64*/) ); 
+		
+	html.write(`<img src="`+ dataUrl+`" />`,,false);
+} 
+
+/**intellisense()
+win.clip.gif.write(__) = 复制 GIF 动画到剪贴板,\n参数指定*.gif 文件路径\n剪贴板虽没有 GIF 专有格式,但是这个函数拥有良好的兼容性
+end intellisense**/

@@ -1,0 +1,84 @@
+ import win.ui;
+/*DSG{{*/
+var winform = win.form(text="极米投影仪客户端";right=697;bottom=378;border="dialog frame";max=false)
+winform.add(
+btnDiscover={cls="button";text="发现极米投影仪";left=477;top=40;right=651;bottom=76;db=1;dr=1;z=2};
+btnGame={cls="button";text="游戏模式";left=91;top=96;right=265;bottom=142;z=4};
+btnKeystoneCorrection={cls="button";text="自动梯形较正";left=284;top=162;right=458;bottom=208;z=7};
+btnOffice={cls="button";text="办公模式";left=477;top=98;right=651;bottom=144;z=6};
+btnSearch={cls="button";text="执行语音指令";left=477;top=259;right=651;bottom=295;z=9};
+btnTurnOfScreen={cls="button";text="关闭屏幕";left=477;top=162;right=651;bottom=208;z=8};
+btnVideo={cls="button";text="观影模式";left=284;top=98;right=458;bottom=144;z=5};
+edit={cls="edit";left=153;top=263;right=454;bottom=294;db=1;dl=1;dr=1;dt=1;edge=1;multiline=1;vscroll=1;z=10};
+editIp={cls="edit";left=32;top=44;right=454;bottom=75;db=1;dl=1;dr=1;dt=1;edge=1;multiline=1;vscroll=1;z=1};
+lbFriendlyName={cls="static";left=32;top=17;right=338;bottom=40;transparent=1;z=3};
+static={cls="static";text="按 WIN + P 键可以切换主从显示器显示方式";left=116;top=331;right=651;bottom=361;align="right";font=LOGFONT(h=-13);transparent=1;z=11}
+)
+/*}}*/
+
+import wsock.udp.xgimiClient;
+winform.btnDiscover.oncommand = function(id,event){
+
+	wsock.udp.xgimiClient.enumDevice(
+		function(ip,name){
+			winform.lbFriendlyName.text = name;
+			winform.editIp.text = ip;
+		}
+	)	
+}
+winform.btnDiscover.oncommand();
+	
+winform.btnGame.oncommand = function(id,event){
+	
+	var xgimiClient = wsock.udp.xgimiClient(winform.editIp.text)
+	xgimiClient.search("设置",2000);
+	xgimiClient.pressDown(4); 
+		xgimiClient.pressRight(); 
+		xgimiClient.pressDown();
+		xgimiClient.pressOk(2000);
+		xgimiClient.pressOk(2000);
+		xgimiClient.pressBack();
+		xgimiClient.close();
+}
+
+winform.btnVideo.oncommand = function(id,event){
+	var xgimiClient = wsock.udp.xgimiClient(winform.editIp.text)
+	xgimiClient.search("设置",2000);
+	xgimiClient.pressDown(4); 
+		xgimiClient.pressRight(); 
+		xgimiClient.pressOk(2000);
+		xgimiClient.pressBack();
+		xgimiClient.close();	
+}
+
+winform.btnOffice.oncommand = function(id,event){
+	var xgimiClient = wsock.udp.xgimiClient(winform.editIp.text)
+	xgimiClient.search("设置",2000);
+	xgimiClient.pressDown(4); 
+		xgimiClient.pressRight(); 
+		xgimiClient.pressDown(2);
+		xgimiClient.pressOk(2000);
+		xgimiClient.pressBack();
+		xgimiClient.close();		
+}
+
+winform.btnKeystoneCorrection.oncommand = function(id,event){
+	var xgimiClient = wsock.udp.xgimiClient(winform.editIp.text)
+	xgimiClient.search("自动梯形较正");
+	xgimiClient.close();
+}
+
+winform.btnTurnOfScreen.oncommand = function(id,event){
+	var xgimiClient = wsock.udp.xgimiClient(winform.editIp.text)
+	xgimiClient.search("关闭屏幕");
+	xgimiClient.close();	
+}
+
+winform.btnSearch.oncommand = function(id,event){
+	var xgimiClient = wsock.udp.xgimiClient(winform.editIp.text)
+	xgimiClient.search(winform.edit.text);
+	xgimiClient.close();		
+}
+
+winform.show() 
+win.loopMessage();

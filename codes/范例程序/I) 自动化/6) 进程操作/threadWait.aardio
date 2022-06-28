@@ -1,0 +1,38 @@
+//等待进程执行完成
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="等待进程执行完成";right=349;bottom=249;parent=...)
+winform.add(
+btnRun={cls="button";text="打开记事本";left=71;top=66;right=293;bottom=114;z=1}
+)
+/*}}*/
+
+winform.btnRun.oncommand = function(id,event){
+
+	thread.invoke( 
+		function(winform){
+			import mouse;
+			import process;
+			import winex;
+			import win;
+			
+			winform.btnRun.disabledText = "等待记事本关闭..."
+			var prcs = process("notepad.exe")
+			var hwnd = prcs.waitMainWindow();
+			
+			mouse.move(-1,-1,true);//鼠标移到记事本窗口,标题会自动恢复
+			winex.setText(hwnd,"新窗口标题");
+
+			prcs.wait();
+			
+				winform.btnRun.disabledText = null;
+				winform.btnRun.text = "已完成..."
+		}
+		,winform
+	)
+
+	
+}
+
+winform.show() 
+win.loopMessage();

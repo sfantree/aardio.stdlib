@@ -1,0 +1,79 @@
+/*
+抓取百度实时热点排行榜
+
+tables 数组内的一个单元
+url             关键词对应百度搜索页地址
+guanjianci      关键词  
+xiangxi_url     关键词详细页地址
+jinri_num       今日搜索量
+bianhualv       变化率
+qushi           变化趋势
+xinwen_url      关键词对应百度新闻地址
+tieba_url       关键词对应百度贴吧地址
+tupian_url      关键词对应图片地址
+
+*/
+import inet.whttp;
+
+xml_url = ...
+//测试实时排行
+xml_url = "http://top.baidu.com/rss/top10.xml";
+
+//实例化whttp对象
+whttp = inet.whttp();
+//下载xml
+xmlstr = whttp.get(xml_url);
+//关闭
+whttp.close();
+
+//判断是否下载成功
+if(xmlstr != null){
+    //声明tables
+    tables = {};
+    //匹配item区域
+    str = string.match(xmlstr,"\<item\>(.*?)\<\/item\>");   
+    //匹配更新时间pubDate                           
+    title = string.match(str,"\<title\>(.*?)\<\/title\>");      
+    //匹配更新时间pubDate                       
+    pubDate = string.match(str,"\<pubDate\>(.*?)\<\/pubDate\>");                        
+    //匹配内容链接区域
+    description = string.match(str,"\<description\>(.*?)\<\/description\>");            
+   
+    //循环每个tr区域
+    for tr in string.gmatch(description ,"\<tr\>(.*?)\<\/tr\>") {  
+        url,guanjianci = string.match(tr,"\<td class=""key""\>\<a href=""(.*?)"" target=""_blank""\>(.*?)\<\/a\>");                     
+        //详细内容url
+        xiangxi_url = string.match(tr,"\<td\>\<a href=""..(.*?)"" target=""_blank"" class=""detail""\>\<\/a\>\<\/td\>\<\!\-\-详");      
+        //关键词趋势
+        qushi = string.match(tr,"的链接\-\-\>.*?\<td\>\<span class=""trend (.*?)""\>\<\/span\>\<\/td\>\<\!\-\-趋势");                  
+        //24小时搜索量
+        jinri_num = string.match(tr,"持平\-\-\>.*?\<td\>(.*?)\<\/td\>\<\!\-\-最近");                                                   
+        //变化率
+        bianhualv = string.match(tr,"小时\-\-\>.*?\<td\>(.*?)\<\/td\>\<\!\-\-本周");        
+        //匹配新闻地址 贴吧地址 图片地址                                                                    
+        xinwen_url,tieba_url,tupian_url = string.match(tr,"\<td\>\<\!\-\-下面是文字链.*?\<a href=""(.*?)"" target.*?\<a href=""(.*?)"" target.*?\<a href=""(.*?)"" target.*?\<\/td\>");     
+        //压入tables
+        table.push(tables,{url=url;guanjianci=guanjianci;xiangxi_url=xiangxi_url;jinri_num=jinri_num;bianhualv=bianhualv;qushi=qushi;xinwen_url=xinwen_url;tieba_url=tieba_url;tupian_url=tupian_url});
+        
+    }
+    return tables;
+}else{
+    return false;
+}
+  
+
+io.open();
+io.print(tables);
+
+//测试数据
+for(k,v in tables){
+    for(kk,vv in v){
+        io.print(kk,vv)
+    }
+}
+
+//测试输出标题和更新日期
+io.print(title,pubDate);   
+
+execute("pause") //按任意键继续
+io.close();//关闭控制台

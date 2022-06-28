@@ -1,0 +1,61 @@
+//显示网络流量
+//获取单个网卡流量请参考 inet.monitor 扩展库范例( 扩展库管理器双击 inet.monitor )
+//网络流量波动较大,流量越小时不同查看工具的差距会越大。
+import fonts.fontAwesome;
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=289;bottom=43;bgcolor=16777215;border="none")
+winform.add(
+bk={cls="bk";text="  ";left=-5;top=0;right=290;bottom=46;bgcolor=16244939;forecolor=16777215;linearGradient=0;z=1};
+btnClose={cls="close";text="×";left=269;top=3;right=287;bottom=21;bgcolor=13405076;dr=1;dt=1;notify=1;z=4};
+rx={cls="plus";text="0 bytes/s";left=145;top=9;right=273;bottom=37;align="left";color=9858560;disabled=1;iconStyle={align="left";font=LOGFONT(name='FontAwesome')};iconText='\uF019';textPadding={left=29};z=3};
+tx={cls="plus";text="0 bytes/s";left=15;top=9;right=143;bottom=37;align="left";color=9858560;disabled=1;iconStyle={align="left";font=LOGFONT(name='FontAwesome')};iconText='\uF093';textPadding={left=29};z=2}
+)
+/*}}*/
+
+import com.wmi;
+import win.timer;
+var timer = win.timer(winform,2000);
+
+var tmPrev;
+var rxPrev = math.size64();
+var txPrev = math.size64();
+var rx = math.size64();
+var tx = math.size64();
+timer.onTimer = function(){
+	rx.reset(0);
+	tx.reset(0);
+	for item in com.wmi.eachProperties("SELECT BytesReceivedPersec,BytesSentPersec FROM Win32_PerfRawData_Tcpip_NetworkInterface") {
+	 	rx.add(item.BytesReceivedPersec);
+	 	tx.add(item.BytesSentPersec); 
+	}
+ 
+	var tm = ..time.tick();
+	if(tmPrev){
+		var sec = (tm - tmPrev) / 1000;
+		winform.tx.text = math.size64(tx).sub(txPrev).div(sec).format() + "/s";
+		winform.rx.text = math.size64(rx).sub(rxPrev).div(sec).format() + "/s"; 
+	}
+	
+	rxPrev.reset(rx);
+	txPrev.reset(tx);
+	tmPrev = tm;
+}
+timer.onTimer();
+timer.enable();
+
+import win.ui.shadow;
+win.ui.shadow(winform,60,3,,,,,12);
+winform.transparent(200);
+
+winform.btnClose.show(true);
+winform.btnClose.oncommand = function(id,event){
+	winform.close();
+}
+
+winform.onMouseDown  = function(wParam,lParam){
+	winform.hitCaption();	
+}
+
+winform.show();
+win.loopMessage();

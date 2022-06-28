@@ -1,0 +1,104 @@
+import process.popen;
+namespace process.isocmd;
+
+/*
+~/lib/process/isocmd/.res/目录下的文件为UltraISO中附带的驱动，本支持库不拥有该驱动文件的版权，
+这里包含该文件仅用于测试isocmd命令行调用接口，任何用户以任何形式使用该驱动文件的后果本支持库作者概不负责。
+*/
+install = function(){
+	remove();
+	var prcs  = ..process.popen( "~/lib/process/isocmd/.res/isocmd.exe","-i" );
+	var s = prcs.read(-1)
+	prcs.close();
+	start();
+	return s;
+}
+
+remove = function(){
+	var prcs  = ..process.popen( "~/lib/process/isocmd/.res/isocmd.exe","-r" );
+	var s = prcs.read(-1)
+	prcs.close();
+	return s;
+} 
+ 
+change = function(n,drive){
+	var prcs  = ..process.popen( "~/lib/process/isocmd/.res/isocmd.exe","-c",tostring(n),drive );
+	var s = prcs.read(-1)
+	prcs.close();
+	return s;
+}
+
+start = function(){
+	var prcs  = ..process.popen( "~/lib/process/isocmd/.res/isocmd.exe","-s" );
+	var s = prcs.read(-1)
+	prcs.close();
+	return s;
+}
+
+stop = function(){
+	var prcs  = ..process.popen( "~/lib/process/isocmd/.res/isocmd.exe","-1" );
+	var s = prcs.read(-1)
+	prcs.close();
+	return s;
+}
+
+number = function(num){
+	var prcs  = ..process.popen( "~/lib/process/isocmd/.res/isocmd.exe","-n",tostring(num:1));
+	var s = prcs.read(-1)
+	prcs.close();
+	return s;
+}
+
+mount = function(drive,path){
+	if(!path){
+		path = drive;
+		drive = null;
+	}
+	if(!drive){
+		drive = drives()[[1]];
+		if(drive) drive = drive + ":";
+	}
+	if(!drive){ return null;}
+	eject(drive);
+ 
+	var prcs  = ..process.popen( "~/lib/process/isocmd/.res/isocmd.exe","-m",drive,..io.fullpath(path));
+	var s = prcs.read(-1)
+	prcs.close();
+	 
+	if( ..io.exist(drive) ) ::Kernel32.SetCurrentDirectory(drive + "\");
+	return s,drive;
+}
+
+eject = function(drive){  
+	var prcs  = ..process.popen( "~/lib/process/isocmd/.res/isocmd.exe","-e",drive);
+	var s = prcs.read(-1)
+	prcs.close();
+	return s;
+}
+
+info = function(drive){
+	var prcs  = ..process.popen( "~/lib/process/isocmd/.res/isocmd.exe","-p",drive);
+	var s = prcs.read(-1) 
+	return s;
+}
+
+drives = function(drive){
+	var prcs  = ..process.popen( "~/lib/process/isocmd/.res/isocmd.exe","-p",drive);
+	var s = prcs.read(-1) 
+	if( s ){ 
+		var devices,letters = ..string.match(s,"Number of Devices\=(\d+)\, DriveLetters\=\[(\a+)\]")
+		return letters; 
+	} 
+}
+
+/**intellisense(process.isocmd)
+remove() = 移除驱动,\n需要管理权限，可能需要重启
+install() = 安装驱动,\n需要管理权限，可能需要重启\n该函数会自动调用remove,然后install,最后调用start
+number(1) = 设置虚拟光驱数据,\n需要管理权限，可能需要重启
+start() = 启用驱动,\n需要管理权限
+stop() = 停用驱动,\n需要管理权限
+info() = 返回光驱信息
+drives() = 返回虚拟光区盘符\n返回值为盘符使用的字母组成的字符串
+mount(.("J:","ISO路径") = 加载到虚拟光驱\n盘符省略则自动获取第一个虚拟分区\n返回值2为加载的分区盘符,该分区自动设为当前目录
+eject(.("J:") = 自虚拟光驱卸载文件\n盘符省则自动获取第一个虚拟分区
+end intellisense**/

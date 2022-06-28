@@ -1,0 +1,37 @@
+﻿import win.reg; 
+import string.cmdline;
+import process;
+
+namespace process;
+
+class maya{
+	ctor( environment,... ){
+		var filePath = path();
+		if(!filePath) return null,"文件不存在";
+		
+		return ..process(filePath,..string.cmdline.arguments(...),{environment=environment});
+	}; 
+}
+
+namespace maya{
+	
+	path = function(){
+		var reg  = ..win.regReader("HKEY_CLASSES_ROOT\MayaBinaryFile\shell\open\command");
+		if(reg){
+			var path = reg.queryValue("")
+			if(path){
+				path = ..string.match(path,`"(.+?)"`) 
+			}
+			reg.close();
+			
+			return path;
+		}
+
+	}
+}
+
+/**intellisense()
+process.maya(.(environment,->->->) = 启动 Maya,\n@environment 参数可选用一个表指定环境变量参数,\n可选增加一个或多个字符串参数指定进程启动参数
+process() = !process.
+process.maya.path() = 返回 Maya 安装路径
+end intellisense**/

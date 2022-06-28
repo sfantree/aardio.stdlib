@@ -1,0 +1,257 @@
+import win.ui;
+import win.ui.atom;
+/*DSG{{*/
+var winform = ..win.form(text="新公司数据采集系统";right=1000;bottom=650;border="thin";max=false;parent=...)
+winform.add(
+btnCheck={cls="button";text="采集";left=825;top=6;right=887;bottom=32;z=3};
+dumpxls={cls="button";text="导出";left=901;top=6;right=966;bottom=32;z=8};
+geturl={cls="edit";text="http://www.wxgsj.gov.cn/baweb/show/shiju/gg.jsp?fenceid=95000000&queryType=6";left=49;top=8;right=679;bottom=33;edge=1;z=7};
+listview={cls="listview";left=11;top=37;right=991;bottom=620;bgcolor=16777215;edge=1;fullRow=1;gridLines=1;msel=false;z=1};
+Page={cls="edit";text="20";left=743;top=7;right=798;bottom=32;edge=1;multiline=1;num=1;z=2};
+shuoming={cls="static";left=13;top=627;right=303;bottom=643;transparent=1;z=9};
+static={cls="static";text="采集页数";left=688;top=12;right=739;bottom=26;notify=1;transparent=1;z=4};
+static2={cls="static";text="页";left=804;top=13;right=826;bottom=29;transparent=1;z=5};
+static3={cls="static";text="网址";left=16;top=12;right=47;bottom=29;transparent=1;z=6};
+tishi={cls="static";text="版本:1.0 作者:曾QQ 联系QQ:191291375";left=527;top=626;right=985;bottom=645;transparent=1;z=10}
+)
+/*}}*/
+
+//表头
+winform.listview.insertColumn("ID号",60,,0x0/*_LVCFMT_LEFT*/)
+winform.listview.insertColumn("企业名称",200,,0x0/*_LVCFMT_LEFT*/)
+winform.listview.insertColumn("企业地址",240,,0x0/*_LVCFMT_LEFT*/)
+winform.listview.insertColumn("企业类型",80,,0x0/*_LVCFMT_LEFT*/)
+winform.listview.insertColumn("联系人",110,,0x0/*_LVCFMT_LEFT*/)
+winform.listview.insertColumn("联系电话",110,,0x0/*_LVCFMT_LEFT*/)
+winform.listview.insertColumn("备注",155,,0x0/*_LVCFMT_LEFT*/)
+//读取数据库
+import access;
+var  db = access("/gx.mdb");
+//创建表
+if(!db.existsTable("content") ){
+    db.exec("create table content (Id autoincrement PRIMARY KEY, qyname text, qyaddress text, qyxz text, lxr text, phone text, [note] text)");
+}
+
+//获取总记录数
+for(rs,fields in db.each("select count(*) as xl from content") ){ 
+    dbcount=rs("xl").value;
+}
+winform.shuoming.text="提示:共有"+dbcount+"条记录,程序最多只显示500条";
+//读取top500条记录
+    for(rs,fields in db.each("select top 500 * from content order by id desc") ){ 
+		序号=rs("Id").value;
+        企业名称=rs("qyname").value;
+        企业地址=rs("qyaddress").value;
+        企业类型=rs("qyxz").value;
+        联系人=rs("lxr").value;
+        联系电话=rs("phone").value;
+        备注=rs("note").value;
+        winform.listview.addItem({序号;企业名称;企业地址;企业类型;联系人;联系电话;备注;})
+}
+//删除数据
+import win.ui.menu;
+winform.popmenu = win.ui.popmenu(winform);//创建弹出菜单
+winform.popmenu.add('修改',function(id){
+	//在下面输入菜单响应代码
+	var id =winform.listview.getItemText(winform.listview.selIndex,1);
+	var selid=winform.listview.selIndex;
+	if(id=="新采集"){
+		win.msgbox("新采集的记录请重新打开软件后再执行修改操作");
+		return ; 
+	}
+	for(rs,fields in db.each("select * from content where id="+ id+"") ){ 
+	    企业名称=rs("qyname").value;
+        企业地址=rs("qyaddress").value;
+        企业性质=rs("qyxz").value;
+        联系人=rs("lxr").value;
+        联系电话=rs("phone").value;
+        备注=rs("note").value;
+	}
+	//显示窗口修改
+	var subwinform = ..win.form(text="修改资料";right=599;bottom=399)
+	subwinform.add(
+	tqym={cls="static";text="企业名称:";left=41;top=25;right=108;bottom=46;font=LOGFONT( h=-14 );notify=1;transparent=1;z=1};
+	qyname={cls="edit";text=企业名称;left=129;top=23;right=561;bottom=47;edge=1;tabstop=1;z=2;};
+	xqyxz={cls="static";text="企业性质:";left=40;top=114;right=107;bottom=135;font=LOGFONT( h=-14 );notify=1;transparent=1;z=5}
+	qyxz={cls="edit";text=企业性质;left=128;top=110;right=560;bottom=134;edge=1;tabstop=1;z=6};
+	qydz={cls="static";text="企业地址:";left=42;top=68;right=109;bottom=89;font=LOGFONT( h=-14 );notify=1;transparent=1;z=3};
+	qyaddress={cls="edit";text=企业地址;left=128;top=66;right=560;bottom=90;edge=1;tabstop=1;z=4};
+	lxdh={cls="static";text="联系电话:";left=40;top=202;right=107;bottom=223;font=LOGFONT( h=-14 );notify=1;transparent=1;z=9};
+	phone={cls="edit";text=联系电话;left=128;top=200;right=560;bottom=224;edge=1;tabstop=1;z=10};
+	tlxr={cls="static";text="联系人:";left=41;top=157;right=108;bottom=178;font=LOGFONT( h=-14 );notify=1;transparent=1;z=7};
+	lxr={cls="edit";text=联系人;left=128;top=155;right=560;bottom=179;edge=1;tabstop=1;z=8};
+	bz={cls="static";text="备注:";left=40;top=248;right=107;bottom=269;font=LOGFONT( h=-14 );notify=1;transparent=1;z=11};
+	note={cls="richedit";text=备注;left=128;top=247;right=561;bottom=333;edge=1;multiline=1;z=12};
+	save={cls="button";text="保存修改";left=205;top=348;right=406;bottom=384;font=LOGFONT( h=-16 );z=13};
+	)
+	//子窗口保存操作
+	vid=id;
+	subwinform.save.oncommand = function(id,event){
+			//不能为空的数据判断
+			qyname=subwinform.qyname.text;
+			qyaddress=subwinform.qyaddress.text;
+			qyxz=subwinform.qyxz.text;
+			lxr=subwinform.lxr.text;
+			phone=subwinform.phone.text;
+			note=subwinform.note.text;
+			if(qyname=="" || qyaddress=="" || qyxz==""){
+				subwinform.msgbox("企业名,企业地址,企业类型性质不能为空","操作提示");
+				return ; 
+			}
+	db.exec("update content set qyname='"+qyname+"',qyaddress='"+qyaddress+"',qyxz='"+qyxz+"',lxr='"+lxr+"',phone='"+phone+"',[note]='"+note+"' where Id="+vid);
+	//刷新对应的记录
+	winform.listview.setItemText(qyname,selid,2);
+	winform.listview.setItemText(qyaddress,selid,3);
+	winform.listview.setItemText(qyxz,selid,4);
+	winform.listview.setItemText(lxr,selid,5);
+	winform.listview.setItemText(phone,selid,6);
+	winform.listview.setItemText(note,selid,7);
+	//关闭子窗口
+	subwinform.show(false);
+	subwinform.msgbox("已经执行修改操作","提示");
+	}
+	
+	subwinform.show();
+
+});
+winform.popmenu.add('删除',function(id){
+	//在下面输入菜单响应代码
+	var id=winform.listview.getItemText(winform.listview.selIndex,1);
+	if(id=="新采集"){
+		win.msgbox("新采集的记录请重新打开软件后再执行删除操作");
+	}else{
+	var bool=win.msgboxTest("确定删除序号为 "+id+" 的记录？","系统提示")
+     	if(bool){
+          	db.exec("delete * from content where id=%s",id);
+          	winform.tishi.text = "已经删除序号为 "+id+" 的记录";
+          	winform.listview.delItem( winform.listview.selIndex );
+          	win.msgboxTimeout("已执行删除操作",'提示:',500)
+     	}
+	}
+});
+//双击listview控件添加下面的代码
+import mouse;
+winform.listview.onnotify = function(id,code,ptr){ 
+    
+    select(code) {
+    	case 0xFFFFFF9B/*_LVN_ITEMCHANGED*/{
+    		var nm = winform.listview.getNotifyMessage(code,ptr)
+    	}
+    	case 0xFFFFFFFB/*_NM_RCLICK*/  {
+    		var x,y = mouse.getPos()
+    		winform.popmenu.popup(x,y,true);//弹出菜单
+    	}
+ 	
+    }
+    
+}
+
+
+//采集开始
+import inet.whttp;
+winform.btnCheck.oncommand = function(id,event){
+winform.btnCheck.disabled=true;
+	Page=winform.Page.text;
+	Url=winform.geturl.text;
+	if(Page=="0"){
+			win.msgbox("不能为0")
+			return ; 
+	}
+	if(Url!="http://www.wxgsj.gov.cn/baweb/show/shiju/gg.jsp?fenceid=95000000&queryType=6"){
+			win.msgbox("不能改变网址")
+			return ; 
+	}
+	whttp = inet.whttp();
+	//循环采集,每页采集完毕后暂停1秒
+	for(i=1;Page;1){
+	winform.tishi.text="正在采集第 "+i+" 页";
+		if(i>1){
+			Url="http://www.wxgsj.gov.cn/baweb/show/shiju/gg.jsp?fenceid=95000000&total=19337&queryType=6&pagenum="+i+"&action=pagin&findWenhao=&findName=";
+		}	
+		cg=1;
+		tg=1;
+		html = whttp.get(Url);	
+		var pattern = //<@@a','width=550 height=350@>[^\>]+([^\<]+)&nbsp;<@@</a></td>@>[\p\s]+<@@<td width="233" align="left" style="border-bottom:dotted 1px #CCCCCC;">@>([^\<]+)&nbsp;<@@</td>@>[\p\s]+<@@<td width="234" align="left" style="border-bottom:dotted 1px #CCCCCC@>[\p\s]+([^\<]+)&nbsp;
+			pattern = ..string.trim(pattern)//正则匹配获取内容,感谢.wjxdqq的帮助
+		for qyname,qyaddress,qyxz in string.gmatch(string.fromto(html),pattern) {
+		qyname=string.trim(qyname); 
+		qyaddress=string.trim(qyaddress); 
+		qyxz=string.trim(qyxz); 
+			//判断是否在数据库中存在记录
+			for(rs,fields in db.each("select count(*) as xl from content where qyname='"+ string.replace(qyname,">","") +"'") ){ 
+				checkqyname=rs("xl").value;
+			}
+			//不存在相同纪录时,入库
+			if(checkqyname==0){
+				db.exec( "insert into content(qyname,qyaddress,qyxz) values('"+string.replace(qyname,">","")+"','"+string.replace(qyaddress," ","")+"','"+string.replace(qyxz," ","")+"')")
+				//同步显示到列表
+				winform.listview.addItem({"新采集";string.replace(qyname,">","");qyaddress;qyxz;"";"";"";})
+			}	
+		}
+		//延时一秒继续
+		win.delay(1000);
+	}
+	winform.btnCheck.disabled=false;
+	winform.tishi.text="";
+	win.msgboxTimeout("采集执行完毕",'提示:',3000)
+}
+
+//导出excel
+import com.excel;
+import fsys.dlg;
+winform.dumpxls.oncommand = function(id,event){
+winform.dumpxls.disabled=true;
+	//winform.msgbox( winform.dumpxls.text );
+	var path=fsys.dlg.save(".xls|*.xlsx")
+	var excel=com.excel(true);
+	excel.Visible=false
+	var book=excel.Workbooks.Add();
+	var sheet=book.Worksheets(1)
+	//提取文件记录数
+	for(rs,fields in db.each("select count(*) as xl from content") ){ 
+	datanum=rs("xl").value;
+	}
+	sheet.Cells(1,1).value2="序号";
+	sheet.Cells(1,2).value2="企业名称";
+	sheet.Cells(1,3).value2="企业地址";
+	sheet.Cells(1,4).value2="企业类型";
+	sheet.Cells(1,5).value2="联系人";
+	sheet.Cells(1,6).value2="联系电话";
+	sheet.Cells(1,7).value2="备注";
+	//定义每个列的宽度
+	sheet.Cells(1,1).ColumnWidth=10;
+	sheet.Cells(1,2).ColumnWidth=40;
+	sheet.Cells(1,3).ColumnWidth=50;
+	sheet.Cells(1,4).ColumnWidth=15;
+	sheet.Cells(1,5).ColumnWidth=30;
+	sheet.Cells(1,6).ColumnWidth=30;
+	sheet.Cells(1,7).ColumnWidth=30;
+	//定义高度
+	sheet.Cells.RowHeight=30
+	winform.tishi.text="正在导出,请稍候....";
+    i=1	
+    			for(rs,fields in db.each("select * from content order by id desc") ){
+  					i++ 
+   					sheet.Cells(i,1).value2=rs("Id").value;;
+					sheet.Cells(i,2).value2=rs("qyname").value;;
+					sheet.Cells(i,3).value2=rs("qyaddress").value;;
+					sheet.Cells(i,4).value2=rs("qyxz").value;;
+					sheet.Cells(i,5).value2=rs("lxr").value;;
+					sheet.Cells(i,6).value2=rs("phone").value;;
+					sheet.Cells(i,7).value2=rs("note").value;; 
+						winform.tishi.text="共有"+dbcount+"条记录需要导出到excel,已经导出到第"+i+"条,请稍候....";
+					if(i%200==0){
+						winform.tishi.text="共有"+dbcount+"条记录需要导出到excel,已经导出到第"+i+"条,请稍候....";
+						win.delay(200);
+					}
+				}
+				
+	excel.ActiveWorkbook.SaveAS(path);
+	excel.Quit();
+	winform.dumpxls.disabled=false;
+	winform.tishi.text="";
+	win.msgboxTimeout("导出完毕",'提示:',3000)
+}
+
+winform.show()
+win.loopMessage();

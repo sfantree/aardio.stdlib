@@ -1,0 +1,80 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add(
+button={cls="button";text="Button";left=81;top=280;right=182;bottom=315;z=2};
+button2={cls="button";text="Button";left=229;top=279;right=339;bottom=316;z=3};
+custom={cls="custom";left=60;top=54;right=158;bottom=138;bgcolor=0;z=1};
+static={cls="static";text="Static";left=60;top=122;right=158;bottom=135;ah=1;aw=1;center=1;color=65280;transparent=1;z=4}
+)
+/*}}*/
+
+// [神2也教你学E] - Cool内存监控显示.e
+
+import console;
+winform.custom.oncommand = function(id,event){
+	
+}
+
+winform.button.oncommand = function(id,event){
+    
+	graphics = gdip.graphics(  winform.custom );
+	
+	
+	var ch = winform.custom.height;
+	var cw = winform.custom.width;
+	console.log(cw, ch)
+	
+	//创建画笔,画笔pen只能画一个轮廓(画线) 
+	var pen = gdip.pen( 0xAA00FF00, 1, 2/*_GdipUnitPixel*/ );
+	
+	// a [1] ＝ 显示画板.高度 － 10 － 14
+	var a1 = ch - 24;
+	// 显示画板.画矩形 (10, 5 ＋ 取整 (a [1] ÷ 10) × (b － 1), 
+	// 显示画板.宽度 － 14, 取整 (a [1] ÷ 10) × (b － 1) ＋ 取整 (a [1] ÷ 10))
+	// 10 5 84 6
+	// 10 11 84 12
+	// 
+	
+	
+
+
+	//画矩形  - 描边需要画笔(Pen)
+	var b = 0;
+	//var brush = gdip.solidBrush(0xAA00FF00);
+	//graphics.drawRectangle( pen, 10,5, 84, 6);
+	//graphics.drawRectangle( pen, 10,11, 84, 6);
+	
+	
+	
+	for(b=1;10;1){
+		graphics.drawRectangle(pen, 10, 5 + (a1 / 10.0) * (b - 1), cw - 14 - 10 , (a1 / 10.0) * (b - 1) + (a1 / 10.0) - (5 + (a1 / 10.0) * (b - 1)) )
+		//console.log(10, 5 + (a1 / 10.0) * (b - 1), cw - 14 - 10 , (a1 / 10.0) * (b - 1) + (a1 / 10.0) - (5 + (a1 / 10.0) * (b - 1)) )
+        //graphics.fillRectangle( brush, 10, 5 + (a1 / 10.0) * (b - 1), cw - 14,  (a1 / 10.0) * (b - 1) + (a1 / 10.0));
+	
+	}
+	
+	
+	/* 
+	画笔(pen)负责描边画线,
+	而刷子(brush)就负责填充、喷涂颜色,在PS里面有个油漆桶、或者说是喷枪就类似这里的刷子(brush)。
+	GDI+提供了SolidBrush(实色刷)、HatchBrush(阴影刷)、TextureBrush(纹理刷)、LinearGradientBrush(渐变刷)和PathGradientBrush(路径刷)等五种画刷
+	创建一个蓝色,透明度为0xAA的刷子.
+	*/ 
+	
+		
+		
+	//删除创建的GDI对象 
+	pen.delete()
+	//brush.delete()
+	//lineBrush.delete() 
+	winform.graphics =  graphics;
+}
+
+winform.button2.oncommand = function(id,event){
+	var graphics = winform.graphics
+	graphics.clear(0xFFFFFFFF)
+}
+
+winform.show();
+win.loopMessage();

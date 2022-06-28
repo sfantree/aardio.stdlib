@@ -1,0 +1,20 @@
+﻿
+namespace string.gfmark{
+   
+	_dll = ..raw.loadDll("~\lib\string\gfmark\.res\cmark-gfm.dll",,"cdecl");
+	
+	render = function(md,opt){
+		var pHtml = _dll.cmark_markdown_to_htmlP(md,#md,opt || 0/*CMARK_OPT_DEFAULT*/)
+		return pHtml  ? ..raw.str(pHtml)
+	} 
+}
+
+/*intellisense()
+string.gfmark = Github Markdown 组件
+string.gfmark.render(.(MARKDOWN字符串) = 解析并返回HTML
+end intellisense**/
+
+/*
+cmark-gfm.dll免费开源，官网：
+https://github.com/github/cmark-gfm
+*/

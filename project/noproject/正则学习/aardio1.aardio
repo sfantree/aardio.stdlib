@@ -1,0 +1,49 @@
+import console; 
+import preg;
+var b = "\uD83D\uDCB0";
+//var c = eval(b)
+//console.log(c )
+var regex = preg("\\uD83D", "u")
+//console.log(regex.match(b, , 6))
+
+//string.formto
+
+//console.log("👩🏽‍❤️‍💋‍👨");
+//var printer=string.match(str,"title=\""(\N+)\""\s")
+//console.log(printer)
+//var printer=string.gmatch(txt,"title=\""(\N+)\""\s")
+//console.log(printer)
+//console.log(b)
+var b = "\uD83D\uDCB0";
+var bu = string.fromUnicode(b, 0);
+console.log(bu)
+
+var bprinter = string.match(bu, "/[\uD830-\uD83F]+/ju")
+console.log(bprinter)
+
+
+var regex,err = preg("/[\uD830-\uD83F]+/ju");
+console.log(err)  
+$keywords,j = regex.match (  bu );
+console.log(  $keywords )
+console.pause();
+
+
+
+var regex,err = preg("/[\x{4e00}-\x{9fa5}]+/u");
+$keywords,j = regex.match (  "abc中文" );
+//console.varDump(  $keywords )
+//console.pause();
+/*
+import preg;
+import console;
+
+var regex,err = preg("/[\uD830-\uD83F]+/ju");
+console.log(err)  
+$keywords,j = regex.match (  b, ,6 );
+console.log(  $keywords )
+console.pause();
+
+*/
+
+console.pause(true);

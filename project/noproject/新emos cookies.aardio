@@ -1,0 +1,63 @@
+import console;
+import process;
+import inet.http;
+
+/*
+cookie 登录 EMOS 工单
+*/
+
+
+/*
+
+键	值
+Cookie	JSESSIONID=0000Sru9MoA7qcl53X7t9g5BdNS:19p3mlitj
+
+方向	键	值	过期时间	域	路径	安全	仅 HTTP
+已发送	username	panlin					
+已发送	JSESSIONID	00004fHwhqq1KKrH4UNMtz7dJYU:19p1kjnro					
+
+
+键	值
+Host	10.30.244.51
+
+方向	键	值	过期时间	域	路径	安全	仅 HTTP
+已发送	JSESSIONID	00007NTjntipjYisIbP0-M8332f:19p3mlitj					
+
+http://10.30.111.50:9002/
+Cookie: Admin-Expires-In=43200; Admin-Token=057a3316-4817-4f43-8451-8ec66d06ff1f
+Authorization: Bearer 057a3316-4817-4f43-8451-8ec66d06ff1f
+
+*/
+var http = inet.http();
+
+//inet.setCookie("https://httpbin.org", "057a3316-4817-4f43-8451-8ec66d06ff1f", "Admin-Token" );
+//inet.setCookie("https://httpbin.org", "43200", "Admin-Expires-In" );
+
+inet.setCookie("http://10.30.111.50:9002", "057a3316-4817-4f43-8451-8ec66d06ff1f", "Admin-Token" );
+inet.setCookie("http://10.30.111.50:9002", "43200", "Admin-Expires-In" );
+
+
+//http.writeHeader("Authorization: Bearer 057a3316-4817-4f43-8451-8ec66d06ff1f")
+http.addHeaders = "Authorization: Bearer 057a3316-4817-4f43-8451-8ec66d06ff1f";
+
+var html,err,errCode = http.get( "https://httpbin.org/anything" );
+http.close();
+
+if( html ){
+    //string.save("/test.html",html )
+    //process.execute( "/test.html" );
+    console.log( html );
+    //console.pause();
+}
+else {
+    if( http.statusCode ){
+        //服务端返回错误信息
+        console.log( http.lastResponse(), "HTTP错误代码:" + http.statusCode )
+    }
+    else{
+        //本地内部错误
+        console.log( err,errCode );
+    }
+    //console.pause();
+}
+console.pause();

@@ -1,0 +1,515 @@
+﻿//treeview 树形视图
+import xcgui.ctrl.metaProperty;
+namespace xcgui.ctrl;
+
+class treeview{
+
+	ctor(hParentPointer,tParam){ 
+		if(! (hParentPointer || tParam) ) return null;
+		if(type(tParam)!=type.table){
+			this.hPointer = topointer( hParentPointer);
+		}
+		else {
+			if( tParam.resource ) ..xcgui.res.load(tParam.resource);
+			if(tParam.layout){
+				var hEle = ..xcgui.loadLayout(tParam.layout,hParentPointer);
+				if( ::Xcgui.XC_IsHELE (hEle) ){ 
+					if( ::Xcgui.XEle_GetType(hEle) != 0x1E/*_XC_TREE*/) return null; 
+					::Xcgui.XEle_AdjustLayoutObject(hEle);
+					this.hPointer = topointer(hEle);
+				}
+				else {
+					return null;
+				}
+			}
+			else {
+				this.hPointer = topointer( ::Xcgui.XTree_Create (tParam.left,tParam.top,tParam.right-tParam.left,tParam.bottom-tParam.top,hParentPointer) );	
+			}	
+		}
+		this@ = _metaProperty;
+		this.loadTemplate($"~\lib\xcgui\.res\Tree_Item.xml");
+	};
+}
+
+treeview._metaProperty = metaProperty( 
+	adapter = {
+		_set = function(v){
+			owner[["(adapter)"]] = v;
+			 ::Xcgui.XTree_BindAdapter(owner.hPointer,v);
+		}
+		_get = function(){
+			if( owner[["(adapter)"]] ) return owner[["(adapter)"]];
+			var ad = ..xcgui.adapter.tree( ::Xcgui.XTree_GetAdapter(owner.hPointer) );
+			owner[["(adapter)"]] =  ad or owner.createAdapter();
+			return owner[["(adapter)"]];
+		}
+	}
+	createAdapter = function(){
+		return ..xcgui.adapter.tree( ::Xcgui.XTree_CreateAdapter(owner.hPointer) );
+	}	
+	addField = function(fieldName){
+		return owner.adapter.addField(fieldName)
+	}
+	setField = function(fieldName){
+		return owner.adapter.setField(fieldName)
+	}
+	insertString = function(value,parentId,afterId){
+		return owner.adapter.insertString(value,parentId,afterId)
+	}
+	insertFieldString = function(fieldName,value,parentId,afterId){
+		return owner.adapter.insertFieldString(fieldName,value,parentId,afterId)
+	}
+	insertImage = function(hImage,parentId,afterId){
+		return owner.adapter.insertImage(hImage,parentId,afterId)
+	}
+	insertFieldImage = function(fieldName,hImage,parentId,afterId){
+		return owner.adapter.insertFieldImage(fieldName,hImage,parentId,afterId)
+	}
+	count = function(){
+		return owner.adapter.count()
+	}
+	fieldCount = function(){
+		return owner.adapter.fieldCount()
+	}
+	setString = function(itemId,iColumn,value){
+		return owner.adapter.setString(itemId,iColumn,value)
+	}
+	setFieldString = function(itemId,fieldName,value){
+		return owner.adapter.setFieldString(itemId,fieldName,value)
+	}
+	setImage = function(itemId,iColumn,hImage){
+		return owner.adapter.setImage(itemId,iColumn,hImage)
+	}
+	setFieldImage = function(itemId,fieldName,hImage){
+		return owner.adapter.setFieldImage(itemId,fieldName,hImage)
+	}
+	getString = function(itemId,iColumn,pOut,nOutLen){
+		return owner.adapter.getString(itemId,iColumn,pOut,nOutLen)
+	}
+	getImage = function(itemId,iColumn){
+		return owner.adapter.getImage(itemId,iColumn)
+	}
+	getFieldString = function(itemId,fieldName){
+		return owner.adapter.getFieldString(itemId,fieldName)
+	}
+	getFieldImage = function(itemId,fieldName){
+		return owner.adapter.getFieldImage(itemId,fieldName)
+	}
+	delete = function(itemId){
+		return owner.adapter.delete(itemId)
+	}
+	clear = function(){
+		return owner.adapter.clear()
+	}
+	clearField = function(){
+		return owner.adapter.clearField()
+	}
+	indentation = {
+		_set = function(v){
+			return ::Xcgui.XTree_SetIndentation(owner.hPointer,v);
+		}
+		_get = function(){
+			return ::Xcgui.XTree_GetIndentation(owner.hPointer);
+		}
+	}
+	rowSpace = {
+		_set = function(v){
+			return ::Xcgui.XTree_SetRowSpace(owner.hPointer,v);
+		}
+		_get = function(){
+			return ::Xcgui.XTree_GetRowSpace(owner.hPointer);
+		}
+	}
+	selected = {
+		_set = function(id){
+			return ::Xcgui.XTree_SetSelectItem(owner.hPointer,id);
+		}
+		_get = function(){
+			return ::Xcgui.XTree_GetSelectItem(owner.hPointer);
+		}
+	}
+	loadTemplate = function(path){
+		if( #path < 0x410/*_MAX_PATH_U8*/  ){
+			if ..io.exist(path) return ::Xcgui.XTree_SetItemTemplateXML(owner.hPointer,..io.fullpath(path));
+			path = ..string.loadBuffer(path) : path;
+		}
+		return ::Xcgui.XTree_SetItemTemplateXMLFromStringA(owner.hPointer,path);
+	}
+	loadTemplateSel = function(path){
+		if( #path < 0x410/*_MAX_PATH_U8*/  ){
+			if ..io.exist(path) return ::Xcgui.XTree_SetItemTemplateXMLSel(owner.hPointer,..io.fullpath(path));
+			path = ..string.loadBuffer(path) : path;
+		}
+		return ::Xcgui.XTree_SetItemTemplateXMLSelFromStringA(owner.hPointer,path);
+	} 
+	getTemplateObject = function(id,nTempItemID){
+		return ..xcgui.ele( ::Xcgui.XTree_GetTemplateObject(owner.hPointer,id,nTempItemID) );
+	}
+	getItemIdFrom = function(hXCGUI){
+		return ::Xcgui.XTree_GetItemIDFromHXCGUI(owner.hPointer,hXCGUI);
+	}
+	enableDragItem = function(bEnable){
+		return ::Xcgui.XTree_EnableDragItem(owner.hPointer,bEnable);
+	}
+	enableConnectLine = function(bEnable,bSolid){
+		return ::Xcgui.XTree_EnableConnectLine(owner.hPointer,bEnable,bSolid);
+	}
+	enableExpand = function(bEnable){
+		return ::Xcgui.XTree_EnableExpand(owner.hPointer,bEnable);
+	}
+	setConnectLineColor = function(color,alpha){
+		return ::Xcgui.XTree_SetConnectLineColor(owner.hPointer,color,alpha);
+	}
+	setExpandButtonSize = function(nWidth,nHeight){
+		return ::Xcgui.XTree_SetExpandButtonSize(owner.hPointer,nWidth,nHeight);
+	}
+	setConnectLineLength = function(nLength){
+		return ::Xcgui.XTree_SetConnectLineLength(owner.hPointer,nLength);
+	}
+	setDragInsertPositionColor = function(color,alpha){
+		return ::Xcgui.XTree_SetDragInsertPositionColor(owner.hPointer,color,alpha);
+	}
+	setDrawItemBkFlags = function(nFlags){
+		return ::Xcgui.XTree_SetDrawItemBkFlags(owner.hPointer,nFlags);
+	}
+	setItemData = function(id,nUserData){
+		return ::Xcgui.XTree_SetItemData(owner.hPointer,id,nUserData);
+	}
+	getItemData = function(id){
+		return ::Xcgui.XTree_GetItemData(owner.hPointer,id);
+	}
+	isExpand = function(id){
+		return ::Xcgui.XTree_IsExpand(owner.hPointer,id);
+	}
+	expandItem = function(id,bExpand){
+		return ::Xcgui.XTree_ExpandItem(owner.hPointer,id,bExpand);
+	}
+	expandAllChildItem = function(id,bExpand){
+		return ::Xcgui.XTree_ExpandAllChildItem(owner.hPointer,id,bExpand);
+	}
+	hitTest = function(x,y){
+		return ::Xcgui.XTree_HitTest(owner.hPointer,::POINT(x,y));
+	}
+	hitTestOffset = function(x,y){
+		return ::Xcgui.XTree_HitTestOffset(owner.hPointer,::POINT(x,y));
+	}
+	getFirstChildItem = function(id){
+		return ::Xcgui.XTree_GetFirstChildItem(owner.hPointer,id);
+	}
+	getEndChildItem = function(id){
+		return ::Xcgui.XTree_GetEndChildItem(owner.hPointer,id);
+	}
+	getPrevSiblingItem = function(id){
+		return ::Xcgui.XTree_GetPrevSiblingItem(owner.hPointer,id);
+	}
+	getNextSiblingItem = function(id){
+		return ::Xcgui.XTree_GetNextSiblingItem(owner.hPointer,id);
+	}
+	getParentItem = function(id){
+		return ::Xcgui.XTree_GetParentItem(owner.hPointer,id);
+	}
+	refreshData = function(){
+		return ::Xcgui.XTree_RefreshData(owner.hPointer);
+	}
+	refreshItem = function(id){
+		return ::Xcgui.XTree_RefreshItem(owner.hPointer,id);
+	}
+	setItemHeightDefault = function(nHeight,nSelHeight){
+		return ::Xcgui.XTree_SetItemHeightDefault(owner.hPointer,nHeight,nSelHeight);
+	}
+	getItemHeightDefault = function(){
+		var h,sh = {int value},{int value}
+		::Xcgui.XTree_GetItemHeightDefault(owner.hPointer,h,sh);
+		return h.value,sh.value;
+	}
+	setItemHeight = function(id,nHeight,nSelHeight){
+		return ::Xcgui.XTree_SetItemHeight(owner.hPointer,id,nHeight,nSelHeight);
+	}
+	getItemHeight = function(id,pHeight,pSelHeight){
+		var h,sh = {int value},{int value}
+		::Xcgui.XTree_GetItemHeight(owner.hPointer,h,sh);
+		return h.value,sh.value;
+	}
+	moveItem = function(nMoveItem,nDestItem,nType){
+		return ::Xcgui.XTree_MoveItem(owner.hPointer,nMoveItem,nDestItem,nType);
+	}
+	bkAddItemBorder = function(state,width,alpha,color,g,b){
+		if(b!==null) color = ..gdi.RGB(color,g,b);
+		return ::Xcgui.XTree_AddItemBkBorder(owner.hPointer,xcguistate[state] : state,color,alpha,width);
+	}
+	bkAddItemFill = function(state,alpha,color,g,b){
+		if(b!==null) color = ..gdi.RGB(color,g,b)
+		return ::Xcgui.XTree_AddItemBkFill(owner.hPointer,xcguistate[state] : state,color,alpha);
+	}
+	bkAddItemImage = function(nState,image){
+		if(type(image) == type.string) image = ..xcgui.image(image,repeat,top,right,bottom);
+		return ::Xcgui.XTree_AddItemBkImage(owner.hPointer,xcguistate[state] : state,image);
+	}
+	bkItemInfoCount = function(){
+		return ::Xcgui.XTree_GetItemBkInfoCount(owner.hPointer);
+	}
+	bkItemInfoClear = function(){
+		return ::Xcgui.XTree_ClearItemBkInfo(owner.hPointer);
+	}
+)
+
+/**intellisense()
+xcgui.ctrl.treeview(.(父窗口,参数表) = 创建一个树形视图
+xcgui.ctrl.treeview() = !stdxctree.
+win.ui.ctrl.xctreeview() = !stdxctree.
+end intellisense**/
+
+/**intellisense(!stdxctree)
+getScrollView() = 获取滚动视图接口\n!stdxcscrollview.
+createAdapter() = 创建数据适配器，根据绑定的项模板初始化数据适配器的列\n!stdxcadtree.
+adapter = 数据适配器\n!stdxcadtree.
+addField("__") = 添加列,参数为字符串
+setField("__") = 设置列,参数为字符串
+insertString(.(文本值,父ID,插入位置ID) = 插入项,数据填充到第一列\n返回值为插入新项的ID值
+insertFieldString(.(模板名字,文本值,父ID,插入位置ID) = 插入项,数据填充到指定列\n省略最后一个参数追加到最后一列\n返回值为插入新项的ID值
+insertImage(.(hImage,parentId,afterId) = 插入项,数据填充到第一列\n返回值为插入新项的ID值
+insertFieldImage(.(fieldName,hImage,parentId,afterId) = 插入项,数据填充到指定列\n省略最后一个参数追加到最后一列\n返回值为插入新项的ID值
+count() = 获取项数量
+fieldCount() = 获取列数量
+setString(.(itemId,iColumn,value) = 设置项数据
+setFieldString(.(itemId,fieldName,value) = 设置项文件内容
+setImage(.(itemId,iColumn,hImage) = 设置项数据
+setFieldImage(.(itemId,fieldName,hImage) = 设置项内容
+getString(.(itemId,iColumn,pOut,nOutLen) = 获取项文本内容
+getImage(.(itemId,iColumn) = 获取项内容
+getFieldString(.(itemId,fieldName,pOut,nOutLen) = 获取项文本内容
+getFieldImage(.(itemId,fieldName) = 获取项内容
+delete(__) = 删除项
+clear() = 删除所有项
+clearField() = 删除所有列,并且清空数据
+enableDragItem(__) = 启用拖动项功能
+enableConnectLine(.(bEnable,bSolid) = 启用或禁用显示项的连接线
+enableExpand(__) = 启动或关闭默认展开功能,如果开启新插入的项将自动展开
+setConnectLineColor(.(color,alpha) = 设置项连接线颜色
+setExpandButtonSize(.(nWidth,nHeight) = 设置展开按钮占用空间大小
+setConnectLineLength(__) = 设置连线绘制长度,展开按钮与项内容之间的连线
+setDragInsertPositionColor(.(color,alpha) = 设置拖动项插入位置颜色提示
+loadTemplate(__) = 设置列表项模板文件\n参数支持文件路径、资源路径、或内存数据
+loadTemplateSel(__) = 设置列表项模板文件,选中状态,\n参数支持文件路径、资源路径、或内存数据
+setDrawItemBkFlags(__) = 设置是否绘制指定状态下项的背景
+setItemData(.(id,nUserData) = 设置项用户数据
+getItemData(__) = 获取项用户数据
+selected  = 当前选择项
+isExpand(__) = 判断项是否展开
+expandItem(.(id,bExpand) = 展开项
+expandAllChildItem(.(id,bExpand) = 展开所有的子项
+hitTest(__) = 检测坐标点所在项
+hitTestOffset(__) = 检测坐标点所在项,自动添加滚动视图偏移坐标
+getFirstChildItem(__) = 获取第一个子项
+getEndChildItem(__) = 获取末尾子项
+getPrevSiblingItem(__) = 获取上一个兄弟项
+getNextSiblingItem(__) = 获取下一个兄弟项
+getParentItem(__) = 获取父项
+refreshData() = 刷新所有项模板,以便更新UI
+refreshItem(__) = 刷新指定项模板,以便更新UI
+indentation  = 缩进大小
+setItemHeightDefault(.(nHeight,nSelHeight) = 设置项默认高度
+getItemHeightDefault(.(pHeight,pSelHeight) = 获取项默认高度
+setItemHeight(.(id,nHeight,nSelHeight) = 设置指定项高度
+getItemHeight(.(id,pHeight,pSelHeight) = 获取指定项高度
+rowSpace =  行间隔大小
+moveItem(.(nMoveItem,nDestItem,nType) = 移动项的位置
+bkAddItemBorder(.(状态,线宽,透明度,RGB颜色) = 添加项背景内容边框\n状态可以是字符串或数值,可用值参考xucgui.state
+bkAddItemBorder(.(状态,线宽,透明度,R,G,B) = 添加项背景内容边框\n状态可以是字符串或数值,可用值参考xucgui.state
+bkAddItemFill(.(状态,透明度,RGB颜色) = 添加项背景内容填充\n状态可以是字符串或数值,可用值参考xucgui.state
+bkAddItemFill(.(状态,透明度,R,G,B) = 添加项背景内容填充\n状态可以是字符串或数值,可用值参考xucgui.state
+bkAddItemImage(.(状态,图像) = 添加项背景内容图片,参数为xcgui.image对象
+bkItemInfoCount() = 获取项背景内容数目
+bkItemInfoClear() = 清除项背景内容
+getTemplateObject(.(id,nTempItemID) = 通过模板项ID,获取实例化模板项ID对应的对象句柄
+getItemIdFrom(__) = 获取当前对象所在模板实例,属于列表树中哪一个项
+background = 获取控件的背景管理器\n!stdxcbkmanager.
+bkAddFill(.("状态",图像,颜色数值或RGB分量) = 设置控件填充颜色\n可用的背景状态请查看xcgui.state
+bkAddImage(.("状态",图像) = 设置窗口顶部图像\n图像可直接指定路径或资源路径,也可使用xcgui.image对象
+bkAddBorder(.("状态",线宽,透明度,RGB颜色) = 添加背景边框\n状态可以是字符串或数值,可用值参考xucgui.state
+id = ID值
+z = Z序
+topmost(true) = Z序置顶
+getWindow() = 返回父窗体\n!stdxcwnd
+hitEle(.(x,y) = 根据指定的坐标获取子节点\n!stdxcele
+getParent() = 获取父节点\n!stdxcele
+getParentHandle() = 获取父节点句柄
+getParentType() = 获取父节点类型
+getObjectType() = 获取节点类型
+addEle(__) = 添加子节点
+insertEle(.(child,index) = 在index指定的位置插入子节点child 
+remove() = 移除元素,但不销毁.
+disabled = 是否禁用
+hide = 是否隐藏;
+pointerEvents = 是否触发鼠标事件\n值设为false可实现鼠标穿透效果
+transparent = 是否支持背景透明\n透明PNG图像需要设置此属性为true
+alpha = 透明度
+color = 字体颜色
+border = 设置是否允许显示边框\n只写属性
+focusBorderColor = 焦点边框颜色
+enableDrawFocus = 是否允许绘制焦点
+focusBorder = 是否启用焦点
+scrollView = 是否允许显示滚动
+tabstop = 是否允许键盘切换焦点
+tooltip = 提示文本
+css("__") = 修改CSS样式名\n无参数时返回CSS样式名
+popupToolTip(.(x,y) = 在指定坐标弹出提示
+getFont() = 获取字体\n!stdxcfont.
+setFont(.(字体名,字体大小,样式) = 创建字体
+setFont(.(字体名） = 设置字体
+setFont(.(name="字体"） = 设置字体\n参数为LOGFONT对象，或指定部分LOGFONT属性的表
+setFont(.(句柄） = 设置字体\n参数为字体句柄
+getClientRect() = 返回客户区区块,::RECT对象\n!rect. 
+getRect = 返回控件区块,::RECT对象\n!rect. 
+setRect(.(rect,是否重绘) = 设置区块,参数@1为::RECT对象
+getLogicRect = 返回控件逻辑区块,::RECT对象\n!rect. 
+setLogicRect(.(rect,是否重绘) = 设置控件逻辑区块,参数@1为::RECT对象
+setPos(.(x坐标,y坐标,宽,高) = 调整控件位置或排序,所有参数可选\n同时指定x,y坐标则移动位置\n同时指定宽高则改变大小
+getPos() = 返回相对坐标,宽,高,返回4个值：x,y,cx,cy
+autoResize = 是否允许aardio窗口自动调整控件位置\n只有在窗口设计器中添加的控件,并是aardio窗口对象的成员时此属性才有效
+getWidth() = 获取宽度
+getHeight() = 获取高度
+layoutObject = 获取或绑定布局对象\n获取布局对象时如果布局对象不存在则自动创建\n!stdxclayoutObj.
+getParentLayoutObject() = 获取父布局对象
+adjustLayoutObject() = 调整布局对象
+adjustLayout() = 调整布局
+setLayoutHeight(.(宽度,选项) = 设置布局宽度
+setLayoutWidth(.(高度,选项) = 设置布局高度 
+cursor = 鼠标指针
+redraw() = 重绘
+redrawRect(__) = 重绘区块,参数为::RECT对象
+close() = 销毁控件
+post("click__",wParam,lParam) = 发送消息,不获取返回值\n参数@1可使用任何字符串自定义新的控件消息
+send("click__",wParam,lParam) = 发送消息,获取消息处理函数的返回值\n任何一个事件回调函数返回非null值都会结束当次事件并返回该值,\n参数@1可使用任何字符串自定义新的控件消息
+.onMessage= @.on("message",function(message,wParam,lParam){
+	if( message == "自定义消息" ) return __/*返回非null值结束本次回调*/;
+})
+.onTempCreate = @.on("treeTempCreate",function(pItem){
+	__
+})
+.onTempCreateEnd = @.on("treeTempCreateEnd",function(pItem){
+	__
+})
+.onTempDestroy = @.on("treeTempDestroy",function(pItem){
+	__
+})
+.onTempAdjustCoordinate = @.on("treeTempAdjustCoordinate",function(pItem){
+	__
+})
+.onDrawitem = @.on("treeDrawitem",function(hDraw,pItem){
+	__
+})
+.onSelect = @.on("treeSelect",function(itemId){
+	__
+})
+.onExpand = @.on("treeExpand",function(id,bExpand){
+	__
+})
+.onDragIteming = @.on("treeDragIteming",function(pInfo){
+	__
+})
+.onDragItem = @.on("treeDragItem",function(pInfo){
+	__
+})
+.onPaint = @.on("paint",function(hDraw){
+	__
+})
+.onPaintEnd = @.on("paintEnd",function(hDraw){
+	__
+})
+.onPaintScrollView = @.on("paintScrollView",function(hDraw){
+
+})
+.onMove = @.on("move",function(nFlags,pt){
+	
+	__
+})
+.onEnter = @.on("enter",function(){
+
+})
+.onHover = @.on("hover",function(nFlags, pt){
+	
+	__
+})
+.onLeave = @.on("leave",function(hEleHover){
+
+})
+.onWheel = @.on("wheel",function(nFlags,pt){
+	
+	__
+})
+.onLbuttonDown = @.on("lbuttonDown",function(nFlags, pt){
+	
+	__
+})
+.onLbuttonUp = @.on("lbuttonUp",function(nFlags, pt){
+	
+	__
+})
+.onRbuttonDown = @.on("rbuttonDown",function(nFlags, pt){
+	
+	__
+})
+.onRbuttonUp = @.on("rbuttonUp",function(nFlags, pt){
+	
+	__
+})
+.onDblclick = @.on("dblclick",function(nFlags, pt){
+	
+	__
+})
+.onFocus = @.on("focus",function(){
+	__
+})
+.onKillFocus = @.on("killFocus",function(){
+	__
+})
+.onDestroy = @.on("destroy",function(){
+	__
+})
+.onSize = @.on("size",function(){
+	__
+})
+.onShow = @.on("show",function(shown){
+	__
+})
+.onSetFont = @.on("font",function(){
+	__
+})
+.onKeyDown = @.on("keyDown",function(wParam,lParam){
+	__
+})
+.onChar = @.on("char",function(wParam,lParam){
+	__
+})
+.onSetCapture = @.on("setCapture",function(){
+	__
+})
+.onKillCapture = @.on("killCapture",function(){
+	__
+})
+.onCursor = @.on("cursor",function(wParam,lParam){
+	__
+})
+.onDropfiles = @.on("dropfiles",function(wParam){
+	var files = ..win.getDropFile(wParam) __
+})
+.onMenuPopup = @.on("menuPopup",function(hMenu){
+	__
+})
+.onMenuPopupWnd = @.on("menuPopupWnd",function(hMenu,pInfo){
+	__
+})
+.onMenuSelect = @.on("menuSelect",function(id){
+	__
+})
+.onMenuDrawBackground = @.on("menuDrawBackground",function(hDraw,pInfo){
+	__
+})
+.onMenuDrawitem = @.on("menuDrawitem",function(hDraw,pInfo){
+	__
+})
+.onMenuExit = @.on("menuExit",function(){
+	__
+})
+end intellisense**/

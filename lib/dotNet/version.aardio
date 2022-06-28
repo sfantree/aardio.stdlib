@@ -1,0 +1,74 @@
+//version 已安装版本
+import win.reg;
+namespace dotNet.version;
+	
+getFrameworks = function(vPattern){  
+	var vers = {};
+	var reg = ..win.regReader("HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\NET Framework Setup\NDP");
+	
+	if(!vPattern) vPattern = "^v\d"
+	for(keyname,writetime in reg.eachKey() ){  
+	
+		if( ..string.match(keyname,vPattern ) ){
+			 
+			var regVer = reg.open(keyname); 
+			if(!regVer) continue; 
+			if(regVer.queryValue("")=="deprecated"){
+				regVer.close();
+				continue;
+			}
+			 
+			var ver = {}
+			vers[keyname] = ver;
+			ver.version = regVer.queryValue("Version");
+			ver.sp = regVer.queryValue("SP");
+			ver.installPath  = regVer.queryValue("InstallPath");
+			
+			if( ! ver.version ){
+				var regClientVer  = regVer.openReg("Client",true); 
+				if( regClientVer ){
+					//安装了精简版
+					ver.client = {
+						version = regClientVer.queryValue("Version");
+						sp = regClientVer.queryValue("SP");
+						installPath  = regClientVer.queryValue("InstallPath");
+					}
+					regClientVer.close()
+				}
+				
+				var regFullVer  = regVer.openReg("Full",true); 
+				if( regFullVer ){
+					ver.full = {
+						version = regFullVer.queryValue("Version");
+						sp = regFullVer.queryValue("SP");
+						installPath  = regFullVer.queryValue("InstallPath");
+					}
+					regFullVer.close();
+				}
+				
+				if( ! ( regClientVer || regFullVer ) ){
+					vers[keyname] = null;
+				}
+			} 
+			regVer.close(); 
+		}
+	}
+	
+	reg.close();
+	
+	return vers; 
+}
+
+getVersions = function(){
+	var versions = getFrameworks();
+	return ..table.map(versions,function(v,k,result){
+		k = ..string.match(k,"^v\d+\.*\d*");
+		if(#k==2) k = k + ".0";
+		result[k] = true;
+	})  
+}
+
+/**intellisense(dotNet.version)
+getFrameworks() = 获取安装的 .Net Framework 版本信息列表\n可选用参数@1指定注册表版本主键匹配模式串，默认为 "^v\d"
+getVersions() = 返回已安装的 .Net Framework 版本\n版本号一律规范为 vN.N 格式,例如 v2.0 v4.0 等等\n\n注意 .NET 3.5的运行时是 v2.0，.Net 4.5 的运行时是 v4.0，\nWin7 自带 .NET2.0 运行时，Win10 自带 .NET4.0 运行时。\n\naardio 可以自适应不同的版本，\n所以大多时候不需要去指定版本
+end intellisense**/

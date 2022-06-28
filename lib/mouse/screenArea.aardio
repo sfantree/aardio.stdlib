@@ -1,0 +1,102 @@
+//screenArea 屏幕选区
+import win.ui;
+import win.ui.atom;
+import win.cur;
+import gdip.snap;
+
+namespace mouse;
+class screenArea{
+	ctor(parent) begin
+	/*DSG{{*/
+	this = ..win.form(text="aardio form";right=759;bottom=469;border="none";composited=1;exmode="toolwindow";mode="popup";parent=parent)
+	this.add(
+	mask={cls="plus";left=0;top=0;right=930;bottom=606;clip=1;db=1;dl=1;dr=1;dt=1;notify=1;z=2};
+	staticClipRect={cls="plus";left=137;top=638;right=656;bottom=988;z=1}
+	)
+	/*}}*/
+	
+	var atom,hwnd = this.atom("3F36877F-145C-474F-A60E-447CDFEA3F09.screenArea");
+	if(!atom) return; 
+
+	this.mask.foreground = 0xA2000000; 
+	
+	var cur = ..win.cur.load(0x7F03/*_IDC_CROSS*/);
+	..win.ui.waitCursor(true,cur);
+	
+ 	this.beforeShowWindow = function(shown,status){ 
+		if(shown){
+			var srcX,srcY,srcCx,srcCy = ..win.getScreenPos(this.hwnd); 
+			this.setPos( srcX,srcY,srcCx,srcCy,0/*_HWND_TOP*/ );
+
+			var pic = ..com.picture.snap();
+			this.setBitmap(pic.CopyHandle() )
+ 			..com.Release(pic);	
+ 			
+ 			this.mask.predraw(); 
+		}
+	}
+ 			
+	var spyRc;
+	this.mask.onMouseDown = function(wParam,lParam){
+    	var x,y = ..win.getMessagePos(lParam);
+    	spyRc= ::RECT(x,y,x,y);
+    	spyRc.lastX = x;
+    	spyRc.lastY = y;
+    	
+    	..win.cur.setCur(cur);
+	}
+	
+	this.mask.onMouseUp = function(wParam,lParam){
+		if(spyRc && this.onSelectionChanged){
+			..win.ui.waitCursor(false);
+		    this.onSelectionChanged(spyRc);
+		}
+	}
+	
+	this.mask.onMouseDrag = function(wParam,lParam){ 
+    	var x,y = ..win.getMessagePos(lParam);
+    	
+ 		if( spyRc){
+        	if( spyRc.lastX !=x || spyRc.lastY != y ){
+            	spyRc.lastX = x;
+            	spyRc.lastY = y;
+      	
+            	if( x < spyRc.left+ ( ( spyRc.right- spyRc.left )/2)){
+                	spyRc.left =  x;
+            	}
+            	else {
+                	spyRc.right = x;
+            	}
+            	if( y < spyRc.top + ( ( spyRc.bottom- spyRc.top )/2)){
+                	spyRc.top  = y;
+            	}
+            	else {
+                	spyRc.bottom = y;
+            	} 
+            	
+            	this.staticClipRect.setRect(spyRc);
+        	}
+    	}
+	};
+	end;
+}
+
+if( !owner ) ..mouse.screenArea().doModal();
+/**intellisense()
+mouse.screenArea = 屏幕选区工具
+mouse.screenArea( = 创建屏幕选区工具,\n如果已打开屏幕选区则返回 null
+mouse.screenArea(.(winform) = 参数 @1 指定父窗口
+mouse.screenArea() = !stdMouseScreenArea.
+end intellisense**/
+
+/**intellisense(!stdMouseScreenArea)
+mask.foreground = 设置遮罩颜色，0xAARRGGBB 格式数值
+show(true) = 显示创建屏幕选区工具
+show(false) = 隐藏创建屏幕选区工具
+doModal(__/*请指定所有者窗口\n可省略此参数*/) = 此函数创建屏幕选区工具并显示为模态对话框，\n\n模态对话框应是独立窗口，并显示在所有者窗口前面。\n\n模态对话框会自己创建自己的消息循环，\n并阻止调用模态对话框的代码继续向后运行 - 直到模态对话框被关闭。
+close() = 关闭创建屏幕选区工具
+onSelectionChanged = @.onSelectionChanged = function(rc){
+	__/*rc 为表示当前选区的::RECT 结构体*/
+	owner.close();
+}
+end intellisense**/

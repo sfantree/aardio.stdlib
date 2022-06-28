@@ -1,0 +1,61 @@
+﻿//uwpCompiler 编译器
+import dotNet;
+import fsys;
+
+namespace dotNet;
+
+if(!_WIN10_LATER){
+	error("仅支持 Windows 10 1507 以上版本",2)
+}
+
+var appDomain = ..dotNet.appDomain();
+if( !appDomain ) error("当前系统未安装.Net Framework") 
+
+class uwpCompiler{
+	ctor( outputPath,winmdPath ){
+		
+		this = appDomain.createCompiler("C#"); 
+		this.Reference("System.Runtime.dll");
+		this.Reference("System.Runtime.WindowsRuntime.dll");	
+		this.Parameters.GenerateInMemory = false;
+		this.Parameters.OutputAssembly = ..io.fullpath(outputPath);
+		
+		var findWinMdPath = function(){
+			if(!..io.exist(winmdPath)){ 
+				var metaDir = ..io.getSpecial(0x26/*_CSIDL_PROGRAM_FILES*/,"\Windows Kits\10\UnionMetadata\")
+				if(!..io.exist(metaDir)){
+					error("请先安装 Windows 10 SDK，或指定 Windows.winmd 文件路径。 ",2)
+				}
+				
+				winmdPath = ..io.joinpath(metaDir,"Windows.winmd")
+				if(!..io.exist(winmdPath)){ 
+					var files,dirs = ..fsys.list(metaDir,"\d+");
+					if(#dirs){
+						..table.sort(dirs);
+						var dir = ..table.pop(dirs);
+						var path = ..io.joinpath(metaDir,dir,"Windows.winmd")
+					
+						if(..io.exist(path)){
+							winmdPath = path;
+						}
+					} 
+				}
+			}
+			
+			return ..io.exist(winmdPath);			
+		}
+		
+		if(!findWinMdPath()){
+			error("未找到文件 " + ..io.joinpath(metaDir,"Windows.winmd"),2)
+		}
+		else {
+			this.Reference(winmdPath)	
+		}
+	}; 
+}
+
+/**intellisense()
+dotNet.uwpCompiler( = 创建支持 UWP 接口的 C# 编译器
+dotNet.uwpCompiler(.(outputPath,winmdPath) = 创建支持 UWP 接口的 C# 编译器,\n@outputPath 参数必须指定编译后生成 DLL 文件的路径,\n可选自定义 Windows.winmd 路径，不指定则自动搜索最新版本\n生成的DLL程序集不再需要 Windows.winmd 文件
+dotNet.uwpCompiler() = !dotNetCompiler.
+end intellisense**/

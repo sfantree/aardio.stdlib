@@ -1,0 +1,94 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add()
+/*}}*/
+
+import console;
+
+import fsys.stream;
+
+// 将提供的bindata(png[12:29]数据 替换为指定的宽和高)
+getBindata = function(bindata, w, h){
+	var req = {
+		INT v1 = w;
+		INT v2 = h;
+	}
+	var s = ..raw.buffer(req);
+	s = string.reverse(s);
+	//console.dump("req", string.hex(s));
+	
+	var r = string.slice(bindata, 1, 4);
+	r = r ++ s;
+	r = r ++ string.slice(bindata, 13);
+    //console.dump("r", string.hex(r));
+    return r;
+}
+
+/*
+fsys_stream = fsys.stream("G:\Users\lin\PycharmProjects\zhihu2epub\python-course\1.png","r+");
+fsys_stream.seek("set", 12);
+bindata = fsys_stream.read(17);
+console.dump("bindata", string.hex(bindata));
+crc32key = string.crc32(bindata,,17);
+crc32key = crc32key ^ 0xFFFFFFFF;
+getBindata(bindata, 1, 142)
+
+
+fsys_stream.seek("set", 29);
+bindata = fsys_stream.read(4);
+crc32key2 = string.hex(bindata,"");
+crc32key2 = (tonumber(crc32key2, 16)) ^ 0xFFFFFFFF;
+
+
+
+fsys_stream.close();
+
+console.dump(crc32key );
+console.dump((crc32key2));
+console.dump(string.hex(bindata));
+*/
+
+
+// path: png路径 
+// maxweight, maxheight: 爆破最大的宽和高 
+fuzz = function(path, maxweight, maxheight){
+	if( not ..io.exist(path) ) {
+	    return 0;
+	}
+	var fsys_stream = fsys.stream(path,"r+");
+	
+	// png原始crc32
+	fsys_stream.seek("set", 29);
+	bindata = fsys_stream.read(4);
+	crc32key2 = string.hex(bindata,"");
+	crc32key2 = (tonumber(crc32key2, 16)) ^ 0xFFFFFFFF;
+	
+	// png IHDR
+	fsys_stream.seek("set", 12);
+	bindata = fsys_stream.read(17);
+	
+	var w = 0;
+	var h = 0;
+	for(w=1;maxweight;1){
+		for(h=1;maxheight;1){
+			var r = getBindata(bindata, w, h);
+		
+		}
+	}
+	
+	
+	
+	crc32key = string.crc32(bindata,,17);
+	crc32key = crc32key ^ 0xFFFFFFFF;
+    
+    fsys_stream.close();
+}
+
+
+
+
+
+
+winform.show();
+win.loopMessage();

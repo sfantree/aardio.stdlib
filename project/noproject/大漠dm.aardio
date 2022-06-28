@@ -1,0 +1,100 @@
+// @Author  : popy32
+// @Contact : 74o5o27o8#qq.com
+// @File    : dm.aardio
+// @Comment : 大漠插件测试
+
+import debug;
+import console;
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add(
+button={cls="button";text="日志测试1";left=0;top=0;right=128;bottom=32;z=2};
+button2={cls="button";text="蜂鸣器";left=0;top=32;right=128;bottom=64;z=3};
+button3={cls="button";text="基础信息";left=0;top=64;right=128;bottom=96;z=4};
+button4={cls="button";text="遍历进程";left=0;top=96;right=128;bottom=128;z=5};
+button5={cls="button";text="屏幕坐标转换";left=0;top=128;right=128;bottom=160;z=6};
+edit={cls="edit";left=0;top=256;right=760;bottom=472;autohscroll=false;bgcolor=0;color=16777215;edge=1;multiline=1;z=1}
+)
+/*}}*/
+
+import com;
+import win.dlg.message;
+
+
+// 日志输出
+Logd = function(...){
+    import time;
+    var args = {...};
+    var tm = time.now();
+    tm.format = "[%Y/%m/%d %H:%M:%S] ";
+    //
+    var debugInfo = debug.queryinfo(2, "select source,function,upvars,name,currentline,activelines") ;
+    winform.edit.log(tostring(tm), "line: ", debugInfo[['currentline']], " ", ..string.join(args,' '),'\r\n');
+    // 滚动条随光标滚动
+    winform.edit.scrollCaret();
+}
+
+g_dmObject = null;
+
+dmRegState = function(){
+	g_dmObject = com.TryCreateObject("dm.dmsoft");
+	return (not(g_dmObject == null));
+}
+
+if (not( dmRegState() )) {
+	winform.msgWarn("系统未注册dm.dmsoft");
+	//winform.close();
+	return;
+} else {
+	if(g_dmObject) {
+	    Logd("dmRegState", "初始化dm.dll");
+	}
+}
+
+// 测试当前目录
+winform.button.oncommand = function(id,event){
+    import fsys;
+    import fsys.path;
+    Logd("winform.button.oncommand", "fsys.getCurDir()", fsys.getCurDir());
+    Logd("winform.button.oncommand", "io._exepath", io._exepath);
+    Logd("winform.button.oncommand", 'io.fullpath("/")', io.fullpath("/") );
+    Logd("winform.button.oncommand", 'io.fullpath("~")', io.fullpath("~") );
+}
+
+winform.button2.oncommand = function(id,event){
+	g_dmObject.Beep(1000, 1000);
+}
+
+winform.button3.oncommand = function(id,event){
+	if(g_dmObject) {
+		var basePath = g_dmObject.GetBasePath();
+		var path = g_dmObject.GetPath();
+	    Logd("winform.button3.oncommand", 
+	        "注册路径", basePath, 
+	        "全局路径", path);
+	}
+}
+
+winform.button4.oncommand = function(id,event){
+	if(g_dmObject) {
+		var pids  = g_dmObject.EnumProcess("svchost.exe");
+	    Logd("winform.button3.oncommand", 
+	        "枚举 svchost.exe", pids);
+	}
+}
+
+winform.button5.oncommand = function(id,event){
+	if(g_dmObject) {
+		var hwnd = winform.hwnd;
+		var x = 0;
+		var y = 0;
+		var r = 0;
+		r, x, y = g_dmObject.ClientToScreen(hwnd, x, y);
+	    Logd("winform.button3.oncommand", 
+	        "r", r, "x", x, "y", y);
+	}
+}
+
+winform.show();
+win.loopMessage();

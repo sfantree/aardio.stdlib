@@ -1,0 +1,53 @@
+import console;
+import process.adb;
+
+process.adb.startServer();
+if( process.adb.getState() != "device" ){
+	console.log("请选连接安卓手机,并打开设置->开发者选项->USB 调试模式" )
+	console.pause();
+	return;
+}
+
+console.log("设备串号",process.adb.getSerialno() )
+
+//上传文件
+//process.adb.push( "/abc.txt","/mnt/sdcard/abc.text" )
+
+//打开 shell
+//var padb = process.adb("shell su -c 'cat /init.rc'" );
+
+//var padb = process.adb("shell su -c 'cat /data/data/com.tencent.mm/shared_prefs/system_config_prefs.xml'" );
+
+//var padb = process.adb("shell su -c 'ls /data/data/com.tencent.mm/MicroMsg/'" );
+//var padb = process.adb("shell su -c 'ls -l /data/data/com.tencent.mm/MicroMsg'");
+
+//var padb = process.adb("shell su -c '/system/xbin/busybox ls -l /system/xbin/'");
+
+//var padb = process.adb("shell su -c '/system/xbin/busybox ps -ef'");
+
+var padb = process.adb("shell /system/xbin/su -c '/system/xbin/busybox ls /data/data/com.tencent.mm/MicroMsg'");
+
+//var padb = process.adb("shell /system/xbin/su -c '/system/xbin/busybox ls -l /data/data/com.tencent.mm/MicroMsg/a6cbeb1d3a25b380c0ec4d8ab98c6069/EnMicroMsg.db'");
+
+
+//sleep(3000);
+//adb.print("su"); //root
+//var out,err = adb.expect("\N+(.*?)\N+([\$#]) $")
+//console.log(out,err)
+
+//padb.print("ls /sdcard"); //列出文件
+var out,err = padb.read(-1)
+padb.close();
+console.log(out)
+
+
+//var dbPath = "/storage/3035-3935/EnMicroMsg.db"
+//var downloadPath = "G:\chromedl\aardio\project\noproject\wechat2html"
+//process.adb.pull( dbPath, downloadPath)
+
+
+
+
+process.adb.killServer()
+
+console.pause()

@@ -1,0 +1,40 @@
+import console;
+import debug;
+import win.ui;
+
+global.onError = function( err,over ){ 
+    if(!over){
+        import debug;
+        import console;
+        var stack = debug.traceback(,"traceback",3);
+        var info = debug.queryinfo(2,"select source");
+        console.dump(stack, info);
+    }
+    
+    if( _STUDIO_INVOKED ) {
+        return err;
+    }; 
+}
+
+/**
+if( ! win.loadForm("\dlg\login\login.aardio").doModal() ){
+	return;
+}
+
+
+mainForm.tab.loadForm("\dlg\main\tabs1.aardio");
+mainForm.tab.loadForm("\dlg\main\tabs2.aardio");
+mainForm.tab.loadForm("\dlg\main\tabs3.aardio");
+**/
+
+/*DSG{{*/
+mainForm = win.form(text="qtcp";right=959;bottom=591)
+mainForm.add()
+/*}}*/
+
+if( ! win.loadForm("\dlg\loginwin.aardio").doModal() ){
+	return;
+}
+
+mainForm.show();
+return win.loopMessage();

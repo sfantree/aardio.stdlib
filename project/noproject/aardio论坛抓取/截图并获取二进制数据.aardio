@@ -1,0 +1,87 @@
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form(text="aardio form";right=471;bottom=341)
+winform.add(
+button={cls="button";text="button";left=160;top=254;right=261;bottom=295;z=1};
+picturebox={cls="picturebox";left=59;top=34;right=225;bottom=94;autosize=1;z=2}
+)
+/*}}*/
+
+GetDIBits = ::Gdi32.api("GetDIBits","int(ptr aHDC,ptr hBitmap,int nStartScan,int nNumScans,ptr lpBits,struct& lpBI,int wUsage)")
+class BITMAP {
+        int bmType;
+        int bmWidth;
+        int bmHeight;
+        int bmWidthBytes;
+        WORD bmPlanes;
+        WORD bmBitsPixel;
+        pointer bmBits;
+}; 
+class BITMAPINFOHEADER{
+        int biSize;
+        int biWidth;
+        int biHeight;        
+        WORD biPlanes;
+        WORD biBitCount;
+        int biCompression;
+        int biSizeImage;
+        int biXPelsPerMeter;
+        int biYPelsPerMeter;
+        int biClrUsed;
+        int biClrImportant;
+};        
+var BITMAPINFOHEADER = BITMAPINFOHEADER;
+class BITMAPINFO{                 
+        struct BITMAPINFOHEADER = BITMAPINFOHEADER(); 
+        int bmiColors;
+};
+class BITMAPFILEHEADER{                 
+        WORD bfType;
+        int bfSize;
+        WORD bfReserved1;
+        WORD bfReserved2;
+        int bfOffBits;
+};        
+winform.button.oncommand = function(id,event){                
+        var bmp=BITMAP()//位图
+        var bmpinfo =BITMAPINFO() ; //位图信息
+        var bmpfh=BITMAPFILEHEADER()        
+        var hdc = ::GetDC(0)//创建屏幕DC            
+    var hMemDc = CreateCompatibleDC(hdc);//创建内存DC
+    var hbmp = ::CreateCompatibleBitmap(hdc,200,200);
+        var hOldBitmap = ::SelectObject(hMemDc,hbmp);
+        ::BitBlt( hMemDc , 0, 0,200,200, hdc,0,0,0xCC0020/*_SRCCOPY*/ )
+        ::SelectObject(hMemDc, hOldBitmap);
+        //winform.picturebox.setBitmap(hbmp)//调试输出
+        ::GetObject(hbmp,24,bmp);
+        bmpinfo.BITMAPINFOHEADER.biSize =44;        
+        GetDIBits(hMemDc,hbmp,0,0,null,bmpinfo,0);                
+        var pi=raw.buffer(bmpinfo.BITMAPINFOHEADER.biSizeImage);//位图像素点阵
+        bmpinfo.BITMAPINFOHEADER.biCompression=0
+        GetDIBits(hMemDc,hbmp,0,bmp.bmHeight,pi,bmpinfo,0);        
+        //构造位图信息
+        var l=raw.tostring(bmpinfo)        
+        var bmpinfobyte = ::GlobalAlloc( 0x2 /*_GMEM_MOVEABLE*/,bmpinfo.BITMAPINFOHEADER.biSize); //位图信息字节集
+        pImageMemory = ::GlobalLock(bmpinfobyte); 
+        ::CopyMemory(pImageMemory,l,bmpinfo.BITMAPINFOHEADER.biSize);
+        ::GlobalUnlock(bmpinfobyte);
+        //构造位图文件头        
+        bmpfh.bfType=19778
+        bmpfh.bfOffBits=14+bmpinfo.BITMAPINFOHEADER.biSize
+        bmpfh.bfSize=bmpfh.bfOffBits+bmpinfo.BITMAPINFOHEADER.biSizeImage
+        bmpfh.bfReserved1=0
+        bmpfh.bfReserved2=0
+        var l=raw.tostring(bmpfh)
+        var bmpfhbyte = ::GlobalAlloc( 0x2 /*_GMEM_MOVEABLE*/,14);//位图文件头字节集 
+        pImageMemory = ::GlobalLock(bmpfhbyte); 
+        ::CopyMemory(pImageMemory,l,14);
+        ::GlobalUnlock(bmpfhbyte);
+        var str=raw.tostring(bmpfhbyte)+raw.tostring(bmpinfobyte)+raw.tostring(pi)
+        winform.picturebox.image=str//显示图象不成功        
+        ::SelectObject(hMemDc, hOldBitmap);
+        ::DeleteDC(hMemDc);        
+        ::ReleaseDC(winform.hwnd,hdc);
+        ::DeleteObject(hbmp)        
+}
+winform.show() 
+win.loopMessage();

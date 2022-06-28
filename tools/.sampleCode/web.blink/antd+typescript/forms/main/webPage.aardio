@@ -1,0 +1,57 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469;bgcolor=16777215;border="dialog frame")
+winform.add(
+lbInfo={cls="plus";left=87;top=442;right=710;bottom=466;align="left";db=1;dl=1;dr=1;z=2};
+static={cls="static";left=0;top=-1;right=755;bottom=425;db=1;dl=1;dr=1;dt=1;transparent=1;z=1}
+)
+/*}}*/
+
+import web.blink.portable;
+var mb= web.blink.form(winform.static); 
+
+//定义网页脚本可调用的本地函数
+mb.external = {
+    onCounterUpdate = function(name,value){
+        if(name!==null && value!==null){
+        	winform.lbInfo.text = "这是 aardio 控件 - 网页中 React 状态值改变了：value:"+value;
+        } 
+    }; 
+}
+
+import web.blink.server;
+web.blink.server(mb,{
+	publicPath = "/web/index.html";
+	devPort = 36152;
+	devHtml = /**
+		<!doctype html>
+		<html>
+		<head>
+		    <style type="text/css">
+		    html,body{ height:100%; margin: 20px 10px 10px 50px; overflow: hidden; } 
+		    </style> 
+		</head>
+		<body>
+		<pre>
+正在等待 http://localhost:36152 启动……
+
+请先安装 Node.js,VS Code,yarn 等前端开发环境。
+然后在此工程内右键点「网页源码」目录，弹出菜单中点击：「用外部编辑器打开」
+默认会在 VS Code 中打开，在 VS Code 中运行命令 yarn 安装依赖。
+然后运行命令 yarn start 启动网页调试服务器即可（修改源码网页可实时刷新）。
+
+发布 EXE 前在 VS Code 中运行 yarn build 命令即可。
+
+注意：
+请不要在工程内右键点「网页」或「网页源码目录」，然后点击「同步本地目录」
+这几个目录是不需要做同步操作的，而且前端工具会生成巨大的 node_modules 目录，
+同步会不必要的占用大量资源。
+		</pre>  
+		</body>
+		</html>
+		**/
+	}
+) 
+
+winform.show() 
+win.loopMessage();

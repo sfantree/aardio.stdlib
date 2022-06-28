@@ -1,0 +1,16 @@
+import web.script
+
+var vm = web.script()
+
+var javascript = $"C:\Documents and Settings\Administrator\桌面\JS\md5.js"; //这个填写自己 md5.js 路径
+
+vm.AddCode(javascript); //加载脚本
+
+io.open() //打开控制台
+
+pass = vm.Run("hex_sha1","aaabbbccc"); //运行函数
+
+io.print(pass)
+
+execute("pause") //按任意键继续
+io.close()

@@ -1,0 +1,48 @@
+/* 
+* 在aardio开发环境中创建窗体，
+* 在工具箱拖动一个自定义控件到窗体上。修改类名为 "htmllite"
+* 然后在 import win.ui 后面添加 import win.ui.ctrl.htmllite; 
+*/
+ 
+import win.ui; 
+import win.ui.ctrl.htmllite
+/*DSG{{*/
+var winform = win.form(text="htmllite";right=599;bottom=399)
+winform.add(
+htmllite={cls="htmllite";left=20;top=23;right=581;bottom=370;autosize=1;z=1}
+)
+/*}}*/
+
+//指定 HTML 支持 aardio 模板语法
+winform.htmllite.text = /*
+<p highlight=#003399 padding-left=20 padding-top=14 padding-bottom=14>
+	<font face="arial" size=22pt color="white">aardio</font><br>
+	<font face="arial" size=9pt color="white"><b>桌面软件快速开发</b></font>
+</p>
+
+<p align="right">
+	<a color=#3F4F7F HOVER-COLOR=#C3120C linkid="211"><b>www.aardio.com</b></a>
+</p>
+
+<IMG src="hbmp://<?= tonumber( com.picture.loadBitmap("~\codes\范例程序\D) 图形图像\.gdip.jpg") ) ?>">
+*/ 
+
+winform.htmllite.onMouseClick = function(linkid,linkrc,nmHtmlLite){ 
+	if( linkid = 211 ){
+		winform.htmllite.text = /*
+		<p highlight=#003399 padding-left=20 padding-top=14 padding-bottom=14>
+			<font face="arial" size=22pt color="white">aardio</font><br>
+			<font face="arial" size=9pt color="white"><b>桌面软件快速开发</b></font>
+		</p>
+		
+		<p align="right">
+			<a color=#3F4F7F HOVER-COLOR=#C3120C linkid="211"><b>你点击了超链接</b></a>
+		</p>
+		
+		*/ 
+		return true;//阻止浏览器打开该链接 
+	}
+}
+
+winform.show(); 
+win.loopMessage(); 

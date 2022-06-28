@@ -1,0 +1,272 @@
+//Datatables
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="强大的表格组件: Datatables ( 兼容 Win XP/IE6 )";right=1063;bottom=729)
+winform.add(
+button={cls="button";text="aardio 修改数据";left=832;top=683;right=990;bottom=723;db=1;dr=1;z=2};
+lbBrowser={cls="static";left=15;top=8;right=1053;bottom=680;db=1;dl=1;dr=1;dt=1;transparent=1;z=1};
+static={cls="static";text="可单击编辑姓名、状态值";left=353;top=698;right=778;bottom=726;align="right";db=1;dl=1;dr=1;font=LOGFONT(h=-13);transparent=1;z=3}
+)
+/*}}*/
+
+import web.form; 
+var wb = web.form(winform.lbBrowser);
+
+import web.json;
+wb.external = {
+	getData = function(){
+		var data = {
+            {
+                "id": "001",
+                "name": "张三（点这里）",
+                "status": "在线",
+                "birthday": "2000-12-31"
+            },
+            {
+                "id": "002",
+                "name": "李四",
+                "status": "离线",
+                "birthday": "2000-11-31"
+            } 
+		}
+		
+		return web.json.stringifyArray(data);
+	};
+} 
+
+winform.button.oncommand = function(id,event){
+	wb.script.reloadData(web.json.stringifyArray({
+        {
+            "id": "001",
+            "name": "李一二三",
+            "status": "离线",
+            "birthday": "1990-12-31"
+        },
+        {
+            "id": "002",
+            "name": "张四五六",
+            "status": "在线",
+            "birthday": "1990-11-31"
+        } 
+	}));
+}
+
+/*
+实际开发建议到 https://datatables.net/download/ 下载 JS,CSS 到本地。
+更多官方范例请参考: https://datatables.net/examples/
+中文文档请参考: https://datatables.club
+*/ 
+
+wb.html = /**
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <script src="http://lib.sinaapp.com/js/jquery/1.12.4/jquery-1.12.4.min.js"></script>
+    
+    <!-- IE6 ~ IE9 加载 DataTables 1.10( Win7 最低 IE8,Win10,Win11 都自带 IE11 ) -->
+    <!--[if IE]>
+	<script src="http://lib.baomitu.com/datatables/1.10.21/js/jquery.dataTables.min.js"></script> 
+	<link rel="stylesheet" href="http://lib.baomitu.com/datatables/1.10.21/css/jquery.dataTables.min.css"/>
+	<![endif]-->
+ 
+	 <!-- IE10,IE11 改用 DataTables 1.11( 支持 IE9~11 )  -->
+	<!--[if !IE]><!-->
+	<script src="http://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script> 
+	<link rel="stylesheet" href="http://cdn.datatables.net/1.11.3/css/jquery.dataTables.min.css"/>  
+	<style>
+	input[type="text"] {
+    	border: 1px solid #aaa;
+    	border-radius: 3px;
+    	padding: 5px;
+    	background-color: transparent;
+    	margin-left: 3px;
+	}  
+	</style>
+	<!--<![endif]-->
+	
+</head>
+<body>
+    <table id="example" class="display" style="width:100%"> 
+    	<thead>
+            <tr>
+                <th>编号</th>
+                <th>姓名</th>
+                <th>状态</th>
+                <th>出生日期</th>
+            </tr>
+        </thead>
+    </table>
+<script>
+	$(document).ready(function() {
+   		window.datatable = $('#example').DataTable({
+   			data: eval(external.getData()),
+			columns: [
+      			{ data: 'id'},
+      			{ data: 'name'},
+      			{ data: 'status',
+      				render: function(data, type, row, meta) {
+                		return '<span style="color:' + (data =="在线" ? '#0D0' :'#F00') + '">' + data + '</span>';
+                	}
+                },
+      			{ data: 'birthday'}
+        	],
+        	columnDefs: [{
+            	"targets": [1],//指定应用此选项的列索引,0为第 1 列
+ 					createdCell: function (cell, cellData, rowData, rowIndex, colIndex) {
+     					
+     					//单击列时切换为可编辑文本框
+     					$(cell).click(function () {
+         					$(this).html('<input type="text" size="16" style="width: 100%"/>');
+         					$(this).find(":input").focus().val(cellData);
+     					});
+     					
+     					//旧版 IE 避免点击 input 调用上面的 click 回调
+     					$(cell).on("click", ":input", function (e) {
+							e.stopPropagation();
+							});
+     					
+     					//失去输入焦点时保存修改后的文本
+     					$(cell).on("blur", ":input", function () {
+         					var text = $(this).val();
+         					$(cell).html(text);
+         					window.datatable.cell(cell).data(text).draw();
+         					
+         					cellData = text;
+     					})
+ 					}
+            }],
+   			language:  {
+   				//自定义界面语言
+   				//http://cdn.datatables.net/plug-ins/1.11.3/i18n/zh.json
+    			"processing": "处理中...",
+    			"lengthMenu": "显示 _MENU_ 项结果",
+    			"zeroRecords": "没有匹配结果",
+    			"info": "显示第 _START_ 至 _END_ 项结果，共 _TOTAL_ 项",
+    			"infoEmpty": "显示第 0 至 0 项结果，共 0 项",
+    			"infoFiltered": "(由 _MAX_ 项结果过滤)",
+    			"search": "搜索:",
+    			"emptyTable": "表中数据为空",
+    			"paginate": {
+        			"first": "首页",
+        			"previous": "上页",
+        			"next": "下页",
+        			"last": "末页"
+    			},
+    			"aria": {
+        			"sortAscending": ": 以升序排列此列",
+        			"sortDescending": ": 以降序排列此列"
+    			},
+    			"autoFill": {
+        			"cancel": "取消",
+        			"fill": "用 <i>%d<\/i> 填充所有单元格",
+        			"fillHorizontal": "水平填充单元格",
+        			"fillVertical": "垂直填充单元格"
+    			},
+    			"buttons": {
+        			"collection": "集合 <span class=\"ui-button-icon-primary ui-icon ui-icon-triangle-1-s\"><\/span>",
+        			"colvis": "列可见性",
+        			"colvisRestore": "恢复列可见性",
+        			"copy": "复制",
+        			"copyKeys": "按 ctrl 或者 u2318 + C 将表数据复制到剪贴板。<br \/><br \/>要取消，请单击此消息或按Escape键。",
+        			"copyTitle": "复制到剪贴板",
+        			"csv": "CSV",
+        			"excel": "Excel",
+        			"pdf": "PDF",
+        			"copySuccess": {
+            			"1": "已将 1 行复制到剪贴板",
+            			"_": "已将 %d 行复制到剪贴板"
+        			},
+        			"pageLength": {
+            			"-1": "显示所有行",
+            			"_": "显示 %d 行"
+        			},
+        			"print": "打印"
+    			},
+    			"searchBuilder": {
+        			"add": "添加搜索条件",
+        			"button": {
+            			"0": "搜索生成器",
+            			"_": "搜索生成器 (%d)"
+        			},
+        			"clearAll": "全部清除",
+        			"condition": "条件",
+        			"data": "数据",
+        			"deleteTitle": "删除过滤规则",
+        			"leftTitle": "Outdent 条件",
+        			"logicAnd": "And",
+        			"logicOr": "Or",
+        			"rightTitle": "Indent 条件",
+        			"title": {
+            			"0": "搜索生成器",
+            			"_": "搜索生成器 (%d)"
+        			},
+        			"value": "值",
+        			"conditions": {
+            			"date": {
+                			"after": "日期条件查询为after条件名称：大于",
+                			"before": "日期条件查询为before条件名称：小于",
+                			"between": "日期条件查询为between条件名称：介于2个日期之间",
+                			"empty": "日期条件查询为empty条件名称：日期为空",
+                			"equals": "日期条件查询为equals条件名称：等于",
+                			"notBetween": "日期条件查询为notBetween条件名称：不介于2个日期之间",
+                			"notEmpty": "日期条件查询为notEmpty条件名称：日期不为空"
+            			},
+            			"string": {
+                			"contains": "文本包含",
+                			"empty": "文本为空",
+                			"endsWith": "文本以某某结尾",
+                			"equals": "文本等于",
+                			"not": "文本不等于",
+                			"notEmpty": "文本不为空",
+                			"startsWith": "文本从某某开始"
+            			}
+        			}
+    			},
+    			"searchPanes": {
+        			"collapse": {
+            			"0": "搜索栏",
+            			"_": "搜索栏（%d）"
+        			},
+        			"title": "应用的过滤器 - %d",
+        			"clearMessage": "全部清除",
+        			"count": "计数",
+        			"countFiltered": "过滤计数",
+        			"emptyPanes": "没有搜索栏",
+        			"loadMessage": "正在加载搜索栏"
+    			},
+    			"select": {
+        			"cells": {
+            			"1": "选择了1个单元格",
+            			"_": "选择了%d个单元格"
+        			},
+        			"columns": {
+            			"1": "选择了1列",
+            			"_": "选择了%d列"
+        			},
+        			"rows": {
+            			"1": "被选中一行的说明",
+            			"_": "被选中多行的说明"
+        			}
+    			},
+    			"decimal": "用于标记小数位的字符",
+    			"loadingRecords": "数据加载提示信息，例如：数据加载中...",
+    			"infoThousands": ",",
+    			"thousands": ","
+			}	  	   
+  		});
+	});
+	
+	reloadData = function(json){
+		window.datatable.clear();
+		window.datatable.rows.add(eval(json)).draw();
+	}
+      
+</script>
+</body>
+</html>
+**/
+
+winform.show();
+return win.loopMessage();

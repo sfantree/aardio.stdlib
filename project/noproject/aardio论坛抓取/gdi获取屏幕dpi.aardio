@@ -1,0 +1,7 @@
+import console;
+import gdi; 
+var x,y = gdi.getDpi();
+console.log(x,y)
+xS,yS = gdi.getDpiScale();
+console.log(xS,yS)
+console.pause(true);

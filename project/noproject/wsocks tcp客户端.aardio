@@ -1,0 +1,12 @@
+import console; 
+import wsock;
+import wsock.tcp.client;
+
+var s = wsock.tcp.client()
+s.connect("127.0.0.1", 666)
+s.write("fuck you");
+var b = s.readAll();
+console.log(b)
+s.close();
+
+console.pause(true);

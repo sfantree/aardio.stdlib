@@ -1,0 +1,13 @@
+﻿//inspector 调试工具
+namespace web.sciter.inspector{};
+if(!_STUDIO_INVOKED) return;
+
+import web.sciter;
+web.sciter.enableDebug();
+
+import process;
+process.execute("~\lib\web\sciter\.res\inspector.exe");	
+
+/**intellisense()
+web.sciter.inspector = 必须在使用 Sciter 的代码以前导入，\n导入此支持库可以打开Sciter调试工具:inspector.exe\n如果不是在开发环任何操作，忽略不操作。\n按 CTRL+SHIFT+I 组合键可以连接调试工具,\n也可以按住 CTRL+SHIFT 用鼠标点击并查看指定HTML节点
+end intellisense**/

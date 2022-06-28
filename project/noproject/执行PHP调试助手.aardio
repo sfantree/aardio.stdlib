@@ -1,0 +1,81 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text='PHP代码调试助手 (\u2261^\u2207^\u2261)';right=759;bottom=469)
+winform.add(
+button={cls="button";text="运行代码";left=632;top=0;right=760;bottom=40;z=2};
+button2={cls="button";text="清空日志";left=632;top=40;right=760;bottom=80;z=4};
+edit={cls="edit";left=0;top=0;right=632;bottom=304;autohscroll=false;edge=1;font=LOGFONT(h=-16;name='Consolas');multiline=1;vscroll=1;z=1};
+edit2={cls="edit";left=0;top=304;right=760;bottom=472;edge=1;font=LOGFONT(h=-13);multiline=1;z=3}
+)
+/*}}*/
+
+import php;
+import console;
+
+winform.Logd = function(...){
+	import debug;
+	import console;
+	import win.ui;
+    import time;
+    var args = {...};
+    var tm = time.now();
+    tm.format = "[%Y/%m/%d %H:%M:%S] ";
+    //
+    //var debugInfo = debug.queryinfo(2, "select source,function,upvars,name,currentline,activelines") ;
+    //winform.edit2.log(tostring(tm), "line: ", debugInfo[['currentline']], " ", ..string.join(args,' '),'\r\n');
+    
+    winform.edit2.log(tostring(tm), ..string.join(args,' '),'\r\n');
+
+    // 滚动条随光标滚动
+    winform.edit2.scrollCaret();
+}
+
+winform.button.oncommand = function(id,event){
+	var code = winform.edit.text;
+	if(code and #code > 0) {
+		winform.code = code;
+	    thread.invoke( 
+	    	function(winform){
+	    		import php;
+                import console;
+                import debug;
+				import win.ui;
+    			import time;
+    			
+                var code = winform.code;
+                //winform.edit2.text = code;
+                var ret;
+                php.begin();
+                php.print = function( msg ) {
+					//winform.edit2.print("echo:", msg);
+					//winform.edit2.print(msg);
+					winform.Logd(msg)
+				}
+                
+                php.exec(code);
+                php.end();
+                //winform.edit2.print("");
+	    	}, winform
+	    )
+	}
+}
+
+winform.button2.oncommand = function(id,event){
+	// 清空日志
+	winform.edit2.text = "";
+}
+
+winform.edit.text = /***
+class test{             
+  private $flag = "flag{this-is-flag}";             
+  public $a = "snail";             
+  static  $b = "beta";         
+}     
+
+$test = new test;     //建立一个test的对象；
+$data = serialize($test);   //将对象进行序列化；
+echo $data; 
+***/
+
+winform.show();
+win.loopMessage();

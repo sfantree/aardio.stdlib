@@ -1,0 +1,121 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add(
+button={cls="button";text="push";left=7;top=6;right=111;bottom=46;z=2};
+button2={cls="button";text="添加任务";left=8;top=56;right=112;bottom=96;z=3};
+button3={cls="button";text="involk";left=8;top=104;right=112;bottom=144;z=4};
+button4={cls="button";text="pop";left=136;top=8;right=240;bottom=48;z=5};
+edit={cls="edit";left=16;top=280;right=736;bottom=448;edge=1;multiline=1;z=1}
+)
+/*}}*/
+
+import nnmsg;
+import thread.works;
+import debug;
+
+/*
+thread_command_main = thread.command();
+
+thread_command_main.logd = function( ... ){
+	winform.edit.print(...);
+}
+*/
+
+import console;
+console.open();
+
+thread.invoke( 
+	function(winform){
+		import win;
+		import nnmsg;
+		import console;
+		var sock = nnmsg.socket.sub();
+         sock.connect("ws://127.0.0.1:7713")
+        
+        console.log("客户端nnmsg ws://*:7715")
+        
+        while(true){
+        	s = sock.recv();
+        	if(#s) {
+        	    console.log(s);
+        	    //winform.edit.print("客户端打印：", s);
+        	}
+        	win.delay(100);
+    	}
+	},
+	winform
+)
+
+/*
+thread.set("threadCommandHwnd", thread_command_main.hwnd);
+
+thread_command_main.logd(thread.getId(), 'thread.get("threadCommandHwnd")', thread.get("threadCommandHwnd") );
+*/
+
+threadFunc = function(sleeptime) {
+		import math;
+		import win;
+		import thread;
+		import nnmsg;
+		
+		
+		var sock = nnmsg.socket.pub();
+		sock.connect("ws://127.0.0.1:7715")
+		//var threadCommandHwnd = thread.get("threadCommandHwnd");
+		//var thread_command = thread.command(threadCommandHwnd);
+		
+		
+		//listener.logd((thread.getId()) , "start run");
+		sock.send(tostring(..thread.getId()) + "start run");
+		
+		win.delay(sleeptime);
+		
+		
+		sock.send(tostring(..thread.getId()) + "stop run");
+		
+		//listener.logd((thread.getId()) , "stop run");
+		
+		return (sleeptime);
+}
+
+
+
+
+
+WorksQueue = thread.works( 1,
+    threadFunc
+);
+
+
+
+winform.button.oncommand = function(id,event){
+	import math;
+	var arg = math.random(1000, 2000);
+	WorksQueue.push(arg);
+	//thread_command_main.logd(thread.getId(), "push ", arg);
+	
+}
+
+winform.button2.oncommand = function(id,event){
+	import math;
+	//thread_command_main.logd(thread.getId(), "WorksQueue.busy()", WorksQueue.busy() );
+	//WorksQueue.resume()
+}
+
+winform.button3.oncommand = function(id,event){
+	//thread_command_main.logd(thread.getId(), "winform.button3.oncommand"  );
+	thread.invoke( 
+		threadFunc, 1000
+	)
+}
+
+winform.button4.oncommand = function(id,event){
+	import math;
+	//var arg = math.random(2000, 5000);
+	var ret = WorksQueue.pop();
+	//thread_command_main.logd(thread.getId(), "pop ", ret);
+}
+
+winform.show();
+win.loopMessage();

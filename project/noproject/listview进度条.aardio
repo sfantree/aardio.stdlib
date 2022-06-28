@@ -1,0 +1,99 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="listview中添加进度条演示";right=945;bottom=474)
+winform.add(
+button={cls="button";text="(点击这里随机更新一次第二行的进度值)";left=0;top=392;right=944;bottom=472;font=LOGFONT(h=-21);z=2};
+流程编辑框={cls="listview";left=0;top=0;right=946;bottom=384;edge=1;font=LOGFONT(name='FontAwesome';h=-19);fullRow=1;vscroll=1;z=1}
+)
+/*}}*/
+
+import win.fontAwesome;
+import win.graphics;
+import win.imageList;
+var imagelist = win.imageList(5,34);
+winform.流程编辑框.setImageList( imagelist,1/*_LVSIL_SMALL*/ );
+winform.流程编辑框.insertColumn("",30,,0x2/*_LVCFMT_CENTER*/)
+winform.流程编辑框.insertColumn("中断",80,,0x2/*_LVCFMT_CENTER*/)
+winform.流程编辑框.insertColumn("备注",300,,0x0/*_LVCFMT_LEFT*/)
+winform.流程编辑框.insertColumn("功能",100,,0x0/*_LVCFMT_LEFT*/)
+winform.流程编辑框.insertColumn("参数",300,,0x0/*_LVCFMT_LEFT*/)
+winform.流程编辑框.insertColumn("",30,,0x2/*_LVCFMT_CENTER*/)
+winform.流程编辑框.insertColumn("",1,,0x2/*_LVCFMT_CENTER*/)
+//自适应列宽度
+winform.流程编辑框.adjust = function(cx,cy){
+    winform.流程编辑框.fillParent(5/*列序号*/);
+}
+
+
+winform.流程编辑框.addItem( {
+        text={'\uF00c';'\uF1db';30;"直线运动";'{["速度"]=1000;["模式"]="相对运动";["距离"]="2380";["是否等待"]="否";}';'\uF01a'}
+} )
+winform.流程编辑框.addItem( {
+        text={'\uF00d';'\uF05e';100;"直线运动";'{["速度"]=300;["模式"]="连续运动";["是否等待"]="是";}';'\uF01a'}
+} )
+winform.流程编辑框.addItem( {
+        text={'\uF00c';'\uF1db';200;"调用子程序";'{["调用子程序"]="连续读传感器";["是否等待"]="是";}';'\uF01a'}
+} )
+winform.流程编辑框.addItem( {
+        text={'\uF00c';'\uF1db';50;"调用子程序";'{["调用子程序"]="回字形对准算法";["是否等待"]="是";}';'\uF01a'}
+} )
+winform.流程编辑框.addItem( {
+        text={'\uF00c';'\uF1db';150;"直线运动";'{["速度"]=1000;["模式"]="相对运动";["距离"]="2380";["是否等待"]="否";}';'\uF01a'}
+} )
+winform.流程编辑框.addItem( {
+        text={'\uF00c';'\uF1db';120;"直线运动";'{["速度"]=1000;["模式"]="相对运动";["距离"]="2380";["是否等待"]="否";}';'\uF01a'}
+} )
+winform.流程编辑框.addItem( {
+        text={'\uF00d';'\uF05e';10;"直线运动";'{["速度"]=300;["模式"]="连续运动";["是否等待"]="是";}';'\uF01a'}
+} )
+winform.流程编辑框.addItem( {
+        text={'\uF00c';'\uF1db';70;"调用子程序";'{["调用子程序"]="连续读传感器";["是否等待"]="是";}';'\uF01a'}
+} )
+winform.流程编辑框.addItem( {
+        text={'\uF00c';'\uF1db';260;"调用子程序";'{["调用子程序"]="回字形对准算法";["是否等待"]="是";}';'\uF01a'}
+} )
+winform.流程编辑框.addItem( {
+        text={'\uF00c';'\uF1db';130;"直线运动";'{["速度"]=1000;["模式"]="相对运动";["距离"]="2380";["是否等待"]="否";}';'\uF01a'}
+} )
+
+//自绘
+winform.流程编辑框.onnotify = function(id,code,ptr){
+        if( code == 0xFFFFFFF4/*_NM_CUSTOMDRAW*/ ){
+                var lvcd = winform.流程编辑框.getNotifyCustomDraw(code,ptr);
+                if( lvcd.nmcd.dwDrawStage == 0x10001/*_CDDS_ITEMPREPAINT*/)
+                        return 0x20/*_CDRF_NOTIFYSUBITEMDRAW*/
+                elseif( lvcd.nmcd.dwDrawStage == 1/*_CDDS_PREPAINT*/ ){
+                        return 0x20/*_CDRF_NOTIFYITEMDRAW*/;
+                }
+                elseif( lvcd.nmcd.dwDrawStage == ( 0x10001/*_CDDS_ITEMPREPAINT*/ | 0x20000/*_CDDS_SUBITEM*/) ){
+                        //注意这里 iSubItem 的索引自0开始( 其他函数通常自1开始 )
+                        
+                        var cvs = win.graphics.canvas(); // 创建一个画布
+                    cvs.fromHDC(lvcd.nmcd.hdc); // 传入 hDC
+                    var nItem = lvcd.nmcd.dwItemSpec+1;
+                    var nSubItem = lvcd.iSubItem;
+                    var rc = owner.getItemRect(nItem,nSubItem);
+                    if(nSubItem == 3){
+                           
+                            var RetRc = ::RECT(rc.left+1,rc.top+6,rc.right-tonumber(owner.getItemText(nItem,3)),rc.bottom-6);
+                            cvs.brush.color = 0x00ff00;
+                            cvs.fillRect(RetRc)
+                                   
+                    }
+                    cvs.pen.color = 0xebebeb; // 定义画笔的颜色
+                    cvs.drawEdge(rc);
+                        
+                    lvcd.update()
+                    cvs.destroy();
+                    
+                    return 0/*_CDRF_DODEFAULT*/
+                }
+        }
+}
+//演示更新进度
+winform.button.oncommand = function(id,event){
+        winform.流程编辑框.setItemText(tostring(math.random(10,280)),2,3);
+}
+
+winform.show()
+win.loopMessage();

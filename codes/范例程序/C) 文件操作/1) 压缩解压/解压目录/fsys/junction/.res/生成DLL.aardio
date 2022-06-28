@@ -1,0 +1,22 @@
+﻿
+import vc6;
+
+var vc = vc6( "/",, io.open() ) 
+ 
+ 
+//编译生成DLL 
+vc.exec(
+	'cl *.cpp'
+	,'/W3' /*警告等级*/
+	,'/MD' /*使用多线程动态运行库*/
+	,'/O2 /Ot /GL /EHsc' /*代码优化选项*/
+	,'/D "WIN32" /D "_WINDOWS" /D "NDEBUG" /D "_UNICODE" /D "UNICODE" /D "_USRDLL"' /*定义常数和宏*/
+	,'/I"./INCLUDE"'/*指定头文件目录*/
+	,'kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib' /*导入库*/
+	,'/link /SUBSYSTEM:WINDOWS /MACHINE:X86' /*后面是链接参数 */
+	,'/out:Junction.dll /dll'/*输出文件名*/ 
+	,'/LIBPATH:".\LIB" /LIBPATH:".\LIB2"' /*指定库目录*/
+)
+ 
+ 
+execute("pause")

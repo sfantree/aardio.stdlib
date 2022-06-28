@@ -1,0 +1,125 @@
+﻿//atlax ATL控件
+namespace win.ui.ctrl; 
+import win.ui.ctrl.metaProperty;
+
+class atlax{
+    ctor(parent,tParam){  
+    	if( !_dll ){
+    		_dll = ..raw.loadDll("atl.dll");
+			_dll.AtlAxWinInit();
+    	}
+    	if( tParam ){
+    		tParam.cls  = "AtlAxWin"; 
+		} 
+    }  
+    onCreated = function(){
+		var out = {ptr unknow}; 
+		if(  0 <= _dll.AtlAxGetControl(this.hwnd,out) ){ 
+			var object = ..com.QueryObject( out.unknow );
+			if( object ) {
+				this._embedObject = { _object = object; _form = this }; 
+				try{
+				 	..com.ConnectWeak(object,object) 
+				 	
+					this._onDestroy = function(){ 
+						
+						//必须按以下顺序释放资源
+						collectgarbage("collect") 
+						
+						if( ..com.IsObject(this._embedObject._object) ){
+							..com.ReleaseConnection(this._embedObject._object); 
+							..com.Release(this._embedObject._object) 
+						};
+					};
+				};
+			}
+		}
+	}
+	getControl = function(){
+		return this._embedObject._object;
+	}
+	getControlTypeName = function(){
+		var inf =  ..com.GetTypeInfo(this._embedObject._object);
+		return inf ? inf.GetDocumentation().name;
+	}
+	getControlClsId = function(){
+		var inf =  ..com.GetTypeInfo(this._embedObject._object);
+		return inf ? inf.GetTypeAttr().GUID;
+	} 
+	defaultTranslateAccelerator = function(msg){
+     	if (::SendMessageByStruct(this.hwnd, 0x037F/*_WM_FORWARDMSG*/, 0,msg)  )
+     		return true; 
+	}
+	@_metaProperty;
+}
+
+namespace atlax {
+ 	_metaProperty = ..win.ui.ctrl.metaProperty(); 
+} 
+
+/***intellisense()
+!atlAxWin.cls = 设计时类名
+!atlAxWin.color = 获取或修改字体颜色数值
+!atlAxWin.bgcolor= 获取或修改景颜色数值
+!atlAxWin.className = 运行时类名
+!atlAxWin.hwnd = 控件句柄
+!atlAxWin.id = 控件ID
+!atlAxWin.text = 控件文本
+!atlAxWin.getForm() = 如果是窗体返回自身\n如果是控件则返回_parentForm\n!winform.
+!atlAxWin.isForm = 窗体返回true,控件返回false
+!atlAxWin._parentForm = 创建该控件的父窗口（win.form对象）,\n设计时窗体容器是所有拖放在窗体上的控件的 _parentForm,\n\n即使窗口移除子窗口样式、更改父子关系，或以 orphanWindow显示,\n控件的 _parentForm 始终都不会改变\n!winform.
+!atlAxWin.getParent() = 返回父窗口\n!atlAxWin.
+!atlAxWin.setParent(__/*控件对象*/) = 改变父窗口 
+!atlAxWin.addCtrl = @.addCtrl(\n	button={ cls="button";text="button";left=33;top=32;right=126;bottom=81;autoResize=false }  \n)
+!atlAxWin.translateAccelerator = @.translateAccelerator = function(msg){ \n	__/*返回是否快捷键*/\n} 
+!atlAxWin.adjust = @.adjust = function( cx,cy,wParam ) {	 \n	__ \n};  
+!atlAxWin.adjust() = 调整窗口 - 自定义事件函数
+!atlAxWin._embedObject = 嵌入 COM 控件的容器对象\n!embedObject.
+!atlAxWin.hide = 控件是否隐藏
+!atlAxWin.disabled = 是否禁用
+!atlAxWin.left = 左侧坐标
+!atlAxWin.right = 右侧坐标
+!atlAxWin.top = 顶部坐标
+!atlAxWin.bottom = 底部坐标
+!atlAxWin.width = 宽度
+!atlAxWin.height = 高度
+!atlAxWin.redraw() = 刷新
+!atlAxWin.setRedraw(false) = 禁止重绘
+!atlAxWin.setRedraw(true) = 恢复重绘
+!atlAxWin.redrawTransparent() = 刷新\n透明背景时请使用此函数替代redraw()
+!atlAxWin.show(true__) = 显示控件
+!atlAxWin.getRect() = 控件区块位置(::RECT结构体)
+!atlAxWin.getRect(true) = 控件屏幕区块位置(::RECT结构体)  
+!atlAxWin.setRect(rc) = 设置控件区块位置(::RECT结构体)  
+!atlAxWin.setRect(rc,true) = 设置控件屏幕区块位置(::RECT结构体)
+!atlAxWin.getClientRect() =  控件客户区块位置(::RECT结构体)\n!rect.
+!atlAxWin.getFont() = 控件字体(::LOGFONT结构体)\n!logfont.
+!atlAxWin.setFont(__/*指定字体*/) = 指定LOGFONT字体对象,或逻辑字体句柄 
+!atlAxWin.setFont(混入字体属性) = @.setFont(point=10;name="宋体");
+!atlAxWin.theme = 外观主题,例如\nwinform.button.theme = "Explorer"\nwinform.button.theme = false
+!atlAxWin.modifyStyle(.(remove,add,swpFlags) = 修改窗口样式,所有参数都是可选参数,\n@remove 用数值指定要移除的样式,可使用 _WS_ 前缀的常量\n@add 用数值指定要添加的样式,可使用 _WS_ 前缀的常量\n@swpFlags 可选用数值指定调整窗口选项,可使用 _SWP_ 前缀的常量\n如果指定了 @swpFlag ,则使用该参数调用::SetWindowPos\n细节请参考 win.modifyStyle 函数源码 
+!atlAxWin.modifyStyleEx(.(remove,add,swpFlags) = 修改窗口扩展样式,所有参数都是可选参数,\n@remove 用数值指定要移除的样式,可使用 _WS_EX_ 前缀的常量\n@add 用数值指定要添加的样式,可使用 _WS_EX_ 前缀的常量\n@swpFlags 可选用数值指定调整窗口选项,可使用 _SWP_ 前缀的常量\n如果指定了 @swpFlag ,则使用该参数调用::SetWindowPos\n细节请参考 win.modifyStyle 函数源码
+!atlAxWin.capture = 是否捕获全局鼠标消息
+!atlAxWin.close() = 关闭控件窗口
+!atlAxWin.invalidate(__/*可选使用::RECT()对象指定客户区*/) = 使窗口绘图区无效
+!atlAxWin.invalidate(__/*可选使用::RECT()对象指定客户区*/,0) = 使窗口绘图区无效\n不刷新背景
+!atlAxWin.update() = 重绘invalidate函数指定的区块
+!atlAxWin.setFocus() = 设置焦点 
+!atlAxWin.setPos(.(x坐标,y坐标,宽,高,插入位置,参数) = 调整窗口位置或排序,所有参数可选\n同时指定x,y坐标则移动位置\n同时指定宽高则改变大小\n指定插入位置(句柄或_HWND前缀常量)则调整Z序
+!atlAxWin.getPos() = 返回相对坐标,宽,高\nx,y,cx,cy=win.getPos(hwnd)
+!atlAxWin.messageOnly() = 将窗口转换为message-only window\n该窗口不可见,仅用于消息分发
+!atlAxWin.setInterval(回调函数,延时毫秒数,->->->) = @.setInterval( \n	function(){\n		__/*参数@1指定执行函数,参数@2指定执行间隔，\n可选指定一个或多个回调参数，不指定回调参数则默认为:\n hwnd,message,timerId,tick,\n\n如果在定时器中执行了win.delay等继续消息循环的代码，\n在定时器退出前不会再触发同一定时器（重入）。\n\n定时器回调函数返回数值可修改时间间隔,\n返回false取消该定时器*/\n	},1000 \n)
+!atlAxWin.changeInterval(.(定时器ID,间隔时间,回调函数) = 重新设置间隔时间或回调函数
+!atlAxWin.clearInterval(__/*定时器ID*/) = 删除定时器
+!atlAxWin.msgbox("__") = 弹出对话框,可选用参数@2指定标题
+!atlAxWin.msgboxErr("__") = 弹出错误对话框,可选用参数@2指定标题
+!atlAxWin.msgboxTest("__") = 弹出询问对话框,可选用参数@2指定标题
+!atlAxWin.orphanWindow(.(transparent,hwndBuddy) = 创建悬浮窗口,\n悬浮窗口仍然显示在原来的位置,\n悬浮窗口如影随形的跟随父窗口移动或改变大小,控件原来的固定边距等参数仍然有效\n此控件不建议指定参数
+!atlAxWin.getControl() = 返回com控件对象\naardio默认会尝试将atlax创建控件自身注册为默认事件接口
+!atlAxWin.getControlTypeName() = 返回COM接口名
+!atlAxWin.getControlClsId() = 返回COM对象类名
+!atlAxWin._defWindowProc(hwnd,message,wParam,lParam) = 用于在 wndproc 回调中提前调用默认消息回调函数,\n所有窗口和控件定义了 wndproc 回调以后会自动创建这个函数,\n调用此函数以后,wndproc 必须指定非 null 返回值,\n以避免再次重复调用默认回调函数
+?win.ui.ctrl.atlaxwin  =!atlAxWin.
+win.ui.ctrl.atlax() = 静态文本控件\n!atlAxWin.
+win.ui.ctrl.atlax = 静态文本控件支持库
+end intellisense***/

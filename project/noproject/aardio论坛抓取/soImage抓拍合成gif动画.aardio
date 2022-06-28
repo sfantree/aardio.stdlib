@@ -1,0 +1,101 @@
+import win.ui;
+/*DSG{{*/
+mainForm = win.form(text="aardio form";right=784;bottom=649;image=$"\res\zz.bmp";bgcolor=16777215;bkBottom=132;bkLeft=75;bkRight=89;bkTop=140;border="none";clipch=1)
+mainForm.add(
+button={cls="button";text="开始录制";left=291;top=548;right=494;bottom=624;color=-1;db=1;dr=1;font=LOGFONT(h=-21);z=1};
+button2={cls="button";text="关闭窗口";left=70;top=548;right=273;bottom=624;db=1;dr=1;font=LOGFONT(h=-21);z=2};
+button3={cls="button";text="结束录制";left=516;top=550;right=719;bottom=626;color=-1;db=1;dr=1;font=LOGFONT(h=-21);z=4};
+button4={cls="button";text="button4";left=545;top=30;right=716;bottom=98;z=5};
+static={cls="static";text="开洞抓拍演示:";left=81;top=51;right=356;bottom=94;color=8421376;dl=1;dt=1;font=LOGFONT(h=-32);transparent=1;z=3}
+)
+/*}}*/
+
+mainForm.button4.oncommand = function(id,event){
+        mainForm.msgbox( mainForm.button4.text );
+        
+        
+}
+
+ 
+import console;
+console.open()
+mainForm.button2.oncommand = function(id,event){
+    //mainForm.msgbox( mainForm.button2.text );
+    mainForm.close();
+     
+}
+ 
+mainForm.wndproc = function(hwnd,message,wParam,lParam){
+    select( message ) { 
+        case 0x201/*_WM_RBUTTONUP*/{
+            //鼠标右键弹起,下面获取坐标
+            mainForm.hitCaption()  
+        }
+    }
+}
+
+mainForm.button.oncommand = function(id,event){
+    thread.set("startOrend",true);
+    var x,y,cx,cy = mainForm.getPos();//坐标 x , y  宽 高
+    thread.invoke(
+        function( x,y,cx,cy ){
+            import com;
+            import soImage;
+            import console;
+            import win ;
+            import win.ui ;
+            //import process;
+            var img = soImage();
+            
+            var gifFile = soImage.gifFile("/testgif.gif");
+             
+            while(thread.get("startOrend")){
+                    //下面这句用上就会卡住界面,界面上的按钮就不能操作了
+                //img.capture(deskhwnd,x,y,cx,cy);
+                //于是换成了下面这个抓拍方式
+                var pic = com.picture.snap(win.getDesktop(),x,y,cx,cy);
+                var bmp = gdip.bitmap(pic,80); 
+                img.fromBitmap(bmp.copyHandle());
+                gifFile.write(img); //写入GIF文件
+                console.log("已录制",gifFile.count())
+                /**测试功能区-------
+                //bmp.save("/eb.bmp");
+                        //img.save("/eb2.bmp");
+                               // process.execute( "/eb.bmp" );
+                //thread.set("startOrend",false);
+                --------------**/
+               // sleep(1000);//5HZ,如果设置为正常的50HZ即20ms,则窗体响应不了按键了.
+               win.delay(20)
+            }
+            gifFile.close();//释放录制 
+            console.log("录制完毕")
+        },x+mainForm.bkLeft,y+mainForm.bkTop,cx-mainForm.bkRight-mainForm.bkLeft,cy-mainForm.bkBottom-mainForm.bkTop
+         
+    )
+ 
+}
+ 
+mainForm.button3.oncommand = function(id,event){
+    thread.set("startOrend",false);
+}
+ 
+ 
+ 
+ 
+//窗体开洞
+mainForm.transparent(128,0);
+ 
+//win.setTopmost(mainForm.hwnd)
+//添加阴影边框
+import win.ui.shadow;
+win.ui.shadow( mainForm,,20);
+  
+//下面的代码为窗体添加可拖动改变大小的边框
+import win.ui.resizeBorder;
+win.ui.resizeBorder( mainForm );
+ 
+  
+mainForm.enableDpiScaling();
+mainForm.show();
+ 
+return win.loopMessage();

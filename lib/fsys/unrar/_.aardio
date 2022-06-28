@@ -1,0 +1,332 @@
+import fsys;
+namespace fsys;
+
+class unrar{
+	ctor(rarFile,savePath,password,omExtract){ {
+		if(!rarFile) error("路径参数错误",2);
+		if( omExtract === null ) omExtract = 1/*_RAR_OM_EXTRACT*/;
+		var partNum = ..string.match(..string.lower(rarFile),"\.part(\d+)\.rar$");
+		if( partNum && tonumber(partNum) > 1 ){
+			return null,"解压路径不是第一个分卷文件";
+		}
+		var archive = RAROpenArchiveDataEx();
+    	archive.ArcNameW = ..io.fullpath(rarFile);
+    	archive.CmtBuf = ..raw.malloc(0x10002);
+    	archive.CmtBufSize = 0x3FFF;  
+    	archive.OpenMode = omExtract ? 1/*_RAR_OM_EXTRACT*/ :  0/*_RAR_OM_LIST*/;
+
+		if(!savePath){
+			var arcName = ..io.fullpath(rarFile);
+			var f = ..string.lastIndexAny( arcName,"." );
+			savePath = f ? ..string.left(arcName,f-1  ) 
+		}
+
+		if(!savePath){ error("存储路径错误",2); }
+		savePath = ..io.fullpath(savePath)
+		this.savePath = savePath;
+
+    	this.handle = RAROpenArchiveEx(archive)
+    	if( archive.OpenResult != 0 )  {  
+    		return errMessage[archive.OpenResult]:"未知错误",archive.OpenResult;
+    	}
+	
+    	if( password ) { 
+			RARSetPassword(this.handle, password )
+		}
+	 
+    	if (archive.CmtState == 1) {
+    		this.comment = ..raw.tostring(archive.CmtBuf,1,archive.CmtSize);
+    	} 
+    	
+    	this.rarHeaderData = RARHeaderDataEx();
+    	..table.add_gc( this,"close");
+	} };
+	eachHeader = function(){
+		this.lastErrorMessage = null;
+		this.lastErrorCode = null;
+		
+		return function(){
+			var h,f,e = this.readHeader();
+			if(h) return f,h;
+			if(e!==10){
+				this.lastErrorMessage = f;
+				this.lastErrorCode = e;	
+			} 
+		} 
+	}; 
+	readHeader = function(){
+		var iStatus = RARReadHeaderEx(this.handle, this.rarHeaderData);
+
+		if(iStatus==0){
+			return this.rarHeaderData,this.rarHeaderData.FileNameW;
+		} 
+		
+		return null,errMessage[iStatus]:"未知错误",iStatus; 
+	};
+	size64 = function(){
+		var math_size64 = ..math.size64
+		var size64 = math_size64();;
+		var handle = this.handle; 
+		var rarHeader = this.rarHeaderData;
+		
+		this.lastErrorMessage = null;
+		this.lastErrorCode = null;
+		var err = RARReadHeaderEx(handle,this.rarHeaderData);
+		while( err === 0 
+			&& ( 0 >= RARProcessFile(handle, 0/*_RAR_SKIP*/, "", "") )   ) {
+			 
+			size64.add( math_size64(rarHeader.UnpSize,rarHeader.UnpSizeHigh) )
+			err = RARReadHeaderEx(handle,this.rarHeaderData)
+		} 
+			
+		if(err && err!=10 ){
+			this.lastErrorCode = err;	
+			this.lastErrorMessage = errMessage[err]:"未知错误"; 
+			return null,this.lastErrorMessage,err;
+		}
+		
+		return size64;
+	};
+	count = function(){
+		var count = 0;
+		var handle = this.handle; 
+		
+		this.lastErrorMessage = null;
+		this.lastErrorCode = null;
+		var err = RARReadHeaderEx(handle,this.rarHeaderData);
+		while( (err === 0 )
+			&& ( 0 >= RARProcessFile(handle, 0/*_RAR_SKIP*/, "", "") ) ) {
+			count = count + 1;
+			err = RARReadHeaderEx(handle,this.rarHeaderData);
+		}
+		
+		if(err && err!=10 ){
+			this.lastErrorCode = err;	
+			this.lastErrorMessage = errMessage[err]:"未知错误"; 
+			return null,this.lastErrorMessage,err;
+		} 
+		return count;
+	};
+	extractNext = function(opMode=2/*_RAR_EXTRACT*/){
+		var err;
+        select(opMode) {
+        	case 2/*_RAR_EXTRACT*/ {
+        		err = RARProcessFile(this.handle, 2/*_RAR_EXTRACT*/,this.savePath ,"" )  
+        	}
+        	case 1/*_RAR_TEST*/ {
+        		err = RARProcessFile(this.handle, 1/*_RAR_TEST*/, "", this.rarHeaderData.FileName)
+        	}
+        	case 0/*_RAR_SKIP*/ {
+        		err = RARProcessFile(this.handle, 0/*_RAR_SKIP*/, "", "")
+        	} 
+        } 
+        
+        if( err > 0 ){ 
+            this.lastErrorCode = err;	
+			this.lastErrorMessage = errMessage[err]:"未知错误"; 
+			return  null,this.lastErrorMessage,err;    
+         }
+         return true;	
+	};
+	skipNext = function(){
+		return this.extractNext(0/*_RAR_SKIP*/)
+	};
+	testNext = function(){
+		return this.extractNext(1/*_RAR_TEST*/)
+	};
+	setCallback = function(cb,userData){
+		this.stdcallCallback = ..raw.tostdcall(cb,"int(addr,INT,ptr,addr)",this/*设为owner对象*/);
+		_dll.RARSetCallback(this.handle,this.stdcallCallback,userData);
+	};
+	close = function(){
+		 if(this.handle){
+		 	RARCloseArchive(this.handle);
+		 	this.handle = null;
+		 }
+	} 
+}
+
+namespace unrar{
+	_dll = ..raw.loadDll(..io.appData("aardio\std\fsys\unrar.dll",$"~\lib\fsys\unrar\.res\unrar.dll"),);
+	RAROpenArchiveEx = _dll.api("RAROpenArchiveEx","pointer(struct &ArchiveData)");
+	RARCloseArchive = _dll.api("RARCloseArchive","int(POINTER hArcData)");  
+	RARReadHeaderEx = _dll.api("RARReadHeaderEx","int(POINTER hArcData,struct &HeaderData)"); 
+	RARProcessFile = _dll.api("RARProcessFileW","int(POINTER hArcData,int Operation,ustring DestPath,ustring DestName)"); 
+	RARSetPassword = _dll.api("RARSetPassword","void(POINTER hArcData,string Password)");
+	RARSetProcessDataProc = _dll.api("RARSetProcessDataProc","void(POINTER hArcData,pointer ProcessDataProc)");
+
+	class RAROpenArchiveDataEx{
+		ptr ArcName;
+		ustring ArcNameW;
+		INT OpenMode;
+		INT OpenResult;
+		pointer CmtBuf;
+		INT CmtBufSize;
+		INT CmtSize;
+		INT CmtState;
+		INT Flags;
+		ptr Callback;
+		int UserData;
+		INT Reserved[28];
+	}; 
+ 
+	class RARHeaderDataEx {
+  		BYTE ArcName[1024];
+  		WORD ArcNameW[1024];
+  		BYTE FileName[1024];
+  		WORD FileNameW[1024];
+  		INT Flags;
+  		INT PackSize;
+  		INT PackSizeHigh;
+  		INT UnpSize;
+  		INT UnpSizeHigh;
+  		INT HostOS;
+  		INT FileCRC;
+  		INT FileTime;
+  		INT UnpVer;
+  		INT Method;
+  		INT FileAttr;
+  		ptr CmtBuf;
+  		INT CmtBufSize;
+  		INT CmtSize;
+  		INT CmtState;
+  		INT DictSize;
+  		INT HashType;
+  		byte Hash[32];
+  		INT RedirType;
+  		ptr RedirName;
+  		INT RedirNameSize;
+  		INT DirTarget;
+  		INT Reserved[994];
+	}; 
+	
+	count = function(rarFile,password){ 
+ 		var unrar,errMessage,err = ..fsys.unrar(rarFile, ,password,0/*_RAR_OM_LIST*/)
+ 	 	if(!unrar){
+ 	 		return null,errMessage,err
+ 	 	}
+ 	 	var count = unrar.count();
+ 	 	unrar.close();
+ 	 	return count; 
+	};
+	
+	size64 = function(rarFile,password){ 
+ 		var unrar,errMessage,err = ..fsys.unrar(rarFile, ,password,0/*_RAR_OM_LIST*/)
+ 	 	if(!unrar){
+ 	 		return null,errMessage,err
+ 	 	}
+ 	 	var size64 = unrar.size64();
+ 	 	unrar.close();
+ 	 	return size64; 
+	};
+	
+	extract = function (rarFile,savePath,password) { 
+ 		var unrar,errMessage,err = ..fsys.unrar(rarFile,savePath,password,1/*_RAR_OM_EXTRACT*/)
+ 	 	if(!unrar){
+ 	 		return null,errMessage,err
+ 	 	}
+ 	 	for( filename,rarHeader in unrar.eachHeader() ){
+ 	 		var ok,errMsg,err = unrar.extractNext(opMode);
+ 	 		if(  ! ok){
+ 	 			unrar.close();
+ 	 			return false,errMsg,err ;
+ 	 		}
+ 	 	};
+    	unrar.close() 
+    
+    	if(unrar.lastErrorMessage){
+    		return null,unrar.lastErrorMessage,unrar.lastErrorCode;
+    	}
+    	return unrar.savePath;
+	}
+	
+	errMessage  = {
+		[/*_ERAR_END_ARCHIVE*/10]="文件结尾";
+		[/*_ERAR_NO_MEMORY*/11]="内存不足";
+		[/*_ERAR_BAD_DATA*/12]="错误数据";
+		[/*_ERAR_BAD_ARCHIVE*/13]="卷错误";
+		[/*_ERAR_UNKNOWN_FORMAT*/14]="未知的压缩包格式";
+		[/*_ERAR_EOPEN*/15]="打开卷失败";
+		[/*_ERAR_ECREATE*/16]="创建文件失败";
+		[/*_ERAR_ECLOSE*/17]="文件关闭失败";
+		[/*_ERAR_EREAD*/18]="读错误";
+		[/*_ERAR_EWRITE*/19]="写错误";
+		[/*_ERAR_SMALL_BUF*/20]="缓冲区太小";
+		[/*_ERAR_UNKNOWN*/21]="未知错误";
+		[/*_ERAR_MISSING_PASSWORD*/22]="缺少密码";
+		[/*_ERAR_EREFERENCE*/23]="";
+		[/*_ERAR_BAD_PASSWORD*/24]="密码错误"; 
+	}
+}
+  
+/**intellisense(fsys.unrar)
+extract(.("rar压缩文件路径") = 解压文件到压缩包所在目录\n成功返回解压目录\n成功返回解压目录,失败返回:false,错误信息,错误代码
+extract(.("rar压缩文件路径","解压目录","密码") = 解压文件\n不存在的目录自动创建\n成功返回解压目录,失败返回:false,错误信息,错误代码
+count(.("rar压缩文件路径","密码") = 以只读模式打开压缩包\n并计算压缩包内文件总数
+size64(.("rar压缩文件路径","密码") = 以只读模式打开压缩包\n并返回解压后文件大小
+size64() = !math_size64.
+errMessage =  错误代码、错误信息对照表。
+end intellisense**/
+
+ /**intellisense()
+fsys.unrar() = !fsys_unrar.
+fsys.unrar(.("rar压缩文件路径","解压目录","密码",是否解压) = 创建RAR文件对象\n不存在的目录自动创建\n成功返回unrar对象,失败返回:null,错误信息,错误代码
+!fsys_unrar.savePath = 返回解压目录
+!fsys_unrar.readHeader() = 读取下一个文件头,\n成功返回文件头,文件名\n失败返回:null,错误信息,错误代码\n解压完成返回空
+!fsys_unrar.extractNext() = 解压并查找下一个文件\n失败返回:null,错误信息,错误代码\n成功返回true
+!fsys_unrar.testNext() = 测试并查找下一个文件\n失败返回:null,错误信息,错误代码\n成功返回true
+!fsys_unrar.skipNext() = 查找下一个文件\n失败返回:null,错误信息,错误代码\n成功返回true
+!fsys_unrar.close() = 关闭文件
+!fsys_unrar.count() = 返回压缩包内文件总数
+!fsys_unrar.lastErrorCode = 最后发生的错误信息
+!fsys_unrar.lastErrorMessage = 最后发生的错误代码
+!fsys_unrar.setCallback( 回调函数 ) = @.setCallback(\n	function( msg,userData,pData,dataSize){\n		if(msg==4){\n			raw.copy(pData,string.toUnicode("password"));\n		}\n	} \n)
+!fsys_unrar.eachHeader( ) = @for(filename,rarHeader in ??.eachHeader() ){ 
+ 	if(  ! ??.extractNext(opMode) ){
+ 	 	return false;__
+ 	}
+};
+!fsys_unrar.readHeader() = !RARHeaderData.
+!fsys_unrar.eachHeader() = !RARHeaderData.
+!fsys_unrar.size64() = 解压后大小,math.size64对象\n!math_size64.
+!RARHeaderData.ArcName = 压缩卷名
+!RARHeaderData.FileName = 文件名
+!RARHeaderData.Flags = 输出文件标志
+!RARHeaderData.PackSize = 分卷大小
+!RARHeaderData.PackSizeHigh = 分卷大小高位
+!RARHeaderData.UnpSize = 解压后的文件大小
+!RARHeaderData.UnpSizeHigh  = 解压后的文件大小高位
+!RARHeaderData.HostOS = 压缩文件的宿主操作系统
+!RARHeaderData.FileCRC = 压缩之前文件的CRC值
+!RARHeaderData.FileTime = 按照MS DOS格式输出的日期和时间
+!RARHeaderData.UnpVer = 解压需要的Rar版本。按照10 * Major version + minor version格式给出
+!RARHeaderData.Method = 压缩方式
+!RARHeaderData.FileAttr = 文件属性
+!RARHeaderData.CmtBuf = 文件注释缓冲区
+!RARHeaderData.CmtBufSize = 注释的缓冲区大小
+!RARHeaderData.CmtSize = 实际注释大小
+!RARHeaderData.CmtState = 注释状态
+ 	 	
+_ERAR_END_ARCHIVE=@0xA/*_ERAR_END_ARCHIVE*/
+_ERAR_NO_MEMORY=@0xB/*_ERAR_NO_MEMORY*/
+_ERAR_BAD_DATA=@0xC/*_ERAR_BAD_DATA*/
+_ERAR_BAD_ARCHIVE=@0xD/*_ERAR_BAD_ARCHIVE*/
+_ERAR_UNKNOWN_FORMAT=@0xE/*_ERAR_UNKNOWN_FORMAT*/
+_ERAR_EOPEN=@0xF/*_ERAR_EOPEN*/
+_ERAR_ECREATE=@0x10/*_ERAR_ECREATE*/
+_ERAR_ECLOSE=@0x11/*_ERAR_ECLOSE*/
+_ERAR_EREAD=@0x12/*_ERAR_EREAD*/
+_ERAR_EWRITE=@0x13/*_ERAR_EWRITE*/
+_ERAR_SMALL_BUF=@0x14/*_ERAR_SMALL_BUF*/
+_ERAR_UNKNOWN=@0x15/*_ERAR_UNKNOWN*/
+_ERAR_MISSING_PASSWORD=@0x16/*_ERAR_MISSING_PASSWORD*/
+_RAR_OM_LIST=@0/*_RAR_OM_LIST*/
+_RAR_OM_EXTRACT=@1/*_RAR_OM_EXTRACT*/
+_RAR_OM_LIST_INCSPLIT=@2/*_RAR_OM_LIST_INCSPLIT*/
+_RAR_SKIP=@0/*_RAR_SKIP*/
+_RAR_TEST=@1/*_RAR_TEST*/
+_RAR_EXTRACT=@2/*_RAR_EXTRACT*/
+_RAR_VOL_ASK=@0/*_RAR_VOL_ASK*/
+_RAR_VOL_NOTIFY=@1/*_RAR_VOL_NOTIFY*/
+_RAR_DLL_VERSION=@5/*_RAR_DLL_VERSION*/
+end intellisense**/

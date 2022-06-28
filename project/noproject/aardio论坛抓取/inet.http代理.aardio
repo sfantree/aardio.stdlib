@@ -1,0 +1,23 @@
+import console;
+import inet;
+import inet.http;
+
+
+// https://bbs.aardio.com/forum.php/?mod=viewthread&tid=8662
+
+
+var http = inet.http(,"127.0.0.1:1086");
+
+http.disableCache(); // 禁止缓存
+
+//var html = http.down("https://www.baidu.com");
+var html = http.down("http://10.30.111.50:9002/eoms-html/prod-api/dict/define/id2Name?id=1808");
+//string.save("/test.html", html )
+//import process;
+//process.execute("/test.html");
+
+
+
+console.dump(html);
+
+console.pause();

@@ -1,0 +1,73 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="筛选法求素数";right=407;bottom=281)
+winform.add(
+static={cls="static";text="素数生成器";left=8;top=8;right=402;bottom=48;align="center";center=1;font=LOGFONT(h=-24;name='仿宋');notify=1;transparent=1;z=2};
+tab={cls="tab";left=16;top=80;right=392;bottom=264;edge=1;z=1}
+)
+/*}}*/
+
+var frmTabPage1 = winform.tab.add( text="问题"; bottom=140;right=402; )
+frmTabPage1.add( 
+    edit={cls="edit";text="Edit";left=8;top=8;right=365;bottom=135;edge=1;autohscroll=false;multiline=1;z=3};
+) 
+frmTabPage1.edit.text = "　　找出素数(我们把找素数的范围定在2-50000内)。素数的定义：任何大于1的正整数，如果它不能被1和它本身之外的其它正整数整除，则该数为素数。";
+
+var frmTabPage2 = winform.tab.add( text="问题分析"; bottom=140;right=325 )
+frmTabPage2.add( 
+    edit={cls="edit";text="Edit";left=8;top=8;right=365;bottom=135;edge=1;autohscroll=false;multiline=1;z=3};
+)
+frmTabPage2.edit.text = "　　所谓筛选法，即对于2～N之内的任一整数I，其倍数2×i,3×i,4×i，……，J×I（J×I<=N）,都不是素数，可以筛选掉。I从2循环至N，逐个进行筛选，那么剩下的数就是2至N之间的全部素数。
+
+　　比如我们找50以内的所有素数，我们可以把50以内的所有数存放到一个一维数组中，把数I存放在S[I]中，对于I从2到50，如果S[i]>1，则可以把S[2*i]，s[3*i]，……，s[j*i]都筛选掉（清为0），当然J必须满足J×I<=50，最后输出数组中大于1的数（剩下的数）即可。";
+
+
+var frmTabPage3 = winform.tab.add( text="解决方法"; bottom=140;right=325 )
+frmTabPage3.add(
+button={cls="button";text="开始计算";left=40;top=112;right=128;bottom=136;z=8};
+edit2={cls="edit";text="50";left=8;top=8;right=96;bottom=32;edge=1;z=1};
+edit3={cls="edit";text="50";left=88;top=40;right=176;bottom=64;edge=1;z=5};
+edit4={cls="edit";text="50";left=88;top=80;right=176;bottom=104;edge=1;z=6};
+listview={cls="listview";left=200;top=8;right=304;bottom=136;edge=1;z=7};
+static={cls="static";text="以内的素数为：";left=112;top=8;right=208;bottom=32;center=1;transparent=1;z=2};
+static2={cls="static";text="最大素数：";left=8;top=40;right=104;bottom=64;center=1;transparent=1;z=3};
+static3={cls="static";text="素数个数：";left=8;top=72;right=104;bottom=104;center=1;transparent=1;z=4}
+)
+
+
+var isPrime = function(n){
+	if(n <= 1) {
+	    return false;
+	} elseif(n == 2 or n == 3){
+	    return true;
+	} else {
+	    var maxRange = math.floor(math.sqrt(n)) + 1;
+	    for(i=2;maxRange;1){
+	    	if(n % i == 0) {
+	    	    return false;
+	    	}
+	    }
+	    return true;
+	}
+}
+
+frmTabPage3.button.oncommand = function(id,event){
+    frmTabPage3.listview.clear(true);
+    frmTabPage3.listview.insertColumn("列表", -1)
+	var maxRange = tonumber(frmTabPage3.edit2.text);
+	var t = {}
+	for(i=2;maxRange;1){
+		if(isPrime(i)) {
+		    table.push(t, i);
+		    
+		    frmTabPage3.listview.addItem(tostring(i));
+		}
+	}
+	//winform.listview.addItem();
+	frmTabPage3.edit3.text = tostring(t[table.len(t)])
+	frmTabPage3.edit4.text = tostring(table.len(t))
+}
+
+
+winform.show();
+win.loopMessage();

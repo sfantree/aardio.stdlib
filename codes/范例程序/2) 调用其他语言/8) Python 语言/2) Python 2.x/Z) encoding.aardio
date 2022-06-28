@@ -1,0 +1,54 @@
+//文本编码
+import console; 
+console.open(); //先打开控制台以显示 Python 中 print 调用的输出
+
+import py2;
+
+//此函数参数可以是代码也可以是文件路径，加载的 Python 代码总是先自 UTF-8 转换为 ANSI 编码再执行
+py2.exec(`print("abc中文")`) ;//看不到中文，除非打开控制台前指定 console.utf8 = false
+
+//用法同上，但加载代码前 aardio 不会转换 Python 代码的编码。 
+py2.execRaw(`print("abc中文")`) ; //正常显示了，其实 Python2是把字符串当二进制，啥都没干
+
+//用法同上，执行前不转换代码的编码，但会在代码前面加上 Python 编码声明 '#-*-coding:utf-8-*-\n' 
+py2.execUtf8(`print("abc中文")`) ;
+
+py2.execUtf8(` 
+def getTable(v):
+	print type(v["a"]); #表对象传入 Python 总是使用 Unicode 编码
+	return v
+	
+def getString(v):
+	print type(v); #这里显示 str 类型
+	return v
+`) ;
+
+//aardio 表对象传给 Python , 这种方式总是使用 Unicode 编码
+var pyObject = py2.main.getTable({a:"测试中文"})
+
+//调用 pyObject.parseValue() 还原表对象时，总是尝试还原为 UTF-8 编码。
+console.dump(  pyObject.parseValue()  )
+
+//aardio 与 Python 间传字符串时，aardio 不改变真实编码，aardio 文本字符串默认为 UTF-8 编码。
+var pyObject = py2.main.getString("测试中文")
+
+//Python 里是什么编码，这里就是什么编码，纯字符串类型 Python 对象在转换为  aardio 字符串时不会转换编码。
+console.dump( pyObject.parseValue() );
+
+console.pause(); 
+/*
+Python2 里 unicode 是一个单独的类型，相当于 aardio 中的 Unicode 字符串，也就是 aardio 里的 '这种字符串'u。
+Python2 里的 bytes 实际就是 str - 可以理解为二进制字符串，相当于 aardio 中的普通字符串。
+aardio 文本字符串默认为 UTF-8 编码，而 Python 2 字符串（str / bytes）默认为 ANSI 编码。
+
+在 Python3 中的字符串实际上就里 Python2 里的 Unicode，
+Python3 的这种 Unicode 字符串在 aardio 中等价于默认 UTF-8 编码的普通字符串。
+Python 3 里的 bytes 在 aardio 中会转换为 buffer（即二进制字节数组）。
+
+Python 2 在 Windows 上默认把字符串处理为 ANSI 编码，
+所以很多地方要用string.fromto(str)将字符串转换为 ANSI 编码，ANSI 编码在不同的系统会解释为不同编码，
+简体中文系统即 GBK，这就很乱很容易出问题了。
+
+Python2 里虽然也可以在代码文件前加一个声明用UTF8编码。
+但这是没有多大用的，Python2 对 UTF-8 的支持很糟糕，如果在代码中有文件路径，或者控制台输出，都会非常麻烦。
+*/

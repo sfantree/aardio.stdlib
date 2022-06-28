@@ -1,0 +1,55 @@
+﻿//下标 Item[]
+import dotNet;  
+var compiler = dotNet.createCompiler("C#");
+
+compiler.Source = /****** 
+using System;
+using System.Collections.Generic;
+namespace CSharpLibrary  
+{ 
+	public class TestClass
+    {
+        private Object [] values = new Object [] {1,2,3,4,5,6,7,8,9};
+        public Object this [int index]
+        {
+            get  { return values[index]; }
+            set  { values[index] = value; }
+        }
+        
+        public Dictionary<string,string> dict = new Dictionary<string,string> ();
+   }
+} 
+******/ 
+
+compiler.import("CSharpLibrary"); //编译并引入 C# 名字空间
+var netObj = CSharpLibrary.TestClass(); //使用 C# 编写的类构造对象实例
+
+import console;   
+
+/*
+C# 中的 下标操作符[] 实际上会被自动转换为访问 Item[] 下标属性。
+在 aardio 中需要用 Item[] 访问 .Net 对象的 Item 属性。
+*/
+
+//读下标属性，C# 起始下标为0，而非 aardio 中的起始下标为 1。
+var item = netObj.Item[5];
+var item = netObj.getItem(5); //这样读下标属性也可以，支持多参数
+var item = netObj.Item(5); //get 前缀可以省略
+
+//写下标属性
+netObj.Item[5]  = 123;
+netObj.setItem(5); //这样写下标属性也可以，支持多参数
+
+//如果.Net 对象的下标为数值，允许省略 Item，但这时候起始下标为 1。
+var item = netObj[6];
+ 
+//也可以下面这样赋值：
+netObj[6] = 123; 
+
+console.log(netObj[6]); 
+
+//字典也可以这样访问
+netObj.dict.Item["test"] = "abc";
+console.log( netObj.dict.Item["test"] );
+
+console.pause();

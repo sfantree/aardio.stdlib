@@ -1,0 +1,56 @@
+﻿//模板语法
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="Sciter 使用 aardio 模板语法";right=1014;bottom=523)
+winform.add()
+/*}}*/
+
+import web.sciter;
+var wbSciter = web.sciter( winform );
+ 
+//下面定义的 external 对象在 JavaScript 中可直接使用
+wbSciter.external = {
+    func = function(str){ 
+         return "Hello, "+str+"!"; 
+    }
+}
+
+/*
+web.sciter 支持 aardio 模板语法，
+html,js 等都可以直接加载 *.aardio 代码,例如在 aardio 工程里可以直接写:
+
+wbSciter.go("/res/index.aardio",{
+	name = "这里可以指定模板参数,在网页中可以用 owner.name 访问这里指定的参数"
+})
+*/
+wbSciter.html = /**
+<body style="white-space:pre;font-size:14px;word-wrap: break-word;word-break: normal;">
+显示 AppData 路径 <?=..io.appData() ?><br>
+
+在 aardio 代码中直接支持 HTML 模板语法。
+
+一、一个 aardio 文件，即可以是纯 aardio 代码，也可以是纯 HTML，或是 HTML、aardio相互混合的模板代码。
+注意 aardio 解析模板文件时，可以使用全局变量，或接收到的 owner 参数，不能使用模板代码外部的局部变量。
+
+二、在HTML代码中aardio代码必须置于 &lt;? ..... ?&gt; 内部，，类似PHP的模板语法, 
+但是要注意与PHP的区别是，aardio规定开始标记  &lt;? 必须独立不能紧跟英文字母，例如 &lt;?xml.....  
+不是合法的aardio代码段开始标记(aardio会认为这是一个XML标记)。 另外，aardio 总是忽略?&gt;后面
+或文件开始的空白字符（包含空格、制表符，换行）。
+
+三、在一个aardio文件中如果混合了HTML代码，aardio将&lt;? ..... ?&gt; 之外的部分解析为： print("HTML代码") 以调用全局函数print输出HTML。
+关于print函数的规则：
+   1)、print允许接收多个参数，并且必须对每个参数调用tostring()转换为字符串
+   2)、在一个aardio文件解析结束时，print函数将收到一个null参数调用
+
+四、可以使用 &lt;?=表达式?&gt; 输出文本，该代码的作用类似于 print( 表达式 ) , 下面的写法也是允许的：
+<p style="font-family: 新宋体"></font><font color="#008000">&lt;?</font><font color="#000000"><BR>
+=&nbsp;</font><font color="#800000">表达式</font><font color="#000000"><BR>
+</font><font color="#008000">?&gt;</font></p>
+五、aardio文件只能以UTF-8编码保存，不建议添加UTF8 BOM(如果添加了BOM,aardio仍然会自动移除)
+**/
+
+wbSciter.preloadScript(js)
+
+winform.show();	
+win.loopMessage();
+

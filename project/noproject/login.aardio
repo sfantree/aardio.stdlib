@@ -1,0 +1,109 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=295;bottom=199;border="none";composited=1;mode="popup";title=false)
+winform.add(
+button={cls="button";text="登录";left=32;top=160;right=112;bottom=184;tabstop=1;z=3};
+button2={cls="button";text="重置";left=192;top=160;right=272;bottom=184;tabstop=1;z=4};
+edit={cls="edit";left=56;top=40;right=280;bottom=64;edge=1;tabstop=1;z=1};
+edit2={cls="edit";left=56;top=88;right=280;bottom=112;edge=1;password=1;tabstop=1;z=2}
+)
+/*}}*/
+
+import console;
+import sqlite;
+import string.md5;
+
+g_db = sqlite("/login.db");
+
+
+/*
+//创建数据表
+if( not g_db.existsTable("UserManege") ) {  
+    g_db.exec( "CREATE TABLE [UserManege](UserName, PassWord);")  
+}  
+
+// 插入数据
+var command = g_db.prepare("INSERT INTO [UserManege] VALUES ( @UserName, @PassWord);" ) 
+command.step(  
+	"UserName" = "admin";
+	"PassWord" = string.md5("admin123");
+)  
+*/  
+
+// 屏蔽SQL注入
+function CheckSqlInject(SqlString){
+	var l,r;
+	l,r = string.indexOf(SqlString, "'");
+	if(l != null) {
+	    return true;
+	}
+	l,r = string.indexOf(SqlString, '"');
+	if(l != null) {
+	    return true;
+	}
+	return false;
+}
+
+
+// 登陆按钮
+winform.button.oncommand = function(id,event){
+	if (#(winform.edit.text) == 0) {
+	    winform.msgbox("您的用户名为空！请填写后登录！");
+	    return;
+	}
+	if (#(winform.edit2.text) == 0) {
+	    winform.msgbox("您的密码为空！请填写后登录！");
+	    return;
+	}
+	
+	
+	if( CheckSqlInject(winform.edit.text) ) { 
+		winform.msgbox("输入用户名存在SQL注入！");
+	    return;
+	}
+	
+	if( CheckSqlInject(winform.edit2.text) ) {
+	    winform.msgbox("输入密码存在SQL注入！");
+	    return;
+	}
+	
+	
+	
+	//var sql = "select * from UserManege where UserName = "
+	assert(g_db != null);
+	var result = g_db.stepQuery(
+		"SELECT * FROM [UserManege]", { 
+		    "UserName" = winform.edit.text;
+		    "PassWord" = string.md5((winform.edit2.text));
+		 }
+	)
+	//console.dump(result);
+	if(result == null) {
+	    winform.msgbox("用户名密码不正确！");
+	    return;
+	} else {
+	    winform.msgbox("欢迎回来，" + winform.edit.text);
+	    return;
+	}
+}
+
+winform.button2.oncommand = function(id,event){
+	winform.edit.text = "";
+	winform.edit2.text = "";
+	winform.edit.setFocus();
+}
+ 
+winform.edit2.onOk = function(){ 
+    /*当前已按下回车,返回true阻止默认事件*/
+    winform.button.setFocus();
+    //return true; 	
+} 
+
+
+winform.edit.setFocus();
+
+import win.ui.simpleWindow;
+win.ui.simpleWindow(winform);
+
+winform.show();
+win.loopMessage();

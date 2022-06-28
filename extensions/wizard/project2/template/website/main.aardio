@@ -1,0 +1,59 @@
+
+if( !request ){
+
+	/*
+	创建一个兼容FastCGI接口的简单Web服务器，如果已经在Web服务器环境下这段可以省略。
+	*/
+	import fsys.log;
+	import wsock.tcp.simpleHttpServer;
+	import process;
+	import console;
+	
+	/*捕获错误信息{{*/
+	global.onError = function( err,over,app ){ 
+    	if(!over){
+        	import debug;
+        	var stack = debug.traceback(,"调用栈",3);
+        	err =  ..string.concat(err,'\n',stack);
+    	}
+    	
+    	if(!app){
+    		//CGI进程错误信息请查看"CGI.EXE目录/config"下面生成的日志文件
+    		import fsys.log;
+    		fsys.log.print( ..string.replace(err,"![\r\n]\n",'\r\n')  );
+    	}
+    	
+    	//500错误错误服务器上本地打开网页可以看到,
+    	return err;
+	} 
+	/*}}*/ 
+
+	var server = wsock.tcp.simpleHttpServer("127.0.0.1",/*8081*/);
+	console.setTitle("web服务器已启动 " + server.getUrl() ); 
+	process.execute( server.getUrl()  )
+	
+	server.run(
+		function(response,request,session){
+			response.loadcode( request.path ); //参数可以省略
+		} 	
+	);
+	
+	return;
+}
+
+?>
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />  
+    <title>Web服务器 wsock.tcp.simpleHttpServer</title>
+</head>
+<body style="white-space:pre;font-size:14px;word-wrap: break-word;word-break: normal;">
+在aardio中几句代码就可以创建一个简单的支持多线程并发连接的Web服务器，
+支持文件上传下载，支持Session ID,并且网站编程接口与FastCGI应用完全兼容，同一套aardio网站代码可以跑在simpleHttpServer下，也可以运行于IIS这样Web服务器环境。
+
+<a href='/help/'>查看aardio HTML模板语法说明</a>
+<a href='http://bbs.aardio.com/forum.php?mod=viewthread&tid=13210&from=portal'>aardio网站开发、FastCGI开发入门教程</a> 
+</body>
+</html>

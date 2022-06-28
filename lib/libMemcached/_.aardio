@@ -1,0 +1,92 @@
+﻿
+class libMemcached{
+	ctor( optServers ){
+		var client = topointer( dll.memcached_create(null) );  
+        if(!client) return null,,"memcached_create fail";
+        
+        var servers = dll.memcached_servers_parse(optServers:"localhost:11211");  
+        var ret = dll.memcached_server_push(client,servers);  
+        dll.memcached_server_list_free(servers); 
+        
+        if(ret) return null,"memcached_server_push fail:" + ..raw.str( topointer(dll.memcached_strerror(client,ret)) ); 
+        this.client = client;
+        ..table.gc(this,"free");
+        
+	};
+	strerror = function(e){
+		var p = topointer(dll.memcached_strerror(client,e));
+		return  p ? ..raw.str( p  )
+	};
+	set = function(key,value,timeout) { 
+		if( value === null){
+			return delete.delete(key);
+		};
+		 
+    	var ret = dll.memcached_set(this.client,key,#key,value,#value,timeout,0);  
+    	if( ret ) return null, this.strerror(ret);
+    	return true;
+	};
+	get = function(key) {  
+        var ret ={INT value}
+        var len ={INT value}
+        var flag ={INT value}
+        var result = dll.memcached_get(this.client,key,#key,len,flag,ret); 
+        if(!ret.value){  
+            return ..raw.str(topointer(result));
+        }  
+        else if(ret == 16/*_MEMCACHED_NOTFOUND*/){  
+            return null; 
+        }  
+        else {  
+            return null, this.strerror(ret.value);
+        }  
+	};
+	mget = function(keys){  
+		if(!#keys) return;
+		var lens = {};
+		for(i=1;#keys;1)lens[i] = #(keys[i])  
+  	
+    	var rc = dll.memcached_mget(this.client,{string keys[] = keys},{INT lens[]=lens},#keys);
+    	
+    	var result = {};
+    	var k = ..raw.malloc(251); //{ BYTE value[251/*MEMCACHED_MAX_KEY*/] } 
+    	var vLen  = {INT value};  
+    	var kLen = {INT value};   
+    	var flags = {INT value};
+    	var rc = {INT value}; 
+  		var v = dll.memcached_fetch(this.client,k,kLen,vLen,flags,rc)
+  		
+    	while(v){ 
+        	if(!rc.value){
+           		result[..raw.tostring(k,1,kLen.value)] = ..raw.tostring( topointer(v),1,vLen.value );
+        	}
+        	v = dll.memcached_fetch(this.client,k,kLen,vLen,flags,rc)
+    	};
+    	return result;  
+	};
+	delete = function(key) {    
+    	var ret = dll.memcached_delete(this.client,key,#key,0);  
+    	if(ret) return null,this.strerror(ret);
+    	return true;
+	};
+	free = function(){
+		if(this.client){
+			dll.memcached_free(this.client); 
+			this.client = null;
+		};
+	};
+	@{ _get = this.get;_set = this.set };
+}
+
+namespace libMemcached{
+
+	dll = ..raw.loadDll($"~\lib\libmemcached\.dll\libmemcached.dll","std.libmemcached.dll","cdecl");
+}
+
+/**intellisense()
+libMemcached() = 创建libMemcached客户端,\n可选用参数指定一个或多个服务端,\n格式:"ip:端口,ip2:端口2"\n!stdlibMemcached.
+!stdlibMemcached.set(.("键","值") = 写入键值
+!stdlibMemcached.get(.("键") = 读取值
+!stdlibMemcached.delete(.("键") = 删除值
+!stdlibMemcached.mget(.({"键";"键2"}) = 参数指定键名数组,返回读取的键值对列表
+end intellisense**/

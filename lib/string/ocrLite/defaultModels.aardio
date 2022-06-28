@@ -1,0 +1,23 @@
+﻿import string.ocrLite;
+
+namespace string.ocrLite.defaultModels{
+    
+    var modelDir = ..io.appData("aardio\OcrLiteOnnx\models\");
+    
+    dbNet = ..io.joinpath(modelDir,"dbnet.onnx"); 
+	crnnNet = ..io.joinpath(modelDir,"crnn_lite_lstm.onnx"); 
+	angleNet = ..io.joinpath(modelDir,"angle_net.onnx"); 
+	crnnNetKeys = ..io.joinpath(modelDir,"keys.txt"); 
+					
+    if(!..io.exist(modelDir) ){ 
+    	..string.save(dbNet, $"~\lib\string\ocrLite\.res\dbnet.onnx")
+    	..string.save(angleNet, $"~\lib\string\ocrLite\.res\angle_net.onnx")
+    	..string.save(crnnNet, $"~\lib\string\ocrLite\.res\crnn_lite_lstm.onnx")
+    	..string.save(crnnNetKeys, $"~\lib\string\ocrLite\.res\keys.txt")
+    }	
+}
+
+/**intellisense()
+string.ocrLite.defaultModels = 嵌入默认模型
+end intellisense**/
+

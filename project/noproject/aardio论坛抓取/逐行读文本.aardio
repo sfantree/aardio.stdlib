@@ -1,0 +1,15 @@
+import console; 
+
+io.open()
+str=/*
+成  龙 二年级 95
+王小春 二年级 80
+梁朝伟 三年级 70
+黄日华 四年级 90  
+刘嘉玲 四年级 100
+*/
+tab = string.split(str,'<\r\n>')
+for(i=1;#tab;1){
+    io.print(tab[ i ])
+}
+console.pause(true);

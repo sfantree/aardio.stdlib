@@ -1,0 +1,54 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=378;bottom=205)
+winform.add(
+button2={cls="button";text="添加待执行函数到队列";left=84;top=51;right=295;bottom=88;z=1};
+button3={cls="button";text="开启时钟逐个执行队列里的函数";left=84;top=95;right=294;bottom=132;z=2}
+)
+/*}}*/
+
+import console;
+
+//设计一个table,用时钟定时检测逐个函数执行,函数名直接存进去,用的时候后面加括号
+var 待执行函数队列 = {}
+
+var jiafa = function(a,b){
+        console.log("加法结果:",a+b);
+}
+
+winform.button2.oncommand = function(id,event){
+   
+    //var tab = {fun=jiafa;a=1;b=2;}
+        table.push(待执行函数队列,{fun=jiafa;a=1;b=2;})
+        table.push(待执行函数队列,{fun=jiafa;a=1;b=3;})
+        table.push(待执行函数队列,{fun=jiafa;a=1;b=4;})
+        table.push(待执行函数队列,{fun=jiafa;a=1;b=5;})
+       
+        console.dumpJson(待执行函数队列)
+       
+        //待执行函数队列[1].fun(待执行函数队列[1].a,待执行函数队列[1].b)
+}
+
+import win.timer
+var timer = win.timer( winform );
+timer.setInterval(2000)
+timer.onTimer = function(hwnd,msg,id,tick){
+   
+    //console.log("任务队列里待执行函数个数:",table.count(待执行函数队列));
+   
+    if(table.count(待执行函数队列)>=1){
+        
+        //函数名后面加括号执行
+            待执行函数队列[1].fun(待执行函数队列[1].a,待执行函数队列[1].b)
+           
+            //执行完就从队列中删除掉,避免重复执行
+        table.remove(待执行函数队列,1)
+    }
+}
+
+winform.button3.oncommand = function(id,event){
+        timer.enable();
+}
+
+winform.show()
+win.loopMessage();

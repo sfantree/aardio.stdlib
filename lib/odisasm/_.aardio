@@ -1,0 +1,252 @@
+//默认库源代码
+//http://www.ollydbg.de/srcdescr.htm 
+namespace odisasm;
+
+var dll = ..raw.loadDll( $"~\lib\odisasm\.res\disasm.dll")
+Assemble = dll.api("Assemble","int(string cmd,int ip, struct& model,int attempt,int constsize, pointer errtext)")
+Checkcondition = dll.api("Checkcondition","int(int code_,int flags_)")
+Decodeaddress = dll.api("Decodeaddress","int(int addr_, pointer& symb_,int nsymb_, pointer& comment_)")
+Disasm = dll.api("Disasm","int(pointer src_,int srcsize_,int srcip_, struct& disasm_,int disasmmode_)")
+Disassembleback = dll.api("Disassembleback","int(pointer& block_,int base_,int size_,int ip_,int n_)")
+Disassembleforward = dll.api("Disassembleforward","int(pointer& block_,int base_,int size_,int ip_,int n_)")
+Isfilling = dll.api("Isfilling","int(int addr_, pointer& data_,int size_,int align_)")
+Print3dnow = dll.api("Print3dnow","int(pointer& s_, pointer& f_)")
+Printfloat10 = dll.api("Printfloat10","int(pointer& s_,double ext_)")
+Printfloat4 = dll.api("Printfloat4","int(pointer& s_,float f_)")
+Printfloat8 = dll.api("Printfloat8","int(pointer& s_,double d_)")
+DisasmGetSettings = dll.api("DisasmGetSettings","void(struct& t_)")
+DisasmSetSettings = dll.api("DisasmSetSettings","void(struct& t_)")
+
+class t_addrdec { 
+	int defseg; 
+	int descr; 
+} 
+
+class t_cmddata{
+	int mask;
+	int code;
+	byte len;
+	byte bits;
+	byte arg1;
+	byte arg2;
+	byte arg3;
+	byte type;
+	int name;
+}  
+
+class t_disasm { 
+	INT ip; 
+	BYTE dump[256];
+	BYTE result[256];
+	BYTE comment[256];
+	int cmdtype;
+	int memtype;
+	int nprefix;
+	int indexed;
+	int jmpconst;
+	int jmptable;
+	int adrconst;
+	int immconst;
+	int zeroconst;
+	int fixupoffset;
+	int fixupsize;
+	int error;
+	int warnings;
+}  
+
+class t_asmmodel {
+	byte code[16];
+	byte mask[16]; 
+	int length; 
+	int jmpsize; 
+	int jmpoffset; 
+	int jmppos; 
+}  
+
+
+class t_disasm_settings{ 
+	int ideal; 
+	int lowercase; 
+	int tabarguments; 
+	int extraspace; 
+	int putdefseg; 
+	int showmemsize;  
+	int shownear; 
+	int shortstringcmds; 
+	int sizesens; 
+	int symbolic; 
+	int farcalls; 
+	int decodevxd; 
+	int privileged; 
+	int iocommand; 
+	int badshift; 
+	int extraprefix; 
+	int lockedbus; 
+	int stackalign; 
+	int iswindowsnt; 
+} 
+
+var t = t_disasm();  
+dasm = function(code,ip=0x400000,mode=4/*_DISASM_CODE*/){
+	var t = t_disasm();
+	var len = Disasm(code,#code,ip,t,mode) 
+	if( len ){
+		var codeLine  = ..string.str( t.result  );
+		if( len >= #code )
+			return codeLine;
+			
+		return ..string.concat(codeLine,'\r\n',dasm(..string.right(code,-(len+1))) ); 
+	}
+}
+
+eachDasm = function(...){
+	var codes = {...}
+	return function(){
+		var code = ..table.remove(codes);
+		if( #code ) return dasm( code )
+	} 
+}
+
+var errBuffer =..raw.malloc(256)
+nextAsm = function(code,ip=0x400000 ){
+	var code,nextLine = ..string.match(code,"([^\r\n]+)[\r\n]*(.*)$");
+	
+	var am = t_asmmodel()
+	var j = Assemble( code,ip,am,0,0,errBuffer );
+	if(j){  
+		if( j < 0 ){
+			var errtext = ..raw.tostring(errBuffer) 
+			return null,errtext,j;
+		}
+		
+		return ..string.str(am.code),code,nextLine;
+	} 
+}  
+
+eachAsm = function(code,ip=0x400000,mode=4/*_DISASM_CODE*/){
+	var bin,asmCode; 
+	return function(){
+		if(#code){
+			bin,asmCode,code  = nextAsm(code);
+			if( bin )
+				return bin,asmCode;
+		}
+	} 
+}
+
+asm = function(code){
+	var tab = {};
+	for( bin,line in eachAsm(code) ){ 
+		..table.push(tab,bin);
+	} 
+	return ..string.join(tab);	
+}
+
+hex = function(s){
+	return ..string.replace(s,".",function(c){
+		return ..string.format("\x%02X",c[1] )
+	})
+}
+
+ /**intellisense()
+odisasm.hex(.(二进制数据) = 返回十六进制编码字符串
+odisasm.dasm(.(机器码) = 32位反汇编,\n可返回继续的多行汇编代码
+odisasm.asm(.(汇编代码) = 32位汇编一行返回机器码
+odisasm.nextAsm(.(汇编代码) = 32位汇编一行返回机器码,汇编代码,下一行汇编代码,\n失败返回null,错误信息
+odisasm.eachAsm(汇编代码) = @for( bin,line in odisasm.eachAsm(__/*汇编代码*/) ){
+	io.print( odisasm.hex(bin),line ) 
+} 
+odisasm.eachDasm(不定个数机器码) = @for code in odisasm.eachDasm(\n	'\x55', /*push ebp*/\n	'\x89\xE5', /*mov ebp,esp*/ \n	){\n	io.print( code )__\n}
+_MAXCMDSIZE=@0x10/*_MAXCMDSIZE*/
+_MAXCALSIZE=@8/*_MAXCALSIZE*/
+_NMODELS=@8/*_NMODELS*/
+_INT3=@0xCC/*_INT3*/
+_NOP=@0x90/*_NOP*/
+_TRAPFLAG=@0x100/*_TRAPFLAG*/
+_REG_EAX=@0/*_REG_EAX*/
+_REG_ECX=@1/*_REG_ECX*/
+_REG_EDX=@2/*_REG_EDX*/
+_REG_EBX=@3/*_REG_EBX*/
+_REG_ESP=@4/*_REG_ESP*/
+_REG_EBP=@5/*_REG_EBP*/
+_REG_ESI=@6/*_REG_ESI*/
+_REG_EDI=@7/*_REG_EDI*/
+_SEG_UNDEF=@-1/*_SEG_UNDEF*/
+_SEG_ES=@0/*_SEG_ES*/
+_SEG_CS=@1/*_SEG_CS*/
+_SEG_SS=@2/*_SEG_SS*/
+_SEG_DS=@3/*_SEG_DS*/
+_SEG_FS=@4/*_SEG_FS*/
+_SEG_GS=@5/*_SEG_GS*/
+_C_TYPEMASK=@0xF0/*_C_TYPEMASK*/
+_C_CMD=@0/*_C_CMD*/
+_C_PSH=@0x10/*_C_PSH*/
+_C_POP=@0x20/*_C_POP*/
+_C_MMX=@0x30/*_C_MMX*/
+_C_FLT=@0x40/*_C_FLT*/
+_C_JMP=@0x50/*_C_JMP*/
+_C_JMC=@0x60/*_C_JMC*/
+_C_CAL=@0x70/*_C_CAL*/
+_C_RET=@0x80/*_C_RET*/
+_C_FLG=@0x90/*_C_FLG*/
+_C_RTF=@0xA0/*_C_RTF*/
+_C_REP=@0xB0/*_C_REP*/
+_C_PRI=@0xC0/*_C_PRI*/
+_C_DAT=@0xD0/*_C_DAT*/
+_C_NOW=@0xE0/*_C_NOW*/
+_C_BAD=@0xF0/*_C_BAD*/
+_C_RARE=@8/*_C_RARE*/
+_C_SIZEMASK=@7/*_C_SIZEMASK*/
+_C_EXPL=@1/*_C_EXPL*/
+_C_DANGER95=@1/*_C_DANGER95*/
+_C_DANGER=@3/*_C_DANGER*/
+_C_DANGERLOCK=@7/*_C_DANGERLOCK*/
+_DEC_TYPEMASK=@0x1F/*_DEC_TYPEMASK*/
+_DEC_UNKNOWN=@0/*_DEC_UNKNOWN*/
+_DEC_BYTE=@1/*_DEC_BYTE*/
+_DEC_WORD=@2/*_DEC_WORD*/
+_DEC_NEXTDATA=@3/*_DEC_NEXTDATA*/
+_DEC_DWORD=@4/*_DEC_DWORD*/
+_DEC_FLOAT4=@5/*_DEC_FLOAT4*/
+_DEC_FWORD=@6/*_DEC_FWORD*/
+_DEC_FLOAT8=@7/*_DEC_FLOAT8*/
+_DEC_QWORD=@8/*_DEC_QWORD*/
+_DEC_FLOAT10=@9/*_DEC_FLOAT10*/
+_DEC_TBYTE=@0xA/*_DEC_TBYTE*/
+_DEC_STRING=@0xB/*_DEC_STRING*/
+_DEC_UNICODE=@0xC/*_DEC_UNICODE*/
+_DEC_3DNOW=@0xD/*_DEC_3DNOW*/
+_DEC_BYTESW=@0x11/*_DEC_BYTESW*/
+_DEC_NEXTCODE=@0x13/*_DEC_NEXTCODE*/
+_DEC_COMMAND=@0x1D/*_DEC_COMMAND*/
+_DEC_JMPDEST=@0x1E/*_DEC_JMPDEST*/
+_DEC_CALLDEST=@0x1F/*_DEC_CALLDEST*/
+_DEC_PROCMASK=@0x60/*_DEC_PROCMASK*/
+_DEC_PROC=@0x20/*_DEC_PROC*/
+_DEC_PBODY=@0x40/*_DEC_PBODY*/
+_DEC_PEND=@0x60/*_DEC_PEND*/
+_DEC_CHECKED=@0x80/*_DEC_CHECKED*/
+_DECR_TYPEMASK=@0x3F/*_DECR_TYPEMASK*/
+_DECR_BYTE=@0x21/*_DECR_BYTE*/
+_DECR_WORD=@0x22/*_DECR_WORD*/
+_DECR_DWORD=@0x24/*_DECR_DWORD*/
+_DECR_QWORD=@0x28/*_DECR_QWORD*/
+_DECR_FLOAT10=@0x29/*_DECR_FLOAT10*/
+_DECR_SEG=@0x2A/*_DECR_SEG*/
+_DECR_3DNOW=@0x2D/*_DECR_3DNOW*/
+_DECR_ISREG=@0x20/*_DECR_ISREG*/
+_DISASM_SIZE=@0/*_DISASM_SIZE*/
+_DISASM_DATA=@1/*_DISASM_DATA*/
+_DISASM_FILE=@3/*_DISASM_FILE*/
+_DISASM_CODE=@4/*_DISASM_CODE*/
+_DAW_FARADDR=@1/*_DAW_FARADDR*/
+_DAW_SEGMENT=@2/*_DAW_SEGMENT*/
+_DAW_PRIV=@4/*_DAW_PRIV*/
+_DAW_IO=@8/*_DAW_IO*/
+_DAW_SHIFT=@0x10/*_DAW_SHIFT*/
+_DAW_PREFIX=@0x20/*_DAW_PREFIX*/
+_DAW_LOCK=@0x40/*_DAW_LOCK*/
+_DAW_STACK=@0x80/*_DAW_STACK*/
+_DAW_DANGER95=@0x1000/*_DAW_DANGER95*/
+_DAW_DANGEROUS=@0x3000/*_DAW_DANGEROUS*/
+end intellisense**/

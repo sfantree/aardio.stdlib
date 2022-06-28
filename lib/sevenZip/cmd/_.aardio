@@ -1,0 +1,71 @@
+import process.popen;
+import fsys;
+
+namespace sevenZip.cmd;
+
+/*
+About:7za.dll( 7-Zip Command line version )
+Copyright (C) 1999-2010 Igor Pavlov. 
+7-Zip Command line version is distributed under the GNU LGPL license
+You can use 7-Zip on any computer, including a computer in a commercial organization. 
+You don't need to register or pay for 7-Zip
+*/ 
+var zPath  = ..fsys.appdata("aardio/std/7za.9.20.dll",$"~/lib/sevenZip/cmd/.bin/7za.dll");
+ 
+write7zHeader = function(path){
+	var file = ..io.open(path,"a+b");
+    if(file){
+    	file.seek("end");
+    	file.write( '7z\xBC\xAF\x27\x1C\0\x03\x8D\x9B\xD5\x0F\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0' );
+    	file.close();
+    	return true;
+    }
+}
+
+compress = function(src,dst,proc,level=9,password,...){
+    if( ! #src ) error("源目录错误",2)
+    if( ! dst ) error("请指定生成压缩包路径",2);
+    
+    if( ..io.exist(dst) && ..string.endWith(dst,".exe",true) ){
+    	write7zHeader(dst);
+    }
+    
+    var prcs = ..process.popen(zPath,
+        '"' + zPath  + '" ' //7z的第一个命令参数应当是自身路径
+        + ' a "'  + (..io.fullpath(dst)) + '" -t7z ' //a命令表示压缩
+        + ( password? " -mhe=on -p"+password : "")
+        + ( " -mx=" ++ level )
+        + ' -mmt=on ' 
+        ++ ..string.join({...}, " ")
+        + ' "' + ..io.fullpath(src) + '\*"' 
+        )
+   
+    for( all,out,err in prcs.each() ){
+       if(proc) proc( out,err );
+    } 
+    prcs.close()    
+}  
+
+extract = function(src,dst,proc,password, ...){
+    if( ! ..io.exist(src) ) error("压缩包路径错误",2)
+    
+    var prcs = ..process.popen(zPath,
+        '"' + zPath  + '" ' //7z的第一个命令参数应当是自身路径
+        + ' x "'  + ..io.fullpath(src) + '" ' //x命令表示解压
+        + ' -o"' + ..io.fullpath(dst) + '" ' //o设置输出目录,注意后面没有空格
+        + ' -aoa' //直接覆盖现有文件 
+        + ( password? "-p"+password : "" )
+        ++ ..string.concat(" ", ...)
+        )
+    
+    for( all,out,err in prcs.each() ){
+       if(proc) proc( out,err );
+    } 
+    prcs.close();
+}  
+
+/**intellisense(sevenZip.cmd)
+compress(.("源路径","压缩文件路径",回显函数,压缩级别,密码,其他命令参数) = 压缩\n源路径可以使用星号表示压缩目录下的文件\n回显函数,压缩级别,密码都是可选参数\n压缩级别可选值为0到9,默认值为9
+extract(.("压缩文件路径","解压目录",回显函数,密码,其他命令参数) = 解压缩\n回显函数,密码都是可选参数
+write7zHeader(.("文件路径") = 保持文件已有内容不变,并追加7z格式头\ncompress函数当压缩包参数为exe文件时自动调用此函数
+end intellisense**/

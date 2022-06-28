@@ -1,0 +1,123 @@
+//dict 字典
+import util.metaProperty;
+namespace py3;
+	
+class dict {
+
+	ctor( object ){ 
+	
+		var tt = type(object) 
+		select(tt) {
+			case type.pointer{
+				this.pyObject = object;
+			}
+			case type.null{
+				this.pyObject = PyDict_New();
+			}
+			else {
+				if(object[["pyObject"]] ){
+					this.pyObject = object[["pyObject"]];
+					..py3.IncRef(this.pyObject);
+				}
+				else{
+					error("pyObject构造参数不支持此数据类型:" + tt ,2);
+				}
+			} 
+		}
+		
+		..table.add_gc(this,"release");
+	}
+	@_metaProperty
+}
+
+namespace dict {
+
+	_metaProperty = ..util.metaProperty(   
+	
+		_topointer = function(){
+			if(!owner.pyObject) error("Python Dict已销毁",2);
+			return owner.pyObject;
+		};   
+		getItem = function(k){
+			return owner[k]
+		}; 
+		setItem = function(k,v){
+			owner[k] = v;
+		}; 
+		__get = function(k,ownerCall){ 
+			var item = PyDict_GetItemString(owner.pyObject,k) 
+			if(item){
+				..py3.IncRef(item);//特例 borrow reference
+				return ..py3.object(  item,true ) ;
+			} 
+		};
+		__set = function(k,v){
+			if(v===null)
+				PyDict_DelItemString(owner.pyObject,k);
+			else {
+			 	PyDict_SetItemString(owner.pyObject,k,..py3.object(v) ); 
+			} 
+		};
+		each = function(){
+			var pos = 0;
+			var ret,k,v;
+			return function(){
+				ret,pos,k,v = PyDict_Next(owner.pyObject,pos);
+				if( k !== null){
+					return ..py3.object(k,true) ,..py3.object(v,true) 
+				}
+			} 
+		};
+		len = function(){
+			return PyDict_Size(owner._pyObject);
+		} 
+		statement = function(s,locals){
+			if( !PyDict_GetItemString(owner.pyObject,"__builtins__")  ){
+				//模块会自动导入对内建模块的引用,自己创建的字典需要手动导入
+				PyDict_SetItemString( owner.pyObject,"__builtins__",::Python3.PyEval_GetBuiltinsP());
+			}
+			PyRun_String(s,256/*_Py_single_input*/,owner,locals || owner);
+		};
+		exec = function(s,locals){
+			if( !PyDict_GetItemString(owner.pyObject,"__builtins__")  ){
+				PyDict_SetItemString( owner.pyObject,"__builtins__",::Python3.PyEval_GetBuiltinsP());
+			}
+			PyRun_String(s,257/*_Py_file_input*/,owner,locals || owner);
+		};
+		eval = function(s,locals){
+			if( !PyDict_GetItemString(owner.pyObject,"__builtins__")  ){
+				PyDict_SetItemString( owner.pyObject,"__builtins__",::Python3.PyEval_GetBuiltinsP());
+			}
+			var p = PyRun_String(s ,258/*_Py_eval_input*/,owner,locals || owner);
+			if( p ) return ..py3.object( p,true ); 
+		};
+		
+		_type = "py3.dict";
+	);
+	..table.mix(_metaProperty,..py3.object._metaProperty);
+	
+	PyDict_New = ::Python3.api("PyDict_New","pyObject()","cdecl")  
+	PyDict_GetItemString = ::Python3.api("PyDict_GetItemString","pyObject(PyObject dp,string key)","cdecl")  
+	PyDict_SetItemString = ::Python3.api("PyDict_SetItemString","pyObject(PyObject dp,string key,pyObject item)","cdecl") 
+	PyDict_DelItemString = ::Python3.api("PyDict_DelItemString","pyObject(PyObject dp,string key)","cdecl")  
+	PyDict_Next = ::Python3.api("PyDict_Next","int(PyObject dp,INT &pos,pyObject &key,pyObject &value)","cdecl")  
+	PyDict_Size = ::Python3.api("PyDict_Size","INT(PyObject dp)","cdecl") 
+	PyRun_String = ::Python3.api("PyRun_String","pointer(string str, int start, PyObject globals, PyObject locals)")
+}
+
+/**intellisense()
+py3.dict() = 创建新的字典对象\n此对象继承自pyObject(py3.object)\n一般不需要手动创建此对象,aardio会在传参数时自动转换\n!py3Object. 
+!py3Dict.setItem("键名",) = 写字典中的元素的值，也可以直接用下标操作符赋值\n在aardio中也可以用成员操作符代替下标赋元素值
+!py3Dict.getItem("键名") = 返回字典中的元素的值，也可以直接用下标操作符取值\n在aardio中也可以用成员操作符代替下标取元素值,\n成员操作后后面是一个函数调用,则返回成员函数而不是返回字典中的元素
+!py3Dict.getItem() = !py3Object.
+!py3Dict.getItem() = !py3Object.
+!py3Dict.? = !py3Object.
+!py3Dict.statement(.("python语句",locals) = 以该字典为名字空间运行单个python语句
+!py3Dict.exec(.("python代码",locals) = 以该字典为名字空间运行代码,locals省略则默认为当前字典\n类似python代码中的 exec "..." in globals, locals 语句
+!py3Dict.eval(.("python表达式",locals) = 以该字典为名字空间运行代码并返回值,locals省略则默认为当前字典\n类似python代码中的 execfile("test.py", globals, locals)
+!py3Dict.eval() = !py3Object.
+!py3Dict.each( ) =  @for( kObject,vObject in ??.each() ){
+	__/*两个都是py3.object对象*/
+}
+!py3Dict.each() = !py3Object.
+end intellisense**/

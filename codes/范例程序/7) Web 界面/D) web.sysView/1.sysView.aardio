@@ -1,0 +1,85 @@
+//入门
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="Edge 浏览器控件 - web.sysView";right=1061;bottom=668;bgcolor=16777215)
+winform.add()
+/*}}*/
+
+/*
+web.sysView 使用 WIN10/11 自带的 WebView1，体积非常小（打包仅增加几十KB）。
+WebView1 支持 Win10 1803 以上系统（支持Win11），好处是系统自带不用额外安装。 。
+缺点首次运行可能会有一个点击启用访问本机页面权限的提示（需要请求管理权限）
+如果软件本身有管理权限，可调用 web.sysView.exemptAs() 静默启用该权限。
+
+改用更强大的 WebView2 (也就是 aardio 标准库 web.view) 可支持 Win7,Win8,Win10,Win11……
+*/
+
+import web.sysView;
+var wb = web.sysView(winform);
+assert(wb,"WebView1 仅支持 Win10 1803 以上系统,在虚拟机上也可能无法运行")
+
+//导出任意个 Javascript 全局函数, 使用JSON自动转换参数和返回值
+//注意下面的 JS 回调函数内禁止调用 wb.doScript 或  wb.eval 执行Javascript。
+wb.export({
+    alert = function(msg){
+		winform.msgbox(msg)
+		return 123; 
+	}
+	nativeLog = function(msg){
+		winform.msgbox(msg) 
+	}
+})
+
+/*
+可以直接用 wb.html 属性写入 HTML 代码。
+现在很多前端的东西,他们在设计都是考虑为网站设计的，所以在本地的HTML上运行有时候有很多奇怪的问题，
+这在 aardio 里面却可以极简单地解决。aardio 里只要两三句代码就可以启动一个嵌入式 HTTP 服务器。
+
+下面启动一个 HTTP 服务器打开网页，aardio 提供的嵌入式HTTP服务器小、轻、快，并自动分配空闲端口,
+HTTP 服务器用于浏览器组件时可以让网页支持 localStorage ，以及支持打开 aardio 工程中的资源文件。
+可以让 web.sysView 支持 eruda.js 创建的调试控制台（ web.sysView 没有 web.view 那样自带的开发者工具 ）
+*/
+import wsock.tcp.asynHttpServer;
+var httpServer = wsock.tcp.asynHttpServer(); 
+httpServer.run( {
+	["/index.html"] = /**
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style type="text/css">
+    html,body{ height:100%; } 
+    </style>
+    
+    <script src="http://cdn.jsdelivr.net/npm/eruda"></script>
+	<script>eruda.init();</script>
+	
+    <script type="text/javascript">
+    alert("test").then( v=>nativeLog(v))
+    </script>
+</head>
+<body style="margin:50px"><pre>
+<b>扩展库 web.sysView</b>
+-----------------------------------
+web.sysView 使用 WIN10/11 自带的 WebView1，体积非常小（打包仅增加几十KB）。
+WebView1 支持 Win10 1803 以上系统（支持Win11），好处是系统自带不用额外安装。 。
+缺点首次运行可能会有一个点击启用访问本机页面权限的提示（需要请求管理权限）
+如果软件本身有管理权限，可调用 web.sysView.exemptAs() 静默启用该权限。
+
+改用更强大的 WebView2 (也就是 aardio 标准库 web.view) 可支持 Win7,Win8,Win10,Win11……
+</pre></body>
+</html>
+</html>
+**/
+}); 
+
+wb.go( httpServer.getUrl("index.html") )
+//wb.go("https://quickref.me/javascript")
+
+//执行 JS 并获取返回值。
+wb.doScript("window.location.href",function(result,err){
+	winform.text = result;
+})
+
+winform.show();
+win.loopMessage();

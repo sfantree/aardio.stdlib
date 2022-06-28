@@ -1,0 +1,61 @@
+import string.jsonTemplate 
+
+var templatestr = /**
+{# This is a comment and will be removed from the output.}
+ 
+{.section songs}
+ <div .songs>
+  <h2>Songs in '{playlist-name}'</h2>
+
+  <table width="100%">
+  {.repeated section @}
+    <tr>
+      <td><a href="{url-base|htmltag}{url|htmltag}">Play</a>
+      <td><i>{title}</i></td>
+      <td>{artist}</td>
+    </tr>
+  {.end}
+  </table>
+ </div>
+{.or}
+  <p><em>(No page content matches)</em></p>
+{.end} 
+**/
+
+var jsonstr = /**
+{
+  "url-base": "http://example.com/music/", 
+  "playlist-name": "Epic Playlist", 
+  "songs": [
+    {
+      "url": "1.mp3", 
+      "artist": "Grayceon", 
+      "title": "Sounds Like Thunder"
+    }, 
+    {
+      "url": "2.mp3", 
+      "artist": "Thou", 
+      "title": "Their Hooves Carve Craters in the Earth"
+    }
+  ]
+}
+**/
+ 
+import win.ui;
+/*DSG{{*/
+var winform =  win.form(text="aardio form";right=599;bottom=399) 
+/*}}*/
+
+import web.layout;
+var wbLayout = web.layout(winform) 
+
+var jsonTemplate = string.jsonTemplate( templatestr ) ; 
+wbLayout.html = jsonTemplate.expandJson( jsonstr )
+wbLayout.css = /**
+.songs{ 
+	margin:20px; 
+} 
+**/
+winform.show(); 
+win.loopMessage();
+

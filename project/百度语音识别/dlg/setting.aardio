@@ -1,0 +1,93 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="设置";right=479;bottom=319)
+winform.add(
+button={cls="button";text="应用";left=248;top=272;right=328;bottom=296;z=5};
+button2={cls="button";text="取消";left=360;top=272;right=440;bottom=296;z=6};
+button3={cls="button";text="可用性";left=360;top=64;right=440;bottom=88;z=9};
+edit={cls="edit";left=96;top=32;right=344;bottom=56;edge=1;z=3};
+edit2={cls="edit";left=96;top=64;right=344;bottom=88;edge=1;z=4};
+edit3={cls="edit";left=96;top=96;right=344;bottom=120;edge=1;z=8};
+static={cls="static";text="apiKey:";left=32;top=32;right=96;bottom=48;transparent=1;z=1};
+static2={cls="static";text="cutOption:";left=32;top=96;right=96;bottom=112;transparent=1;z=7};
+static3={cls="static";text="secretKey:";left=32;top=64;right=96;bottom=80;transparent=1;z=2}
+)
+/*}}*/
+
+import fsys;
+import fsys.config;
+import win.dlg.message;
+import fsys.log;
+
+winform.button.oncommand = function(id,event){
+    
+    var r = winform.msgAsk("是否保存配置");
+    if(not r) {
+        return;
+    }
+    
+	winform.config.global.apiKey = (winform.edit.text);
+	winform.config.global.secretKey = winform.edit2.text;
+	winform.config.global.cutOption = winform.edit3.text;
+	winform.config.saveAll();
+	winform.close();
+}
+
+
+var init_enviroment = function(){
+    
+    fsys.log.print(tostring(time.now()), "winform", "init_enviroment");
+
+    
+	// 1.配置文件
+	//var config_path = fsys.getSpecial( 0x1c /*_CSIDL_LOCAL_APPDATA*/ , "aardio_asr")
+	//winform.config = fsys.config(config_path);
+	winform.config = fsys.config();
+	
+	//mainForm.config.global.last_runtime = tostring(time.now());
+	//mainForm.config.saveAll();
+	var apiKey = winform.config.global.apiKey;
+	var secretKey = winform.config.global.secretKey;
+	var cutOption = winform.config.global.cutOption;
+	if(#apiKey > 0) {
+	    winform.edit.text = apiKey;
+	}
+	
+	if(#secretKey > 0) {
+	    winform.edit2.text = secretKey;
+	} 
+	
+	if(#cutOption > 0) {
+	    winform.edit3.text = cutOption;
+	} 
+	
+}
+
+winform.button2.oncommand = function(id,event){
+	winform.close();
+}
+
+winform.button3.oncommand = function(id,event){
+    if(#winform.edit.text) {
+        return;
+    }
+    
+    if(#winform.edit2.text) {
+        return;
+    }
+    
+    import baidu.client;
+    
+	var bc = baidu.client();
+	var tk = bc.setAuth( winform.edit.text, winform.edit2.text);
+	if(tk != null) {
+		//winform.msgOk()
+	    winform.msgOk("API有效！");
+	} else {
+	    winform.msgOk("API无效！");
+	}
+}
+
+init_enviroment();
+winform.show();
+win.loopMessage();

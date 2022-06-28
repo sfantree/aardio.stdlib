@@ -1,0 +1,40 @@
+/*
+使用import xcgui; 替换原来的 import win.ui;
+修改标准库的 win.form 指向 xcgui.window, 并保留 win.form的所有功能。
+在窗体设计器上添加自定义控件，类名修改为 "xc" + "炫彩控件类名",
+例如 xcgui.ctrl.radiobutton, 类名为 "xcradiobutton"
+*/
+import xcgui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add(
+closebutton={cls="xcclosebutton";text="r";left=725;top=2;right=749;bottom=28;dr=1;dt=1;font=LOGFONT(name='Marlett');transparent=1;z=1};
+radio={cls="xcradiobutton";text="radiobuton";left=63;top=80;right=216;bottom=102;transparent=1;z=3};
+radio2={cls="xcradiobutton";text="radiobuton2";left=231;top=80;right=384;bottom=102;transparent=1;z=4};
+radio3={cls="xcradiobutton";text="radiobuton3";left=414;top=80;right=567;bottom=102;transparent=1;z=5};
+static={cls="xctext";text="   ";left=27;top=12;right=693;bottom=31;dl=1;dr=1;dt=1;z=2}
+)
+/*}}*/
+
+//可以使用group属性指定分组，同一分组的按钮仅单选一个
+winform.radio.group = 1;
+winform.radio2.group = 1;
+winform.radio3.group = 1;
+
+winform.radio.on("check",function(checked){
+	winform.static.text = "选中radio1"
+	winform.static.redraw();
+})
+
+winform.radio2.on("check",function(checked){
+	winform.static.text = "选中radio2"
+	winform.static.redraw();
+})
+
+winform.radio3.on("check",function(checked){
+	winform.static.text = "选中radio3"
+	winform.static.redraw();
+})
+
+winform.show();
+win.loopMessage();

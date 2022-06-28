@@ -1,0 +1,28 @@
+﻿ 
+namespace fsys.everything{
+    var dll = ..raw.loadDll($"~\lib\fsys\everything\.res\Everything32.dll","Everything32");
+    self@ = { _get = function(k){  return dll["Everything_"+k] }   }
+    
+	getNumResults = dll.api("Everything_GetNumResults","int ()")
+	getResultFullPathName = dll.api("Everything_GetResultFullPathNameW","void(int,ustring&path,int len)")
+	query = dll.api("Everything_Query","int (bool)")
+	setSearch = dll.api("Everything_SetSearch","int (ustring key)")	
+	eachSearch = function(key){
+		setSearch(key);
+		query(true);
+		var i = -1;
+		var count = getNumResults();
+		return function(){
+			i++;if(i<count) return getResultFullPathName(i,0x104, 0x104);
+		}
+		
+	}
+	
+}
+
+/**intellisense()
+fsys.everything = Everything 接口,需要先运行 Everything
+fsys.everything.eachSearch(key) = @for k,v in ??.eachSearch("__/*请输入要搜索的关键字*/"){
+	
+}
+end intellisense**/

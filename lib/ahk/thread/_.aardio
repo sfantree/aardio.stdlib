@@ -1,0 +1,248 @@
+﻿import web.json;
+import win.ui;
+
+namespace ahk; 
+
+var dll  = ..raw.loadDll(..io.appData("aardio\std\ahk\AutoHotkey.2.dll",$"~\lib\ahk\thread\.res\AutoHotkey.dll"),,"cdecl,unicode");
+
+class thread{
+	ctor(){
+		this.external = ..win._form().messageOnly();
+		this.external.onThreadCallBackReturn = function(result){ 
+			if(type(result)=="function"){
+				this.external.setTimeout(result,1);
+				return 0;
+			}
+			
+			..string.setenv("AARDIO_AHK_EXTERNAL_RESULT" + this.external.hwnd,..web.json.stringify({result})); 
+			return -1;
+		} 
+	};
+	run = function(script,cmdLine,title){
+		if(this.id) error("线程已启动",2);
+		
+		script = #file<0x104/*_MAX_PATH*/ ? ..string.load(script) : script; 
+		::Kernel32.SetCurrentDirectory( ..io.fullpath("/") );//%A_WorkingDir%
+		
+		var aardio = `
+class aardio_form{
+	__New(hwnd)
+	{
+		this.hwnd := hwnd
+	}
+	
+	__Call(method, params*)
+	{
+		if( -1 == DllCall("user32\SendMessage","int",this.hwnd,"UINT",0xACCE,"Str",method . "( {JSON} )","Str" ,JSON.Stringify(params),"int") ){
+			ret := EnvGet("AARDIO_AHK_EXTERNAL_RESULT"  this.hwnd) 
+			if( ret ) {
+				return JSON.Parse(ret)[1]
+			}
+		}
+	}
+}
+
+global aardio :=  aardio_form(`+this.external.hwnd+`)
+
+aardio_setGlobal(name,value){
+	global ; 切换到全局变量优先模式
+	%name% := JSON.Parse(value)[1] 
+}
+		`
+		
+		if(script){
+			script	= ..string.loadcode("?>" + 	script);	
+		}
+		this.id = dll.NewThread(aardio +'\r\n'+ (script:""),cmdLine:"",title:"AutoHotkey / aardio") >>> 0;	
+	};
+	ready = function(changeTo){
+		return dll.ahkReadyB(this.id);
+	};
+	wait = function(running){
+		while(this.ready()!=running){
+			..thread.delay(500)
+		} 
+	};
+	pause = function(changeTo){
+		return dll.ahkPause(changeTo,this.id); 
+	};
+	findFunc = function(funcname){
+		return dll.ahkFindFuncP(funcname,this.id); 
+	};
+	findLabel = function(labelName){
+		return dll.ahkFindLabelP(labelName,this.id); 
+	};
+	label = function(labelName,nowait){
+		return dll.ahkLabelB(labelName,!!nowait,this.id); 
+	};
+	exec = function(script){
+		return dll.ahkExecB(script,this.id); 
+	};
+	executeLine = function(line,mode,wait){
+		return dll.ahkExecuteLineP(line,mode,wait,this.id); 
+	};
+	addScript = function(script,waitExecute){  
+		dll.addScriptW(script,waitexecute,this.id)  
+	}; 
+	getGlobal = function(k,getVar){
+		return dll.ahkgetvarP(k,getVar===null?true:!!getVar)
+	}; 
+	setGlobal = function(k,v){
+		//return dll.ahkassign(k,tostring(v),this.id);//这函数有问题，下面打补丁
+		this.sendCall("aardio_setGlobal",k,..web.json.stringify({v}));
+	}; 
+	postCall = function(func, param1 = "", param2 = "", param3 = "", param4 = "", param5 = "", param6 = "", param7 = "", param8 = "", param9 = "", param10){
+		return 0 == dll.ahkPostFunction(func,  
+			tostring(param1), tostring(param2), tostring(param3), 
+			tostring(param4), tostring(param5), tostring(param6), tostring(param7), 
+			tostring(param8), tostring(param9), tostring(param10),this.id
+		)	
+	};
+	sendCall = function(func, param1 = "", param2 = "", param3 = "", param4 = "", param5 = "", param6 = "", param7 = "", param8 = "", param9 = "", param10){
+		var p = dll.ahkFunctionP(func, 
+			tostring(param1), tostring(param2), tostring(param3), 
+			tostring(param4), tostring(param5), tostring(param6), tostring(param7), 
+			tostring(param8), tostring(param9), tostring(param10),this.id
+		)
+			
+		if(p){
+			return ..string.fromUnicode(p,,-1); 
+		}
+	};
+	jsonCall = function(func,param){
+		return ..web.json.tryParse( 
+			this.sendCall(func,..web.json.stringify(param)) 
+		)
+	}; 
+	call = function(func,...){
+		
+		if( !this.findFunc("__aardioInvoke___") ){
+			this.wait(true);
+			
+			this.addScript(`
+			IsFunc(FunctionName){
+				Try{
+					return %FunctionName%.MinParams+1
+				}
+				Catch{
+					return 0
+				}
+				return
+			}
+			
+			__aardioInvoke___(methodName,jsonParam){  
+				params := JSON.Parse(jsonParam) 
+				If IsFunc(methodName){   
+					ret := %methodName%(params*)
+					return JSON.Stringify(ret)
+				}  
+			} 
+			`,1); 
+		} 
+		
+		var ret = this.sendCall("__aardioInvoke___"
+			,func,..web.json.stringify({@{_type="array"};...}));
+				
+		return ret !== null ? ..web.json.parse(ret);
+	};
+	terminate =  function(){
+		if(!this.id) return;
+		
+		var h = ..thread.open(this.id);
+		if(h){
+			..thread.terminate(h,0);
+			..raw.closehandle(h);	
+			this.id = 0;		
+		}
+	};
+	@_meta;
+}
+
+thread._meta ={
+	_get = function(key,ownerCall){
+		if(ownerCall){
+			return function(...){
+				return owner.call(key,...);
+			} 
+		}
+		
+		if(type(key)===type.string && (..string.left(key,2) == "on") ){
+			return owner.external[key];
+		}
+	};
+	_set = function(key,value){
+		if(type(value)===type.function){
+			if(type(key)===type.string && (..string.left(key,2) == "on") ){
+				owner.external[key] = value;
+			}
+		}
+		else {
+			owner[[key]] = value;
+		}
+	}; 	
+}
+
+self.import = function(libPath){ 
+	var path = "/AutoHotkey/Lib/" + libPath + ".ahk"
+	var code = ..string.load(path);
+	if(!code){
+		error(`未找到该文件 "` + path + `"`,2)		
+	}
+	
+	..string.save( ..io.getSpecial(0x5 /*_CSIDL_MYDOCUMENTS*/,path) ,code);
+}
+
+/**details(说明)
+aardio 中路径以斜杆开始表示应用程序根目录，
+应用程序根目录在开发时指工程目录或工程外独立启动的文件所在目录，
+发布后指 EXE 所在目录。
+
+当我们用 aardio + AHK 开发时，可以在应用程序根目录下的 /AutoHotkey/Lib/ 目录下面放 AHK 的用户库文件。
+如果创建了 aardio 工程，可以将这个 /AutoHotkey/ 目录设为内嵌资源目录（可生成独立 EXE 文件）。
+
+如果在 aardio中 调用 ahk.import("libName") ，
+aardio 会自动加载 /AutoHotkey/Lib/libName.ahk 的代码，
+并转存到 AHK 加载该用户库的路径 %A_MyDocuments%\AutoHotkey\Lib\*.ahk 。
+然后在 AHK 中可以用 #include <libName> 加载这个库,注意库名是放在 < ... > 这对尖括号中间。
+这个虽然叫用户库目录，其实是所有 AHK 程序公用的，所以最好放在子目录里，例如 ahk.import("aardio/libName") 
+
+在启动 AHK 脚本线程时，也会将应用程序根目录设为 AHK 设为 AHK 中的 %A_WorkingDir% 目录。
+也就是可以在 AHK 中用　#include path/name.ahk 的代码导入 AHK 文件，这时要写文件后缀名，不能加 < ... > 这种尖括号。
+end details**/
+
+/**intellisense()
+ahk.thread = AutoHotkey v2 H 版扩展库，\nAHK v1.x 请改用 ahk 扩展库\n请注意 AHK 使用的是 GPL 许可证，注意 GPL 有传染性。\n[Autohokey_H]( https://github.com/HotKeyIt/ahkdll/ )
+ahk.thread() = 创建 AutoHotkey v2 线程对象。\n默认会将应用程序根目录设为 AHK 中的 %A_WorkingDir%\n\naardio 中路径以斜杆开始表示应用程序根目录，\n应用程序根目录在开发时指工程目录或工程外独立启动的文件所在目录，\n发布后指 EXE 所在目录\n!stdAhkThread.
+end intellisense**/
+
+/**intellisense(!stdAhkThread)
+run( = 运行 AutoHotkey v2 线程
+run(.(script,cmdLine,title) = 运行 AutoHotkey v2 线程，所有参数可选，\n可用 @script 参数指定启动 AHK 脚本代码，字符串值，\n可用 @cmdLine 指定启动参数，字符串值，\n可用 title 参数指定标题
+ready() = 是否正在运行ahk脚本
+wait(true) = 等待 AHK 脚本启动运行,\n只能在启动 AHK 脚本线程后调用,\n否则会一直等待无法返回
+wait(false) = 等待 AHK 脚本运行结束
+addScript(.(脚本代码,false) = 添加文件到正在运行的 AHK 脚本线程,不等待脚本运行完
+addScript(.(脚本代码,true) = 添加文件到正在运行的 AHK 脚本线程,等待脚本运行完成
+exec("__/*脚本代码*/") = 运行脚本代码,成功返回true,失败返回false
+findLabel(.("标签名") =  查找标签,返回标签指针
+sendCall(.("函数名__",) = 运行指定的函数\n可选添加一到十个参数,返回文本值
+postCall(.("函数名__",) = 运行指定的函数\n可选添加一到十个参数,返回文本值\n该函数立即返回不会等待函数执行完成\n0为成功,-1为找不到函数
+jsonCall(.("函数名__",) = 运行指定的函数\n使用JSON传递参数并返回值
+setGlobal() = 对 AHK 中的全局变量赋值,\n运行 AHK 脚本线程后才能调用此函数
+setGlobal(.("变量名","值") = 对 AHK 中的全局变量赋值，\n参数 @2 允许所有 JSON 兼容的类型，\n注意应当在 AHK 中先用 global name := value 声明全局变量
+getGlobal( = 返回 AHK 中全局变量的值或指针,\n注意应当在 AHK 中先用 global name := value 声明全局变量
+getGlobal(.("变量名",false) = 返回 AHK 中的全局变量，这函数有点问题建议不要使用
+getGlobal(.("变量名") = 返回 AHK 中全局变量的指针
+findFunc(.("函数名__") = 查找函数,返回函数指针
+pause("On") = 暂停
+pause("Off") = 取消暂停
+label( = 用来运行脚本中的 Goto/GoSub 子程序
+label(.(标签名,不等待执行结束) = 用来运行脚本中的 Goto/GoSub 子程序
+executeLine( = 用来执行之前通过 addScript 或 addFile 函数追加的脚本行
+executeLine(.(行号,0) = 不运行,返回行号
+executeLine(.(行号,1) = 运行到返回,返回行号\n可选添加第三个参数为true,等待执行完成
+executeLine(.(行号,2) = 运行到块结束,返回行号\n可选添加第三个参数为true,等待执行完成
+executeLine(.(行号,3) = 仅运行一行,返回行号\n可选添加第三个参数为true,等待执行完成 
+? = on 前缀的函数可在 AHK 内通过 aardio.函数名 调用。\n如果 on 前缀的回调函数返回值为函数对象，则异步执行该函数，\n其他返回值返回给 AHK 调用代码。\n\n注意 AHK v2 不需要调用 #include <aardio>
+terminate() = 强制关闭线程
+end intellisense**/

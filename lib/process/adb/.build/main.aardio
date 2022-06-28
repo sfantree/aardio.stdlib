@@ -1,0 +1,12 @@
+import ide;
+import fsys;
+
+var publisDir = ide.getPublisDir();
+if(!#publisDir)return; 
+
+var adbPubDir =  fsys.joinpath(publisDir,"\lib\process\adb\" ); 
+if( ! io.exist(adbPubDir) ){ 
+	..fsys.createDir(adbPubDir);
+	var libPath,libDir = io.libpath("process.adb")
+	..fsys.copy( fsys.joinpath(libDir,"\.res") ,adbPubDir ); 
+}

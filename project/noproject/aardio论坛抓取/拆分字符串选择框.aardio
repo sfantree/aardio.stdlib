@@ -1,0 +1,38 @@
+
+import win.ui;
+/*DSG{{*/
+var winform = win.form(parent=...; text="aardio Form";right=349;bottom=249 )
+winform.add(
+static={ right=257;bottom=187;text="";left=77;top=148;font=LOGFONT( name="宋体";h=-12 );z=2;transparent=1;cls="static" };
+combobox={ bottom=75;text="combobox";left=95;top=55;font=LOGFONT( name="宋体";h=-12 );right=249;z=1;
+items={  };mode="dropdown";edge=1;cls="combobox" }
+)
+/*}}*/
+
+str="a|b|c|d"
+
+//按 | 拆分进tab
+tab=string.split(str,"|")
+
+//取总数后添加进combobox
+for(i=1;#tab;1){
+    winform.combobox.add(tostring(i))
+}
+
+//combobox下拉框事件
+winform.combobox.oncommand = function(id,event){
+   
+    if(event==0x1/*_CBN_SELCHANGE*/){
+        
+        //转换成 number
+        num=tonumber(winform.combobox.selText)
+        
+        //tab访问
+        win.msgbox(tab[num],"aardio")
+        
+    }
+}
+
+winform.show()
+win.loopMessage();
+return winform;

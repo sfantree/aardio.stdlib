@@ -1,0 +1,78 @@
+﻿//baseBoard 主板信息
+import com.wmi;
+import win.reg;
+
+namespace sys.baseBoard;
+
+var wmi = ..com.wmi();
+var boards = wmi.InstancesOf("Win32_BaseBoard")
+
+for index,obj in ..com.each(boards) {
+	if(!obj.HostingBoard) continue;
+	
+	caption = obj.Caption;
+	configOptions = obj.ConfigOptions;
+	creationClassName = obj.CreationClassName;
+	description = obj.Description;
+	manufacturer = obj.Manufacturer;
+	name = obj.Name;
+	product = obj.Product;
+	serialNumber = obj.SerialNumber;
+	sku = obj.SKU;
+	status = obj.Status;
+	tag = obj.Tag;
+	version = obj.Version;
+	break;
+} 
+
+var reg = ..win.reg("HKEY_LOCAL_MACHINE\HARDWARE\DESCRIPTION\System\BIOS");
+if(reg){
+	bios = reg.queryValueTable()
+	reg.close();	
+}
+
+getFullName = function(){
+	var p = product;
+	if(!#p) p = bios.BaseBoardProduct;
+	if(!#p) p = bios.SystemProductName;
+	var m = manufacturer;
+	if(!#m) m = bios.BaseBoardManufacturer;
+	if(!#m) m = bios.SystemManufacturer;
+	
+	if(#p && #m) {
+		m = ..string.match(m,"\s*(\S+)")
+		if(!m || ..string.indexOf(p,m) ) return p;
+		return m + " " + p;
+	}
+	return p : "Base Board"; 
+}
+
+/**intellisense(sys.baseBoard)
+name= 名称
+caption=简单说明
+description=描述
+configOption=这是一个表示主板配置的字符串数组
+creationClassName=实例化的第一个 WMI 类名
+manufacturer=厂商
+otherIdentifyingInfo=其他数据 
+partNumber=编。
+product=制造商定义的主板编号
+serialNumber=序列号
+status=对象的当前状态 
+tag=主板的唯一标识符。
+version=版本
+bios.BIOSReleaseDate=BIOS发布日期
+bios.BIOSVendor=BIOS厂商名
+bios.BIOSVersion=BIOS版本代号
+bios.BaseBoardManufacturer=主板厂商
+bios.BaseBoardProduct=主板产品名称
+bios.BaseBoardVersion=主板版本
+bios.BiosMajorRelease=BIOS主版本号
+bios.BiosMinorRelease=BIOS副版本号
+bios.SystemFamily=产品系列
+bios.SystemManufacturer=系统厂商名
+bios.SystemProductName=系统产品名称
+bios.SystemSKU=系统库存编号
+bios.SystemVersion=系统版本
+getFullName() = 返回主板完整名称
+end intellisense**/

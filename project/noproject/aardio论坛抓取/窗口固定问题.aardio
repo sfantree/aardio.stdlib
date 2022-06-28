@@ -1,0 +1,14 @@
+//窗口固定问题
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469;parent=...)
+winform.add(
+edit={cls="edit";text="edit";left=2;top=1;right=165;bottom=37;ah=1;clip=1;edge=1;font=LOGFONT(h=-20);z=1}
+)
+/*}}*/
+import winex
+var s_hwnd,r_hwnd =winex.findExists(,,"Shell_TrayWnd","ReBarWindow32");
+win.setParent(winform.edit.hwnd,r_hwnd)
+
+winform.show()
+return win.loopMessage();

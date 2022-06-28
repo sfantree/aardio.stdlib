@@ -1,0 +1,11 @@
+import console
+import process.popen
+
+prcs = process.popen("D:\ffmpeg\bin\ffmpeg.exe","-i","d:\test.mkv")
+prcs.codepage = 65001;//使用 UTF8 编码
+
+for( all,out,err in prcs.each() ){
+console.log( out,err );
+}
+
+console.pause();

@@ -1,0 +1,17 @@
+﻿//fontAwesome 图标字体
+import fsys;
+import win.font;
+
+namespace xcgui.fontAwesome{
+		var path = ..fsys.getSpecial( 0x1c /*_CSIDL_LOCAL_APPDATA*/  ,"aardio/std/fontawesome-webfont4.7.ttf");
+		if(!..io.exist(path)){
+			..string.save(path,$"~/lib/win/fontAwesome/.res/fontawesome-webfont.ttf")
+		}
+		create = function(size,style){
+			return ..xcgui.font(path,size,style);
+		}
+}
+
+/**intellisense()
+xcgui.fontAwesome.create(.(size,style) = 创建fontAwesome字体
+end intellisense**/

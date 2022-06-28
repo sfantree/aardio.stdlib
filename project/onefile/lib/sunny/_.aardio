@@ -1,0 +1,108 @@
+import console;
+import util.metaProperty;
+
+class sunny {
+    ctor(port, callback, ca = false, proxy = false) {
+        Sunny_OpenTcp(null);
+        Sunny_NoticeTheRequest(true);
+        Sunny_Start(port, callback, ca, proxy);
+        this.isRun = true;
+        //..table.add_gc(this,"free");
+    }
+    free = function(){
+        ..console.log("free");
+        if( this.isRun ){
+            Sunny_Stop();
+            this.isRun = false;
+        }
+    }
+}
+
+namespace sunny {
+    var dll = ..raw.loadDll("G:\chromedl\抓包工具\抓包工具\Sunny.dll", "Sunny.dll", "cdcel");
+    //var dll = ..raw.loadDll("~/lib/sunny/.res/Sunny.dll", "Sunny.dll","cdecl");
+    
+    
+    /**
+    HTMLengine* CreateHtml(void)
+    void engineFree(HTMLengine* e, GumboOutput *engine);
+    GumboOutput* LoadHtml(HTMLengine* html,const tchar_t* HTML,size_t len);
+    GumboNode* GetRootNode(HTMLengine* html, GumboOutput *engine);
+    GumboNode* Find(HTMLengine *html, GumboNode* gum, char* path, void* JsonCode);
+    void engineFree(HTMLengine* e, GumboOutput *engine);
+    void engineClose(HTMLengine* e);
+    **/
+    
+    Sunny_Start = dll.api("PInit","pointer(int, pointer, bool, bool)" );
+    
+    Sunny_Stop = dll.api("Stop","void(void)" );
+    
+    // 获取错误信息
+    Sunny_GetErr = dll.api("Geterr","string(void)" );
+    
+    // 设置Ca证书
+    Sunny_SetCa = dll.api("SetCa","void(string, string)" );
+    
+    // 设置上游代理,启动之前调用
+    Sunny_SetIpProxy = dll.api("SetIpProxy","void(string)" );
+    
+    // Sunny_开启报告返回协议头 开启后，返回请求 将返回2次，第一次只有协议头，第二次才有正文,再启动之前调用【在启动之前调用】
+    Sunny_NoticeTheRequest = dll.api("NoticeTheRequest","void(bool)" );
+    
+    // Sunny_开启TCP拦截 本命令在启动之前调用，如果开启TCP拦截的同时 启动(Sunny_Start)命令的的二个参数（回调地址）请填写为0
+    Sunny_OpenTcp = dll.api("OpenTcp","void(pointer)" );
+    
+    
+    
+/*
+    GetRootNode = dll.api("GetRootNode","pointer(pointer, pointer, pointer)" );
+    LoadHtml = dll.api("LoadHtml","void(pointer, string)" );
+    engineClose = dll.api("engineClose","void(pointer)" );
+    engineFree = dll.api("engineFree","void(pointer, pointer)" );
+*/
+}
+
+if (owner == null) {
+    import win;
+    import console;
+    console.log("SUNNY单元测试开始");
+    
+    // 回调_HTTP
+    var httpCallBack = function(MessageId, Type, ptr_mod, ptr_Url, UniqueId, IsPreReport, err){
+    	var msgId, typeId, mod, url;
+    	try{
+    	    msgId = MessageId;
+    	    typeId = Type;
+    	    mod = raw.buffer(512);
+    	    url = raw.buffer(512);
+    	    ..raw.copy(mod, ptr_mod, 512);
+    	    ..raw.copy(url, ptr_Url, 512);
+    	    mod = ..raw.str(mod)
+    	    url = ..raw.str(url)
+    	}
+    	
+    	..thread.lock("Sunny")
+    	console.log("msgId", msgId);
+    	console.log("typeId", typeId);
+    	console.log("mod", mod)
+    	console.log("url", url);
+    	..thread.unlock("Sunny")
+    	
+    	//console.log("msgId", msgId);
+    	//console.log("typeId", typeId);
+    	//console.log("mod", mod)
+    	//console.log("url", url);
+    	
+    }
+    
+    var httpCallBack_c = raw.tocdecl(httpCallBack,
+        "void(int, int, pointer, pointer, int, int, pointer)"
+    )
+    
+    
+    sunny(8341, httpCallBack_c);
+    
+    //console.log("SUNNY单元测试结束");
+    win.loopMessage();
+}
+

@@ -1,0 +1,451 @@
+﻿//path 路径
+import win.reg;
+import win.path;
+import process;
+import fsys;
+
+if(!java) error("请先导入 java",2);;
+
+namespace java.path;
+
+var jvmExist = function(path,...){
+	if(...) path = ..io.joinpath(path,...);
+	
+	path = ..io.fullpath(path); 
+	var pe = ..process.isExe(path);
+	if ( pe == "PE32" )  {
+		path = ..fsys.path.canonicalize( path ); 
+		..thread.set("$(JVM_PATH)",path); 
+		return path;
+	} 
+}
+
+findJvm = function(dir,...){ 
+	if(!dir) return;
+	
+	var path = jvmExist(dir,"bin\client\jvm.dll")
+	if(path) return path;
+	
+	var path = jvmExist(dir,"bin\server\jvm.dll")
+	if(path) return path;
+ 
+	if(...) return findJvm(...); 
+} 
+
+setJreHome = function(path){
+	..thread.set("$(JRE_HOME)",path)
+}
+
+setJdkHome = function(path){
+	..thread.set("$(JDK_HOME)",path)
+}
+
+jvm = function(){ 
+	var jvm = ..thread.get("$(JVM_PATH)")
+	if(jvm) return jvm;
+
+	var jreHome = ..thread.get("$(JRE_HOME)")
+	if(jreHome){
+		var jvm = findJvm( jreHome );
+		if( jvm ) return jvm;	
+	}
+
+	/*
+	var jvm = findJvm("\jre\","\java\jre\","~\jre\","~\java\jre\");
+	if( jvm ) return jvm;
+	*/
+	var javaHome = ..thread.get("$(JDK_HOME)")
+	if( ..io.exist(javaHome) ){ 
+		var jvm = findJvm( javaHome );
+		if( jvm ) return jvm;
+		
+		var jvm = findJvm( ..io.joinpath(javaHome,"/jre/") );
+		if( jvm ) return jvm; 
+	} 
+
+	..win.path.update();
+	
+	var jvm = findJvm( ..string.getenv("JRE_HOME") );
+	if( jvm ) return jvm;
+
+	var javaHome = ..string.getenv("JAVA_HOME");
+	if( ..io.exist(javaHome) ){ 
+		var jvm = findJvm( javaHome );
+		if( jvm ) return jvm;
+		
+		var jvm = findJvm( ..io.joinpath(javaHome,"/jre/") );
+		if( jvm ) return jvm; 
+	}  
+
+	var javaPath = ..win.path.search("java.exe") 
+	if( ..io.exist(javaPath) ){ 
+		var jvm = findJvm( ..io.joinpath(javaPath,"/../../") );
+		if( jvm ) return jvm; 
+		
+		var jvm = findJvm( ..io.joinpath(javaPath,"/../../jre/") );
+		if( jvm ) return jvm;
+	}  
+	
+	var jvm = findJvm( jreHomeFromRegistry(false) );
+	if( jvm ) return jvm; 
+	
+	var javaHome = jdkHomeFromRegistry(false);
+	if( ..io.exist(javahome) ){ 
+		var jvm = findJvm( javaHome );
+		if( jvm ) return jvm;
+		
+		var jvm = findJvm( ..io.joinpath(javaHome,"/jre/") );
+		if( jvm ) return jvm; 
+	}
+
+	var jreHome = openJreHomeFromProgramFiles(,false);
+	if(jreHome){
+		jvm = findJvm( jreHome ); 
+		if( jvm ) return jvm; 
+	}
+
+	if(!..java.jre[["v8"]]){
+		import ..java.jre.v8;
+		
+		var jreHome = ..thread.get("$(JRE_HOME)")
+		if(jreHome){
+			var jvm = findJvm( jreHome );
+			if( jvm ) return jvm;	
+		}
+	}
+}
+
+//JRE 根目录( 包含当前使用的 32位 jvm.dll )
+jvmHome = function(){
+	var path = jvm();
+	if(path){
+		return ..fsys.path.canonicalize(..io.joinpath(path,"/../../../") );
+	}
+};
+
+//JRE .bin 目录( 包含当前使用的 32位 jvm.dll )
+jvmBin = function(){
+	var path = jvm();
+	if(path){
+		return ..fsys.path.canonicalize(..io.joinpath(path,"/../../") );
+	}
+};
+
+//JRE .bin 目录( 包含 java.exe,优先 64 位 )
+jreBin = function(){
+	var path = jreHome();
+	if(path){
+		return ..fsys.path.canonicalize(..io.joinpath(path,"/bin/") );
+	}
+};
+
+findJre = function(dir){
+	if(!dir) return;
+	dir = ..io.fullpath(dir);
+	 
+	if ( !..process.isExe(..io.joinpath(dir,"bin\java.exe") ) ) return;  
+	if ( !..process.isExe(..io.joinpath(dir,"bin\javaw.exe") ) ) return;
+
+	..thread.set("$(JRE_HOME)",dir)
+	return dir;
+}
+
+//jre根目录( 包含 java.exe,优先 64 位 )
+jreHome = function(){
+	var jre = findJre( ..thread.get("$(JRE_HOME)") );
+	if(jre) return jre;
+	
+	var jre = findJre( ..thread.get("$(JDK_HOME)") );
+	if(jre) return jre;
+	
+	..win.path.update();
+	
+	var jre = findJre( ..string.getenv("JRE_HOME") );
+	if( jre ) return jre;
+	
+	var jre = findJre( ..string.getenv("JAVA_HOME") );
+	if( jre ) return jre;
+	 
+	var javaPath = ..win.path.search("java.exe") 
+	if( ..io.exist(javaPath) ){ 
+		var jre = findJre( ..io.joinpath(javaPath,"/../../") );
+		if( jre ) return jre;  
+	}  
+	
+	var jre = findJre( jreHomeFromRegistry(true) );
+	if( jre ) return jre; 
+	
+	var jre = findJre( jdkHomeFromRegistry(true) );
+	if( jre ) return jre;   
+	
+	var jre = findJre( openJreHomeFromProgramFiles(,true) );
+	if( jre ) return jre;  
+	
+	var jre = findJre( jreHomeFromProgramFiles(,true) )
+	if( jre ) return jre; 
+	
+	var jre = findJre( jreHomeFromRegistry(false) );
+	if( jre ) return jre; 
+	
+	var jre = findJre( jdkHomeFromRegistry(false) );
+	if( jre ) return jre; 
+	
+	var jre = findJre( openJreHomeFromProgramFiles(,false) );
+	if( jre ) return jre;  
+	
+	var jre = findJre( jreHomeFromProgramFiles(,false) )
+	if( jre ) return jre; 
+	
+	if(!..java.jre[["v8"]]){
+		import ..java.jre.v8;
+		
+		var jre = findJre( ..thread.get("$(JRE_HOME)") );
+		if(jre) return jre;
+	}
+}
+
+//jdk 目录
+jdkHome = function(){
+	var javac = jdkCompiler();
+	if(javac){
+		return ..fsys.path.canonicalize(..io.joinpath(javac,"/../../") );
+	}
+}
+
+//javac.exe 路径
+jdkCompiler = function(){
+	var javaHome = ..thread.get("$(JDK_HOME)")
+	if( ..io.exist(javaHome) ){ 
+		var path = ..io.exist( ..io.joinpath(javaHome,"bin\javac.exe") );
+		if( path ) return path; 
+	}
+
+	..win.path.update(); 
+	
+	var javaHome = ..string.getenv("JAVA_HOME");
+	if( ..io.exist(javaHome) ){ 
+		var path = ..io.exist( ..io.joinpath(javaHome,"bin\javac.exe") );
+		if( path ) return path; 
+	}
+	 
+	var javaPath = ..win.path.search("javac.exe") 
+	if( ..io.exist(javaPath) ){ 
+		return javaPath; 
+	}  
+
+	var javaHome = jdkHomeFromRegistry(true);
+	if( ..io.exist(javaHome) ){ 
+		var path = ..io.exist( ..io.joinpath(javaHome,"bin\javac.exe") );
+		if( path ) return path; 
+	} 
+	
+	var javaHome = jdkHomeFromRegistry(false);
+	if( ..io.exist(javaHome) ){ 
+		var path = ..io.exist( ..io.joinpath(javaHome,"bin\javac.exe") );
+		if( path ) return path; 
+	}   
+
+	var home = openJreHomeFromProgramFiles(,true,true) || openJreHomeFromProgramFiles(,false,true);
+	if(home){
+		return ..io.joinpath(home,"bin\javac.exe") 
+	}
+
+	var home = jreHomeFromProgramFiles(,true,true) || jreHomeFromProgramFiles(,false,true);
+	if(home){
+		return ..io.joinpath(home,"bin\javac.exe") 
+	}
+
+	if(!..java.jdk[["v8"]]){
+		import ..java.jdk.v8;
+		
+		var javaHome = ..thread.get("$(JDK_HOME)")
+		if( ..io.exist(javaHome) ){ 
+			var path = ..io.exist( ..io.joinpath(javaHome,"bin\javac.exe") );
+			if( path ) return path; 
+		}
+	}
+}
+
+jreHomeFromRegistry = function(x64,version){
+
+	var regJre = ..win.reg("HKEY_LOCAL_MACHINE\SOFTWARE\JavaSoft\Java Runtime Environment",,,
+		x64 ? ( 0x20019/*_KEY_READ*/ | 0x0100/*_KEY_WOW64_64KEY*/ ) :  0x20019/*_KEY_READ*/);
+		
+	if(!regJre) return;  
+
+	var ver = version || regJre.queryValue("CurrentVersion"); 
+	
+	if( ver ){
+		var regItem = regJre.open(ver); 
+		if( regItem ){
+			jrehome = regItem.queryValue("JavaHome"); 
+			if( ..io.exist( ..fsys.joinpath(jrehome,"bin\java.exe") ) ){
+				regItem.close();
+				regJre.close();
+				return jrehome,ver;
+			}
+			regItem.close();
+		}
+	}
+	
+	for( keyname in regJre.eachKey() ){
+		var regItem = regJre.open(keyname); 
+		if( regItem ){
+			jrehome = regItem.queryValue("JavaHome"); 
+			if( ..io.exist( ..fsys.joinpath(jrehome,"bin\java.exe") ) ){
+				regItem.close();
+				regJre.close(); 
+				return jrehome,keyname;
+			}
+			regItem.close();
+		}
+	}
+	
+	regJre.close();	
+}
+
+jdkHomeFromRegistry = function(x64,version){ 
+	var regJdk  = ..win.reg("HKEY_LOCAL_MACHINE\SOFTWARE\JavaSoft\Java Development Kit",,,
+		x64 ? ( 0x20019/*_KEY_READ*/ | 0x0100/*_KEY_WOW64_64KEY*/ ) :  0x20019/*_KEY_READ*/   )  
+	if(!regJdk) return; 
+	
+	var ver = version || regJdk.queryValue("CurrentVersion"); 
+	if( ver ){
+		var regItem = regJdk.open(ver); 
+		if( regItem ){
+			javahome = regItem.queryValue("JavaHome");
+			if( ..io.exist( ..fsys.joinpath(javahome,"bin\javac.exe") ) ){
+				regItem.close();
+				regJdk.close();
+				return javahome,ver;
+			}
+			regItem.close();
+		}
+	}
+	if(version!==null) return;
+	
+	for(keyname,writetime in regJdk.eachKey() ){
+		var regItem = regJdk.open(keyname); 
+		if( regItem ){
+			javahome = regItem.queryValue("JavaHome");
+			if( ..io.exist( ..fsys.joinpath(javahome,"bin\javac.exe") ) ){
+				regItem.close();
+				regJdk.close();
+				return javahome,keyname;
+			}
+			regItem.close();
+		}
+	}
+	
+	if(#javahome)return javahome,ver; 
+};
+
+jreHomeFromProgramFiles = function(version,x64,jdkOnly){
+	if(!version) version = "";
+	elseif(!..string.indexOf(version,"_")) version = version + ".";
+
+	var jreDir = (!_WIN_64 || x64 ) ? "C:\Program Files\Java\" : "C:\Program Files (x86)\Java\";
+	var name = jdkOnly ? ("jdk"+version+"*") : {"jre"+version+"*";"jdk"+version+"*"}
+	var exeName = jdkOnly ? "bin\javac.exe" : "bin\java.exe";
+	
+	if(..io.exist(jreDir)){ 
+		..fsys.enum( jreDir,name,
+			function(dirname,filename,fullpath,findData){
+				if(!filename){   
+					if( ..io.exist( ..io.joinpath(fullpath,exeName) ) ){
+						if(!jdkOnly && ..io.exist( ..io.joinpath(fullpath,"jre",exeName) ) ){
+							fullpath = ..io.joinpath(fullpath,"jre");
+						}
+						
+						home = fullpath;
+						return false; 
+					}  
+				}
+			} ,false
+		);
+		
+		if(home) return home;
+	} 
+}
+
+openJreHomeFromProgramFiles = function(version,x64,jdkOnly){
+	if(!version) version = "";
+	elseif(!..string.indexOf(version,"_")) version = version + ".";
+
+	var jreDir = (!_WIN_64 || x64 ) ? "C:\Program Files\Eclipse Adoptium\" : "C:\Program Files (x86)\Eclipse Adoptium\";
+	var name = jdkOnly ? ("jdk"+version+"*") : {"jre"+version+"*";"jdk"+version+"*"}
+	var exeName = jdkOnly ? "bin\javac.exe" : "bin\java.exe";
+	
+	if(..io.exist(jreDir)){ 
+		..fsys.enum( jreDir,name,
+			function(dirname,filename,fullpath,findData){
+				if(!filename){   
+					if( ..io.exist( ..io.joinpath(fullpath,exeName) ) ){
+						if(!jdkOnly && ..io.exist( ..io.joinpath(fullpath,"jre",exeName) ) ){
+							fullpath = ..io.joinpath(fullpath,"jre");
+						}
+						
+						home = fullpath;
+						return false; 
+					}  
+				}
+			} ,false
+		);
+		
+		if(home) return home;
+	} 
+}
+
+/**details(搜索目录规则)
+
+1、JDK HOME 指定是 Java 编译器根目录
+
+搜索目录的优先顺序：
+1、用户调用 java.path.setJdkHome() 设置的目录
+2、进程环境变量 %JAVA_HOME% 设置的目录
+3、搜索包含 javac.exe 的目录,这会检查%Path% 环境变量里的所有目录
+4、自注册表查找 JDK 目录
+5、搜索默认安装位置等
+ 
+
+2、JRE HOME 指定是 Java 运行时器根目录
+
+搜索目录的优先顺序：
+1、用户调用 java.path.setJreHome() 设置的目录
+2、用户调用 java.path.setJdkHome()，j 设置的目录
+3、进程环境变量 %JRE_HOME% 设置的目录
+4、进程环境变量 %JAVA_HOME% 设置的目录
+5、搜索包含 javac.exe 的目录,这会检查%Path% 环境变量里的所有目录
+6、自注册表查找 JDK 目录
+7、搜索默认安装位置等。
+
+JVM 也是在 JRE 目录下查找，搜索顺序基本如上， 
+但搜索 JVM 会排除 64位JRE，仅查找包含可用的 32 位 jvm.dll。
+JVM 用于调用 java 构造函数创建虚拟机，例如：
+`var jvm = java()` 创建 Java 虚拟机或者调用任何获取 JVM 目录以后，
+如果成功获取到可用的 JVM 路径，那么在一个进程实例中将不能再以任何方式修改 JVM 路径，
+调用 java.path.setJreHome() 或修改 %JRE_HOME% 环境变量都不能再改变 JVM 路径。 
+
+在调用 java.openProcess,java.popenProcess 创建 Java 进程时，
+则优先查找64 位 JRE 运行时目录下的 java.exe, javaw.exe。
+也可以支持 32 位 JRE。
+ 
+end details**/
+
+/**intellisense(java.path)
+setJreHome(__) = 指定第一优先级检测的 JRE 运行时根目录，\n在该目录下查找64位或32位 java.exe,javaw.exe 以调用\njava.openProcess,java.popenProcess 创建 Java 进程。\n优先在该目录下搜索 JVM 用于创建 java 虚拟机对象，\n如该目录不符合要求则继续搜索其他合适的目录。
+setJdkHome(__) = 指定第一优先级检测的 JDK 根目录，\n在该目录下查找 Java 编译器 javac.exe 。\n如该目录不符合要求则继续搜索其他合适的目录。
+jvm() = 用于获取创建 Java 虚拟机的 32 位 jvm.dll 路径,\n此路径初始化成功即不允许修改，\n关于初始化JDK,JRE目录的规则细节请参考 java.path 库函数文档
+jvmHome() = 包含可创建 Java 虚拟机的 JRE 运行时根目录,\n此路径一旦获取成功在当前进程中即不允许再修。\n，\n关于初始化JDK,JRE目录的规则细节请参考 java.path 库函数文档
+jdkHome() = 用于获取 JDK 编译器根目录\n关于初始化JDK,JRE目录的规则细节请参考 java.path 库函数文档
+jreHome() = 查找包含  64位 或 32位 java.exe,javaw.exe 的\nJRE 运行时目录，用于调用 java.openProcess,java.popenProcess \n以创建 Java 进程。搜索顺序为（64位优先）：\n\n关于初始化JDK,JRE目录的规则细节请参考 java.path 库函数文档
+jreBin() = 返回 JRE 运行时目录下的 /bin 目录\n关于初始化JDK,JRE目录的规则细节请参考 java.path 库函数文档
+jreHomeFromRegistry( = 自注册表查找安装的 JRE 目录
+jreHomeFromRegistry(.(x64,version) = 自注册表查找安装的 JRE 目录,\n找到目录则返回 JDK 根目录,内部版本号,\n所有参数可选,@x64 指定是否查询 64位注册表,32位系统忽略此参数,\nversion 用一个字符串指定内部版本号,\n例如 Java 8 的内部版本号为 "1.8"
+jdkHomeFromRegistry( = 自注册表查找安装的 JDK 目录
+jdkHomeFromRegistry(.(x64,version) = 自注册表查找安装的 JDK 目录,\n找到目录则返回 JDK 根目录,内部版本号,\n所有参数可选,@x64 指定是否查询 64位注册表,32位系统忽略此参数,\nversion 用一个字符串指定内部版本号,\n例如 Java 8 的内部版本号为 "1.8"
+jreHomeFromProgramFiles(.(version,x64,jdkOnly) = 在默认安装目录搜索 JRE  目录,\n可选用 @version 指定版本,\n@x64 如果为 true 则仅搜索 64 位 JRE,32位系统忽略此参数,\n@jdkOnly 如果为 true 则仅搜索 JDK 目录
+jreHomeFromProgramFiles(.(version,x64,jdkOnly) = 在默认安装目录搜索 JRE  目录,\n可选用 @version 指定版本,\n@x64 如果为 true 则仅搜索 64 位 JRE,32位系统忽略此参数,\n@jdkOnly 如果为 true 则仅搜索 JDK 目录
+findJvm(__) = 参数指定的 JRE 根目下是否包含有效 jvm.dll\n成功返回 true
+findJre(__) = 参数指定的 JRE 根目下是否包含 java.exe,javaw.exe\n成功返回 JRE 目录
+end intellisense**/

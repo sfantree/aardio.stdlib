@@ -1,0 +1,33 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="取色器 - 作为窗口类创建独立窗口";right=759;bottom=469)
+winform.add(
+button={cls="button";text="取色";left=108;top=75;right=316;bottom=127;z=1};
+plus={cls="plus";left=108;top=16;right=444;bottom=56;z=2}
+)
+/*}}*/
+
+import win.ui.ctrl.pick;
+winform.button.oncommand = function(id,event){
+   
+    var colorPick = win.ui.ctrl.pick(winform);
+   
+    //颜色改变时触发此事件
+    colorPick.onColorChange = function(clr){
+        winform.plus.background = clr;
+    }
+   
+    //可选指定初始颜色
+    colorPick.setColor(0xFF808000);
+   
+    //窗口移动到当前鼠标指向位置
+    var x,y = win.getMessagePos();
+    colorPick.setPos(x,y);
+   
+    //显示模态对话框
+    colorPick.doModal();
+   
+}
+
+winform.show()
+win.loopMessage();

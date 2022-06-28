@@ -1,0 +1,268 @@
+
+
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="RSA非对称加密原理";right=735;bottom=631)
+winform.add(
+button={cls="button";text="随机生成密钥对";left=8;top=448;right=136;bottom=480;z=14};
+button2={cls="button";text="加密";left=8;top=480;right=136;bottom=512;z=15};
+button3={cls="button";text="解密";left=136;top=480;right=264;bottom=512;z=16};
+button4={cls="button";text="异常测试";left=592;top=448;right=720;bottom=480;z=19};
+button5={cls="button";text="打开异常日志目录";left=592;top=480;right=720;bottom=512;z=20};
+edit={cls="edit";left=392;top=56;right=720;bottom=144;autohscroll=false;edge=1;multiline=1;z=7};
+edit2={cls="edit";left=392;top=176;right=720;bottom=264;autohscroll=false;edge=1;multiline=1;z=9};
+edit3={cls="edit";left=16;top=58;right=344;bottom=146;autohscroll=false;edge=1;multiline=1;z=2};
+edit4={cls="edit";left=18;top=178;right=346;bottom=266;autohscroll=false;edge=1;multiline=1;z=4};
+edit5={cls="edit";left=0;top=512;right=736;bottom=632;autohscroll=false;bgcolor=0;color=16777215;edge=1;font=LOGFONT(name='');multiline=1;z=11};
+edit6={cls="edit";left=16;top=312;right=352;bottom=408;autohscroll=false;edge=1;multiline=1;z=13};
+edit7={cls="edit";left=392;top=312;right=728;bottom=408;autohscroll=false;edge=1;multiline=1;z=18};
+groupbox={cls="groupbox";text="Public Key";left=8;top=16;right=352;bottom=272;edge=1;z=1};
+groupbox2={cls="groupbox";text="Private Key";left=384;top=16;right=728;bottom=272;edge=1;z=6};
+static={cls="static";text="Value p:(数值)";left=392;top=32;right=512;bottom=56;transparent=1;z=8};
+static2={cls="static";text="Value q:(数值)";left=392;top=152;right=512;bottom=176;transparent=1;z=10};
+static3={cls="static";text="Value n:(数值)";left=18;top=34;right=138;bottom=58;transparent=1;z=3};
+static4={cls="static";text="Value e:(数值)";left=18;top=154;right=138;bottom=178;transparent=1;z=5};
+static5={cls="static";text="Value m:(RAW)";left=16;top=288;right=136;bottom=312;transparent=1;z=12};
+static6={cls="static";text="Value c:(数值)";left=392;top=288;right=512;bottom=312;notify=1;transparent=1;z=17}
+)
+/*}}*/
+
+import debug;
+import console;
+import fsys;
+import fsys.log;
+import process;
+
+import gmp.BigInteger;
+
+global.onError = function( err,over ){ 
+    import io;
+    import fsys;
+    import fsys.log;
+    //import process;
+    
+    if(!over){
+        import debug;
+        var stack = debug.traceback(,"调用栈",3);
+    }
+    fsys.log.print( ..string.replace(err,"![\r\n]\n",'\r\n')  );
+    
+    //if( _STUDIO_INVOKED ) {
+        
+        fsys.log.print(fsys.log.path);
+        //var path = ..thread.get("fsys.log.default.path"):"/config/app$.log";
+        //var openPath = fsys.getParentDir(..io.fullpath(path));
+        
+        ..win.msgboxTimeout("检测到异常，请打开日志目录查看详情");
+        //..process.explore(openPath);
+        //return err; 
+    //}
+}
+
+// 日志输出
+Logd = function(...){
+    import time;
+    var args = {...};
+    var tm = time.now();
+    tm.format = "[%Y/%m/%d %H:%M:%S] ";
+    //
+    var debugInfo = debug.queryinfo(2, "select source,function,upvars,name,currentline,activelines") ;
+    winform.edit5.log(tostring(tm), "line: ", debugInfo[['currentline']], " ", ..string.join(args,' '),'\r\n');
+    // 滚动条随光标滚动
+    winform.edit5.scrollCaret();
+}
+
+s2n = function(buffer){
+	var m = gmp.BigInteger("0x" ++ string.hex(buffer, "") );
+	return m;
+}
+
+n2s = function(number){
+	//console.log(number)
+	var n = gmp.BigInteger(number);
+	var t = tostring(n, 16);
+	//console.log(t)
+	var t1 = ..string.slice( t, 3);
+	
+	var t2 = string.unhex(t1, "");
+	return t2;
+}
+
+getBigRandomPrime = function(nbit){
+	var s = string.random(nbit);
+	var t = s2n(s);
+	//debug.debug();
+	var c = gmp.BigInteger.getNextPrime(t)
+	return c;
+}
+
+//console.log(n2s(s2n("1222666")))
+m_generate = false;
+winform.button.oncommand = function(id,event){
+	p = getBigRandomPrime(60);
+	q = getBigRandomPrime(40);
+	winform.edit.text = tostring(p, 16);
+	winform.edit2.text = tostring(q, 16);
+	
+	//RSA加密算法
+	n = p * q;
+	e = gmp.BigInteger("65537");
+	phi_n = (p - 1)  * (q - 1) ;
+	d = gmp.BigInteger.invert(e, phi_n);
+	
+	winform.edit3.text = tostring(n, 16);
+	winform.edit4.text = tostring(e, 16);
+	m_generate = true;
+}
+
+winform.button2.oncommand = function(id,event){
+	if(not m_generate) {
+	    return;
+	}
+	
+	if( #winform.edit6.text <= 0) {
+	    winform.edit6.text = string.random(math.random(10, 15));
+	}
+	
+	m = s2n(winform.edit6.text);
+	c = gmp.BigInteger.powm(m, e, n);
+	winform.edit7.text = tostring(c, 16);
+	Logd('\r\n', // "明文字符", n2s(m), '\n\r', 
+	           "加密 明文数值", '\r\n', tostring(m, 16), '\r\n', 
+	           //"密文字符",  string.hex( n2s(c) ), '\n\r', 
+	           "加密 密文数值", '\r\n', tostring(c, 16), '\r\n',
+	           )
+	
+}
+
+winform.button3.oncommand = function(id,event){
+	
+	if(not c) {
+	     return;
+	}
+	
+	var m2 = gmp.BigInteger.powm(c, d, n);
+	winform.edit6.text = n2s(m2);
+	Logd('\r\n', // "明文字符", n2s(m), '\n\r', 
+	       "解密 明文数值", '\r\n', tostring(m2, 16), '\r\n', 
+	       //"密文字符",  string.hex( n2s(c) ), '\n\r', 
+	       "解密 密文数值", '\r\n', tostring(c, 16), '\r\n',
+	       )
+    //Logd( tostring(m == m2) );
+}
+
+winform.button4.oncommand = function(id,event) {
+    error("thread");
+}
+
+/*
+winform.button4.oncommand = function(id,event){
+	
+	var p ;
+	p = getBigRandomPrime(12);
+	//p = gmp.BigInteger("65537");
+	//..win.delay(20);
+	
+	winform.edit.text = tostring(p, 16);
+	p = null;
+	//win.delay(1000);
+    collectgarbage("collect");
+}
+*/
+
+winform.button5.oncommand = function(id,event){
+	var path = ..thread.get("fsys.log.default.path"):"/config/app$.log";
+    var openPath = fsys.getParentDir(..io.fullpath(path));
+    process.explore(openPath);
+}
+
+winform.show();
+win.loopMessage();
+
+
+/******
+
+import console;
+
+var a1 = gmp.BigInteger("-34");
+var a2 = gmp.BigInteger("68");
+var a4 = gmp.BigInteger("256");
+console.log( a1 < a2 );
+console.log( a2 % a4 );
+
+var a3 = gmp.BigInteger("0x4eff");
+console.log(tostring(a3));
+console.log(tostring(a3, 16));
+
+var p = gmp.BigInteger("3487583947589437589237958723892346254777");
+
+console.log("p next", tostring(p.getNextPrime()))
+
+var q = gmp.BigInteger("8767867843568934765983476584376578389");
+
+var n = p * q;
+
+var e = gmp.BigInteger("65537");
+
+var phi_n = (p - 1)  * (q - 1) ;
+
+ e和d互为乘法逆元
+var d = gmp.invert(e, phi_n);
+
+var m  = gmp.BigInteger("655376553765537");
+
+
+var m = gmp.BigInteger("0x" ++ string.hex("admin12333232", "") );
+console.log(string.hex("admin") );
+console.log("m", m );
+ 加密
+var c = gmp.powm(m, e, n);
+
+ 解密
+var m2 = gmp.powm(c, d, n);
+
+m2 = string.unhex(tostring(m2, 16),);
+console.log("m2", tostring(m2, 16) );
+
+var t = string.unhex(tostring(m2, 16), "")
+
+console.dump("m2", string. );
+
+
+console.log(m == m2);
+
+console.log( c , m2 );
+
+
+/*
+var t1 = 68;
+console.log (  string.hex ( math.libgmp.n2s(t1) ) );
+
+import debug;
+
+debug.debug();
+
+n2s = function(num){
+		var i = 0;
+		var s = "";
+		var index = 0;
+		while (num > 0) {
+		    index = n % 255;
+		    num = math.floor( num / 16 );
+		    s = s + string.pack(index);
+		}
+		//string.reverse(s);
+		return s;
+}
+*/
+
+/*
+t1 = 222563232;
+console.log(string.pack(65));
+console.log (  string.hex ( n2s(t1) ) );
+*/
+
+
+console.pause();
+
+******/

@@ -1,0 +1,32 @@
+import console;
+import process.adb;
+
+/*
+adb 文档： http://developer.android.com/tools/help/adb.html
+process.adb.startServer 启动 adb 服务端，这个函数实际上会自动调用一次，
+adb 需要一个常驻服务端（启动一个 adb.exe 进程），也只能有一个服务进程，多个会工作不正常。
+这个扩展库会自动查找之前启动的 adb 服务端，如果找到就直接重用。
+进程退出时不会退出常驻服务端（一般无此必要）
+
+每次发送 adb 指令时也会启动一个 adb 客户端，这也是一个 adb.exe 进程。
+所有 adb 客户端在执行完成后，或当前进程退出后将会自动关闭（由 process.job.limitKill 实现）。
+*/
+process.adb.startServer();
+
+if( process.adb.getState() != "device" ){
+	//一般是在设备信息里狂点版本号启用开发者选项，然后再去开发者选项里打开USB调试模式
+	return console.logPause("请先连接安卓手机,并打开设置->开发者选项->USB调试模式" ); 
+}
+ 
+console.log("设备串号",process.adb.getSerialno() );
+
+//执行 shell 命令
+var adb = process.adb.shell("ls");
+//for( all,out,err in adb.each() ) console.log( out,err ); 
+var out = adb.read(-1); //读取进程输出，adb 是一个 process.popen 对象，请参考该库函数文档。
+console.log(out);
+
+//上传文件
+process.adb.push( "/abc.txt","/mnt/sdcard/abc.text" ); 
+
+console.pause();

@@ -1,0 +1,51 @@
+import crypt.bin;  
+import crypt.hmac;
+import web.rest.jsonLiteClient;
+
+assert( type(kuaipan) == type.class );
+namespace kuaipan;
+
+class client{
+
+	ctor( ... ){
+		this = ..web.rest.jsonLiteClient( ... )
+		this.getSignatureUrl = function(url,param,httpMethod="GET"){
+			param = ..table.mix( {
+				oauth_token = this.token[["oauth_token"]];
+				oauth_consumer_key = this.appKey;
+				oauth_signature_method = "HMAC-SHA1";
+				oauth_timestamp = tonumber( ..time()  ) ;
+				oauth_nonce = ..string.random(20);
+				oauth_version = "1.0";
+			},param );
+	
+			param.oauth_signature = signParameters(
+				param,url,this.appSecret, this.token[["oauth_token_secret"]],httpMethod );
+	
+			return ..string.concat( url, "?" , ..inet.url.stringifyParameters( param,true ) );
+		};  
+		this.beforeStringifyRequestParameters = function(param,utf8){
+			this.lastRequestUrl = this.getSignatureUrl(this.lastRequestUrl,param,this.lastRequestMethod);
+		} 
+	}; 
+}
+
+namespace client{ 
+	
+	signParameters = function(param,baseUrl,consumerSecret,oauthToken,httpMethod = "GET"){ 
+		 
+		var strBase = httpMethod + "&" 
+			+ ..inet.url.encode( baseUrl,true ) + "&" 
+			+ ..inet.url.encode(  ..inet.url.stringifyParameters(param,true),true )
+		var key = ..string.concat( consumerSecret,"&",oauthToken )
+		return ..crypt.bin.encodeBase64( ..crypt.hmac.sha1(key,strBase).getValue() );
+	} 
+	 
+	
+	..math.randomize();
+} 
+ 
+/**intellisense()
+kuaipan.client = REST客户端\n仅返回数据使用JSON格式
+kuaipan.client() = 创建REST客户端,\n!web_restClient.
+end intellisense**/

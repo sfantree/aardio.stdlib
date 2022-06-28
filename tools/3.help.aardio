@@ -1,0 +1,15 @@
+//语法与使用手册
+import win;	
+import process;
+
+var prcs  = process("hh.exe","mk:@MSITStore:" 
+	+ ..io.fullpath("~\help\AARDIO.CHM") 
+	+ "::the%20language/basic%20syntax.html"  
+	);
+
+var hwnd = prcs.getMainWindow();
+if(hwnd){
+	win.show(hwnd,3/*_SW_MAXIMIZE*/)
+}
+
+prcs.free();

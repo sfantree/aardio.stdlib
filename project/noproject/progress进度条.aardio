@@ -1,0 +1,27 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="简码编程 jianma123.com";right=264;bottom=194;max=false;min=false)
+winform.add(
+button={cls="button";text="从1跑到最大";left=78;top=69;right=188;bottom=98;z=2};
+button2={cls="button";text="跑到指定位置";left=78;top=146;right=188;bottom=175;z=3};
+edit={cls="edit";text="30";left=147;top=118;right=187;bottom=140;edge=1;z=4};
+progress={cls="progress";left=28;top=33;right=236;bottom=48;edge=1;max=100;min=0;z=1};
+static={cls="static";text="指定数值:";left=78;top=121;right=142;bottom=137;transparent=1;z=5}
+)
+/*}}*/
+
+//从1跑到最大
+winform.button.oncommand = function(id,event){
+    var 最大值 = winform.progress.max
+    for(i=1;最大值;1){
+        winform.progress.pos = i;    
+    }
+}
+
+//跑到指定位置
+winform.button2.oncommand = function(id,event){
+    winform.progress.pos = winform.edit.text;
+}
+
+winform.show() 
+win.loopMessage();

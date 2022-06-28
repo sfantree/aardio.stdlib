@@ -1,0 +1,26 @@
+
+		import win.ui;
+		/*DSG{{*/
+		var winform = ..win.form( bottom=304;parent=...;text="AAuto Form";right=641 )
+		winform.add( 
+		files={ text="待处理文件列表";bottom=270;right=608;left=30;multiline=1;top=88;acceptfiles=1;z=3;edge=1;cls="edit" };
+		path={ text="保存路径";bottom=69;right=609;left=30;multiline=1;top=43;acceptfiles=1;z=2;edge=1;cls="edit" };
+		groupbox={ bottom=287;right=624;left=16;top=19;z=1;text="groupbox";edge=1;cls="groupbox" }
+		)
+		/*}}*/
+		
+		winform.path.wndproc = {
+		   [0x233/*_WM_DROPFILES*/] = function(hwnd,message,wParam,lParam){ 
+		     var dropFiles = win.getDropFile(wParam)[1];
+		         winform.path.text = dropFiles;
+		   }
+		 }
+		 winform.files.wndproc = {
+		   [0x233/*_WM_DROPFILES*/] = function(hwnd,message,wParam,lParam){ 
+		     var dropFiles = win.getDropFile(wParam) 
+		     winform.files.text = string.join(dropFiles,'\r\n');  //显示多个文件
+		  }
+		 }
+		//winform.files.setParent( winform.groupbox )
+		winform.show() 
+		win.loopMessage();

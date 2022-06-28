@@ -1,0 +1,64 @@
+import console; 
+namespace ths {
+	import win;
+	import winex;
+	import process;
+	logOn = function(account,password1,password2){
+    	var hwnd = winex.find("#32770",,pid)
+    	if(hwnd){
+        	var ahwnd = winex.findEx(hwnd,1,"Edit",,1001)
+        	var p1hwnd = winex.findEx(hwnd,,,,1012)
+        	var p2hwnd = winex.findEx(hwnd,3,"Edit",,1001)
+        	setText(ahwnd,account)
+        	setText(p1hwnd,password1)
+        	setText(p2hwnd,password2)
+        	winex.click(hwnd,1006)
+    	}//这里要考虑未获得句柄如何处理，否则判断句柄没有意义
+	}
+	//暂时先这么写，实验可行后在登录之后初始化各种句柄，下一步考虑setText用消息封装到api.aau
+	buy = function(code,price,number){
+    	var hwnd = win.find("Afx:400000:b:10003:6:5bd10ab","网上股票交易系统5.0")               //顶层窗口句柄
+    	codehwnd = winex.findEx(hwnd2,1,"Edit",,1032)
+    	..win.msgbox(codehwnd,"aardio")  
+    	/***
+    	winex.enum(
+        	function(hwnd,depth){
+            	..win.msgbox(hwnd,tostring(depth))                                                           //出错的就是这段了，如果把两端的/**/去掉，运行正常
+            	/*return false*/
+        	}
+        	,hwnd
+        	,
+        	,
+        	,1032
+    	)
+    	***/
+    	
+    	/*var codehwnd = winex.findEx(hwnd2,1,"Edit",,1032)
+    	var pricehwnd = winex.findEx(hwnd2,2,"Edit",,1033)
+    	var numberhwnd = winex.findEx(hwnd2,3,"Edit",,1034)
+    	setText(codehwnd,code)
+    	setText(pricehwnd,price)
+    	setText(numberhwnd,number)
+    	winex.click(hwnd,1006)*/
+	}
+	
+	sell = function(code,price,number){
+    	var hwnd = winex.find(,,pid)
+    	if(hwnd){
+        	var codehwnd = winex.findEx(hwnd,4,"Edit",,1035)
+        	var pricehwnd = winex.findEx(hwnd,5,"Edit",,1058)
+        	var numberhwnd = winex.findEx(hwnd,6,"Edit",,1039)
+        	setText(codehwnd,code)
+        	setText(pricehwnd,price)
+        	setText(numberhwnd,number)
+        	winex.click(hwnd,1008)
+    	}
+	}
+	//setText = api.setWindowText(pid)
+	//setText(0x007C0E24,"6000001")
+}
+
+//调用方式：
+//import ths.aau;
+//buy("6000005","1.02","500")
+console.pause(true);

@@ -1,0 +1,112 @@
+﻿import win;
+import fsys.lnk;
+import win.path;
+namespace process;
+
+namespace gcc {
+	
+	check = function(){
+		if(!path) install();
+		return path;
+	}
+	
+	install = function(url){
+		if(!(
+			..io.exist(..io.appData("aardio/mingw32/bin/gcc.exe")) || ..io.exist(..io.appData("aardio/mingw64/bin/gcc.exe")) 
+		) ){
+			import sevenZip.decoder2.httpFile;
+			if(!url) url = "https://jaist.dl.sourceforge.net/project/mingw-w64/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/8.1.0/threads-win32/dwarf/i686-8.1.0-release-win32-dwarf-rt_v6-rev0.7z";
+			if( sevenZip.decoder2.httpFile.download(url,"正在下载 MinGW-w64",..io.appData("aardio/down~temp~"),..io.appData("aardio")) ){
+				if(..io.exist(..io.appData("aardio/mingw32/bin/gcc.exe"))){
+					..win.path.add(..io.appData("aardio/mingw32/bin"));
+					..string.setenv("MINGW_HOME",..io.appData("aardio/mingw32"));	
+					path = ..io.appData("aardio/mingw32/bin/gcc.exe");
+				}
+				elseif(..io.exist(..io.appData("aardio/mingw64/bin/gcc.exe"))){
+					..win.path.add( ..io.appData("aardio/mingw64/bin") );
+					..string.setenv("MINGW_HOME",..io.appData("aardio/mingw64"));	
+					path = ..io.appData("aardio/mingw64/bin/gcc.exe");
+				}
+			}	
+		}
+		
+		return path;	
+	}
+	
+	if(..io.exist(..io.appData("aardio/mingw32/bin/gcc.exe"))){
+		..win.path.add( ..io.appData("aardio/mingw32/bin") );
+		..string.setenv("MINGW_HOME",..io.appData("aardio/mingw32"));
+	}
+	elseif(..io.exist(..io.appData("aardio/mingw64/bin/gcc.exe"))){
+		..win.path.add( ..io.appData("aardio/mingw64/bin") );
+		..string.setenv("MINGW_HOME",..io.appData("aardio/mingw64"));
+	}
+	elseif(..io.exist(..win.path.search("gcc.exe"))){
+		
+	}	
+	elseif(..io.exist("C:\MinGW\bin\gcc.exe") ){
+		..win.path.add("C:\MinGW\bin\");
+		..string.setenv("MINGW_HOME","C\MinGW");
+	}
+	elseif(..io.exist("C:\TDM-GCC-32\bin\gcc.exe") ){
+		..win.path.add("C:\TDM-GCC-32\bin");
+	}
+	elseif(..io.exist("D:\MinGW\bin\gcc.exe") ){
+		..win.path.add("D:\MinGW\bin\");
+		..string.setenv("MINGW_HOME","D:\MinGW");
+	}
+	elseif(..io.exist("D:\TDM-GCC-32\bin\gcc.exe") ){
+		..win.path.add("D:\TDM-GCC-32\bin");
+	}
+	elseif(..io.exist("E:\MinGW\bin\gcc.exe") ){
+		..win.path.add("E:\MinGW\bin\");
+		..string.setenv("MINGW_HOME","E:\MinGW");
+	}
+	elseif(..io.exist("E:\TDM-GCC-32\bin\gcc.exe") ){
+		..win.path.add("E:\TDM-GCC-32\bin");
+	}
+	else {
+		var mingw = ..fsys.lnk.search( {"mingw"},"terminal" )  
+		if(mingw){
+			var str  = ..string.load(mingw);
+			if(str){
+				var path  = ..string.match(str,"set\s*PATH\s*=\s*(.+?\mingw32\\bin)\;\%PATH\%");
+				if(path){
+					..win.path.add(path);
+					..string.setenv("MINGW_HOME",..fsys.getParentDir(path));
+				}
+			} 
+		}
+		else {
+			var mingw = ..fsys.lnk.search( {"tdm-gcc"},"Modify or Remove MinGW" );
+			if(mingw){
+				mingw = ..io.joinpath( ..fsys.getParentDir( ..fsys.getParentDir(mingw) ),"bin");
+				if(..io.exist(..io.joinpath(mingw,"gcc.exe") ) ){
+					..win.path.add(mingw);
+					..string.setenv("MINGW_HOME",..fsys.getParentDir(mingw));
+				}
+				else {
+					install();
+				}
+			}
+			else {
+				install();
+			}
+		}
+	}
+
+	path = ..win.path.search("gcc.exe");
+}
+
+/**intellisense()
+process.gcc = 自动搜索 Mingw-w64 或 TDM-GCC 并设置 GCC 环境变量,\n如果未找到则自动安装 Mingw-w64,\n引入此库即可调用 process 或 process.popen 运行 gcc 命令
+process.gcc.install() = 安装 Mingw-w64\n可选在参数中指定 Mingw-w64 离线安装包下载地址
+process.gcc.path = gcc.exe 路径
+process.gcc.check() = 查找并返回 gcc.exe 路径,\n如果没找到就安装
+end intellisense**/
+
+/**details(安装说明)
+可以安装 MinGW-W64: https://sourceforge.net/projects/mingw-w64 仅支持64位系统。
+或者安装 TDM-GCC: http://tdm-gcc.tdragon.net/download 提供32位、64位安装包。
+也可以调用 process.gcc.install() 自动安装
+end details**/

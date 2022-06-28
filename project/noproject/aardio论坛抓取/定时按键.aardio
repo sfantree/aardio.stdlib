@@ -1,0 +1,26 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="定时按键";right=412;bottom=198)
+winform.add(
+edit={cls="edit";text="按 CTRL + W 开始,按CTRL + M 结束";left=24;top=11;right=383;bottom=180;edge=1;multiline=1;z=1}
+)
+/*}}*/
+
+import key;
+import win.timer
+var timer = win.timer( winform );
+timer.setInterval(10);
+
+//定时按键
+timer.onTimer = function() key.down("W");
+
+//开始按W
+winform.reghotkey( function() timer.enable()
+    ,0x2/*_MOD_CONTROL*/,'W'#);
+
+//取消按W
+winform.reghotkey( function() timer.disable()
+    ,0x2/*_MOD_CONTROL*/,'M'#);
+
+winform.show()
+win.loopMessage();

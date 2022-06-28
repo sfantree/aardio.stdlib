@@ -1,0 +1,35 @@
+//统计出文件总数
+import fsys;
+import console;
+import zlib.zip
+
+var count =  0;
+
+console.open();
+fsys.enum( "~/lib", "*.aardio",
+    function(dir,filename,fullpath,findData){
+         if( filename == "_.aardio" ) count++
+         console.log(count)
+    }  
+);
+
+
+var zip = zlib.zip("/测试文件.zip" ,"~/lib" );
+var progress =  0;
+
+console.log("开始压缩...")
+fsys.enum( "~/lib", "*.aardio",
+    function(dir,filename,fullpath,findData){  
+        if( filename == "_.aardio" ) {
+            progress++;
+            zip.compress( fullpath,
+                function(len,path){
+                    console.writeBack( "正在压缩: %03d/%03d",progress,count )
+                }
+            )
+        }
+    }  
+);
+
+console.log("压缩已完成");
+console.pause();

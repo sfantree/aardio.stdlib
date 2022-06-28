@@ -1,0 +1,35 @@
+import win.ui;
+import carl.ctrl.toolbar;
+
+/*DSG{{*/
+var winform = ..win.form(text="自定义工具条toolbar演示";right=599;bottom=399)
+winform.add(
+toolbar={cls="toolbar";text="custom";left=-2;top=2;right=594;bottom=26;autosize=1;center=1;edge=1;transparent=1;z=1};
+toolbar2={cls="toolbar";text="custom2";left=0;top=157;right=583;bottom=184;autosize=1;center=1;edge=1;transparent=1;z=2}
+)
+/*}}*/
+ 
+winform.btnAdd = function(){
+        winform.msgbox("新增函数","提示")
+}
+ 
+winform.toolbar.btnAdd(winform.btnAdd, "新增")
+winform.toolbar.btnEdit(func,"修改")
+winform.toolbar.btnDelete(func, "删除")
+winform.toolbar.btnSave(func, "保存")
+winform.toolbar.btnSearch(func, "查询")
+winform.toolbar.btnClose(func, "关闭")
+winform.toolbar.btnRefresh(func, "刷新")
+winform.toolbar.btnCancel(func, "取消")
+ 
+winform.toolbar2.btnSetting(func, "设置")
+winform.toolbar2.btnStart(func, "开始")
+winform.toolbar2.btnPrint(func, "打印")
+winform.toolbar2.btnStop(func, "暂停")
+winform.toolbar2.btnOpenFolder(func, "打开文件夹")
+winform.toolbar2.btnCloseFolder(func, "关闭文件夹")
+winform.toolbar2.btnUp(func, "上移")
+winform.toolbar2.btnDown(func, "下移")
+ 
+winform.show() 
+win.loopMessage();

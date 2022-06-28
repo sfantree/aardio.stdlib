@@ -1,0 +1,100 @@
+﻿//networkCards 网卡设备
+import sys.device;
+import inet.adapter;
+import win.reg;
+
+namespace sys.networkCards;
+		
+each = function(...){
+	
+	var enumerators = ...;
+	if( type.isString(enumerators) ) enumerators = { ... };  
+	
+	var id2desc = {};
+	var hardwareIds = {};
+	
+	if(enumerators){
+		for(k,enumerator in enumerators){
+			var devices = ..sys.device("{4d36e972-e325-11ce-bfc1-08002be10318}"/*_GUID_DEVCLASS_NET*/,enumerator);
+			for( index,ids,desc in devices.each( 1/*_SPDRP_HARDWAREID*/,0/*_SPDRP_DEVICEDESC*/ ) ) {
+				..table.append(hardwareIds,ids);  
+				for(k,id in ids) id2desc[id] = desc;
+				
+			}
+			devices.destroy();
+		}	
+	}
+	else {
+		var devices = ..sys.device("{4d36e972-e325-11ce-bfc1-08002be10318}"/*_GUID_DEVCLASS_NET*/,enumerator);
+		for( index,ids,desc in devices.each( 1/*_SPDRP_HARDWAREID*/,0/*_SPDRP_DEVICEDESC*/ ) ) {
+			..table.append(hardwareIds,ids);  
+			for(k,id in ids) id2desc[id] = desc;
+			
+		}
+		devices.destroy();
+	} 
+	
+	var result = {}
+	var reg  = ..win.regReader("HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Network\{4D36E972-E325-11CE-BFC1-08002BE10318}");
+	if(!reg) return result;
+	
+	for(adapterName in reg.eachKey() ){
+		var regAdapter = reg.open(adapterName + "\Connection"); 
+		if(regAdapter){
+			var pnpInstanceId = regAdapter.queryValue("PnPInstanceId");
+			var netConnectionId = regAdapter.queryValue("Name");
+			if(pnpInstanceId && netConnectionId){
+				for(i=1;#hardwareIds;1){
+					if(..string.startWith(pnpInstanceId,hardwareIds[i],true)){
+						..table.push(result,{
+							netConnectionId = netConnectionId;
+							pnpInstanceId = pnpInstanceId;
+							hardwareId = hardwareIds[i];
+							description = id2desc[hardwareIds[i]];
+							adapterName = adapterName;
+						});
+						break;
+					} 
+				}
+				
+			}
+			
+			regAdapter.close()
+		}
+		
+	}
+	
+	for adptInfo in ..inet.adapter.each() {  
+		if(adptInfo.pnpInstanceId){
+			for(i,card in result){
+				if(card.pnpInstanceId == adptInfo.pnpInstanceId ){
+					card.adapter = adptInfo;
+					card.enabled = true;
+					break;
+				} 
+			} 
+		} 
+	}
+
+	var idx = 0;
+	return function(){
+		idx++;
+		return result[idx];
+	}; 
+}
+
+/**intellisense()
+sys.networkCards = 用于获取网卡信息\n\nsys.networkCards 取的是网卡信息,包含禁用的网卡,\n而 inet.adapter 取的启用的网络连接信息,也就是 IP 配置这些。\n\n使用 com.wmi  查询 Win32_NetworkAdapter 得到的是网卡信息,\n com.wmi 查询 Win32_NetworkAdapterConfiguration 得到的是连接信息。
+sys.networkCards.each(enumerators->->->) = @for networkCard in sys.networkCards.each(){\n	__/*networkCard 是包含网卡信息的表对象\n@enumerators 参数可用一个字符串数组，或任意个字符串参数指定枚举类型，\n例如 "PCI","USB", 一般不必指定*/\n}
+sys.networkCards.each() = !stdSysNetworkCard.
+end intellisense**/
+
+/**intellisense(!stdSysNetworkCard)
+netConnectionId = 网络连接名称
+pnpInstanceId = 设备实例 ID, 由"设备 ID\实例 ID"组成\n用于 process.devcon 的参数时前面要加 "@" 字符
+hardwareId = 设备 ID
+description = 硬件描述
+enabled = 网卡是否启用,\n注意这个值只在查询时更新
+adapterName = 适配器 GUID
+adapter = 调用 inet.adapter.each 获取到的网络连接信息\n如果网卡已禁用则这个属性为 null 值,\n不为 null 值就表示网卡没有禁用\n!net_adptInfo.
+end intellisense**/

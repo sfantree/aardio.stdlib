@@ -1,0 +1,109 @@
+import fonts.painttest;
+import win.ui;
+/*DSG{{*/
+winform = win.form(text="简单画板";right=1270;bottom=784;bgcolor=16777215;border="none")
+winform.add(
+bk={cls="bk";left=-10;top=0;right=1273;bottom=743;db=1;dl=1;dr=1;dt=1;forecolor=10592673;z=1};
+btnEllipse={cls="plus";text='\uE644 圆形';left=873;top=743;right=965;bottom=779;bgcolor=4802979;color=3145728;db=1;dr=1;font=LOGFONT(h=-14;name='painttest';charset=0);notify=1;z=8};
+btnEraser={cls="plus";text='\uE6B3 橡皮檫';left=964;top=743;right=1056;bottom=779;bgcolor=4802979;color=3145728;db=1;dr=1;font=LOGFONT(h=-14;name='painttest';charset=0);notify=1;z=4};
+btnLine={cls="plus";text='\uE686 直线';left=601;top=743;right=693;bottom=779;bgcolor=4802979;color=3145728;db=1;dr=1;font=LOGFONT(h=-14;name='painttest';charset=0);notify=1;z=6};
+btnPen={cls="plus";text='\uE6B4 铅笔';left=510;top=743;right=602;bottom=779;bgcolor=4802979;color=3145728;db=1;dr=1;font=LOGFONT(h=-14;name='painttest';charset=0);notify=1;z=3};
+btnRadiant={cls="plus";text='\uE600 射线';left=691;top=743;right=783;bottom=779;bgcolor=4802979;color=3145728;db=1;dr=1;font=LOGFONT(h=-14;name='painttest';charset=0);notify=1;z=7};
+btnRect={cls="plus";text='\uE625 矩形';left=782;top=743;right=874;bottom=779;bgcolor=4802979;color=3145728;db=1;dr=1;font=LOGFONT(h=-14;name='painttest';charset=0);notify=1;z=5};
+btnSave={cls="plus";text='\uE684 保存';left=1165;top=743;right=1236;bottom=779;db=1;dr=1;font=LOGFONT(h=-14;name='painttest';charset=0);notify=1;z=10};
+btnUndo={cls="plus";text='\uE606 撤消';left=1086;top=743;right=1157;bottom=779;db=1;dr=1;font=LOGFONT(h=-14;name='painttest';charset=0);notify=1;z=11};
+plus={cls="plus";left=10;top=29;right=1259;bottom=734;bgcolor=16777215;clipBk=false;color=255;db=1;dl=1;dr=1;dt=1;notify=1;z=2};
+plusPenColor={cls="plus";left=52;top=748;right=109;bottom=777;bgcolor=10582829;db=1;dr=1;edge=1;font=LOGFONT(h=-16;name='FontAwesome';charset=0);notify=1;z=9};
+tbPenWidth={cls="plus";left=138;top=755;right=480;bottom=770;bgcolor=-13791839;color=4999093;db=1;dr=1;foreRight=17;forecolor=-6194387;paddingBottom=6;paddingTop=6;z=12}
+)
+/*}}*/
+
+import win.util.paint;
+var paint = win.util.paint(winform.plus);
+	
+winform.btnRect.oncommand = function(id,event){
+	paint.drawMode = "rect";//改变当前绘画工具为矩形
+}
+
+winform.btnEllipse.oncommand = function(id,event){
+	paint.drawMode = "ellipse";//改变当前绘画工具为圆形
+}
+
+winform.btnRadiant.oncommand = function(id,event){
+	paint.drawMode = "radiant";//改变当前绘画工具为射线
+}
+
+winform.btnLine.oncommand = function(id,event){
+	paint.drawMode = "line"//改变当前绘画工具为直线
+}
+
+winform.btnPen.oncommand = function(id,event){
+	paint.drawMode = "pen";//改变当前绘画工具为画笔
+}
+	
+winform.btnEraser.oncommand = function(id,event){
+	paint.drawMode = "eraser";//改变当前绘画工具为矩形橡皮擦
+	winform.tbPenWidth.progressPos = 20;
+}
+
+//用户开始绘图时触发此事件
+paint.onStartDrawing = function(){
+	paint.drawColor = winform.plusPenColor.backgroundColor;//设置画笔颜色
+	paint.drawWidth = winform.tbPenWidth.progressPos;//设置画笔宽度
+}
+
+//设置控件外观样式
+import style; 
+winform.tbPenWidth.skin(style.trackbar);
+winform.plusPenColor.skin(style.color)
+winform.btnSave.skin(style.hyperlink);
+winform.btnUndo.skin(style.hyperlink);
+winform.btnLine.skin(style.pen)
+winform.btnPen.skin(style.pen)
+winform.btnEraser.skin(style.pen)
+winform.btnRect.skin(style.pen)
+winform.btnRadiant.skin(style.pen)
+winform.btnEllipse.skin(style.pen);
+
+//修改默认选中画笔，要放在设置样式后面（因为设置样式以后才会成为单选按钮）
+winform.btnPen.checked = true;
+winform.btnPen.oncommand();
+
+//弹出取色窗口
+import win.ui.ctrl.pick;
+winform.plusPenColor.oncommand = function(id,event){
+	if(!(winform.picker && winform.picker.valid ) ){
+		winform.picker = win.ui.ctrl.pick(winform);
+		winform.picker.text = "简单画板 - 选择颜色"; 
+		winform.picker.setColor(winform.plusPenColor.backgroundColor);
+		
+		winform.picker.onColorChange = function(argb){
+			winform.plusPenColor.background = argb;
+		}	
+	}
+
+	winform.picker.show(); 
+}
+
+//保存图像
+import fsys.dlg;
+winform.btnSave.oncommand = function(id,event){
+	var path = fsys.dlg.save("*.png|*.png||")
+	if(path)winform.plus.foreground.save(path)
+}
+
+//撤消
+winform.btnUndo.oncommand = function(id,event){
+	paint.undo();
+}
+
+//plus控件切换到滑块模式
+winform.tbPenWidth.setTrackbarRange(1,100);
+winform.tbPenWidth.progressPos = 3;
+
+//无边框窗口添加边框、阴影、标题上栏
+import win.ui.simpleWindow;
+win.ui.simpleWindow(winform);
+
+winform.show();
+return win.loopMessage();

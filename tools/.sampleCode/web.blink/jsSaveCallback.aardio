@@ -1,0 +1,53 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="跨线程JS回调";right=759;bottom=469)
+winform.add()
+/*}}*/
+
+import web.blink.form; //导入miniblink支持库
+var mb= web.blink.form(winform); //创建miniblink浏览器窗口
+
+//定义网页脚本可调用的本地函数
+mb.external = { 
+    aardioCall = function(callback){ 
+        
+        /*
+        JS调用aardio函数且返回以后，参数中的JS对象将被释放。
+        所以我们需要用下面的代码封装并保存JS回调函数，
+        并由aardio负责在不需要时自动回收该函数。
+        */
+        winform.jsCallback = mb.jsSaveCallback(callback);//也可以改用web.blink.jsSaveCallback(callback)
+        
+        //创建线程
+        thread.invoke( 
+            function(winform){
+                sleep(1000);
+                
+                /*
+                这时候对external.aardioCall()的调用已经结束，
+                但winform.jsCallback仍然可以正常使用，另外因为
+                已存为窗体的成员函数，也支持跨线程调用。
+                */
+                winform.jsCallback("hello");
+            },winform
+        )
+    };
+}
+ 
+
+mb.html = /** 
+<body style="margin:27px;">  
+        <br><a href='javascript:
+            external.aardioCall(
+                function(str){
+                    alert(str);
+                }
+                
+            );
+        '>调用aardio函数，然后异步回调参数中传过去的JS函数</a> 
+    </div>
+**/ 
+
+winform.show();
+win.loopMessage();
+return winform;

@@ -1,0 +1,39 @@
+import fsys;
+import process.popen;
+import win.reg;
+namespace ttf2eot;
+ 
+var dll = ..raw.loadDll($"~\lib\ttf2eot\.res\ttf2eot.dll")
+ttf2eot = dll.api("ttf2eot","bool(pointer fontData,INT fontSize,string outPath)" ,"cdecl") 
+ 
+convert = function(ttf,eot){
+	if(  (ttf &&  ! ..string.endWith(ttf,".ttf",true) ) ){
+		var reg = ..win.reg("HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\Fonts");
+		if( reg ){ 
+			ttf = reg.queryValue(ttf + " (TrueType)")
+			if(ttf) ttf = ..fsys.joinpath( ..fsys.getSpecial(0x14 /*_CSIDL_FONTS*/),ttf)
+				 
+			reg.close(); 
+		}
+	};
+	
+	if( !(ttf && ..string.endWith(ttf,".ttf",true) ) ){
+		error("请指定正确的TTF格式字体文件",2);
+	};
+	var ttfData = ..string.load( ttf );
+	if(!#ttfData) return null,"载入TTF文件失败"
+	
+	if(!eot) eot = ..string.left(ttf,-5) + ".eot";
+	if( ! ..string.endWith(eot,".eot") ){
+	 	eot = ..fsys.joinpath(eot, ..io.splitpath(ttf).name + ".eot");
+	}
+	..fsys.createParentDir(eot);
+ 
+ 	eot = ..io.fullpath(eot)
+	return ttf2eot( ttfData,#ttfData,eot );
+}
+
+/**intellisense(ttf2eot)
+convert(.("ttf文件路径","eot格式输出路径") = TTF字体转换为EOT格式\n省略eot路径参数则在当前目录输出同名eot后缀文件
+convert(.("ttf字体名称","eot格式输出目录") = TTF字体转换为EOT格式\n仅支持TTF格式
+end intellisense**/

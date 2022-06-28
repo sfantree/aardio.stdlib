@@ -1,0 +1,13 @@
+import console; 
+import win.reg;
+
+var reg = win.regWow64("HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Cryptography") ;
+console.dump(reg);
+
+reg = win.reg("HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Cryptography") ;
+console.dump(reg);
+
+var r = reg.queryValue("MachineGuid");
+console.log(r);
+
+console.pause(true);

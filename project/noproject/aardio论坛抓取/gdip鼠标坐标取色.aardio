@@ -1,0 +1,67 @@
+import win.ui;  
+import win.ui.menu
+import mouse;   
+import key;
+import gdi
+import  mouse.hook
+import com.picture;
+import gdip;
+/*DSG{{*/
+var winform = win.form(parent=...; bottom=140;topmost=1;right=311;text="取坐标位置颜色和鼠标左键划定区域" )
+winform.add(
+static5={ z=5;notify=1;align="center";right=136;left=80;top=32;font=LOGFONT( name="宋体";h=-12 );bottom=48;transparent=1;border=1;text="static5";cls="static" };
+static11={ notify=1;color=0;text="终点Y坐标";left=168;top=56;font=LOGFONT( name="宋体";h=-16;out=3;family=2;clip=2;quality=1 );transparent=1;bottom=72;right=240;z=11;cls="static" };
+static6={ z=6;notify=1;align="center";right=304;left=248;top=32;font=LOGFONT( name="宋体";h=-12 );bottom=48;transparent=1;border=1;text="static6";cls="static" };
+static8={ notify=1;color=0;text="起点X坐标";left=8;top=32;font=LOGFONT( name="宋体";h=-16;out=3;family=2;clip=2;quality=1 );transparent=1;bottom=48;right=80;z=8;cls="static" };
+static={ bottom=111;align="center";right=106;left=31;top=97;font=LOGFONT( name="宋体";h=-12 );transparent=1;text="static";border=1;z=13;cls="static" };
+static3={ bottom=72;align="center";right=136;left=80;top=56;font=LOGFONT( name="宋体";h=-12 );transparent=1;text="static3";border=1;z=3;cls="static" };
+static2={ bottom=24;align="center";right=304;left=248;top=8;font=LOGFONT( name="宋体";h=-12 );transparent=1;text="static2";border=1;z=2;cls="static" };
+static4={ z=4;notify=1;align="center";right=304;left=248;top=56;font=LOGFONT( name="宋体";h=-12 );bottom=72;transparent=1;border=1;text="static4";cls="static" };
+static1={ z=1;notify=1;align="center";right=136;left=80;top=8;font=LOGFONT( name="宋体";h=-12 );bottom=24;transparent=1;border=1;text="static1";cls="static" };
+static7={ notify=1;color=0;text="实际Y坐标";left=168;top=8;font=LOGFONT( name="宋体";h=-16;out=3;family=2;clip=2;quality=1 );transparent=1;bottom=24;right=240;z=7;cls="static" };
+static10={ notify=1;color=0;text="起点Y坐标";left=168;top=32;font=LOGFONT( name="宋体";h=-16;out=3;family=2;clip=2;quality=1 );transparent=1;bottom=48;right=240;z=10;cls="static" };
+static9={ notify=1;color=0;text="终点X坐标";left=8;top=56;font=LOGFONT( name="宋体";h=-16;out=3;family=2;clip=2;quality=1 );transparent=1;bottom=72;right=80;z=9;cls="static" };
+static12={ bottom=27;color=0;text="实际X坐标";left=8;top=8;font=LOGFONT( name="宋体";h=-16;out=3;family=2;clip=2;quality=1 );z=14;right=80;transparent=1;cls="static" };
+groupbox={ bottom=117;color=0;right=139;left=8;top=76;font=LOGFONT( name="宋体";h=-14;out=3;family=2;clip=2;quality=1 );z=12;text="当前坐标位置颜色";edge=1;cls="groupbox" };
+chkTopMost={ dr=1;dl=1;bottom=93;text="保持窗口最前";left=170;dt=1;top=78;z=15;right=284;cls="checkbox" }
+)
+/*}}*/
+
+//置顶窗口
+winform.chkTopMost.oncommand = function(id,event){
+    win.setTopmost(winform.hwnd,winform.chkTopMost.checked)  
+}//endproc
+hk = mouse.hook();
+winform.setInterval(//定时执行代码
+    10/*毫秒*/,
+function(hwnd,msg,id,tick){
+    hk.proc = function(msg,x,y){
+        select(msg) {
+            case 0x201/*_WM_LBUTTONDOWN*/{
+                winform.static5.text=x;x1=x
+                winform.static6.text=y;y1=y
+            }
+            case 0x202/*_WM_LBUTTONUP*/{
+                winform.static3.text=x;x2=x
+                winform.static4.text=y;y2=y
+            }
+        }   
+    }
+        x,y=mouse.getPos();//得到当前光标的坐标
+        currentcolor= gdi.getPixel(x,y)  //得到光标当前位置处的色彩
+        winform.static.text=string.format("%.6X", currentcolor) //色彩转换为6位十六进制（BGR）显示
+        winform.static1.text=x;//显示当前X坐标
+        winform.static2.text=y;//显示当前Y坐标
+        winform.static.redraw() //更新页面
+        winform.static1.redraw()
+        winform.static2.redraw()
+        winform.static3.redraw()
+        winform.static4.redraw()
+        winform.static5.redraw()
+        winform.static6.redraw()
+        //winform.clearInterval(id)//移除此定时器
+        //winform.changeInterval(id,2000)//重新设定时间间隔
+}
+);
+winform.show(true) //显示窗体   
+win.loopMessage( winform );//启动消息循环

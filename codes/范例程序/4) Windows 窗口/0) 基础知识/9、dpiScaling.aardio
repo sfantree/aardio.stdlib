@@ -1,0 +1,36 @@
+//高分屏自适应
+
+/*
+aardio 窗口可以自适应缩放，
+也可以自适应高分屏，我们几乎不需要自己写任何代码。
+你可以针对普通屏幕设置参数，在不同 DPI 缩放环境下将会得到一致的结果。
+aardio 会自动为你清除可能遇到的麻烦。
+
+但仍然有一些知识我们需要提前了解: 设 winform 是一个 win.form 窗口对象，
+aardio 在首次显示窗口以前，将自动调用 winform.enableDpiScaling() 以启用高 DPI 自适应功能。
+
+我们可以使用 winform.enableDpiScaling(false) 禁用 DPI 自适应功能。
+也可以通过 win.ui.disableDpiScaling = false 全局禁用 DPI 自适应。
+
+下面是一些重要的建议：
+
+1、aardio 鼓励大家使用图标字体而非图像，图标字体对 DPI 缩放有良好的支持。
+图标字体有着非常多的优点，并有利于创建更时尚和现代化的界面，可显著地减少开发成本。
+
+2、DPI 缩放会自动触发窗口与控件缩放，应当正确设置控件的自适应缩放参数，
+这指的是控件属性中的「固定边距」、「自适应大小」等属性，一个简单而快速的方法
+是在窗体设计器的右键菜单中点击「九宫格缩放布局」自动为所有控件设置这些参数。
+
+3、当在 winform.enableDpiScaling() 被触发以前，
+你如果获取窗口位置大小，这时候得到的是原始值，而非 DPI 缩放后的值，
+如果有这种需要，你可能需要提前调用 winform.enableDpiScaling() 。
+
+4、我们有必要考虑 winform.enableDpiScaling() 触发的时机，
+并适当的优化代码，例如明明可以在 winform.show() 以前调用 winform.add()，
+就不应当在 winform.show() 以后再去调用，aardio 在发现 DPI 缩放已初始化以后，
+将不得不单独调整新增的控件 —— 这通常是不必要的。。
+
+5、plus 控件 expand,scale,center,stretch 等贴图模式。
+以及指定位置的 point 贴图模式支持DPI 自适应，但 tile,repeat-x,repeat-y 等
+重复平铺的贴图模式将使用原始图像绘图。
+*/

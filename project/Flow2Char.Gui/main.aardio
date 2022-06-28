@@ -1,0 +1,82 @@
+// @Author  : popy32
+// @Contact : 74o5o27o8#qq.com
+// @File    : main.aardio
+// @Comment : 
+
+import debug;
+import console;
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="伪代码生成纯字符格式流程图";right=919;bottom=671)
+winform.add(
+button={cls="button";text="转换";left=792;top=632;right=920;bottom=672;z=1};
+edit2={cls="edit";left=0;top=0;right=424;bottom=632;edge=1;font=LOGFONT(h=-16;name='Consolas');multiline=1;z=2};
+edit4={cls="edit";left=424;top=0;right=920;bottom=632;edge=1;font=LOGFONT(h=-13;name='Consolas');multiline=1;z=3}
+)
+/*}}*/
+
+import fsys;
+
+// 释放并加载dll
+/**
+_dllPath = ..fsys.getSpecial( 0x1c /*_CSIDL_LOCAL_APPDATA*/  ,"aardio/std/FlowChar/v1.0.0/FlowCharDll.exe");
+if(!..io.exist(_dllPath)){
+    ..string.save(_dllPath, $"/res/FlowCharDll.dll") 
+}
+_dll = ..raw.loadDll(_dllPath, "FlowCharDll", "cdecl");
+
+Flow2AsciiChar = _dll.api("Flow2AsciiChar","int(string, string)" ,"cdcel");
+**/
+
+import process;
+_exePath = ..fsys.getSpecial( 0x1c /*_CSIDL_LOCAL_APPDATA*/  ,"aardio/std/FlowChar/v1.0.0/FlowCharDll.exe");
+if(!..io.exist(_exePath)){
+    ..string.save(_exePath, $"/res/FlowCharDll.exe") 
+}
+
+flowPath = ..fsys.joinpath( ..fsys.getTempDir() , ..string.random(5) ++ ".txt");
+chartPath = ..fsys.joinpath( ..fsys.getTempDir() , ..string.random(5) ++ ".txt");
+
+Flow2AsciiChar = function(flowPath, chartPath){
+	var path = _exePath;
+	//  lnk.showCmd = 1;//运行方式：常规窗口=1, 最小化=2，最大化=3
+	
+	var argv = string.format(' -c "%s" -o "%s" ', flowPath, chartPath);
+	var p  = ..process.executeWait(path, argv,,2);
+}
+
+winform.button.oncommand = function(id,event){
+    var flowStr = winform.edit2.text;
+    if(#flowStr) {
+        string.save(flowPath, flowStr);
+        Flow2AsciiChar(flowPath, chartPath);
+        var chartStr = string.load(chartPath);
+        winform.edit4.text = chartStr;
+    }
+}
+
+winform.onClose = function(hwnd,message,wParam,lParam){
+    if(..io.exist(flowPath)) {
+        ..io.remove(flowPath);
+    }
+    
+    if(..io.exist(chartPath)) {
+        ..io.remove(chartPath);
+    }
+}
+
+winform.edit2.text = /**
+ui start;
+while (user input) {
+    if (input is valid) {
+        login;
+    }
+    else {
+        alert message;
+    }
+}
+ui end;
+**/
+
+winform.show();
+win.loopMessage();

@@ -1,0 +1,160 @@
+﻿//xgimiClient 极米客户端
+
+import wsock.udp.ssdpClient;
+import web.rest.xmlClient;
+import web.json;
+
+namespace wsock.udp;
+
+class xgimiClient{
+	ctor(serverIp){
+		this.udpClient = ..wsock.udp.client();
+		this.serverIp = serverIp;
+		
+		..table.gc(this,"close");
+	};
+	sendKey = function(keyId,repeat,delayTime){
+		for(i=1;(repeat:1);1){
+			this.udpClient.sendto('KEYPRESSES:'+keyId,this.serverIp,16735);
+			..thread.delay(delayTime:1000);
+		}
+	};
+	sendMessage = function(msg,delayTime){
+		if(!..type.isString(msg)){
+			msg = ..web.json.stringify(msg,false,true)
+		}
+		this.udpClient.sendto(msg,this.serverIp,16750); 
+		..thread.delay(delayTime:1000);
+	};
+	controlCmd = function(cmd,delayTime){
+		cmd = ..table.assign({delayTime=0;time=0;type=0},cmd); 
+		this.sendMessage({action=20000;controlCmd=cmd;msgid="2"},delayTime); 
+	};
+	search = function(data,delayTime){
+		this.controlCmd({data = data;mode = 5;},delayTime) 
+	};
+	clearMemory = function(){
+		this.controlCmd({mode = 9;type=2;}) 
+	};
+	openApp = function(data){
+		this.controlCmd({data = data;mode = 7;type=1;}) 
+	};
+	delayedShutdown = function(time){
+		this.controlCmd({time = time;mode = 6;type=3;}) 
+	};
+	turnOfScreen = function(){
+		this.search("关闭屏幕");
+	};
+	printScreen = function(){ 
+		this.controlCmd({mode = 9;type=1;}) 
+	};
+	reboot = function(){ 
+		this.controlCmd({mode = 6;type=1;}) 
+	};
+	pressPower = function(){
+		this.sendKey(116);
+	};
+	shutdown = function(){
+		this.sendKey(30);
+	};
+	mute = function(){
+		this.sendKey(113);
+	};
+	setting = function(){
+		this.sendKey(251);
+	};
+	pressVolumeUp = function(repeat){
+		this.sendKey(115,repeat);
+	};
+	pressVolumeDown = function(repeat){
+		this.sendKey(114,repeat);
+	};
+	pressMenu = function(){
+		this.sendKey(139);
+	};
+	pressBack = function(repeat){
+		this.sendKey(48,repeat);
+	};
+	pressOk = function(delayTime){
+		this.sendKey(49,,delayTime);
+	};
+	pressDown = function(repeat){
+		this.sendKey(38,repeat);
+	};
+	pressUp = function(repeat){
+		this.sendKey(36,repeat);
+	};
+	pressLeft = function(repeat){
+		this.sendKey(50,repeat);
+	};
+	pressRight = function(){
+		this.sendKey(37,repeat);
+	};
+	pressHome = function(){
+		this.sendKey(35);
+	};
+	close = function(){
+		if(this.udpClient){
+			this.udpClient.close();
+			this.udpClient = null;
+		}
+	};
+}
+
+namespace xgimiClient{
+	
+	var ssdpClient = ..wsock.udp.ssdpClient();  
+	var xmlClient = ..web.rest.xmlClient();
+	
+	enumDevice = function(callback){
+		
+		ssdpClient.onDeviceDiscovered = function(result){
+			
+			if(result.st=="urn:schemas-upnp-org:service:RenderingControl:1"){ 
+				var xml = xmlClient.get(result.location) 
+				if(xml){
+					var tUrl = ..inet.url.split(result.location);
+					if(callback) callback(tUrl.host,xml.root[1].device[1].friendlyName[1].innerText())
+				}
+			}
+		}
+		
+		ssdpClient.discover();
+	}
+}
+
+/**intellisense()
+wsock.udp.xgimiClient.enumDevice(proc) = @.enumDevice(\n	function(deviceIp,friendlyName){\n		__\n	}\n)
+wsock.udp.xgimiClient(.(deviceIp) = 创建极米客户端
+wsock.udp.xgimiClient() = !wsockUdpXgimiClient.
+end intellisense**/
+
+/**intellisense(!wsockUdpXgimiClient)
+sendKey(.(keyId,repeat,delayTime) = 发送按键\n可选用 @repeat 参数指定重复次数\n可选用 @delayTime 参数指定执行后等待时间，单位毫秒
+sendMessage(.(delayTime) = 发送消息,参数可以是 JSON 或表对象\n可选用 @delayTime 参数指定执行后等待时间，单位毫秒
+controlCmd(.(cmd,delayTime) = 发送 controlCmd 消息\n可选用 @delayTime 参数指定执行后等待时间，单位毫秒
+search(.(data,delayTime) = 语音搜索，参数指定要搜索的文本\n可选用 @delayTime 参数指定执行后等待时间，单位毫秒
+clearMemory() = 清理内存
+openApp(.(app) = 打开 APP
+turnOfScreen() = 关闭屏幕
+delayedShutdown(.(time) = 延迟关机,参数：\n0=>取消，1=>15分钟，2=>30分钟，3=>60分钟，4=>120分钟
+printScreen() = 截屏
+reboot() = 重启
+pressPower() = 按电源键
+shutdown() = 直接关机
+mute() = 切换静音
+setting() = 打开设置
+pressVolumeUp(.(repeat) = 按增加音量键\n可选指定重复次数
+pressVolumeDown(.(repeat) = 按降低音量键\n可选指定重复次数
+pressMenu() = 按菜单键
+pressBack(.(repeat) = 按后退键\n可选指定重复次数
+pressOk(.(delayTime) = 按确定键\n可选用 @delayTime 参数指定执行后等待时间，单位毫秒
+pressDown(.(repeat) = 按下方向键\n可选指定重复次数
+pressUp(.(repeat) = 按上方向键\n可选指定重复次数
+pressLeft(.(repeat) = 按左方向键\n可选指定重复次数
+pressRight(.(repeat) = 按右方向键\n可选指定重复次数
+pressHome() = 按主页键
+close() = 关闭客户端对象
+end intellisense**/
+
+//感谢： https://bbs.hassbian.com/thread-8276-1-1.html

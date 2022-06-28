@@ -1,0 +1,49 @@
+﻿import winex;
+import winex.mouse;
+import crypt;
+import inet.url;
+
+namespace baidu.pan;
+	
+down = function(url){
+    
+    if(..string.startWith(url,"thunder://")){
+		url = ..crypt.decodeBin( ..string.right(url,-11) );
+		url = ..string.sub(url,3,-3);
+		url = ..inet.url.decode(url);
+	}
+
+    if( ..string.startWith(url,"ed2k://",true) ){
+    	 url = ..inet.url.decode(url);	
+	}
+
+	var hwnd,hCtrl = ..winex.waitVisible("欢迎使用百度网盘",,"DuiHostWnd")
+	if(!hwnd){ return; }
+	
+	..winex.mouse.click(hwnd,664,103)
+	var hwnd = ..winex.waitVisible("新建离线下载任务窗口",,"BaseGui") 
+	
+	var hEdit = ..winex.findEx(hwnd,,"ATL"); 
+	..winex.setText(hEdit,url);
+	..winex.mouse.click(hwnd,466,251); 
+	
+	..win.delay(1000);
+	var hwndBt = ..winex.findExists("新建离线BT",,"BaseGui");
+	if(hwndBt) ..winex.mouse.click(hwndBt,397,471);
+	else {
+		 if( ..string.startWith(url,"magnet:",true) ){
+		 	hwndBt = ..winex.waitVisible("新建离线BT",,"BaseGui");
+		 	..winex.mouse.click(hwndBt,397,471);
+		 }
+	}
+
+	var hwnd = ..winex.waitVisible("离线下载任务列表",,"BaseGui");  
+	..winex.close(hwnd);
+	
+	..win.delay(100)   
+	return true;
+}
+
+/**intellisense(baidu.pan)
+down(__)  = 添加百度离线下载,参数指定下载网址
+end intellisense**/

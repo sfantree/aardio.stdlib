@@ -1,0 +1,63 @@
+//调用 Python
+import console;
+console.log("必须在导入python库以前打开控制台,
+python中的print函数才能支持控制台.")
+
+import py2;
+py2.main.testData = '可以这样预先指定 Python 全局变量'u; 
+//Python2 对 UTF-8 不友好，所以上面用 Uniocde(UTF-16) 字符串。
+
+var pyCode = /**
+def sign_request():
+    from hashlib import sha1
+    import hmac
+    import binascii
+    key = "\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b"
+    raw = "Hi There" # as specified by oauth
+    hashed = hmac.new(key.encode("gbk"), testData.encode("utf-8"), sha1)
+    return binascii.b2a_base64(hashed.digest())[:-1].decode("gbk")
+    
+def permutations(items,r): 
+    from itertools import permutations
+    return list(permutations(items,r))
+**/
+
+//执行Python2 的代码
+py2.exec( pyCode )
+/*
+执行 aardio 工程中的内嵌资源文件可以这样写: 
+py2.exec("/res/test.py") 
+
+也可以用导入模块的方式,例如导入 /py/pyMain.py 文件
+py2.import("pyMain")
+*/
+
+//调用Python2 __main__ 模块下的函数
+console.log( py2.main.sign_request() )
+
+//用 aardio 计算 HMAC-SHA1 
+import crypt.hmac 
+var key = '\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b';
+var wstr  = py2.main.testData.toString();
+var hmacData = crypt.hmac.sha1(key,string.fromUnicode(wstr)).getValue();  
+console.log( crypt.encodeBin( hmacData ) ) 
+
+//从 py2.main 模块获取 Python 创建的函数 
+var pyList = py2.main.permutations(
+	{"a","b","c"},
+	//aardio 数值默认转为 Python 浮点数, 可使用 py2.int() 生成 Python 整数
+	py2.int(2) 
+);
+
+/*
+所有 Python 返回的对象（pyObject）在aardio 中都基于 py3.object 构建,
+pyObject 用 parseValue() 可转换为纯 aardio 对象。
+*/
+console.dump( pyList.parseValue() );
+
+//不转也可以直接使用这些 pyObject，例如遍历：
+for( pyItem in pyList.each() ){
+	console.log( tostring(pyItem) ) //pyObject也支持 tostring(),tonumber() 这此些函数
+}
+
+console.pause()

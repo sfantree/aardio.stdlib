@@ -1,0 +1,23 @@
+﻿
+namespace utils
+var checkApiUrlFormat = function(url){
+	var pattern =  "http[s]?\://[^\s]*\:\d*"
+	return (#(..string.gmatch(url, pattern)) != 0)
+}
+var checkApiUrlConnect = function(url){
+	import inet.http;
+	var http = inet.http();
+	var html,err,errCode = http.post(url);
+	http.close();
+	if( html ){ 
+		return true;
+	} else {
+		return false;
+	}
+}
+
+
+//namespace utils;
+//utils.checkApiUrlFormat("123")
+..console.log("123")
+..console.pause()

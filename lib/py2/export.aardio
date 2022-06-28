@@ -1,0 +1,276 @@
+﻿//export 导出模块
+import util.registry;
+namespace py2;
+
+class export{
+	ctor( obj ){{ 
+		var t = type(obj); 
+		if(!exportable[t]) {
+			if(..math.isInteger(obj)){
+				return ..py2.int(obj);
+			}
+			return obj;
+		}
+		
+		var id = __proxyRegistry__.reg(obj);
+    	return ..py2.builtin.aardioObjectBox__(id);
+	}}; 
+}
+
+namespace export;
+
+exportable = {["table"]=1,["class"]=1,["cdata"]=1,["function"]=1};
+__proxyRegistry__ = ..util.registry();
+__staticModuleDef__ = {};
+
+self@ = {
+
+	_set = function(k,v){
+		if( ( type(k)!= type.string ) || (type(v) != type.table) ){
+			self[[k]] = v;
+			return;
+		}
+		
+		var methodDef = {}  
+		var callbacks ={}
+		var moduleTable = v;
+		var moduleName = k;
+		if( __staticModuleDef__[moduleName] ){
+			error("已经导出过该名称的 aardio 模块到 Python",2); 
+		}
+		self[[k]] = v;
+		
+		for(k,v in moduleTable){
+			if( type(v) != type.function ) continue ;
+			if( type(k) != type.string ) continue ;
+			
+			callbacks[k] = ..raw.tocdecl(
+				function(self_,args){
+					var tp = ..py2.tuple(args);	
+					var args2 = tp.parseValue();
+					tp.stealPtr();
+					var ret = invoke(v,owner,..table.unpackArgs(args2) );
+					return ..py2.object(ret).stealPtr();
+				},"pyObject(pyObject self,pyObject args)",moduleTable);
+				
+			..table.push(methodDef,{string name=k;ptr method = callbacks[k];int flags = 1|2;string doc = moduleTable[k+"Doc"]: k});
+		}
+		
+		..table.push(methodDef,{string name;ptr method;int flags;string doc })
+		
+		/*
+		Python里需要一直引用函数定义的地址,
+		所以要用raw.buffer提前分配内存并保存起来。
+		如果你的结构体传给API函数，在调用结束后API还要继续引用那个结构体的内存就需要这么做。
+		*/
+		__staticModuleDef__[moduleName] = {
+			callbacks = callbacks;
+			methodDefs = ..raw.buffer( {struct defs[]=methodDef } );
+		};
+		
+		var m = ::Python2.PyImport_AddModuleP(moduleName); 
+		if( m ){
+			//..py2.IncRef(m);//虽然这里返回的是borrow reference，但这里用不到这个指针，所以不需要增加引用计数 
+			if(::Python2.Py_InitModule4(moduleName
+				,__staticModuleDef__[moduleName].methodDefs
+				,null,null,1013))
+				
+				return;
+		}
+	} 
+}
+
+self.__aardioProxy__ = { 
+	
+	callSelf = function(id,...) {
+        var obj = __proxyRegistry__[id];
+        if(obj){ 
+        	return ..py2.export( obj(...) );
+        } 
+    }
+    
+    xcall = function(id,k,...) {
+        var obj = __proxyRegistry__[id];
+        if(obj){ 
+        	return ..py2.export( invoke(obj[k],obj,...) );
+        } 
+    }
+    
+    callable = function(id,k){
+        var obj = __proxyRegistry__[id];
+    	if(obj) return type.callable( obj[k] );
+    }
+    
+    get = function(id,k){
+        var obj = __proxyRegistry__[id];
+    	if(obj) return ..py2.export( obj[k] );
+    }
+    
+    set = function(id,k,value,saveId){ 
+        var obj = __proxyRegistry__[id];
+    	if(obj) { 
+    	    if( saveId){
+    	    	value = __proxyRegistry__[saveId]
+    	    }
+    		obj[k] = value;
+    	}
+    }
+    
+    next = function(id,current){
+        var obj = __proxyRegistry__[id];
+    	if(obj) { 
+    	    var tuple;
+    	    if(type.callable(obj)) tuple = {obj(current)};
+    		else tuple = {..table.next( obj,current)};
+    		
+    		for(k,v in tuple){
+				tuple[k] = ..py2.export(v);
+			}
+			
+			return ..py2.tuple(tuple);
+    	}
+    }
+    
+    remove = function(id,name){
+        var obj = __proxyRegistry__[id];
+    	if(obj) obj[name] = null;
+    }
+      
+    release = function(id){
+    	__proxyRegistry__.unReg(id);
+    } 
+    
+    toString = function(id){
+    	var obj = __proxyRegistry__[id];
+        if(obj){
+            return tostring(obj)
+        }
+    } 
+};
+
+..py2.exec(` 
+import __aardioProxy__
+class aardioObjectBox__Iterator__(object):
+	def __init__(self, objId):
+		self.__objId = objId 
+		self.current = None
+
+	def next(self): #Python3 是 __next__
+		c= self.current 
+		if( c and len(c) ): c = c[0] 
+		
+		self.current = __aardioProxy__.next(self.__objId,c)
+		if( not( self.current and len(self.current) ) ):
+			raise StopIteration
+		else:
+			return self.current
+            
+class aardioObjectBox__(object):  
+	def __init__(self, objId):
+		self.__objId = int(objId) 
+		
+	def __getattr__(self, k):
+		if( __aardioProxy__.callable(self.__objId,k) ):
+			return lambda *args: __aardioProxy__.xcall(self.__objId, k, *args)
+		else:
+			return __aardioProxy__.get(self.__objId, k)
+
+	def __setattr__(self,k,value):
+		if(k=="_aardioObjectBox____objId"):
+			super(aardioObjectBox__, self).__setattr__(k,value)
+		else:
+			if(hasattr(value,"_aardioObjectBox____objId")):
+				__aardioProxy__.set(self.__objId,k,None,value._aardioObjectBox____objId)
+			else:
+				__aardioProxy__.set(self.__objId,k,value)
+				
+	def __getitem__(self, k):
+		return __aardioProxy__.get(self.__objId, k)
+
+	def __setitem__(self,k,value):  
+		if(hasattr(value,"_aardioObjectBox____objId")):
+			__aardioProxy__.set(self.__objId,k,None,value._aardioObjectBox____objId)
+		else:
+			__aardioProxy__.set(self.__objId,k,value)
+	 
+	def __call__(self,*args):
+		return __aardioProxy__.callSelf(self.__objId, *args)
+
+	def __delattr__(self,k):
+		__aardioProxy__.remove(self.__objId, k)
+						
+	def __del__(self):
+		__aardioProxy__.release(self.__objId)
+	
+	def __iter__(self): 
+		return aardioObjectBox__Iterator__(self.__objId)
+  
+	def __str__(self):
+		return __aardioProxy__.toString(self.__objId)
+			
+__builtins__.aardioObjectBox__ = aardioObjectBox__`);
+
+/**details(重要说明)
+一、简介
+-----------------------------------------------------------
+当 py2.export() 作为对象构造函数使用时，
+可用于导入参数指定的 aardio 对象为 Python 对象。
+这种「代理对象」在 Python 中将保持对原始 aardio 对象的引用，
+也就是传址而非传值，可以在 Python 中更直接地使用此 aardio 对象。
+
+二、解决了什么问题
+-----------------------------------------------------------
+首先请了解 aardio 在与 Python 交互时，
+所有 Python 对象转换为 aardio 对象都是传址而非传值，
+即在 aardio 中始终保留对原始 Python 对象的引用。
+所以我们要把这些 Python 对象( pyObject ) 转换为纯 aardio 值，
+就需要调用 pyObject.parseValue(), 当然 pyObject 也像普通 aardio 对象
+一样可以支持许多 aardio 操作符以及 _tostring,_tonumber 等元方法。
+
+但是默认的在交互过程中 - aardio 对象在自动转换为 Python 对象时，
+aardio 则只转换数据，即传值而非传址，Python 中不保留对 aardio  对象的引用。
+例如 aardio 表对象，经过 JSON 作为中间协议转换为纯 Python 对象，
+这样带来的好处是在 Python 中可以获得纯 Python 对象，用起来非常简洁。
+但缺点是这种转换后的对象不再引用原始的 aardio 对象，
+也就因此失去了在 Python 中全面操控和利用 aardio 对象的能力。
+
+我们可以利用 py2.export 导出 aardio 模块，例如：
+
+	py2.export.aardio = {
+		exportFunction = function(){
+			
+		} 
+	}
+
+然后可以在 Python 中 import aardio，然后调用这个模块的所有成员函数。
+你可以使用不同的模块名称，不一定要是 aardio。
+
+但这种导出的模块，仍然遵守前述的规则，
+aardio 对象传入 Python 仍是传值而不是传址。
+
+三、py3.export( aardioObject ) 使用要点
+-----------------------------------------------------------
+但我们用 py2.export( aardioObject ) 就可以用传址的方式导出 aardio 代理对象给 Python,
+这种方式支持传址转换 table,cdata,class,function 等 aardio 对象，也可以支持导出 aardio 迭代器
+并且于 Python 的 for 语句（注意 aardio 迭代器在 Python 中返回 tuple 而非单个值)
+
+对于整型数值 py2.export( number ) 默认转换为 Python 中的整型，而非浮点数。
+对于其他类型，例如字符串等则不作转换直接返回（当作为 Python 函数的参数时，按传值规则做默认转换）
+
+并且在 Python 中调用这种 aardio 对象再次返回到 Python 中的 aardio 对象
+也会自动调用 py2.export() 转换为代理对象。
+
+更多关于 py2.export 建议大家查看这个库的源代码。
+
+四、使用限制
+-----------------------------------------------------------
+注意 py2.export 只能在 Python 启动线程中使用,
+aardio 可以支持真多线程，也提供了 py2.lock 简化了 Python 全局锁操作，支持除 py2.export 以外的接口。
+但要注意：py3.export 与 Python 多线程模式不兼容。
+
+在非 Python 主线程下，py3.export 为 null 值,
+使用 py2.mainThread 也可以检测是否  Python 主线程， 
+其实 Python 的多线程有全局锁 —— 无法实现真正的多线程， 
+所以如果没有特别的原因 Python 就不要搞多线程了，可以省很多事。
+end details**/
+

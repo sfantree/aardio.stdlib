@@ -1,0 +1,182 @@
+
+class kuaipan {
+	ctor( config ){
+	
+		if(! config[["appKey"]] )
+			error("请指定 appKey ",2)
+	
+		if(! config[["appSecret"]] )
+			error("请指定 appSecret ",2)
+		
+		this.session = ..kuaipan.client();
+		this.session.appKey = config[["appKey"]];
+		this.session.appSecret = config[["appSecret"]];  
+		
+		var openApi1 = this.session.declareApi("http://openapi.kuaipan.cn/1")
+	};
+	lastResponse = function(){
+		return this.session.lastResponse();
+	};
+	getAccountInfo = function(){
+		if( !this.session.token )
+			error("请先调用authorise()获取用户授权",2);
+		 
+		return openApi1.account_info.get({});
+	};
+	createFolder = function(path,root="app_folder"){
+		if( !#path)
+			error("请指定路径参数",2);
+		
+		return openApi1.fileops.create_folder[root][path].get(
+			path = path;
+			root = root;
+		); 
+	}; 
+	remove = function(path,root="app_folder"){
+		if( !#path)
+			error("请指定路径参数",2);
+		
+		return openApi1.fileops.delete[root][path].get(
+			path = path;
+			root = root;
+			to_recycle = "True";
+		); 
+	}; 
+	delete = function(path,root="app_folder"){
+		if( !#path)
+			error("请指定路径参数",2);
+		
+		return openApi1.fileops.delete[root][path].get(
+			path = path;
+			root = root;
+			to_recycle = "False";
+		); 
+	};  
+	move = function(path,toPath,root="app_folder"){
+		if( !#path)
+			error("请指定路径参数",2);
+		
+		return openApi1.fileops.move[root][path].get(
+			from_path = path;
+			to_path = toPath;
+			root = root;
+			to_recycle = "False";
+		); 
+	};     
+	metadata = function( path,root="app_folder"){
+		return openApi1.metadata[root][path].get();
+	};
+	shares = function( path,root="app_folder"){ 
+		return openApi1.shares[root][path].get();
+	};
+	download  = function(localPath,remotePath,progressProc){
+		if( ! ( remotePath && localPath ) ) error("参数不能为空",2);
+     	var downloadUrl = this.getDownloadUrl(remotePath);
+     	if( downloadUrl ){
+     	 	this.session.receiveFile( localPath ,progressProc );  
+     	 	return this.session.get( downloadUrl );
+     	}
+	};
+	upload = function(localPath,remotePath,progressProc){
+		if( ! ( remotePath && localPath ) ) error("参数不能为空",2);
+		
+    	var uploadUrl = this.getUploadUrl(remotePath); 
+    	if( uploadUrl ){
+    		this.session.sendMultipartForm( {
+    				file = "@" + localPath;
+    			},progressProc
+    		); 
+        	return this.session.post( uploadUrl  )
+    	}   
+	}; 
+	getUploadUrl = function( path,overwrite=false,root="app_folder"){
+		if( !#path)
+			error("请指定路径参数",2);
+			
+		var result,errMsg,errCode = this.session.get("http://api-content.dfs.kuaipan.cn/1/fileops/upload_locate",{});
+		if( !result[["url"]] )
+			return null,errMsg,errCode;
+			
+		return this.session.getSignatureUrl( result[["url"]] + "/1/fileops/upload_file",{
+			overwrite = overwrite;
+			path = path;
+			root = root;
+		},"POST");  
+	};
+	getDownloadUrl = function(path,root="app_folder"){
+		if( !#path)
+			error("请指定路径参数",2);
+		
+		return this.session.getSignatureUrl( "http://api-content.dfs.kuaipan.cn/1/fileops/download_file",{
+			root = root;
+			path = path;
+		} );  
+	}; 
+	requestToken = function(){  
+		var errCode,errMsg;
+		this.session.token,errMsg,errCode = this.session.get( "https://openapi.kuaipan.cn/open/requestToken",{} ); 
+		if( !this.session.token ){ 
+			return null,errMsg,errCode;
+		}
+		return this.session.token;
+	}; 
+	accessToken = function(authCode){ 
+		var errCode,errMsg;
+		this.session.token,errMsg,errCode = this.session.get("https://openapi.kuaipan.cn/open/accessToken",{}  )
+		if( !this.session.token ){  
+			return null,errMsg,errCode;
+		}
+		return this.session.token;
+	};
+	authorise = function( loginProc ){
+
+		if( type(loginProc) != type.function )
+			error("参数不是用于登录快盘的回调函数",2)
+
+		var tokenTemp,errMsg,errCode = this.requestToken();
+		if( !tokenTemp ){ 
+			if( errMsg ){
+				if( this.session.lastStatusCode == 401 ){
+					var json = ..web.json.parse(errMsg);
+					if( _STUDIO_INVOKED ){
+						error('请检查appKey,appSecret参数是否正确,\n服务器返回401请求验证错误:' 
+							+ json.msg,2)
+					}
+				}
+			}
+			return null,errMsg,errCode;
+		}
+
+		var authCode = loginProc( "https://www.kuaipan.cn/api.php?ac=open&op=authorise&oauth_token=" + tokenTemp.oauth_token,{} ) 
+		return this.accessToken( authCode )
+	}; 
+}
+
+import kuaipan.client;  
+
+/**intellisense()
+kuaipan(配置参数) = @kuaipan(\n	appKey = "consumer_key";\n	appSecret = "consumer_secret" \n);
+kuaipan() = !kuaipan_client2.
+!kuaipan_client2.session = REST连接对象\n!web_restClient.
+!kuaipan_client2.lastResponse() = 服务端最后一次返回的数据
+!kuaipan_client2.metadata( = 获取文件、文件夹信息
+!kuaipan_client2.metadata(.(路径,根路径) = 根路径为可选参数
+!kuaipan_client2.shares( = 获取分享链接
+!kuaipan_client2.shares(.(路径,根路径) = 根路径为可选参数\n如果返回msg:PSA_OUTLINK_STATUS_REVIEWING需要等待审核
+!kuaipan_client2.remove( = 彻底删除文件或文件夹到回收站
+!kuaipan_client2.remove(.(路径,根路径) = 根路径为可选参数
+!kuaipan_client2.delete( = 彻底删除文件或文件夹
+!kuaipan_client2.delete(.(路径,根路径) = 根路径为可选参数
+!kuaipan_client2.move( = 移动文件、文件夹
+!kuaipan_client2.move(.(源路径,变更路径,根路径) = 根路径为可选参数 
+!kuaipan_client2.createFolder(.(相对路径,根路径) = 创建文件夹,\n根路径为可选参数,默认为 app_folder
+!kuaipan_client2.getUploadUrl(.(上传相对路径,是否允许覆盖,根路径) = 获取上传文件网址,\n参数2为可选参数,默认为false\n参数3为可选参数,默认为app_folder
+!kuaipan_client2.getDownloadUrl(.(下载相对路径,根路径) = 获取下载文件网址,\n参数2为可选参数,默认为app_folder
+!kuaipan_client2.upload("本地路径","网盘路径",进度回调函数) = @.upload("/__/*本地路径*/","/网盘路径"\n 	,function(str,sendSize,contentLength){\n		..io.print("正在上传",sendSize,contentLength);\n	}\n)
+!kuaipan_client2.download("本地路径","网盘路径",进度回调函数) = @.download("/__/*本地路径*/","/网盘路径"\n 	,function(str,receiveSize,contentLength){\n		..io.print("正在下载",receiveSize,contentLength);\n	}\n)
+!kuaipan_client2.authorise(登录函数) = @.authorise(\n	function( authoriseUrl ){ \n		__\n		\n	}\n)
+!kuaipan_client2.getAccountInfo() = 返回用户信息\n!kpan_AccountInfo.
+!kpan_AccountInfo.quota_total = 用户空间总量,字节数
+!kpan_AccountInfo.quota_used = 用户空间已使用量,字节数
+!kpan_AccountInfo.quota_recycled = 用户回收站空间使用量,字节数
+end intellisense**/

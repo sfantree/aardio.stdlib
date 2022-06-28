@@ -1,0 +1,26 @@
+import win.ui;
+var winform = win.form(text="web.view")
+
+import web.view;
+var wb = web.view(winform);
+
+import py;
+var pyCode = /**
+def testPy(): return "测试 test"
+**/
+py.exec( pyCode )
+
+wb.external = {
+testPy = function() return tostring( py.main.testPy() );
+}
+
+wb.html = /**
+<html><head>
+<script type="text/javascript">
+aardio.testPy().then( v=>document.write(v) )
+</script>
+</head>
+**/
+
+winform.show();
+win.loopMessage();

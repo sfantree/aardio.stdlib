@@ -1,0 +1,27 @@
+﻿//displaySwitch 切换显示器
+import process.wow64;
+
+namespace process.displaySwitch;
+
+clone = function(){
+	 return ..process.wow64.executeWait("DisplaySwitch.exe","/clone");
+}
+
+extend = function(){
+	 return ..process.wow64.executeWait("DisplaySwitch.exe","/extend");
+}
+
+internal = function(){
+	 return ..process.wow64.executeWait("DisplaySwitch.exe","/internal");
+}
+
+external = function(){
+	 return ..process.wow64.executeWait("DisplaySwitch.exe","/external");
+}
+
+/**intellisense(process.displaySwitch)
+clone() = 切换为复制主显示器\n也可以直接按 WIN + P
+extend() = 切换为扩展主显示器\n也可以直接按 WIN + P
+internal() = 切换为使用主显示器\n也可以直接按 WIN + P
+external() = 切换为使用副显示器\n也可以直接按 WIN + P
+end intellisense**/

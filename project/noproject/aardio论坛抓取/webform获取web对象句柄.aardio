@@ -1,0 +1,39 @@
+
+
+import win.ui;
+import web.form
+import winex
+/*DSG{{*/
+var winform = win.form(parent=...; text="aardio Form";right=349;bottom=249 )
+winform.add(
+button={ bottom=178;right=252;left=129;top=144;font=LOGFONT( name="宋体";h=-12 );z=2;text="button";cls="button" };
+static={ bottom=101;text="static";left=122;top=58;font=LOGFONT( name="宋体";h=-12 );z=1;transparent=1;right=220;cls="static" }
+)
+/*}}*/
+
+wb=web.form( winform.static )
+
+winform.show()
+
+wb.go("https://www.hao123.com")
+
+io.open()
+winform.button.oncommand = function(id,event){
+	winex.enum(
+        function(hwnd,depth){
+                
+                ..io.print( depth/*深度*/,hwnd/*窗口*/,win.getText(hwnd)/*标题*/,win.getClass(hwnd),win.getChild(hwnd))
+                /*return false*/
+        },winform.hwnd
+	)  
+	
+	{
+		var hwnd = win.getChild(win.getChild(wb.hwndControl))
+		..io.print( hwnd)
+	}
+}
+
+
+
+win.loopMessage();
+return winform;

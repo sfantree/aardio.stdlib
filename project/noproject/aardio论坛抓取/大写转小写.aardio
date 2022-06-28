@@ -1,0 +1,39 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="大写转小写";right=727;bottom=519)
+winform.add(
+button={cls="button";text="大写转小写";left=592;top=472;right=704;bottom=512;z=3};
+edit={cls="edit";left=16;top=16;right=712;bottom=232;edge=1;multiline=1;z=1};
+edit2={cls="edit";left=16;top=248;right=712;bottom=464;edge=1;multiline=1;z=2}
+)
+/*}}*/
+
+import console;
+
+
+winform.button.oncommand = function(id,event){
+	if(#winform.edit.text) == 0 {
+	    return;
+	}
+	var resCh = {};
+	for(i=1;#winform.edit.text;1){
+		 var ch = (winform.edit.text[i]);
+		 if(ch >= 'A'# and ch <= 'Z'#) {
+		     ch = ch + 32;
+		     table.push(resCh, ch);
+		 } else {
+		     table.push(resCh, ch);
+		 }
+		 
+	}
+	if(#resCh) {
+	    var txt = string.pack(resCh);
+	    winform.edit2.text = txt;
+	}
+	
+	
+}
+
+winform.show();
+win.loopMessage();
+return winform;

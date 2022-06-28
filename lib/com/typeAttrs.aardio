@@ -1,0 +1,35 @@
+﻿//typeAttrs 类型属性
+import com;
+namespace com.typeAttrs;
+
+load = function(path,typekind){
+	var tlb;
+	try{tlb = ..com.LoadTypeLibrary(path);}
+	if(!tlb) return;
+	
+	var r = {}
+	for(i=1;tlb.GetTypeInfoCount()){
+		var info = tlb.GetTypeInfo(i)
+		var attr = info && info.GetTypeAttr();
+			if(attr){
+				if( typekind && typekind != attr.typekind) continue;
+				
+			attr.name = info.GetDocumentation()[["name"]];
+			..table.push(r,attr);
+		}	
+	}
+	
+	return r;
+}
+
+firstCoClass = function(path){ 
+	return load(path,"coclass")[[1]]; 
+};
+
+/**intellisense()
+com.typeAttrs.firstCoClass(__) = 参数@1可指定包含类型库资源的组件，\n获取第一个 COM 类\n!comtypeattr.
+com.typeAttrs.load( = 返回一个数组包含类型库中所有类型的属性表,
+com.typeAttrs.load(.(path,typekind) = 参数@1可指定包含类型库资源的组件,\n也可以是类型库路径、或ProgID,\n可选使用参数@2指定要查找的typekind
+com.typeAttrs.load() = !comLiteTypeAttrs.
+!comLiteTypeAttrs.? = !comtypeattr.
+end intellisense**/

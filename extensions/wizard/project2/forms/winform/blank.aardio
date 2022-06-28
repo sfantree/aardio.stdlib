@@ -1,0 +1,20 @@
+﻿import win.ui;
+/*DSG{{*/
+var winform = win.form(text="空白工程";right=703;bottom=511;bgcolor=16777215;border="dialog frame")
+winform.add(
+lbDescription={cls="static";left=24;top=456;right=680;bottom=497;db=1;dl=1;dr=1;notify=1;transparent=1;z=2};
+plus={cls="plus";left=24;top=24;right=680;bottom=440;background="~\forms\images\winform.jpg";db=1;dl=1;dr=1;dt=1;repeat="scale";z=1}
+)
+/*}}*/
+
+winform.getTemplatePath = function(){
+	return io.fullpath("/template/winform-blank/") 
+}
+
+winform.lbDescription.text = /*
+仅创建主窗口，不添加其他演示代码(新用户)。
+*/
+
+winform.show();
+win.loopMessage();
+return winform;

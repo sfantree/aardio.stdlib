@@ -1,0 +1,47 @@
+import xcgui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469;bgcolor=15245824)
+winform.add(
+closebutton={cls="xcclosebutton";text="r";left=725;top=2;right=749;bottom=28;dr=1;dt=1;font=LOGFONT(name='Marlett');transparent=1;z=1};
+static={cls="xctext";text="   ";left=27;top=12;right=693;bottom=31;dl=1;dr=1;dt=1;z=3};
+static2={cls="static";left=31;top=77;right=735;bottom=456;bgcolor=16777215;db=1;dl=1;dr=1;dt=1;z=4};
+xcbutton={cls="xcbutton";left=534;top=22;right=648;bottom=58;bkBottom=7;bkImage="\控件使用\image\button_leave.png";bkLeft=11;bkRight=11;bkTop=6;db=1;dl=1;dr=1;dt=1;transparent=1;z=2}
+)
+/*}}*/
+
+/*
+指定各种交互状态下变换的图像，所有可用的状态参考 xcgui.state库源码。
+在下面可以指定图像文件，也可以指定背景颜色（RGB数值，最高位为透明度）
+*/
+winform.xcbutton.skin(
+	background = { 
+		hover = "\控件使用\image\button_hover.png";
+		active = "\控件使用\image\button_down.png";
+		leave = "\控件使用\image\button_leave.png"; 
+	}
+)
+
+winform.xcbutton.on("click",function(){
+	winform.static.text = "点击了按钮";
+	winform.static.redraw();	
+})
+
+//用下面的代码获取炫彩窗口对象
+var xcWnd = xcgui.window(winform)
+
+/*
+炫彩窗口还是传统窗口，支持 winform.wndproc里处理所有窗口消息，
+也可以使用炫彩窗口对象注册事件，如下：
+*/
+xcWnd.on("lbuttonUp",function(nFlags, pt){
+	winform.static.text = "点击了窗体";
+	winform.static.redraw();
+})
+
+winform.show();
+
+import xcgui.shadow;
+xcgui.shadow(winform);
+
+win.loopMessage();
+return winform;

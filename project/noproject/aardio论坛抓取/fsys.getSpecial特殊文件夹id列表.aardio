@@ -1,0 +1,16 @@
+import console; 
+//目的：为了了解getSpecial()函数各个参数代表的是什么特殊文件夹
+
+io.open();//打开控制台
+import fsys;
+  
+for(i=1;2048;1){
+    var qq=fsys.getSpecial(i)
+    if(qq != null && qq != ""){ //此处为什么为空值的时候还显示？？ 改为(qq != "")或(qq != '')也是一样的显示
+        io.print(i+'   '+qq)
+    }
+}
+
+execute("pause") //按任意键继续
+io.close();//关闭控制台
+console.pause(true);

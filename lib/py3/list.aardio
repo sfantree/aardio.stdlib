@@ -1,0 +1,136 @@
+//list 列表数组
+import util.metaProperty;
+namespace py3;
+	
+class list {
+
+	ctor( object ){ 
+
+		var tt = type(object) 
+		select(tt) {
+			case type.pointer{
+				this.pyObject = object;
+			}
+			case type.null{
+				this.pyObject = PyList_New(0);
+			}
+			case type.number{
+				this.pyObject = PyList_New(object);
+			}
+			case type.table{ 
+			
+				if(object[["pyObject"]] ){
+					this[["pyObject"]] = object[["pyObject"]];
+					..py3.IncRef(this.pyObject);
+				}
+			  	else{
+					var len = #object;
+					this.pyObject = PyList_New(len); 
+					
+					for(i=1;len;1)
+						PyList_SetItem(this.pyObject,i-1,..py3.object(object[i]).stealPtr() );   
+				}
+			}
+			else {
+				error("pyObject构造参数不支持此数据类型:" + tt ,2);
+			} 
+		}
+		
+		..table.add_gc(this,"release");
+	}
+	@_metaProperty
+}
+
+namespace list {
+
+	_metaProperty = ..util.metaProperty(   {
+	
+		_topointer = function(){
+			if(!owner.pyObject) error("Python List已销毁",2);
+			return owner.pyObject;
+		} 
+		
+		parseValue = function(){
+			var result = {}; 
+			var len = PyList_Size(owner.pyObject);
+			for(i=0;len-1;1){
+				var item = PyList_GetItem(owner.pyObject,i);
+				if(item){
+					item = ..py3.object(  item,true );
+					result[i+1] = item.parseValue();
+					item.stealPtr();//因为item是借用，所以盗用还回去
+				}
+			}
+			return result; 
+		}
+		  
+		getItem = function(k){
+			return owner[k]
+		}  
+		
+		setItem = function(k,v){
+			owner[k] = v;
+		}
+		
+		append = function(v){
+			if(v!==nul)PyList_Append(owner.pyObject,..py3.object(v) ); 
+		}	
+		
+		__get = function(k,ownerCall){ 
+			if( type(k) != type.number ) {
+				return owner.getAttr(k); 
+			}
+			
+			var item = PyList_GetItem(owner.pyObject,k);
+			if(item){
+				..py3.IncRef(item);//特例 borrow reference
+				return ..py3.object(  item,true) ;
+			} 
+		}
+		
+		__set = function(k,v){
+			if( type(k) != type.number ) {
+				return null;
+			}
+			
+			if(v===null)
+				PyList_DelItem(owner.pyObject,k);
+			else {
+				if( type(v) == "pointer" ){
+					..py3.IncRef(v);
+					PyList_SetItem(this.pyObject,k,v );  
+				}
+				else{
+					PyList_SetItem(owner.pyObject,k,..py3.object(v).stealPtr() ); 
+				}
+			} 
+		}
+		len = function(){
+			return PyList_Size(owner.pyObject);
+		}
+		_type = "py3.list";
+	} );
+	..table.mix(_metaProperty,..py3.object._metaProperty); 
+	
+	PyList_New = ::Python3.api("PyList_New","pyObject(int size)")  
+	PyList_GetItem = ::Python3.api("PyList_GetItem","pyObject(PyObject dp,INT key)")  
+	PyList_SetItem = ::Python3.api("PyList_SetItem","pyObject(PyObject dp,INT key,pyObject item)") 
+	PyList_Append = ::Python3.api("PyList_Append","pyObject(PyObject dp,pyObject item)")  
+	PyList_Size = ::Python3.api("PyList_Size","INT(PyObject dp)") 
+}
+
+
+/**intellisense()
+py3.list( = 创建新的列表\n此对象继承自pyObject(py3.object)\n一般不需要手动创建此对象,aardio会在传参数时自动转换
+py3.list(.(列表长度) = 创建新的列表\n也可以省略参数
+py3.list(.(pyObject指针) = 创建新的python列表,\n不会添加引用计数,但对象销毁时负责释放引用计数
+py3.list(.(pyObject对象) = 创建新的python列表,\n复制对象副本,添加引用计数,对象销毁时负责释放引用计数
+py3.list(.(aardio数组) = 参数传入aardio数组,\n创建并返回新的的python列表\n注意 python中下标自0开始,而aardio中下标是自1开始
+!py3List.stealPtr() =  接管此对象的指针并盗用一次引用计数\n原对象的内部指针被清空,并不再负责释放引用计数\n steal references
+!py3List.parseValue() = 转换为aardio数组
+!py3List.setItem("键名",) = 写字典中的元素的值，也可以直接用下标操作符赋值\n在aardio中也可以用成员操作符代替下标赋元素值
+!py3List.getItem("键名") = 返回字典中的元素的值，也可以直接用下标操作符取值\n在aardio中也可以用成员操作符代替下标取元素值,\n成员操作后后面是一个函数调用,则返回成员函数而不是返回字典中的元素
+!py3List.getItem() = !p3yObject.
+!py3List.? = !p3yObject.
+py3.list() = !p3yObject. 
+end intellisense**/

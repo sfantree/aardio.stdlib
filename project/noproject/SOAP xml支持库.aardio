@@ -1,0 +1,12 @@
+import console;
+import web.soapClient;
+
+//创建 SOAP 客户端
+seviceClient = web.soapClient("http://fy.webxml.com.cn/webservices/EnglishChinese.asmx")
+
+//调用远程 Web 服务提供的函数
+var transArray = seviceClient.TranslatorString("fuck");
+
+//显示返回值
+console.dumpJson( transArray ) ;
+console.pause();

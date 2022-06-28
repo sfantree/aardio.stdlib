@@ -1,0 +1,81 @@
+﻿import julia.lib;
+import julia.value;
+import julia.module;
+
+namespace julia
+
+typeof = value.typeof;
+
+exceptionOccurred = function(){
+	var e = ::LibJulia.jl_exception_occurredP();
+	if(e){
+		return e,typeof(e);
+	}
+}
+
+lasterr = function(){
+	if(::LibJulia.jl_exception_occurredP()){
+		var p = self.eval("sprint(showerror, ccall(:jl_exception_occurred, Any, ()))");
+		return value.parse(p);
+	}
+}
+
+self.error = function(str,...){
+	if(...){str = ..string.format(str,...) }
+	
+	return ::LibJulia.jl_error(str);
+}
+
+self.eval = function(code,...){
+	if(...) code = ..string.format(code,...);
+	return value.parse( ::LibJulia.jl_eval_stringP(code) );
+}
+
+self.evalRaw = function(code,...){
+	if(...) code = ..string.format(code,...);
+	return ::LibJulia.jl_eval_stringP(code);
+}
+
+self.using = function(name){
+	if(self[[name]]){return self[[name]]; }
+	self[[name]] = module(name,"using");
+}
+
+self.import = function(name){
+	if(self[[name]]){return self[[name]]; }
+	self[[name]] = module(name,"import");
+}
+
+self.Main = module("Main");
+self.Core = module("Core");
+self.Base = module("Base");
+
+self@ ={
+	_get = function(k,ownerCall){
+		return Main[k];
+	}
+}
+
+appendLoadPath = function(path,...){
+	if(path!=".") path = ..io.exist(path)
+	if( path ){ self["push!"](self.eval("LOAD_PATH"),path) }
+	if(!...) return;
+	appendPath(...);
+}
+
+appendLoadPath( ..io.fullpath("\") );
+
+/**intellisense()
+julia = Julia 语言扩展库
+end intellisense**/
+
+/**intellisense(julia)
+appendLoadPath(.(->->->) = 添加一个或多个查找模块的目录到 LOAD_PATH
+exceptionOccurred() = 如果有错误发生,\n返回错误对象指针,以及错误对象类型字符串
+lasterr() = 如果有错误发生，返回错误信息文本
+typeof(__) = 返回 Julia 对象指针的数据类型,返回值为字符串,\n参数@2为true是返回类型对象的原始指针而不会返回字符串,\n如果传入参数不是指针，返回 null
+eval(.(code,->->->) = 执行 Julia 代码,\n尝试将返回值转为 aardio 对象,\n如果有多个参数，将首先使用这些参数调用 string.format 格式化代码
+evalRaw(.(code,->->->) = 执行 Julia 代码,\n返回 Julia 对象的原始指针,\n如果有多个参数，将首先使用这些参数调用 string.format 格式化代码
+using(__) = 使用 using 语句导入 Julia 模块到 julia 名字空间,,\n此函数返回模块对象,\n\n例如执行 aardio 代码 julia.using("Base64") 以后,\n就可以在 aardio 中调用 julia.Base64 模块了，例如：\n julia.Base64.base64encode("测试一下")了
+import(__) = 使用 import 语句导入 Julia 模块到 julia 名字空间,,\n此函数返回模块对象,\n\n例如执行 aardio 代码 julia.using("Base64") 以后,\n就可以在 aardio 中调用 julia.Base64 模块了，例如：\n julia.Base64.base64encode("测试一下")了
+end intellisense**/

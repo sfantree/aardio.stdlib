@@ -1,0 +1,50 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(parent=...; text="aardio Form";right=349;bottom=249 )
+winform.add(
+edit_result={ bottom=169;right=196;left=113;top=144;font=LOGFONT( name="宋体";h=-12 );z=10;text="";edge=1;cls="edit" };
+edit_begin={ bottom=79;right=78;left=22;top=55;font=LOGFONT( name="宋体";h=-12 );z=2;text="";edge=1;cls="edit" };
+edit_step={ bottom=78;right=240;left=188;top=55;font=LOGFONT( name="宋体";h=-12 );z=6;text="";edge=1;cls="edit" };
+static2={ bottom=42;right=154;left=111;top=29;font=LOGFONT( name="宋体";h=-12 );transparent=1;z=3;text="结束值";cls="static" };
+static4={ bottom=131;right=163;left=120;top=119;font=LOGFONT( name="宋体";h=-12 );transparent=1;z=9;text="结果";cls="static" };
+static3={ bottom=45;right=234;left=189;top=27;font=LOGFONT( name="宋体";h=-12 );transparent=1;z=5;text="递增值";cls="static" };
+button={ bottom=164;right=319;left=244;top=126;font=LOGFONT( name="宋体";h=-12 );z=11;text="计算";cls="button" };
+edit_end={ bottom=77;right=162;left=107;top=54;font=LOGFONT( name="宋体";h=-12 );z=4;text="";edge=1;cls="edit" };
+radiobutton_add={ checked=1;bottom=137;right=77;left=35;top=125;font=LOGFONT( name="宋体";h=-12 );z=7;text="加";cls="radiobutton" };
+radiobutton_multiply={ bottom=173;right=107;left=36;top=157;font=LOGFONT( name="宋体";h=-12 );z=8;text="乘";cls="radiobutton" };
+static={ bottom=43;right=68;left=23;top=24;font=LOGFONT( name="宋体";h=-12 );transparent=1;z=1;text="开始值";cls="static" }
+)
+/*}}*/
+
+winform.button.oncommand = function(id,event){
+    //win.msgbox( winform.button.text );
+   
+    var result=0;
+    if(winform.radiobutton_multiply.checked)
+    {   
+        result=1;
+    }
+
+    var start=tonumber(winform.edit_begin.text) ;
+    var endwith =tonumber(winform.edit_end.text) ;
+    var step =tonumber(winform.edit_step.text) ;
+    for(i=start;endwith;step){
+        if(winform.radiobutton_add.checked)
+        {   
+            result=result+i;
+        }
+        if(winform.radiobutton_multiply.checked)
+        {   
+            result=result*i;
+        }
+        
+   
+    }
+    winform.edit_result.text=result;
+     
+   
+}
+
+
+winform.show()
+win.loopMessage();

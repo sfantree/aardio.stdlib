@@ -1,0 +1,50 @@
+﻿import zlib.httpFile;
+import inet.http;
+
+if( !_WIN7_LATER ){
+	error("Electron组件到少要求 Win7/Win2008 R2 或之后的操作系统",2)
+}
+
+namespace electron.runtime; 
+
+electronDir = ..io.getSpecial( 0x1c /*_CSIDL_LOCAL_APPDATA*/  ,"aardio/std/electron/v12.2.3/");
+pathdll = ..io.joinpath(electronDir,"\electron.dll"); 
+path = ..io.joinpath(electronDir,"\electron.exe");
+chromeVersion = 78;
+ 
+if( ..io.exist(pathdll) ){
+    path = pathdll;
+    return;
+}
+
+if( !..io.exist(path) ){
+    ..zlib.httpFile.referer = "https://registry.npmmirror.com/binary.html?path=electron/v12.2.3/"
+	..zlib.httpFile.download("https://cdn.npmmirror.com/binaries/electron/v12.2.3/electron-v12.2.3-win32-ia32.zip"
+		,"正在下载" + (..win[["title"]] or "本程序") + "必须的组件",..io.joinpath(electronDir,"\.download"),electronDir,"electron-v11.2.-win32-ia32.zip"); 
+} 
+
+..io.rename(path,pathdll);
+..io.remove( ..io.joinpath(electronDir,"\resources\app") );
+
+if(..io.exist(pathdll))  path =   pathdll;
+
+/**details(说明) 
+
+1、Electron 免费的镜像地址万一失效或变更就会很麻烦，
+所以这个愉快的自动下载 Electron 也只能用于测试了，实际开发还是请自行打包 Electron 。
+
+2、Electron 升级喜欢大刀阔斧的改接口，老说旧版接口有问题，可是新版接口又太复杂，
+本人对 Electron 不是很熟，没有精力一直折腾，原则上放弃支持 Electron 后续版本。
+
+aardio 强烈建议大家改用微软的 WebView2（也就是 aardio 标准库里的 web.view ）。
+WebView2 稳定、强大、性能强悍、接口简洁并且可以生成极小的EXE。 
+WebView2 基于系统共享的运行时，Win11 已经自带，并支持 Win7、Win10, 已被部署在超 2亿台电脑上。
+即使 WebView2 没有安装，web.view 也可以自官方提供的地址快速下载安装。  
+
+end details**/
+
+/**intellisense()
+electron.runtime = 此支持库不需要在调用代码中导入,\n\n如果创建 electron.app 对象时没有指定 Electron 路径,\n就会默认加载 electron.runtime 使用共享的 Electron 运行时,\n首次运行如果未检测到 Electron 运行时会自动下载安装,速度非常快,\n支持生成极小的绿色 EXE 文件，可以方便的复制、移动、分享,\n\n如果创建 electron.app 对象时指定 ELectron 的路径参数，\nelectron.runtime 就会被忽略。
+electron.runtime.path = electron.runtime 使用的 Electron.exe 路径
+electron.runtime.chromeVersion = electron.runtime 使用的 Electron.exe 对应的 Chrome 浏览器版本
+end intellisense**/

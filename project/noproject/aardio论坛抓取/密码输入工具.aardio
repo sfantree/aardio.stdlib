@@ -1,0 +1,75 @@
+import win.ui;
+import key;
+import winex;
+import win.clip.viewer;
+import process;
+/*DSG{{*/
+var winform = win.form(parent=...; top=0;bottom=113;text="密码输入工具";left=0;right=374 )
+winform.add(
+button2={ bottom=107;right=365;left=312;top=83;font=LOGFONT( name="宋体";h=-12 );z=6;text="关闭";cls="button" };
+static6={ transparent=1;bottom=38;right=354;left=21;top=20;font=LOGFONT( name="宋体";h=-12 );z=11;text="";cls="static" };
+static={ text="00:00:00";bottom=78;right=145;left=59;top=54;font=LOGFONT( name="宋体";h=-12 );z=3;transparent=1;cls="static" };
+static2={ right=56;bottom=71;text="Run：";left=23;top=53;font=LOGFONT( name="宋体";h=-12 );transparent=1;z=7;cls="static" };
+static4={ notify=1;right=55;left=22;top=71;font=LOGFONT( name="宋体";h=-12 );transparent=1;bottom=89;text="Sys：";z=9;cls="static" };
+static3={ right=130;bottom=91;text="00:00:00";left=60;top=71;font=LOGFONT( name="宋体";h=-12 );transparent=1;z=8;cls="static" };
+groupbox2={ bottom=99;right=302;left=193;top=53;font=LOGFONT( name="宋体";h=-12 );z=4;text="快捷键：";edge=1;cls="groupbox" };
+button={ bottom=79;right=364;left=311;top=55;font=LOGFONT( name="宋体";h=-12 );z=5;text="设定";cls="button" };
+static5={ bottom=103;color=255;text="aardio论坛";left=95;top=87;font=LOGFONT( underline=1;h=-16;name="宋体";out=3;family=2;clip=2;quality=1 );z=10;notify=1;right=175;transparent=1;cls="static" };
+hotkey={ bottom=88;right=290;left=201;top=68;z=1;text="hotkey";edge=1;cls="hotkey" };
+groupbox={ bgcolor=32768;bottom=48;text="剪贴板内容：";left=13;top=6;font=LOGFONT( name="宋体";h=-12 );transparent=1;right=362;z=2;edge=1;cls="groupbox" }
+)
+/*}}*/
+
+import win.cur;
+var hand = win.cur.load(32649/*_IDC_HAND*/ )
+winform.static5.wndproc = function(hwnd,message,wparam,lparam){
+    if( message = 0x200/*_WM_MOUSEMOVE*/ )
+        win.cur.setCur();
+}//endproc
+winform.static5.oncommand = function(id,event){
+     process.execute("bbs.aardio.com")
+   
+   
+}
+winform.button.oncommand = function(id,event){
+
+    hkid = winform.reghotkey(function(id,mod,vk){
+
+    key.send(winform.static6.text);//发送剪贴板内容
+    }
+    ,winform.hotkey.gethotkey() );
+
+}
+
+
+var tm= time("00:00:00","%H:%M:%S");//创建时间
+tmid = winform.setInterval(
+    1000/*毫秒*/,
+    function(hwnd,msg,id,tick){//定时执行代码
+    tm1=time()
+    str=tostring(tm1);
+    str=string.right(str,8)
+
+    tm.addsecond(1)
+        winform.static3.text=str
+        winform.static.text=tm
+        //winform.clearInterval(id)//移除此定时器
+        //winform.changeInterval(id,2000)//重新设定时间间隔
+    }
+);
+
+
+
+winform.button2.oncommand = function(id,event){
+    //win.msgbox( winform.button2.text );
+    winform.close()
+   
+}
+
+viewer = win.clip.viewer(winform);//复制剪贴板内容
+viewer.onDrawClipboard=function(){
+    var str = win.clip.read();  
+    winform.static6.text = str;
+}      
+winform.show()
+win.loopMessage()

@@ -1,0 +1,134 @@
+import console;
+import fonts.fontAwesome;
+import win.ui;
+import win.inputBox;
+import win.util.tray;
+
+import fsys.config;
+//config  = fsys.config( io.appData("/aardio/github-ip-tools/") );
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add(
+button={cls="button";text="刷新";left=800;top=408;right=920;bottom=448;z=2};
+button2={cls="button";text="关闭";left=952;top=408;right=1072;bottom=448;z=4};
+checkbox={cls="checkbox";text="自动刷新";left=312;top=408;right=416;bottom=448;z=6};
+listview={cls="listview";left=8;top=8;right=752;bottom=392;edge=1;font=LOGFONT(name='宋体');fullRow=1;gridLines=1;z=1};
+plus={cls="plus";text='\uF021 刷新';left=480;top=408;right=600;bottom=448;bgcolor=-6371181;font=LOGFONT(h=-15;name='FontAwesome';charset=0);notify=1;z=3};
+plus2={cls="plus";text='\uF064 关闭';left=624;top=408;right=744;bottom=448;bgcolor=-6371181;font=LOGFONT(h=-15;name='FontAwesome';charset=0);notify=1;z=5}
+)
+/*}}*/
+
+
+{
+    winform.listview.insertColumn("币种", 100);
+	winform.listview.insertColumn("价格", 100);
+	winform.listview.insertColumn("未确认交易", 100);
+	winform.listview.insertColumn("刷新时间", -1);
+	winform.listview.setExtended(0x10000/*_LVS_EX_DOUBLEBUFFER*/);
+}
+
+getData = function(){
+	import inet.http;
+	import web.json;
+	
+	var ohttp = inet.http();
+	var url = "https://chain.so/api/v2/get_info";
+	var d = ohttp.get(url);
+	var t = web.json.parse(d);
+	
+	var name = t[["data"]][["name"]];
+	var price = t[["data"]][["price"]];
+	var unconfirmed_txs = t[["data"]][["unconfirmed_txs"]];
+	var fresh_time = tostring( time.now() );
+	
+	//console.dump(name, price, unconfirmed_txs);
+	
+	return name, price, unconfirmed_txs, fresh_time;
+}
+
+winform.refreshListview = function(){
+	var name, price, unconfirmed_txs, fresh_time = getData();
+	winform.listview.clear();
+	winform.listview.addItem( {name, price, unconfirmed_txs, fresh_time} );
+	//winform.listview.setItemColor(item, 0x0000FF);
+	winform.listview.redraw();
+}
+
+winform.button.oncommand = function(id,event){
+	//winform.button.disabledText = {'\uF254';'\uF251';'\uF252';'\uF253';'\uF250'}
+	winform.button.disabled = true;
+	win.delay(100);
+	
+	win.invoke(
+		function(winform){
+			import win;
+			winform.refreshListview();
+		} , winform
+	)
+	
+	winform.button.disabled = false;
+}
+
+winform.plus.skin({
+	background={
+		default=0xFF93C89E;
+		hover=0xFF928BB3
+	}
+})
+
+winform.plus.oncommand = function(id,event){
+	winform.plus.disabledText = {'\uF254';'\uF251';'\uF252';'\uF253';'\uF250'}
+	win.invoke(
+		function(winform){
+			import win;
+			winform.refreshListview();
+		} , winform
+	)
+    
+    //win.delay(5000)
+	winform.plus.disabledText = null;
+}
+
+winform.button2.oncommand = function(id,event){
+	win.quitMessage();
+}
+
+
+winform.plus2.skin({
+	background={
+		default=0xFF93C89E;
+		hover=0xFF928BB3
+	}
+})
+winform.plus2.oncommand = function(id,event){
+	win.quitMessage();
+}
+
+import win.timer;
+timer = win.timer(winform, 1500);
+
+timer.onTimer = function(hwnd,msg,id,tick){
+	//console.log("timer.onTimer");
+	winform.plus.oncommand();
+	//timer.enable();
+} 
+
+timer.disable();
+
+winform.checkbox.oncommand = function(id,event){
+	//console.log("winform.checkbox.oncommand");
+	var status = winform.checkbox.checked;
+	if(status) {
+		//console.log("winform.checkbox.checked 1");
+	    timer.enable();
+	} else {
+		//console.log("winform.checkbox.checked 0");
+	    timer.disable();
+	}
+}
+//winform.checkbox.checked = false;
+
+winform.enableDpiScaling();
+
+winform.show();
+win.loopMessage();

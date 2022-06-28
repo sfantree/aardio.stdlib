@@ -1,0 +1,14 @@
+﻿ 
+//生成 EXE 时 aardio 会自动执行扩展库目录下的 \.build\main.aardio 复制下面的目录到发布目录 
+py2.appendPath("~\lib\py2\lib\numpy\.py")
+namespace py2.lib{
+    numpy = ..py2.import("numpy")
+}
+
+/**intellisense()
+py2.lib.numpy = numpy 模块,\n必须先导入 py2 扩展库\n!py2Module.
+end intellisense**/
+
+/*
+https://github.com/numpy/numpy
+*/

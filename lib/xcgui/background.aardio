@@ -1,0 +1,88 @@
+﻿//background 背景管理
+import gdi;
+import xcgui.state;
+import util.metaProperty;
+namespace xcgui;
+
+class background{
+	ctor( hBkManager ){
+		if(!hBkManager) {
+			hBkManager = ::Xcgui.XBkM_Create();
+			..table.gc(this,"destroy");
+		}
+		this.hBkManager = topointer(hBkManager);
+	}; 
+	@_metaProperty;
+}
+
+var xcguistate = state;
+namespace background{
+
+	_metaProperty = ..util.metaProperty(
+	
+		_topinter = function(){
+			return owner.hBkManager;
+		}
+		setInfo = function(text){
+			return ::Xcgui.XBkM_SetBkInfo(owner.hBkManager,text);
+		}
+		addInfo = function(text){
+			return ::Xcgui.XBkM_AddInfo(owner.hBkManager,text);
+		}
+		addBorder = function(state,width,alpha,color,g,b){
+			if(b!==null) color = ..gdi.RGB(color,g,b)
+			::Xcgui.XBkM_AddBorder(owner.hBkManager,xcguistate[state] : state,color,alpha,width);
+		}
+		addFill = function(state,alpha,color,g,b){
+			if(b!==null) color = ..gdi.RGB(color,g,b)
+			::Xcgui.XBkM_AddFill(owner.hBkManager,xcguistate[state] : state,color,alpha);
+		}
+		addImage = function(state,image,repeat,left,top,right,bottom){
+			if(type(image) == type.string) image = ..xcgui.image(image,repeat,left,top,right,bottom);
+			if(image) return ::Xcgui.XBkM_AddImage(owner.hBkManager,xcguistate[state] : state,image);
+		}
+		count = function(){
+			return ::Xcgui.XBkM_GetCount(owner.hBkManager);
+		}
+		clear = function(){
+			::Xcgui.XBkM_Clear(owner.hBkManager);
+		}
+		draw = function(hDraw,rect,state){
+			return ::Xcgui.XBkM_Draw(owner.hBkManager,xcguistate[state] : state,hDraw,rect);
+		}
+		drawEx = function(hDraw,rect,state,stateFilter){
+			return ::Xcgui.XBkM_DrawEx(owner.hBkManager,xcguistate[state] : state,hDraw,rect,stateFilter);
+		}
+		destroy = function(){
+			if(owner.hBkManage){
+				::Xcgui.XBkM_Destroy(owner.hBkManager);
+				owner.hBkManage = null;
+			};
+		} 
+	)
+}
+
+/**intellisense()
+xcgui.background = 背景管理器
+xcgui.background() = 创建背景管理器,对象负责自动释放\n!stdxcbkmanager.
+xcgui.background(__) = 绑定组景管理器句柄,不负责自动释放
+end intellisense**/
+
+/**intellisense(!stdxcbkmanager)
+setInfo(__) = 设置背景内容,参数为字符串
+addInfo(__) = 添加背景内容,参数为字符串
+addBorder(.(状态,线宽,透明度,RGB颜色) = 添加背景内容边框\n状态可以是字符串或数值,可用值参考xucgui.state
+addBorder(.(状态,线宽,透明度,R,G,B) = 添加背景内容边框\n状态可以是字符串或数值,可用值参考xucgui.state
+addFill(.(状态,透明度,RGB颜色) = 添加背景内容填充\n状态可以是字符串或数值,可用值参考xucgui.state
+addFill(.(状态,透明度,R,G,B) = 添加背景内容填充\n状态可以是字符串或数值,可用值参考xucgui.state
+bkAddImage( = 添加背景内容图片\n注意相同路径的图像会自动缓存,不会重复创建相同图像\n所以不应在参数@2中应传入文件路径,而非文件数据
+bkAddImage(.(状态,图像) = 添加背景内容图片,参数为xcgui.image对象,也可以直接指定图片路径\n状态参数使用字符串表述,可用值参考xcgui.state库源码
+bkAddImage(.(状态,文件路径,绘制类型) = 创建图像,支持资源路径,绘制类型参数可选 - 默认值为true\n状态参数使用字符串表述,可用值参考xcgui.state库源码\n绘制类型为字符串值，参考xcgui.image.repeat
+bkAddImage(.(状态,文件路径,"expand",左,上,右,下) = 创建九宫格图像,支持资源路径\n状态参数使用字符串表述,可用值参考xcgui.state库源码
+bkAddImage(.(状态,文件路径,绘制类型,左,上,宽,高) = 加载图片上指定的部分\n状态参数使用字符串表述,可用值参考xcgui.state库源码
+count() = 获取背景内容数量
+clear() = 清空背景内容
+draw(.(hDraw,rect,状态) = 绘制背景内容\n状态可以是字符串或数值,可用值参考xucgui.state
+drawEx(.(hDraw,rect,状态,过滤状态) = 绘制背景内容\n状态可以是字符串或数值,可用值参考xucgui.state
+destroy() = 释放对象\n只有创建而不是绑定的背景管理器需要释放
+end intellisense**/

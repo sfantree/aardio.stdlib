@@ -1,0 +1,153 @@
+﻿//metaProperty 控件公用属性
+import xcgui.background;
+import util.metaProperty;
+import xcgui.font;
+
+namespace xcgui.shape;
+
+class metaProperty{
+	ctor( meta ){
+		this = ..util.metaProperty(meta); 
+		this._topointer = function(){
+			return owner.hPointer;
+		}
+	};
+	@_metaPrototype;
+} 
+
+var event = event;
+namespace metaProperty { 
+
+	commonProperty = {
+		id = {
+			_get = function(){
+				return ::Xcgui.XShape_GetID(owner);
+			}
+			_set = function(v){
+				::Xcgui.XShape_SetID(owner,v);
+			}	
+		};
+		uid = {
+			_get = function(){
+				return ::Xcgui.XShape_GetUID(owner);
+			}
+			_set = function(v){
+				::Xcgui.XShape_SetUID(owner,v);
+			}	
+		};
+		getWindow = function(){
+			return ..xcgui.window( ::Xcgui.XShape_GetHWINDOW(owner ) ) ; 
+		};
+		getParent = function(){
+			return ..xcgui.ctrl.queryObject( ::Xcgui.XShape_GetParent(owner) ) ; 
+		};
+		getParentHandle = function(){
+			return topointer( ::Xcgui.XShape_GetParent(owner) ); 
+		};
+		getParentType = function(){
+			return ::Xcgui.XC_GetObjectType(topointer( ::Xcgui.XShape_GetParent(owner) )); 
+		};
+		getObjectType = function(){
+			return ::Xcgui.XC_GetObjectType(owner); 
+		};
+		remove = function(){
+			::Xcgui.XShape_RemoveShape(owner); 
+		};
+		getContentSize = function(){
+			var sz = ::SIZE()
+			::Xcgui.XShape_GetContentSize(owner,sz)
+			return sz; 
+		};
+		getRect = function(){
+			var rc = ::RECT()
+			::Xcgui.XShape_GetRect(owner,rc)
+			return rc; 
+		};
+		setRect = function(rect){
+			var restoreRatio = owner._savePosRatio();
+			::Xcgui.XShape_SetRect(owner,rect);
+			if(restoreRatio){
+				restoreRatio(); 
+				if(owner.adjust){
+					var x,y,cx,cy = owner.getPos();
+					owner.adjust(cx,cy);
+				}
+			} 
+		};
+		setRectEx = function(x,y,cx,cy){
+			return owner.setRect(::RECT(x,y,x+cx,y+cy)); 
+		};
+		resetRect = function(x,y,cx,cy){
+			::Xcgui.XShape_SetRect(owner,::RECT(x,y,x+cx,y+cy));
+		};
+		getPos = function(x,y,cx,cy){  
+			var rc = owner.getRect();
+			return rc.left,rc.top,rc.width(),rc.height();
+		};
+		setPos = function(x,y,cx,cy){  
+			var rc = owner.getRect();
+			if(x!==null)rc.left = x;
+			if(y!==null)rc.top = y;
+			if(cx!==null)rc.right = rc.left + cx;
+			if(cy!==null)rc.bottom = rc.top + ccy;
+		};
+		getWidth = function(){
+			return ::Xcgui.XShape_GetWidth(owner);  
+		};
+		getHeight = function(){
+			return ::Xcgui.XShape_GetHeight(owner);  	
+		};
+		_savePosRatio = function(){ 
+			var defRc = owner[["_defRect"]];
+			if(defRc){ 
+				var this = owner;
+				var rc = this.getRect();
+				var xr,tr,rr,br = rc.left?( rc.left / defRc.left),rc.top ? (rc.top / defRc.top) ,rc.right / defRc.right,rc.bottom / defRc.bottom
+				return function(){
+					rc = this.getRect();
+					defRc.left  = xr?(rc.left / xr); 
+					defRc.top  = tr?(rc.top / tr);
+					defRc.right  = rr?(rc.right / rr);
+					defRc.bottom  = br?(rc.bottom / br);
+				} 
+			}	
+		};
+		autoResize = { 
+			_get = function(){
+				if(!owner._defRect) return;
+				var p = owner.getWindow();
+				return p ? p.form[["_xcCtrlAutoResize"]][[owner.hPointer]]
+			} 
+			_set = function(v){ 
+				if(!owner._defRect) return;
+				var p = owner.getWindow();
+				if( p ? p.form[["_xcCtrlAutoResize"]] ){
+					p.form[["_xcCtrlAutoResize"]][owner.hPointer] = v?owner:null;
+				} 
+			} 
+		};
+		getParentLayout = function(){
+			return topointer(::Xcgui.XShape_GetParentLayout(owner));	
+		};
+		showLayout = function(v){
+			::Xcgui.XShape_ShowLayout(owner,v);	
+		}; 
+		adjustLayout = function(){
+			::Xcgui.XShape_AdjustLayout(owner);	
+		};
+		redraw = function(){
+			::Xcgui.XShape_Redraw(owner);	
+		};
+		close = function(){
+			if(::Xcgui.XC_IsHELE(owner) ){
+				var p = owner.getWindow();
+				if( p ? p.form[["_xcCtrlAutoResize"]] ){
+					p.form[["_xcCtrlAutoResize"]][owner.hPointer] = null;
+				} 
+				::Xcgui.XShape_Destroy(owner);
+			} 
+		};
+	};
+	
+	_metaPrototype = { _get = commonProperty  }; 
+}

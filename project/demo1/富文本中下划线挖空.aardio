@@ -1,0 +1,287 @@
+import win.ui;
+import console;
+
+
+//导入自定义的用户库
+/*DSG{{*/
+mainForm = win.form(text="haha";right=527;bottom=541;border="dialog frame";edge=1;frame=1;parent=...)
+mainForm.add(
+button={cls="button";text="Button";left=23;top=339;right=150;bottom=379;z=2};
+button2={cls="button";text="Button";left=186;top=339;right=313;bottom=379;z=3};
+button3={cls="button";text="Button";left=349;top=339;right=476;bottom=379;z=4};
+button4={cls="button";text="Button";left=22;top=398;right=149;bottom=438;z=5};
+richedit={cls="richedit";left=18;top=17;right=498;bottom=316;autohscroll=false;font=LOGFONT(h=-16;name='宋体');multiline=1;vscroll=1;wrap=1;z=1}
+)
+/*}}*/
+
+//设置热键
+var hkid = mainForm.reghotkey(function(id,mod,vk) {
+    	mainForm.button.oncommand( )
+    }
+,0x2/*_MOD_CONTROL*/, 'Q'#);
+
+mainForm.button.oncommand = function(id,event){
+	mainForm.richedit.paste()
+}
+
+var checkIfUnderline = function(rtfEdit) {
+    var cf2 = rtfEdit.getSelCharformat();
+	cf2.mask = 0x800000/*_CFM_UNDERLINETYPE*/ | 0x4 /*_CFM_UNDERLINE*/;
+	
+	// 有下划线
+	if( cf2.effects & 0x4/*_CFE_UNDERLINE*/) {
+		return true;
+	}
+	// 没有下划线
+	else {
+		return false;
+	}
+}
+
+var getUnderlineCount = function(rtfEdit) {
+    
+    // 参数为 mainForm.richedit
+    if(!rtfEdit) {
+        return 0;
+    }
+    
+    var maxLen = mainForm.richedit.getLength();
+    var i = 1;
+	var j = 1;
+	var count = 0;
+	
+	while(i <= maxLen) {
+	    //console.log(i);
+	    mainForm.richedit.setsel(i, i);
+	    if(checkIfUnderline(mainForm.richedit)) {
+	        j = i + 1;
+	        while(j <= maxLen) {
+	        	mainForm.richedit.setsel(j, j);
+	            if(checkIfUnderline(mainForm.richedit)) {
+	                j = j + 1;
+	            } else {
+	                break;
+	            }
+	        }
+	        //console.log(i, j - 1);
+	        //mainForm.richedit.setsel(i, j - 1);
+	        count = count + 1;
+	        i = j;
+	        continue;
+	    }
+	    i = i + 1;
+	}
+	return count;
+}
+
+
+var getFirstUnderlineRange = function(rtfEdit) {
+    if(!rtfEdit) {
+        return 0, 0;
+    }
+    var maxLen = mainForm.richedit.getLength();
+    var i = 1;
+	var j = 1;
+	
+	while(i <= maxLen) {
+	    //console.log(i);
+	    mainForm.richedit.setsel(i, i);
+	    if(checkIfUnderline(mainForm.richedit)) {
+	        j = i + 1;
+	        while(j <= maxLen) {
+	        	mainForm.richedit.setsel(j, j);
+	            if(checkIfUnderline(mainForm.richedit)) {
+	                j = j + 1;
+	            } else {
+	                break;
+	            }
+	        }
+	        //console.log(i, j - 1);
+	        //mainForm.richedit.setsel(i, j - 1);
+	        return i, j - 1;
+	    }
+	    i = i + 1;
+	}
+	return 0, 0;
+}
+
+// 获取第几个下划线位置
+var getNstUnderlineRange = function(rtfEdit, Nst) {
+    if(!rtfEdit) {
+        return 0, 0;
+    }
+    var maxLen = mainForm.richedit.getLength();
+    var i = 1;
+	var j = 1;
+	
+	while(i <= maxLen) {
+	    //console.log(i);
+	    mainForm.richedit.setsel(i, i);
+	    if(checkIfUnderline(mainForm.richedit)) {
+	        j = i + 1;
+	        while(j <= maxLen) {
+	        	mainForm.richedit.setsel(j, j);
+	            if(checkIfUnderline(mainForm.richedit)) {
+	                j = j + 1;
+	            } else {
+	                break;
+	            }
+	        }
+	        //console.log(i, j - 1);
+	        //mainForm.richedit.setsel(i, j - 1);
+	        Nst = Nst - 1;
+	        if(Nst > 0) {
+	            i = j;
+	            continue;
+	        }
+	        return i, j - 1;
+	    }
+	    i = i + 1;
+	}
+	return 0, 0;
+}
+
+
+var toggleUnderline = function(rtfEdit) {
+	var cf2 = rtfEdit.getSelCharformat();
+	cf2.mask = 0x800000/*_CFM_UNDERLINETYPE*/ | 0x4 /*_CFM_UNDERLINE*/;
+	
+	// 有下划线
+	if( cf2.effects & 0x4/*_CFE_UNDERLINE*/) {
+		//console.log("有下划线")
+	    cf2.effects = cf2.effects & ~(0x4)/*_CFE_UNDERLINE*/;
+	    cf2.underlineType = 0 /*_CFU_UNDERLINENONE*/;
+	    rtfEdit.setSelCharformat(cf2)
+	}
+	// 没有下划线
+	else {
+		//console.log("没有下划线")
+	    cf2.effects = cf2.effects | (0x4)/*_CFE_UNDERLINE*/;
+	    cf2.underlineType = 1 /*_CFU_UNDERLINE*/;
+	    rtfEdit.setSelCharformat(cf2)
+	}
+}
+
+var addCloze = function() {
+    var rtfEdit = mainForm.richedit;
+    var count = getUnderlineCount(rtfEdit);
+    
+    for(i=1;count;1){
+        var left, right = getNstUnderlineRange(rtfEdit, i);
+        if(left and right) {
+            rtfEdit.setsel(left, right);
+            var replaceAfter = string.format("{{c1::%s}}", rtfEdit.selText);
+	        rtfEdit.selText =  replaceAfter;
+        }
+    }
+}
+
+
+
+mainForm.button2.oncommand = function(id,event){
+	console.log(type(mainForm.richedit));
+	var maxLen = mainForm.richedit.getLength()
+	
+	mainForm.richedit.setsel(1, 1);
+	var charformat2 = mainForm.richedit.getSelCharformat()
+	var gf = charformat2.getFont()
+	
+	//console.log(mainForm.richedit.selText);
+	//console.log(gf.underline); //[["underlineType"]]
+	
+	var i = 1;
+	var j = 0;
+	console.log("maxlen:", maxLen);
+	
+	while(i <= maxLen) {
+	    //console.log(i);
+	    mainForm.richedit.setsel(i, i);
+	    var charformat2 = mainForm.richedit.getSelCharformat()
+	    var gf = charformat2.getFont()
+	    if(gf.underline > 0) {
+	        j = i + 1;
+	        while(j <= maxLen) {
+	        	mainForm.richedit.setsel(j, j);
+	        	var charformat22 = mainForm.richedit.getSelCharformat()
+	            var gf2 = charformat22.getFont()
+	            if(gf2.underline > 0) {
+	                j = j + 1;
+	            } else {
+	                break;
+	            }
+	        }
+	        console.log(i, j - 1);
+	        mainForm.richedit.setsel(i, j - 1);
+	        //console.log(mainForm.richedit.selText);
+	        
+	        //替换为 {{c1::xxx}}
+	        var replaceAfter = string.format("{{c1::%s}}", mainForm.richedit.selText)
+	        mainForm.richedit.selText =  replaceAfter;
+	        
+	        j = i + #replaceAfter;
+	        i = j;
+	        continue;
+	    }
+	    i = i + 1;
+	}
+}
+
+mainForm.button3.oncommand = function(id,event){
+    // test getUnderlineCount
+	//var underlineCount = getUnderlineCount(mainForm.richedit);
+	//console.log(underlineCount);
+	//var left, right = getFirstUnderlineRange(mainForm.richedit);
+	//console.log(left, right);
+	
+	
+	//mainForm.richedit.setsel(1, 3);
+	
+	//mainForm.richedit.setSelCharformat( 
+		//faceName = "隶书"; 
+		//yHeight = 200; //字体大小的计量单位是：缇(Twips)：“磅(也就是pt)”的1/2
+		//textColor = gdi.RGB(255,0,0);
+		//underlineType = 1;
+	//)
+	
+	// https://stackoverflow.com/a/13920988
+/**
+	import win.ui.ctrl;
+	var cf2 = win.ui.ctrl.CHARFORMAT2()
+	//cf2.textColor = 65280;// 设置cf2 字体颜色
+	//cf2.yHeight = 400;//设置cf2 字体高度
+	cf2.mask = 0x800000/*_CFM_UNDERLINETYPE*/ | 0x4 /*_CFM_UNDERLINE*/;
+	cf2.effects = 0x4/*_CFE_UNDERLINE*/; 
+	cf2.underlineType = 0x8/*_CFU_UNDERLINEWAVE*/;
+	
+	mainForm.richedit.setSelCharformat(cf2)  //将cf2样式传递给选择的文本。
+	mainForm.richedit.deselect()
+**/
+	
+	
+	var cf2 = mainForm.richedit.getSelCharformat();
+	cf2.mask = 0x800000/*_CFM_UNDERLINETYPE*/ | 0x4 /*_CFM_UNDERLINE*/;
+	
+	// 有下划线
+	if( cf2.effects & 0x4/*_CFE_UNDERLINE*/) {
+		console.log("有下划线")
+	    cf2.effects = cf2.effects & ~(0x4)/*_CFE_UNDERLINE*/;
+	    cf2.underlineType = 0 /*_CFU_UNDERLINENONE*/;
+	    mainForm.richedit.setSelCharformat(cf2)
+	}
+	// 没有下划线
+	else {
+		console.log("没有下划线")
+	    cf2.effects = cf2.effects | (0x4)/*_CFE_UNDERLINE*/;
+	    cf2.underlineType = 1 /*_CFU_UNDERLINE*/;
+	    mainForm.richedit.setSelCharformat(cf2)
+	}
+	
+	
+}
+
+mainForm.button4.oncommand = function(id,event){
+	addCloze();
+}
+
+mainForm.show()
+win.loopMessage();

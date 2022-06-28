@@ -1,0 +1,17 @@
+import win.ui;
+var winform = win.form(text="WebView2")
+
+import web.view;
+var wb = web.view(winform);
+wb.external = {
+msgBox = function(text,caption){
+::User32.MessageBox(winform.hwnd,text,caption,0)
+}
+}
+
+wb.html = /**
+<script> aardio.msgBox("内容","标题");</script>
+**/
+
+winform.show();
+win.loopMessage();

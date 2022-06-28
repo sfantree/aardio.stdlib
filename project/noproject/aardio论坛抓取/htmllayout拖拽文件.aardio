@@ -1,0 +1,30 @@
+import win.ui;
+/*DSG{{*/
+winform = ..win.form(text="HTMLayout 系统拖放";right=599;bottom=399; )
+/*}}*/
+
+import web.layout;
+wbLayout = web.layout(winform);
+
+//自定义behavior
+namespace web.layout.behavior.dnd{
+    onExchangeDrag = function( ltTarget,ltEle,x,y,cmd,dataTypes,fetchData,exParams ) {  
+        return true;
+    }
+
+    onExchangeDrop = function( ltTarget,ltEle,x,y,cmd,dataTypes,fetchData,exParams ) {
+        var data,dataType = fetchData( 0x10/*_HL_EXF_FILE*/ );
+        if( data ) {
+            ltEle.insertAdjacentHTML("beforeEnd",..table.tostring(data))
+            return true;
+        }
+    }
+}
+
+wbLayout.html =/***
+<div style="behavior:dnd;height:100%;">请把文件拖到这里</div>
+***/
+
+
+winform.show()
+win.loopMessage();

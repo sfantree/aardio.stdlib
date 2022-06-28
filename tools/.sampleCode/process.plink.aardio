@@ -1,0 +1,7 @@
+import console;
+import process.plink;
+
+//连接linux服务器
+var shell = process.plink.shell( "服务器IP","登录密码");
+shell.verify() //忽略首次登录时的服务器验证
+shell.exec("ls -a");  //执行脚本

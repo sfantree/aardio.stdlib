@@ -1,0 +1,31 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add(
+button={cls="button";text="访问";left=600;top=424;right=720;bottom=456;z=2};
+custom={cls="custom";text="自定义控件";left=32;top=32;right=712;bottom=400;z=1}
+)
+/*}}*/
+
+thread.invoke( 
+	function(server){
+		import console;
+		import wsock.tcp.simpleHttpServer;
+        server = wsock.tcp.simpleHttpServer("127.0.0.1", 8081);
+		server.run(
+    		function(response,request,session){
+	    		response.write("Hello world");
+    		}
+		);
+	} , server
+)
+
+import web.form;
+wb = web.form(winform.custom);
+
+winform.button.oncommand = function(id,event){
+	wb.go("http://127.0.0.1:8081");
+}
+
+winform.show();
+win.loopMessage();

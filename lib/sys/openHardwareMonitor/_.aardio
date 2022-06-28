@@ -1,0 +1,105 @@
+﻿import dotNet; 
+dotNet.load("OpenHardwareMonitorLib",$"~\lib\sys\openHardwareMonitor\.res\OpenHardwareMonitorLib.dll").import("OpenHardwareMonitor")
+
+namespace sys.openHardwareMonitor;
+ 
+computer = function(){
+	var c = ..OpenHardwareMonitor.Hardware.Computer();
+	
+	c.MainboardEnabled = true;
+	c.CPUEnabled = true;
+	c.HDDEnabled = true;
+	c.RAMEnabled = true;
+	c.GPUEnabled = true;
+	c.FanControllerEnabled = true;
+	c.Open();
+	
+	c[["enumHardware"]] = function(proc,path,hardware){
+		if(!hardware) hardware = c.Hardware;
+
+		for(i=1;hardware.Length;1){
+			var hardwareItem = hardware[i];
+			
+			if(!(hardwareItem && hardwareItem.Name)){
+				continue
+			}
+			
+			hardwareItem[["HardwareTypeString"]] = hardwareType[hardwareItem.HardwareType]
+			hardwareItem[["eachSensors"]] = function(k){
+				var i = 0;
+				return function(){
+					i++;
+					var sensor =hardwareItem.Sensors[i] 
+					if(sensor){
+						sensor[["SensorTypeString"]] = sensorType[sensor.SensorType];
+						sensor[["Format"]] = sensorFormat[sensor.SensorType];
+						sensor[["ValueString"]] = sensor[["Format"]] (sensor.Value:0);
+						sensor[["MaxString"]] = sensor[["Format"]] (sensor.Max:0);
+						sensor[["MinString"]] = sensor[["Format"]] (sensor.Min:0);
+						return i,sensor;
+					}
+				}
+			}
+
+			var path = proc(hardwareItem,path,i)
+			if(path){
+				c.enumHardware(proc,path,hardwareItem.SubHardware)
+			}
+		}
+	}
+	
+	return c;
+}
+
+hardwareType = {
+		[0] = "Mainboard";
+		[1] = "SuperIO";
+		[2] = "CPU";
+		[3] = "GpuNvidia";
+		[4] = "GpuAti";
+		[5] = "TBalancer";
+		[6] = "Heatmaster";
+		[7] = "HDD";
+}
+
+sensorType = {
+	[0] = "Voltage", // V
+	[1] = "Clock", // MHz
+	[2] = "Temperature", // °C
+	[3] = "Load", // %
+	[4] = "Fan", // RPM
+	[5] = "Flow", // L/h
+	[6] = "Control", // %
+	[7] = "Level", // %
+	[8] = "Factor", // 1
+	[9] =  "Power", // W
+	[10] = "Data", // GB = 2^30 Bytes    
+	[11] = "SmallData", // MB = 2^20 Bytes
+	[12] = "Throughput", // MB/s = 2^20 Bytes/s
+}
+
+sensorFormat = {
+	[0] = lambda(v) ..string.format("%.3f V", v);
+	[1] = lambda(v) ..string.format("%.1f MHz", v);
+	[2] = lambda(v) ..string.format("%.1f °C", v);
+	[3] = lambda(v) ..string.format("%.1f %%", v);
+	[4] = lambda(v) ..string.format("%d RPM", v); // RPM
+	[5] = lambda(v) ..string.format("%.1f L/h", v);
+	[6] = lambda(v) ..string.format("%.1f %%", v);
+	[7] = lambda(v) ..string.format("%.1f %%", v); 
+	[8] = lambda(v) ..string.format("%d", v); 
+	[9] = lambda(v) ..string.format("%.1f W", v);
+	[10] = lambda(v) ..string.format("%.1f GB", v);
+	[11] = lambda(v) ..string.format("%.1f MB", v);
+	[12] = lambda(v) ..string.format("%.1f MB/s", v);
+}
+
+/**intellisense()
+sys.openHardwareMonitor = 开源硬件温度检测组件,\n仅支持 aardio v34.38 以上版本\nhttp://openhardwaremonitor.org 
+sys.openHardwareMonitor.computer() = 创建 OpenHardwareMonitor.Hardware.Computer 对象\n!sysOpenHardwareMonitorComputer.
+end intellisense**/
+
+/**intellisense(!sysOpenHardwareMonitorComputer)
+enumHardware = @.enumHardware(function(hardwareItem,path,index){\n	hardwareItem.Update()\n	io.print( hardwareItem.Name,hardwareItem.HardwareTypeString );\n	\n	for i,sensor in hardwareItem.eachSensors(){       \n		io.print(path+'\t',sensor.Name,sensor.Value ,sensor.SensorTypeString )\n	}	\n	\n	return path + '\t';	\n},"")
+end intellisense**/
+

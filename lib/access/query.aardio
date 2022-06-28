@@ -1,0 +1,19 @@
+﻿//query 查询工具 
+import zlib.httpFile;
+import process;
+
+namespace access;
+
+class query{
+	ctor( path ){
+        if(!..io.exist("\download\tool\MSAQuery\MSAQuery.exe")){
+            if(!..zlib.httpFile.download("http://www.mitec.cz/Downloads/MSAQuery.zip","MSA Query","~/download/tool") ) return;
+        }
+
+        return ..process.execute("\download\tool\MSAQuery\MSAQuery.exe",..io.fullpath(path) )
+	}; 
+}
+
+/**intellisense(access)
+query(__) = 调用 MSA Query 打开 mdb 数据库
+end intellisense**/

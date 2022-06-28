@@ -1,0 +1,16 @@
+//图像 Exif 信息
+import fsys.dlg;
+var jpgPath = fsys.dlg.open("jpg图像文件|*.jpg||","请选择图像",io.getSpecial(0x27 /*_CSIDL_MYPICTURES*/) )
+if(!jpgPath) return;
+
+import gdip.image;
+import gdip.exifTags; 
+var img = gdip.image(jpgPath) 
+
+import console;
+for( id,propertyItem in img.eachProperty() ){  
+	console.printf('0x%04x\t%s\t%s',id,gdip.exifTags[id]:"unknown", propertyItem.text  ) 
+	console.more( 10 ) 
+}
+
+execute("pause")

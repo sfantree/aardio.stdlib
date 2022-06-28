@@ -1,0 +1,5 @@
+import console; 
+import inet.ipdata;
+
+console.log( inet.ipdata().query('123.123.123.123' ) ) 
+console.pause()

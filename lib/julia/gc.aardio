@@ -1,0 +1,46 @@
+﻿//gc 内存回收
+import julia.lib;
+
+namespace julia.gc;
+
+var pTlsState = ::LibJulia.jl_get_ptls_statesP();
+protect = function(args,callback){
+	var tlsState = ..raw.convert(pTlsState,{ptr topGcStack});
+	var prevGcStack = tlsState.topGcStack;
+
+	var currentGcStack = ..raw.buffer({
+		int nroots = #args<<2|1;
+		ptr prevGcStack = prevGcStack;
+		ptr roots[] = args;
+	});
+	
+	..raw.copy(pTlsState,{ptr topGcStack = currentGcStack });
+	var a,b,c,d,e,f,g,h,i,j,k = callback();
+	..raw.copy(pTlsState,{ptr topGcStack = prevGcStack });
+	
+	return a,b,c,d,e,f,g,h,i,j,k;
+}
+
+collect = function(){
+	return ::LibJulia.jl_gc_collect();
+}
+
+enable = function(){
+	return ::LibJulia.jl_gc_enable(1);
+}
+
+disable = function(){
+	return ::LibJulia.jl_gc_enable(1);
+}
+
+isEnabled = function(){
+	return ::LibJulia.jl_gc_is_enabled(1);
+}
+
+/**intellisense(julia.gc)
+protect(.((args,callback) = 调用callback指定的函数,\nargs 用一个数组指定原始的 Julia 对象指针,\n并在该函数返回前禁止回收参数中的对象
+collect() = 运行内存回收
+enable() = 允许内存回收
+disable() = 禁止内存回收
+isEnabled() = 内存回收是否启用
+end intellisense**/

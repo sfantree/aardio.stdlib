@@ -1,0 +1,184 @@
+//mshtml 文档对象
+import web.rest.client;
+import fsys.codepage;
+import web.form;
+namespace web
+
+class mshtml{
+	ctor(doc,...){
+		if( doc ){
+			this.document = ..com.IsObject(doc)  ?  doc : doc.getDoc(...)   
+		}
+		else {
+			this.document = ..com.CreateObject("{25336920-03F9-11cf-8FD0-00AA00686F13}") 
+		}
+	}; 
+	@_metaProperty;
+}
+
+namespace mshtml{ 
+	_metaProperty = ..util.metaProperty(..web.form._metaProperty,{
+	
+		go = function(url,headers){  
+			var str ;
+			if(!..inet.url.is(url)) str = ..fsys.codepage.load(url);
+			if(!str){
+				if(!owner.http){
+					owner.http = ..web.rest.client();
+				}
+				str = owner.http.get(url,headers,owner[["location"]]);
+			}
+			
+			if(str){
+				owner.write(str)
+				owner[["location"]] = url
+			}
+		}
+		post = function(url,postdata,headers='Content-Type: application/x-www-form-urlencoded' ){ 
+			if(headers=="")headers=null;
+			if(!postdata)return owner.go(url); 
+			if(!owner.http){
+				owner.http = ..inet.http()
+			}
+			var str = owner.http.post(url,postdata,headers,owner[["location"]]); 
+			if(str){
+				owner.document.write(str)
+				owner[["location"]] = url
+			} 
+		}
+		getDoc = function(frame){  
+			if(frame===null)
+				return owner.document; 
+			
+			var ele = owner.getFrame(frame);  
+   			if(ele){
+   				var doc;
+   				try{
+   					doc = ele.Document; //ele.contentDocument
+   				}
+   				return doc;
+   			}
+		} 
+		waitDoc = function( frame,timeout){ 
+			var doc = owner.document
+			var tk = 0;
+			do{  
+				if(doc.readyState == 'interactive' || doc.readyState == 'complete'  )	
+					 return doc;
+					  
+				if( timeout && tk>timeout)
+						return null,"Timeout!"
+						
+				tk+=101;  
+			} while( ..thread.delay(100) )
+		}
+		waitEle = function(name,frame,timeout,complete=true ){  
+			var ele,t;
+			var wb = owner;
+			if(timeout){
+				t = ..time.tick();
+			}
+			do{
+				if(t && ((..time.tick()-t)>=timeout)){
+					return ; 
+				}
+				ele = ele || wb.getEle(name,frame);
+				if(ele && ( (!complete) || ele.readyState == 'loaded' || ele.readyState == 'complete')  )
+					return ele;
+			}while(..thread.delay(200)) 
+		}
+		wait = function(url,timeout){
+			owner.waitDoc(null,timeout);
+			return true;
+		} 
+		waitQueryEles = function(arg,timeout,complete=true ){
+			var qEle;
+			var wb = owner;
+			if(timeout){
+				t = ..time.tick();
+			}
+			do{
+				if(t && ((..time.tick()-t)>=timeout)){
+					return ; 
+				}
+				
+				var qEle =  wb.queryEles(arg,timeout,true) 
+					if( #qEle > 0  && ( (!complete) || qEle.getReadyState() == 'loaded' || qEle.getReadyState() == 'complete')  )
+						return qEle;
+			}while(..thread.delay(200)) 	
+		};
+		write = function(strhtml,frame ){
+			var doc = owner.getDoc(frame) 
+			if(!doc)
+				return false;
+			
+			doc.write(strhtml); 
+			doc.close();
+		}  
+		html = {
+			_set = function(s){
+				owner.write(s);
+			}
+			_get = function(){
+				return owner.getDoc().documentElement.outerHTML;
+			} 
+		}  
+	})
+}
+
+/***intellisense()
+web.mshtml = MSHTML支持库
+web.mshtml() = 创建HTML文档对象\n!mshtm.
+web.mshtml(doc) = 创建HTML文档对象\n可选指定一个document对象
+web.mshtml(wb,框架名) = 创建HTML文档对象\n可选指定一个wb窗体,以及框架名
+!mshtm.write("__") =  将字符串值写入网页、不允许追加
+!mshtm.write("__","框架名") = 将字符串值写入框架网页、不允许追加 
+!mshtm.write("__") = 将字符串值写入网页	
+!mshtm.go("__/*网址*/") = 打开网址或本地路径\n注意驱动器根目录要以反斜杠结束
+!mshtm.post(.("__/*网址*/","k=v&k2=v2") = 自动提交表单
+!mshtm.post(.("__/*网址*/","k=v&k2=v2","自定义http头") = 自动提交表单
+!mshtm.post(.("__/*网址*/","k=v&k2=v2","自定义http头","目标框架") = 自动提交表单
+!mshtm.go("__/*网址*/","自定义http头") = 打开网址
+!mshtm.go("__/*网址*/","自定义http头","目标框架") = 打开网址
+!mshtm.getDoc(__/*框架名*/) = 获取文档对象\n参数可以是框架名,ID,基于0的索引,或者frame节点
+
+!mshtm.waitEle("__") = 返回一个节点对像或框架内子节点对像\n并等待加载完成
+!mshtm.waitEle("__","",20000) = 返回一个节点对像\n第三个参数指定超时值(毫秒)
+!mshtm.getDoc() = document.
+!mshtm.waitDoc() = document.
+!mshtm.waitQueryEles(  函数等待wb.queryEles()返回有效节点,\nweb窗体关闭或超时返回null空值\n该函数返回的是一个数组,但可以通过调用数组的成员函数\n批量调用节点的同名成员函数,支持click函数
+!mshtm.waitQueryEles(.(参数表,超时,时间间隔,完全加载) = 参数@1指定一个表对象，\n该参数表可包含一个或多个键值，用于匹配节点的属性值,\n可使用parent属性指定开始查询节点的父节点，parent可以是ID或者节点对象。\n属性值使用 string.cmpMatch函数进行比对，\n等价于调用string.cmp函数进行忽略大小写的比较。\n并且在失败后调用 string.match函数使用模式匹配语法进行比较。\n\n注意在匹配节点属性时有几个例外：\nparent属性不使用模式匹配进行比对，\ntagName,id,name属性如果匹配值不含标点则使用忽略大小写的完全比对（禁用模式匹配和部分匹配）\n\n\n可选使用参数@2指定超时值，单位毫秒，,其他参数可选
+!mshtm.queryEles( = 搜索节点对象,该函数返回的是一个数组,\n但可以通过调用数组的成员函数批量调用节点的同名成员函数,支持click函数,\n即使找不到节点,此函数也会返回一个空数组,
+!mshtm.queryEles(.(查询参数表,超时值) = 搜索节点对象,该函数返回的是一个数组,\n但可以通过调用数组的成员函数批量调用节点的同名成员函数,支持click函数\n\n参数@1指定一个表对象，\n该参数表可包含一个或多个键值，用于匹配节点的属性值,\n可使用parent属性指定开始查询节点的父节点，parent可以是ID或者节点对象。\n属性值使用 string.cmpMatch函数进行比对，\n等价于调用string.cmp函数进行忽略大小写的比较,\n并且在失败后调用 string.match函数使用模式匹配语法进行比较。\n\n注意在匹配节点属性时有几个例外：\nparent属性不使用模式匹配进行比对，\ntagName,id,name属性如果匹配值不含标点则使用忽略大小写的完全比对（禁用模式匹配和部分匹配）\n\n\n可选使用参数@2指定获取网页文档对象的超时值，单位毫秒，此参数一般不需要指定
+!mshtm.getEle("__") = 返回一个节点对象或框架内子节点对象 
+!mshtm.getEle("__","框架名字") = 返回一个节点对象或框架内子节点对象
+!mshtm.getElesByTag("head") = 返回指定标记的所有节点
+!mshtm.getElesByTag("head","框架名字") = 返回指定标记的所有节点
+!mshtm.getEles("__") = 返回同名的所有节点,例如\nele = wb.getEles("节点名字");\nele(1).setAttribute("属性名字", "修改第一个节点属性值");
+!mshtm.getEles("__","框架名字") = 返回同名的所有节点,例如\nele = wb.getEles("节点名字");\nele(1).setAttribute("属性名字", "修改第一个节点属性值");
+!mshtm.jsConstructor("Array__") = 获取JS对象构造函数,\n参数可以是JS对象，或字符串类型的对象名
+!mshtm.eval( = 运行js代码
+!mshtm.eval(.("JS代码") = 返回表达式的值
+!mshtm.doScript = @var js = /**\n	alert("Javascript!");\n**/\n??.doScript(js,__ )
+!mshtm.html = @.html = /**\n<!doctype html>\n<html>\n<head>\n    <meta charset="utf-8">\n    <meta http-equiv="X-UA-Compatible" content="IE=edge" />\n</head>\n<body>\n    <div></div>\n</body>\n</html>\n**/
+!mshtm.eachAll() = @//创建迭代器,迭代页面所有节点,例：\nfor i,ele in ??.eachAll() {\n	__\n}\n!ele.
+!mshtm.eachLinks(父节点) = @//创建迭代器,迭代页面所有超链接,例：\nfor i,ele in ??.eachLinks(__/*父节点或框架名*/) {\n	\n}\n
+!mshtm.eachAll("input") = @//创建迭代器,迭代页面所有输入控件,例：\nfor i,ele in ??.eachAll("input") {\n	__\n}\n
+!mshtm.eachAll("input","框架名") = @//创建迭代器,迭代页面所有输入控件,例：\nfor i,ele in ??.eachAll("input","框架名") {\n	__\n}\n
+!mshtm.eachAll("DIV",父节点) = @//创建迭代器,迭代页面所有输入控件,例：\nfor i,ele in ??.eachAll("DIV" ,??.getEle("id") ) {\n	__\n}\n
+!mshtm.type = 返回当前加载的文件类型\n例如doc文件返回Microsoft Word Document 
+!mshtm.write("__") =  通过字符串参数载入HTML文件源码
+!mshtm.loadcode(__/*HTML模板代码*/) = 使用aardio模板语法加载HTML文件\n可选在第二个参数中传入模板参数,\n模板代码中使用owner参数获取首个模板参数
+!mshtm.write("__","框架名") = 将字符串值写入框架网页、不允许追加
+!mshtm.eachLinks() = !ele.
+!mshtm.exec("__") = 执行命令\n参数@2为传入参数,可省略\n参数@3指定是否显示交互界面,布尔值,可省略
+!mshtm.execEle(ele,"__") = 执行命令\n参数@2为传入参数,可省略\n参数@3指定是否显示交互界面,布尔值,可省略
+!mshtm.execWb( _OLECMDID__ , ,2 ) = 执行命令,\n参数@2为传入参数,可省略,\n参数@3指定UI交互选项:\n    1/*_OLECMDEXECOPT_PROMPTUSER*/为显示界面,\n    2/*_OLECMDEXECOPT_DONTPROMPTUSER*/为不显示界面
+!mshtm.queryEles() = !webFormEles. 
+!mshtm.waitEle() = !ele.
+!mshtm.getEle() = !ele.
+!mshtm.getEles() = !webFormEles.
+!mshtm.getElesByTag() = !webFormEles.
+!mshtm.queryEles() = !webFormEles.
+!mshtm.waitQueryEles() = !webFormEles.
+end intellisense***/

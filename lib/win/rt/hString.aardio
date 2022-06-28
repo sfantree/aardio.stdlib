@@ -1,0 +1,105 @@
+﻿//hString 字符串
+namespace win.rt;	
+
+class hString{
+	ctor(str){
+		var newString;
+		if(str!==null){ 
+			if(type(str)===type.pointer){ 
+				newString = {ptr handle}
+				if(0===::ComBase.WindowsDuplicateString(str,newString)){
+					this.handle = newString.handle; 
+				}
+			}
+			else {
+				str = ..string.toUnicode(tostring(str))
+				newString = {ptr handle}
+				if(0===::ComBase.WindowsCreateString(str,#str/2,newString)){
+					this.handle = newString.handle;
+				}
+			}
+		}
+		
+		..table.gc(this,"free");
+	};
+	free = function(str){
+		if(newString){
+			::ComBase.WindowsDeleteString(newString.handle);
+			newString = null;
+		};
+		
+		this.handle = null;
+	};
+	@_meta;
+}
+
+namespace hString{
+	
+	try{
+		::ComBase := ..raw.loadDll("ComBase.dll",,"stdcall,unicode")
+	}
+	
+	_meta = {
+		_topointer = lambda() owner.handle;
+		_tostring = function(){
+			if(!owner.handle) return;
+			
+			var size ={INT value}
+			var s = ::ComBase.WindowsGetStringRawBufferP(owner.handle,size)	
+			if(s) return ..string.fromUnicode(s,,size.value);
+		}; 
+		_concat = function(v){
+			var out = {ptr v}
+			if(0==::ComBase.WindowsConcatString(owner,..win.rt.hString(v),out)){
+				var ret = ..win.rt.hString();
+				ret.handle = out.v;
+				return ret;
+			}
+		};
+		_get ={
+			size = function(){
+				if(!owner.handle) return 0;
+				return ::ComBase.WindowsGetStringLen(owner.handle);
+			}; 
+			copy = function(){
+				return ..win.rt.hString(owner.handle); 
+			};
+			byStruct = function(){
+				var this = owner;
+				return {
+					pointer handle;
+					@{
+						_set = function(k,v){ 
+							if(k=="handle"){
+								this.free();
+								this.handle = v;
+							}
+						}
+					}
+				}; 
+			}
+		}
+	} 
+	_meta._add = _meta._concat;
+	
+	is = function(v){
+		return v@ == _meta;
+	}
+}
+
+/**intellisense()
+win.rt.hString = WinRT 字符串,\n仅支持 Win10 以及 Win10 以上版本
+win.rt.hString( = 创建 WinRT 字符串,\n返回值可作为 tostring 参数转换为 aardio 字符串,\n可用于调用 WinRT 函数的 HSTRING 类型句柄参数\n也可以作为左操作数使用 + 或 ++ 操作符\n与其他值拼接返回新的 win.rt.hString 对象
+win.rt.hString(.() = 创建空的 WinRT 字符串
+win.rt.hString(.(value) = 传入任何非 null,pointer 类型参,\n此函数自动调用 tostring 转换为字符串参数,\n然后再创建并返回 WinRT 字符串,\n如果传入非 null 值，则应尽早调用 free 函数释放字符串
+win.rt.hString(.(HSTRING) = 传入 HSTRING 指针,\n复制此指针并返回新的 WinRT 字符串对象,\n此类型参数构建的对象需要调用 free 函数释放
+win.rt.hString() = !winRtHString.
+win.rt.is(__) = 判断输入值是否 win.rt.hString 对象
+end intellisense**/
+
+/**intellisense(!winRtHString.)
+free() = 释放字符串,\n即使不调用,回收该变量时也会自动调用此函数,\n如果调用 win.rt.hString 传入了非 null 参数则应尽早调用此函数,\n或者通过拼接、调用 copy 函数等创建新的 WinRT 字符串都应当调用此函数释放,\n否则不必要调用此函数
+copy() = 复制并返回新的字符串,\n复制的字符串应调用 free 函数释放
+byStruct() = 生成一个结构体,\n用于在 API 中接收 HSTRING 类型的输出参数,\n在 C++ 中该输出参数类型应为 HSTRING *,\n在 aardio 中对应参数可声明为 struct &&\n或者免声明调用 API 并传入 byStruct 的返回值作为参数\n\n当返回的结构体获取到 HSTRING 句柄后,\n会立即更新调用 byStruct 成员函数的 win.rt.hString 对象,\n在此之前会自动调用 free 函数释放之前可能需要释放的 HSTRING\n\n通过 byStruct 获取到的 HSTING 未增加引用计数也不需要释放,\n应立即通过 tostring 转换为 aardio 字符串或通过copy复制,\n并调用 free 函数清空或直接弃用或置为 null 值
+size() = 字符串长度,按字符计数
+end intellisense**/

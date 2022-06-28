@@ -1,0 +1,25 @@
+var f = io.open("C:\Windows\System32\drivers\etc\hosts", "rb");
+assert(f, "无法打开文件!");
+var dwFileSize = f.seek("end");
+f.close();
+
+
+io.open();
+if (dwFileSize = 0) {
+    io.print("是空文件");
+} else {
+    io.print(dwFileSize);
+}
+
+import fsys.file;
+
+var file = fsys.file("C:\Windows\System32\drivers\etc\hosts")
+//文件大小 = file.size
+io.print(file.size());
+
+
+while(1){
+
+}
+
+        

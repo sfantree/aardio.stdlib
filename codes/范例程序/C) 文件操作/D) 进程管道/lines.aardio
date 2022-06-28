@@ -1,0 +1,26 @@
+//分行模式匹配
+import console;
+import process.popen;
+
+/*
+进程管道相关范例目录：
+范例 \ 文件操作 \ 进程管道
+范例 \ 自动化 \ 进程操作 \ 进程管道
+范例 \ 调用其他语言  \批处理与命令行
+*/
+var prcs = process.popen("ipconfig");
+
+var tab = {};
+var current = tab;
+for i,k,v in prcs.lines("^(\s*)(\S.*?)[\s.]*\:(.*)"){ 
+	if(!#i){ 
+		current = {};
+		tab[k] = current;
+	}
+	else {
+		current[k] = v;
+	}	
+}
+
+console.dumpJson(tab);
+console.pause(true);

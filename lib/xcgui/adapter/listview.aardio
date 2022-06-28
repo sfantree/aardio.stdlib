@@ -1,0 +1,157 @@
+﻿import util.metaProperty;
+namespace xcgui.adapter;
+
+class listview{
+	ctor(hAdapter){
+		if(hAdapter===null){
+			this.hAdapter = topointer( ::Xcgui.XAdListView_Create() );
+		}
+		else {
+			this.hAdapter = topointer(hAdapter);
+		}
+		if(!this.hAdapter)return;
+	};
+	@_metaProperty;
+}
+
+
+namespace listview{
+		
+
+_metaProperty = ..util.metaProperty(
+
+	groupAddField = function(fieldName){
+		return ::Xcgui.XAdListView_Group_AddColumn(owner.hAdapter ,fieldName);
+	}
+	groupAddString = function(value){
+		return ::Xcgui.XAdListView_Group_AddItemText(owner.hAdapter ,value);
+	}
+	groupAddFieldString = function(fieldName,value){
+		return ::Xcgui.XAdListView_Group_AddItemTextEx(owner.hAdapter ,fieldName,value);
+	}
+	groupAddImage = function(image){
+		return ::Xcgui.XAdListView_Group_AddItemImage(owner.hAdapter ,image);
+	}
+	groupAddFieldImage = function(fieldName,image){
+		return ::Xcgui.XAdListView_Group_AddItemImageEx(owner.hAdapter ,fieldName,image);
+	}
+	groupSetString = function(group,iField,value){
+		return ::Xcgui.XAdListView_Group_SetText(owner.hAdapter ,group,iField,value);
+	}
+	groupSetFieldString = function(group,fieldName,value){
+		return ::Xcgui.XAdListView_Group_SetTextEx(owner.hAdapter ,group,fieldName,value);
+	}
+	groupSetImage = function(group,iField,image){
+		return ::Xcgui.XAdListView_Group_SetImage(owner.hAdapter ,group,iField,image);
+	}
+	groupSetFieldImage = function(group,fieldName,image){
+		return ::Xcgui.XAdListView_Group_SetImageEx(owner.hAdapter ,group,fieldName,image);
+	}
+	groupCount = function(){
+		return ::Xcgui.XAdListView_Group_GetCount(owner.hAdapter );
+	}
+	groupDelete = function(group){
+		return ::Xcgui.XAdListView_Group_DeleteItem(owner.hAdapter ,group);
+	}
+	groupClear = function(){
+		return ::Xcgui.XAdListView_DeleteAllGroup(owner.hAdapter );
+	}
+	groupClearChild = function(group){
+		return ::Xcgui.XAdListView_Group_DeleteAllChildItem(owner.hAdapter ,group);
+	}
+	groupDeleteField = function(iField){
+		return ::Xcgui.XAdListView_DeleteColumnGroup(owner.hAdapter ,iField);
+	}
+	addField = function(fieldName){
+		return ::Xcgui.XAdListView_Item_AddColumn(owner.hAdapter ,fieldName);
+	}
+	count = function(group){
+		return ::Xcgui.XAdListView_Item_GetCount(owner.hAdapter ,group);
+	}
+	addString = function(group,value){
+		return ::Xcgui.XAdListView_Item_AddItemText(owner.hAdapter ,group,value);
+	}
+	addFieldString = function(group,fieldName,value){
+		return ::Xcgui.XAdListView_Item_AddItemTextEx(owner.hAdapter ,group,fieldName,value);
+	}
+	addImage = function(group,image){
+		return ::Xcgui.XAdListView_Item_AddItemImage(owner.hAdapter ,group,image);
+	}
+	addFieldImage = function(group,fieldName,image){
+		return ::Xcgui.XAdListView_Item_AddItemImageEx(owner.hAdapter ,group,fieldName,image);
+	}
+	delete = function(group,item){
+		return ::Xcgui.XAdListView_Item_DeleteItem(owner.hAdapter ,group,item);
+	}
+	clear = function(){
+		return ::Xcgui.XAdListView_DeleteAll(owner.hAdapter );
+	}
+	clearItem = function(){
+		return ::Xcgui.XAdListView_DeleteAllItem(owner.hAdapter );
+	}
+	deleteField = function(iField){
+		return ::Xcgui.XAdListView_DeleteColumnItem(owner.hAdapter ,iField);
+	}
+	getFieldString = function(group,item,fieldName){
+		var sb = ..string.builder(500);
+		::Xcgui.XAdListView_Item_GetTextEx(owner.hAdapter ,group,item,fieldName,sb,250);
+		return sb.fromUnicode();
+	}
+	getFieldImage = function(group,item,fieldName){
+		return ::Xcgui.XAdListView_Item_GetImageEx(owner.hAdapter ,group,item,fieldName);
+	}
+	setString = function(group,item,iField,value){
+		return ::Xcgui.XAdListView_Item_SetText(owner.hAdapter ,group,item,iField,value);
+	}
+	setFieldString = function(group,item,fieldName,value){
+		return ::Xcgui.XAdListView_Item_SetTextEx(owner.hAdapter ,group,item,fieldName,value);
+	}
+	setImage = function(group,item,iField,image){
+		return ::Xcgui.XAdListView_Item_SetImage(owner.hAdapter ,group,item,iField,image);
+	}
+	setFieldImage = function(group,item,fieldName,image){
+		return ::Xcgui.XAdListView_Item_SetImageEx(owner.hAdapter ,group,item,fieldName,image);
+	}
+	_topointer = function(){
+		return owner.hAdapter;
+	}
+)
+
+}
+
+/**intellisense()
+xcgui.adapter.listview() = 数据适配器\n!stdxcadlistview.
+end intellisense**/
+
+/**intellisense(!stdxcadlistview)
+groupAddField(__) = 组操作,添加数据列
+groupAddString(__) = 组操作,添加组,数据默认填充到第一列
+groupAddFieldString(.(fieldName,value) = 组操作,添加组,数据填充指定列
+groupAddImage(__) = 组操作,添加组,数据默认填充第一列
+groupAddFieldImage(.(fieldName,image) = 组操作,添加组,数据填充指定列
+groupSetString(.(group,iField,value) = 组操作,设置指定项数据
+groupSetFieldString(.(group,fieldName,value) = 组操作,设置指定项数据
+groupSetImage(.(group,iField,image) = 组操作,设置指定项数据
+groupSetFieldImage(.(group,fieldName,image) = 组操作,设置指定项数据
+groupCount() = 组操作,获取组数量
+groupClear() = 删除所有的组
+groupDelete(__) = 删除组,自动删除子项,参数指定索引
+groupDeleteField(__) = 删除组的列,参数指定索引
+addField(__) = 项操作,添加列
+count(__) = 项操作,获取指定组中项数量
+addString(.(group,value) = 项操作,添加项
+addFieldString(.(group,fieldName,value) = 项操作,添加项,数据填充指定列
+addImage(.(group,image) = 项操作,添加项
+addFieldImage(.(group,fieldName,image) = 项操作,添加项,填充指定列数据
+groupClearChild(__) = 删除指定组的所有子项
+delete(.(group,item) = 删除项
+clear() = 删除所有(组,项,列)
+clearItem() = 删除所有的项
+deleteField(__) = 删除项的列
+getFieldString(.(group,item,fieldName) = 项操作,获取项文本内容
+getFieldImage(.(group,item,fieldName) = 项操作,获取项图片句柄
+setString(.(group,item,iField,value) = 项操作,数据填充指定列
+setFieldString(.(group,item,fieldName,value) = 项操作,数据填充指定列
+setImage(.(group,item,iField,image) = 项操作,数据填充指定列
+setFieldImage(.(group,item,fieldName,image) = 项操作,数据填充指定列
+end intellisense**/

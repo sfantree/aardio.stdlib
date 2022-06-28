@@ -1,0 +1,19 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=422;bottom=30)
+winform.add()
+/*}}*/
+
+thread.invoke( 
+	function(winform){
+		import inet.http;
+		winform.text = "正在查询公网IP，请稍等...";
+		var http = inet.http();
+		var str = http.get("https://ip.cn/api/index?ip=&type=0");
+		if(!str) winform.text = "查询失败，请检查网络！";
+		winform.text = "您的外网ip地址："++string.match(str,"\d+\.\d+\.\d+\.\d+");
+	},winform
+)
+
+winform.show();
+win.loopMessage();

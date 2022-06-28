@@ -1,0 +1,31 @@
+import xcgui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469;bgcolor=15245824)
+winform.add(
+closebutton={cls="xcclosebutton";text="r";left=725;top=2;right=749;bottom=28;dr=1;dt=1;font=LOGFONT(name='Marlett');transparent=1;z=1};
+static={cls="xctext";text="   ";left=27;top=12;right=693;bottom=31;dl=1;dr=1;dt=1;z=2};
+static2={cls="static";left=31;top=77;right=735;bottom=456;bgcolor=16777215;db=1;dl=1;dr=1;dt=1;z=3}
+)
+/*}}*/
+
+//用下面的代码获取炫彩窗口对象
+var xcWnd = xcgui.window(winform)
+
+xcWnd.on("menuSelect",function(id){
+	
+})
+
+/*
+炫彩窗口还是传统窗口，支持 winform.wndproc里处理所有窗口消息，
+也可以使用炫彩窗口对象注册事件，如下：
+*/
+xcWnd.on("rbuttonDown",function(flags, pt){
+	var menu = xcgui.menu();
+	menu.add(1,"测试")
+	menu.add(2,"测试2")
+	menu.add(3,"测试3",2)
+	menu.popup(xcWnd,pt.x,pt.y)
+})
+
+winform.show();
+win.loopMessage();

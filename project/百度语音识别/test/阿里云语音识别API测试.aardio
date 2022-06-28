@@ -1,0 +1,38 @@
+import console; 
+import inet.http;
+import string.html;
+import inet.url;
+
+//string.save("/1.txt","这是测试数据" );
+
+var data = string.load("C:\Users\lin\AppData\Local\Temp\20210921113645\16k_1.pcm_57260-68619_A.pcm");
+
+console.open();
+var http = inet.http();
+
+//var asrurl = "http://httpbin.org/post";
+var asrurl = "https://nls-gateway.cn-shanghai.aliyuncs.com/stream/v1/asr";
+
+var urlparam = {
+	["appkey"] = "QQvw67EAH2p6ENsa";
+	//["enable_voice_detection"] = true;
+	["enable_punctuation_prediction"] = true;
+};
+
+var posturl = inet.url.appendExtraInfo(asrurl, inet.url.stringifyParameters(urlparam));
+
+var json = http.post( posturl 
+	, data //上传数据包 
+	,  { 
+		   ["Content-Type"] = "application/octet-stream";
+	       ["X-NLS-Token"] =  "99b3163577534845ad0febb32ae5c14a";
+	       ["Host"] = "nls-gateway.cn-shanghai.aliyuncs.com";
+	       //["Content-Length"] = 89;
+	       //["URL_AS"] = inet.url.appendExtraInfo(asrurl, ..inet.url.stringifyParameters(urlparam));
+	   }//要添加的HTTP头
+);
+	
+console.log(json);
+
+
+console.pause(true);

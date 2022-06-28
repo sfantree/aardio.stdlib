@@ -1,0 +1,56 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add()
+/*}}*/
+
+import web.form;
+
+wb = web.form(winform);
+
+var md  = /*
+## 使用教程
+
+1. 运行动作
+2. 截取公式
+3. 选择结果
+4. [视频教程](https://www.bilibili.com/video/BV1g5411H75L)
+
+## 注意事项
+
+右键菜单中可以切换不同的公式识别接口，建议看一下！！！
+*/
+
+import string.gfmark; 
+var md = string.gfmark.render(md);
+
+var html = /**
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <style type="text/css">
+    html,body{ height:100%; margin:0;overflow-x:hidden;overflow-y:hidden; } 
+    </style>
+    <script type="text/javascript"></script>
+</head>
+<body>
+    <div id="header"></div>
+    <div id="container"> 
+**/
+
+html = html ++ md;
+
+var last = /**
+    </div>
+</body>
+</html>
+**/
+
+html = html ++ last;
+
+wb.html = html
+
+winform.show();
+win.loopMessage();

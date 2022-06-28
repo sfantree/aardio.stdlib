@@ -1,0 +1,82 @@
+import fsys;
+import fsys.dlg;
+import process;
+import console;
+
+var versionName = "Python34"
+
+var pythonPath = fsys.dlg.open("python.exe|*.exe||","请选择python3.x安装目录下的python.exe","C:\"+versionName,,,"python.exe");
+if( !pythonPath ) return;
+
+var dllsPath = fsys.path.replaceFile(pythonPath,"DLLs");
+fsys.delete("~\lib\py\.res\DLLs")
+fsys.copy(dllsPath,"~\lib\py\.res\",,"正在复制pyd动态库模块");
+fsys.copy(fsys.path.replaceFile(pythonPath,"msvcr100.dll"),"~\lib\py\.res\DLLs",,"正在复制VC运行库");
+fsys.copy(fsys.path.replaceFile(pythonPath,versionName + ".dll"),"~\lib\py\.res\DLLs",,"正在复制VC运行库");
+
+//更新扩展库源码
+var code = string.load( "~\lib\py\_.aardio" )
+code = string.replace( code,"<@@Python@>3\d+\.dll",versionName + ".dll")
+string.save("~\lib\py\_.aardio",code )
+
+var libPath = fsys.path.replaceFile(pythonPath,"Lib");
+fsys.delete("~\lib\py\.res\Lib",,"正在清空缓存目录")
+fsys.copy(libPath,"~\lib\py\.res\Lib",,"正在复制python标准库");
+
+fsys.delete("~\lib\py\.res\DLLs\_testbuffer.pyd",,"正在移除不需要的模块")
+fsys.delete("~\lib\py\.res\DLLs\_testcapi.pyd",,"正在移除不需要的模块")
+fsys.delete("~\lib\py\.res\DLLs\_testimportmultiple.pyd",,"正在移除不需要的模块")
+fsys.delete("~\lib\py\.res\DLLs\_tkinter.pyd",,"正在移除不需要的模块")
+fsys.delete("~\lib\py\.res\DLLs\tcl86t.dll",,"正在移除不需要的模块")
+fsys.delete("~\lib\py\.res\DLLs\tk86t.dll",,"正在移除不需要的模块")
+fsys.delete("~\lib\py\.res\DLLs\py.ico",,"正在移除不需要的模块")
+fsys.delete("~\lib\py\.res\DLLs\pyc.ico",,"正在移除不需要的模块") 
+
+fsys.delete("~\lib\py\.res\Lib\pydoc_data",,"正在移除不需要的模块")
+fsys.delete("~\lib\py\.res\Lib\curses",,"正在移除不需要的模块")
+fsys.delete("~\lib\py\.res\Lib\test",,"正在移除不需要的模块")
+fsys.delete("~\lib\py\.res\Lib\distutils\tests",,"正在移除不需要的模块")
+fsys.delete("~\lib\py\.res\Lib\lib2to3\tests",,"正在移除不需要的模块")
+fsys.delete("~\lib\py\.res\Lib\tkinter",,"正在移除不需要的模块")
+fsys.delete("~\lib\py\.res\Lib\idlelib",,"正在移除不需要的模块")
+fsys.delete("~\lib\py\.res\Lib\ensurepip",,"正在移除不需要的模块") 
+fsys.delete("~\lib\py\.res\Lib\curses",,"正在移除不需要的模块")
+fsys.delete("~\lib\py\.res\Lib\site-packages",,"正在移除第三方模块") 
+
+console.open() 
+var prcs = process(pythonPath,{
+	"-OO";"compileall.py";
+	"-b"; //不要编译到 _pycache_ 目录
+	"-f";"."},{ workdir = ..io.fullpath("~\lib\py\.res\Lib")})
+prcs.wait();
+	
+fsys.enum( "~\lib\py\.res\Lib\", {"*.pyc";"*.py"},
+	function(dir,filename,fullpath,findData){ 
+		if(filename){ 
+           	console.print("已删除"+filename)
+           	fsys.delete(fullpath);
+		} 
+	}  
+);
+
+fsys.enum( "~\lib\py\.res\Lib\", {"__pycache__"},
+	function(dir,filename,fullpath,findData){ 
+		if(!filename){ 
+           	console.print("已删除"+fullpath)
+           	fsys.delete(fullpath);
+		} 
+	}  
+);
+
+import zlib.zip;
+fsys.delete("~\lib\py\.res\Lib.zip")
+var zip = zlib.zip( "~\lib\py\.res\Lib.zip", "~\lib\py\.res\Lib\" ); 
+zip.compress( "~\lib\py\.res\Lib\",
+	function(len,path){
+		console.print( len,path )
+	}
+)
+ 
+fsys.delete("~\lib\py\.res\Lib",,"正在清空缓存目录")
+console.log("已更新Lib.zip,全部操作已完成")
+console.pause()

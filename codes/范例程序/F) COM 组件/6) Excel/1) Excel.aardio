@@ -1,0 +1,36 @@
+//基础操作
+import console;
+import com.excel; 
+
+console.showLoading(" 正在启动 Excel ");
+var excel,err = com.excel(); 
+assert(excel,err);
+
+excel.alerts = false; //关闭界面提示与屏幕更新
+/*
+excel.Visible = true;//显示 Excel 界面
+excel.alerts = true;//允许界面提示与屏幕更新
+excel.Application.ScreenUpdating = true;//单独设置屏幕更新
+https://docs.microsoft.com/en-us/office/vba/api/excel.application%28object%29
+*/
+
+var book = excel.WorkBooks.Add(); //创建工作簿
+//book = excel.Open( "\test.xls" );
+ 
+var sheet = excel.ActiveWorkbook.Sheets(1);
+var cell = sheet.Cells(1,1);
+
+//https://docs.microsoft.com/en-us/office/vba/api/excel.range.value2
+cell.Value2 = "haha";   
+ 
+console.log( cell.Text );
+
+//遍列所有单元格
+for(i,values in excel.eachValue(1) ){ 
+	console.log("行号"+i,table.tostring(values));  
+}
+
+excel.Quit(); //退出
+//所有存储 Excel 创建或返回对象的变量离开作用域并被回收后才会完全退出 Excel ,可调用 collectgarbage("collect") 提前回收资源
+
+console.pause();

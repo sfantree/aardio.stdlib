@@ -1,0 +1,163 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=939;bottom=772;bgcolor=16777215)
+winform.add(
+custom={cls="custom";left=148;top=11;right=921;bottom=751;bgcolor=16777215;db=1;dl=1;dr=1;dt=1;z=4};
+static={cls="static";left=139;top=7;right=140;bottom=757;bgcolor=16752414;clip=1;db=1;dl=1;dt=1;z=3};
+strip1={cls="plus";text="模板控件";left=1;top=34;right=139;bottom=63;align="right";bgcolor=16752414;clip=1;dl=1;dt=1;font=LOGFONT(h=-14);paddingRight=21;z=1};
+strip2={cls="plus";text="模板控件";left=1;top=63;right=139;bottom=92;align="right";bgcolor=16752414;clip=1;dl=1;dt=1;font=LOGFONT(h=-14);paddingRight=21;z=2}
+)
+/*}}*/
+
+//创建高级选项卡
+import win.ui.tabs;
+
+//至少要添加2个创建好的选项卡(作为设计模板,创建成功后可清除)
+var tbs = win.ui.tabs(winform.strip2,winform.strip1);
+
+//指定选项卡的外观样式,用法请参考plus控件说明
+tbs.skin(
+    background = {  //背景
+        default = 0xFFFFFFFF;
+    }
+    color = { //文本颜色
+        hover = 0xF00000FF; 
+    } 
+    border = { //边框
+        default = { bottom = 1;color= 0xFF1E9FFF;  }
+        hover = { bottom = 1;right = 4;color= 0xFF1E9FFF; }
+    }
+    checked = { //选中状态
+        background = { 
+            hover = 0xFF99CCFF;
+            focus = 0xFF1E9FFF;
+            active = 0xFF333366;
+            default = 0xFF1E9FFF;
+        }
+        color = { //文本颜色
+            hover = 0xFF000000; 
+            default = 0xFFFFFFFF; 
+        } 
+        border = { //边框
+            hover = { right = 2;color=0xFF1E9FFF}
+            default = { right = 2;color=0xFF1E9FFF}
+        }
+    }
+)
+
+tbs.clear();
+
+
+import web.form;
+var wb = web.form( win.form(parent=winform.custom),5/*_UIFLAG_DIALOG*/,,,true);
+wb.noScriptErr = true;
+
+wb.external={
+    showWizard = lambda() winform.loadForm("~\codes\范例程序\8) Web 应用\6) FastCGI\wizard.aardio")
+}
+
+wb.html = /** 
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />  
+    <title>FastCGI安装配置说明</title>
+</head>
+<body style="white-space:pre;font-size:12pt;word-wrap: break-word;word-break: normal;">
+<a href="javascript:void(0)" onclick="external.showWizard()">点这里打开截图演示工具</a><br>
+<pre>此程序应先生成 EXE 文件、并在 Web 服务器上注册为 FastCGI 模块才能使用，
+IIS 服务器可通过在代码中 import fastcgi.iisInstall 自动注册 FastCGI 模块。
+
+以 Win2008 ,IIS7为例:
+
+1、桌面右键点【计算机】，弹出菜单中点【管理】，【添加角色/添加IIS】
+
+2、右键点【Web服务器(IIS)】，弹出菜单中点【添加角色服务】，确认已添加【CGI】
+
+3、然后打开IIS，到指定的网站点击【处理程序映射】，添加【处理程序映射】
+   后缀名设为：*.aardio ( 如果设为 *,取消勾选请求限制到文件或目录则处理所有URL )
+   模块选：FastCgiModule 可执行文件：选中使用本工程生成的 aardio-cgi.exe 
+   
+4、在资源管理器右键点击 aardio-cgi.exe 所在目录，在目录属性中点【安全】，
+添加IUSR,IIS_USER用户组,允许读取和执行、列出目录、写入权限。
+
+5、右键点击网站所在目录，在目录属性中点【安全】，添加IUSR,IIS_USER用户组,
+允许读取和执行、列出目录、写入权限。
+
+6、如果是64位系统，请在应用程序池属性中设置"启用32位的应用程序"为 True
+</pre>
+
+</body>
+</html>
+**/
+
+//动态添加更多选项卡
+tbs.add({
+    text="安装配置"; 
+},wb._form)
+
+var wb = web.form( win.form(parent=winform.custom),5/*_UIFLAG_DIALOG*/,,,true);
+wb.go("http://bbs.aardio.com/forum.php?mod=viewthread&tid=22149&from=portal");
+
+wb.html = /** 
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <script type="text/javascript"></script>
+    <title>帮助页面</title>
+</head>
+<body style="white-space:pre;font-size:12pt;word-wrap: break-word;word-break: normal;"> 
+<pre>
+1、如果用新版aardio编写的代码，在旧版编译的CGI.EXE中运行报错，那么把旧版CGI.EXE重新编译一次就可以。
+
+2、import导入的库，在一个进程中只会加载一次, 如果网站引用了修改的库，应当杀除CGI.EXE进程重启动，如果在服务器上编译CGI.EXE，此工程会在发布后自动执行此操作。工程内的发布前触发器,\.build\default.init.aardio 会在每次发布前停止已运行的CGI进程，这个操作需要管理权限如果在本机上安装IIS测试，本机测试建议以管理权限启动aardio开发环境
+
+3、如果是64位系统，请在应用程序池属性中设置"启用32位的应用程序"为True
+
+4、CGI.EXE 内部错误可请查看"CGI.EXE目录/config"下面生成的日志文件。网页代码发生500内部错误，可查看"网站目录/config"下面生成的日志文件。使用localhost绑定并访问要测试的网站也可以查看500错误的详细信息。
+
+5、注意在编写网站时，有必要请输出日志文件来排查错误。
+</pre>
+
+</body>
+</html>
+ 
+**/
+
+//动态添加更多选项卡
+tbs.add({
+    text="常见问题";  
+    hasCloseButton = true;//允许显示关闭按钮
+},wb._form)
+
+tbs.selIndex = 1;
+
+//也可以用下面的代码自定义关闭按钮的外观样式
+tbs.closeButton.skin(
+    background = { 
+        hover = 0xFFe35c51; 
+        active = 0xFF8f241b;
+        default = 0x99FFCC66; 
+    }
+    color = {
+        hover = 0xFFFFFFFF; 
+        active = 0xFFEEEEEE;
+        default = 0xCCFFFFFF; 
+    } 
+)
+
+//可以自定义关闭按钮在选项卡上的显示位
+tbs.beforeShowCloseButton = function(strip,rcStrip,rcCloseButton){
+    return rcStrip.right - rcCloseButton.width() - 5, rcStrip.top + ( rcStrip.height() - rcCloseButton.height() )/2;
+}
+
+winform.getTemplatePath = function(){
+	return io.fullpath("/template/fastcgi/") 
+}
+
+winform.show();
+win.loopMessage();
+return winform;

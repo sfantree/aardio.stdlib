@@ -1,0 +1,23 @@
+﻿//v8ora 开发包
+import java;
+import inet.installer;
+
+namespace java.jdk.v8ora;
+
+path = ..java.path.jdkHomeFromRegistry(false,"1.8") 
+if(!path) path = ..java.path.jdkHomeFromRegistry(true,"1.8") 
+if(!path) path = ..java.path.jreHomeFromProgramFiles("1.8",false,true);
+if(!path) path = ..java.path.jreHomeFromProgramFiles("1.8",true,true); 
+
+if(!..io.exist(path)){
+	var ok = ..inet.installer("JDK 8","https://mirrors.huaweicloud.com/java/jdk/8u202-b08/jdk-8u202-windows-i586.exe","/s")
+	path = ..java.path.jdkHomeFromRegistry(false,"1.8");
+	if( !path ) return; 
+}
+
+..java.path.setJdkHome(path);
+
+/**intellisense()
+java.jdk.v8ora = 检测并在必要时自动下载 Oracle JDK 8u202,\n导入此库后，发布不用带 JDK
+java.jdk.v8ora.path = 如果成功下载并设为 JDK 根目录,\n此属性为 JDK 根目录路径,\n否则此属性值为 null
+end intellisense**/

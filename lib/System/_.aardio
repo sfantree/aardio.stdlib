@@ -1,0 +1,6 @@
+﻿import dotNet;
+dotNet.import("System")
+
+/**intellisense()
+System = .Net System 名字空间\n!dotNetNameSpace.
+end intellisense**/

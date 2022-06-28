@@ -1,0 +1,17 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=944;bottom=679;bgcolor=16777215;parent=...)
+winform.add(
+plus={cls="plus";left=69;top=40;right=857;bottom=596;background="\forms\plus\images\1.jpg";z=1}
+)
+/*}}*/
+
+winform.getTemplatePath = function(){
+	return io.fullpath("/template/plus/1/") 
+}
+
+winform.enableDpiScaling();
+winform.show();
+
+win.loopMessage();
+return winform;

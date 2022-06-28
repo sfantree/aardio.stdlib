@@ -1,0 +1,46 @@
+import console; 
+import math.bignum;
+
+/*
+ def egcd ( a , b ):
+     if (b == 0):
+         return 1, 0, a
+     else:
+         x , y , q = egcd( b , a % b ) # q = GCD(a, b) = GCD(b, a%b)
+         x , y = y, ( x - (a // b) * y )
+         return x, y, q 
+
+*/
+
+egcd = function(a , b){
+	if (b == 0) {
+	    return 1, 0, a
+	} else {
+	    var x , y , q = egcd( b , a % b ) // q = GCD(a, b) = GCD(b, a%b)
+        x , y = y, ( x - math.floor( (a / b)) * y )
+        return x, y, q 
+	}
+}
+
+mod_inv = function(a, b){
+	var x =  (egcd(a, b)) 
+	return x % b
+}
+
+
+
+var x, y, q  = mod_inv(47,30);
+console.log("x, y, q" ,x, y, q );
+
+console.log(math.floor( ( 1/2 )))
+
+var a = math.bignum("123456789")
+var b = math.bignum("0xFFFFFFEEEDEEEEE")
+var c = a + b;
+
+console.log("10进制" ,tostring(c,10) );
+console.log("16进制" ,tostring(c) );
+console.log("转为math.size64" ,c.size64());
+console.log("随机数","0." + tostring(a.random(100),10) );
+
+console.pause(true);

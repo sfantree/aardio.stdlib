@@ -1,0 +1,40 @@
+//info 文件信息
+namespace fsys.info;
+
+get = function(filename,flag,attr){
+	var sfi = {
+		pointer hIcon; 
+		int iIcon; 
+		INT dwAttributes;
+		WORD szDisplayName[0x104/*_MAX_PATH*/];
+		WORD szTypeName[80];
+	} 
+	
+	filename = ..io.localpath(filename) : filename;
+	sfi.returnValue = ::Shell32.SHGetFileInfoW( filename, attr,sfi, ..raw.sizeof(sfi),flag or 0 ); 
+	return sfi;
+}
+
+getExeType = function(filename){
+	var r = ::Shell32.SHGetFileInfoW(filename,,,, 0x2000/*_SHGFI_EXETYPE*/ );
+	if( r ) return ..raw.convert({addr n = r},{BYTE magic[2];WORD winVer  });
+}
+
+/**intellisense()
+fsys.info.get( = 返回文件信息
+fsys.info.get(.("路径",SHGFI_->->-> ) = 参数@2指定一个或多个选项,多个选项用|连接,\n如果参数@2指定了_SHGFI_USEFILEATTRIBUTES,\n则参数@3必须用 _FILE_ATTRIBUTE_ 前缀常量指定文件属性
+fsys.info.get() = !shFileInfo.
+fsys.info.getExeType(.(文件路径) = 检测是否EXE文件\n失败返回空
+fsys.info.getExeType() = !fsysExeInfoExeType.
+!fsysExeInfoExeType.magic = DOS程序为"MZ"\n非DOS程序为"PE"
+!fsysExeInfoExeType.winVer = 控制台程序为0\nGUI 程序为 Windows 版本号,\nWindows 版本号参考： https://docs.microsoft.com/en-us/windows/win32/winprog/using-the-windows-headers
+end intellisense**/
+
+/**intellisense(!shFileInfo)
+hIcon = 图标句柄\n如果不为空要负责释放该句柄
+iIcon = 在图像列表中的索引
+dwAttributes = 文件属性
+szDisplayName = 文件名
+szTypeName = 类型名
+returnValue = SHGetFileInfo的返回值
+end intellisense**/

@@ -1,0 +1,31 @@
+﻿//update 更新组件
+import fsys.version;
+import web.rest.github;
+import console;
+
+namespace web.sciter.update{
+    
+    ..console.open();
+    ..console.showLoading("正在下载最新版 Sciter.dll");
+    
+	var dll = ..web.rest.github.getContent("https://github.com/c-smile/sciter-js-sdk/blob/main/bin/windows/x32/sciter.dll");
+	if(dll){ 
+		var backup = $"~/lib/web/sciter/.res/sciter.dll";
+		..string.save("~/lib/web/sciter/.res/sciter.dll",dll);
+		var versionInfo = ..fsys.version.getInfo("~/lib/web/sciter/.res/sciter.dll");
+		if(versionInfo){
+			..console.log("Sciter.dll 已下载最新版本",versionInfo.productVersion)
+		}
+		else {
+			..string.save("~/lib/web/sciter/.res/sciter.dll",backup);
+			..console.debug("下载失败")
+		}
+		
+	}
+	else {
+		..console.debug("下载失败")
+	}
+	
+	..console.pause();
+	
+}

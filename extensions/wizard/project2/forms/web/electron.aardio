@@ -1,0 +1,19 @@
+ 
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="electron ";right=1031;bottom=712;bgcolor=16777215;border="dialog frame")
+winform.add(
+plus={cls="plus";left=92;top=44;right=971;bottom=561;ah=1;aw=1;background="\forms\images\electron.jpg";repeat="scale";z=1};
+static={cls="static";text="使用aardio嵌入原版Electron可以一键生成最小仅1MB多一点的单个EXE文件，
+所有使用aardio编写的electron程序可以共享相同版本的electron运行库（ 自动安装 ），
+注意原版Electron不支持xp,vista,不支持Win7,Win2008 R2以下的操作系统,";left=92;top=593;right=971;bottom=697;transparent=1;z=2}
+)
+/*}}*/
+
+winform.getTemplatePath = function(){
+	return io.fullpath("/template/web/electron/") 
+}
+
+winform.show() 
+win.loopMessage();
+return winform;

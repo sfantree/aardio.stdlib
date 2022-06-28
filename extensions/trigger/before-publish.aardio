@@ -1,0 +1,57 @@
+﻿import ide;
+import fsys;
+import service;
+
+if(_WIN10_LATER && service.isRunning("Windefend") ){
+	var curProjectDir = ide.getProjectDir()
+	var path = ..io.joinpath(curProjectDir,".build/mp.lock")
+	if(string.load(path)!=string.crc32(path)){
+		string.save(path,string.crc32(path))
+		
+		var defProjectDir = ide.getConfig("project_default_dir");
+		if(!#defProjectDir) defProjectDir = io.fullpath("~/project");
+		
+		var exclusionPaths;
+	 	if(!fsys.path.ischild(defProjectDir,curProjectDir)){
+	 		exclusionPaths = {..io.fullpath("~/config"),defProjectDir,curProjectDir}	
+	 	}
+	 	else {
+	 		exclusionPaths = {..io.fullpath("~/config"),defProjectDir}	
+	 	}
+	 
+	 	//此时在 defender.aardio 中调用 ide 接呀会导致阻塞
+		var pid = ide.createProcess("~\tools\1) 开发环境\defender.aardio",`
+			_IDE_PUBLISTH_PROJECT_DIR =`+ ..table.tostring(exclusionPaths)+`
+			loadcodex("~\tools\1) 开发环境\defender.aardio")
+		
+		`,"runas");
+		
+		if(pid){
+			import process;
+			process(pid).wait();		
+		} 
+	}	
+}
+else {
+	if(!#ide.getConfig("mpPreferenceWarning")){
+		import win.dlg.message
+		win.dlg.message(ide.getMainHwnd()).warn('如果生成 EXE 时遇到卡顿或异常。\n请将工程目录添加到安全监控类软件的「信任排除目录」或「开发目录」。')
+		ide.setConfig("mpPreferenceWarning","true");
+	}	
+}
+
+var projectPath = ide.getProjectPath(); 
+var projectFileName = io.splitpath(projectPath).name; 
+var builder = fsys.joinpath(ide.getProjectDir(),".build\" + projectFileName + ".init.aardio"); 
+if( io.exist( builder ) ){   
+	var tHnd = thread.create(builder)
+	if(tHnd){
+		thread.waitOne(tHnd);
+		raw.closehandle(tHnd);
+	}
+} 
+else {
+	import fsys;
+	fsys.createParentDir(builder)
+	string.save(builder,'//发布前触发\nimport ide;') 
+} 

@@ -1,0 +1,152 @@
+//cmdline 命令行参数
+import process;
+namespace string;
+
+class cmdline{
+	ctor( s ){
+		if( ( type(s) != "string") || ( !#s ) ) return null; 
+		
+		var p,argc = ::Shell32.CommandLineToArgvP(s,{int v});
+		if(p){
+			var argv = ..raw.convertArray(p,argc.v,"ustring"); 
+			if(#argv)argv[0] = ..table.shift(argv);
+			::Kernel32.LocalFree(pArgv);
+			
+			argv@ = _meta;
+			return argv;
+		}
+		
+		return null;
+		
+		/*不调用API实现{{*/
+		/*
+		var cur = {};
+		var push = ..table.push;  
+		var a,b = ..string.match(s,s[1] == '"'# ? '"([^"]+)"(.*)' : '(\\S*)(.*)')
+		this[0] = #a ? { ..string.unpack(a) } : {} ;
+		s = b;
+		
+		var len = #s;
+		for (i=1;len) {
+			var c = s[i]; 
+			if (c === '"'#) { 
+			 	while(i<=len){ i++; 
+					var c = s[i]; 
+					if( c == '"'# ){
+						if( s[i+1] == '"'# ){  push(cur,c);  i++; }
+						break; //关闭引用
+					}
+					elseif( c == '\\'# ){
+						var b,q = ..string.match( s,"(\\+)(""?)",i);
+						i = i + ( #b - 1 );
+						if( !#q ){
+							push(cur,..string.unpack(b) ); 
+							continue;
+						} 
+						
+						for(k=1;#b/2 ){ push( cur,'\\'#)  };
+						if( #b % 2 ){
+							push( cur,'"'#)
+							i++;
+						} 
+					}
+					else { push(cur,c) }  
+				}  
+				continue ; //考虑"""
+			}
+			
+			if( c === ' '# || c = '\t'# ){ 
+				if(#cur){
+					push( this,cur )
+					cur = {};
+				}
+			}
+			elseif( c == '\\'#   ){
+				var b,q = ..string.match( s,"(\\+)(""?)",i);
+				i = i + ( #b - 1 );
+				if( !#q ){
+					push(cur,..string.unpack(b) ); 
+					continue;
+				} 
+				
+				for(k=1;#b/2 ){ push( cur,'\\'#) } 
+				if( #b % 2 ){
+					push( cur,'"'#)
+					i++;
+				} 
+				continue;
+			}
+			else { push(cur,c); } 
+		}
+		
+		if(#cur)push( this,cur );
+		for(k,v in this) this[k] = ..string.pack(v);  
+		*/
+		/*}}*/
+	};  
+}
+
+cmdline._meta = {
+	_tostring = function(){
+		var s = ..process.joinArguments(owner);
+		if( !owner[0] ) s = " " + s;
+		return s;
+	}
+}
+
+cmdline.arguments = function(param,...){
+    if(!param)return {};
+    if(type(param)==="table") return param,...;
+    
+    param = ..string.trim(param);
+	if( (!...) && ..string.find(param,"\s+")){
+		
+		if( param[1] != '"'# || param[#v] != '"'#  ){
+			var p = ..string.cmdline(" " + param ); 
+			p[0] = null;
+			return p;
+		} 
+	}
+	return {param;...}
+}
+
+cmdline.argv = function(str){
+	var r = cmdline(str); 
+	
+	var n1,n2;
+	var p1,p2;
+	for(i=1;#r){
+		n2 = r[i];
+		p2 = n2[1]
+		
+		if(n1 && p2!=p1) r[n1] = n2; 
+		elseif(p2=='-'# || p2=='/'#){
+			n2 = ..string.trimleft(n2,n2[[1]]);
+			var k,v = ..string.match(n2,"(.+?)\=(.+)");
+			if(k && v){
+				r[k] = v;
+			}
+			else{
+				r[n2] = ""
+				n1 = n2;
+				p1 = p2;
+				continue;
+			}
+		}
+	
+		n1 = null;
+		p1 = null;
+	}
+	
+	return r;
+}
+
+/**intellisense()
+string.cmdline = 命令行解析
+string.cmdline( = 解析命令行,返回数组\n该数组可修改后调用 tostring 函数反解析为字符串文本\n参数不是字符串、或为空串返回 null
+string.cmdline(.("命令行") = 所有【参数段】以空格或制表等分开\n在一对双引号中表示的【引用段】则可以包含空格\n两个连续的引号表示一个引号字符并且关闭【引用段】\n关闭【引用段】后的非空格字符或引用段仍然追加其后\n\n一个或多个连续的反斜杠如果最后有一个引号则启用转义\n单个反斜杠转义其后的引号或反斜杠表示字面值\n\n首个索引为0的参数段要么是引号包含的引用段,或是任意非空白字符组成
+string.cmdline.arguments( = 解析并转换创建进程的命令行参数
+string.cmdline.arguments(.(命令行参数->->->) = 解析并转换创建进程的命令行参数,\n将一个或多个命令行参数转换为数组,\n如果参数@1是一个表,则直接返回所有参数,\n如只有一个文本参数且含空格、首尾无双引号则解析并返回数组,\n否则直接将所有参数置入数组返回,\n\n返回数组不包含索引为0的启动程序路径,\n返回数组可传入 process.joinArguments 函数 或 process 构造函数作为参数
+string.cmdline.argv( = 调用 string.cmdline 解析命令行参数并返回数组,\n该数组也包含按下列规则解析的名值对:\n以斜杠或短横线开始的前导参数作为键(键名移除一个或多个相同的前导字符,区分大小写)，\n如果前导参数包含等号,则以等号拆分为键值对,等号前后不应有空格,\n否则检查下一参数如果没有相同的首字符则设为此键对应的值，\n如果一个前导参数没有指定值,则默认值为空字符串（逻辑值为true）
+string.cmdline.argv(.("命令行") = 调用 string.cmdline 解析命令行参数并返回数组,\n该数组也包含解析后的名值对。\n\n解析名值对时忽略索引为0的参数,\n首个索引为0的参数段要么是引号包含的引用段,或是任意非空白字符组成,\n命令行以空白字符开始表示索引为 0 的参数为空
+end intellisense**/

@@ -1,0 +1,51 @@
+import win.ui;
+//导入自定义的用户库
+/*DSG{{*/
+winform = win.form(text="haha";right=357;bottom=243;border="dialog frame";edge=1;frame=1;parent=...)
+winform.add(
+richedit={cls="richedit";left=14;top=12;right=344;bottom=222;edge=1;multiline=1;z=1}
+)
+/*}}*/
+
+import fsys.log;
+import mouse.hook
+
+global.hk = mouse.hook();
+
+hk.proc = function(msg,x,y){
+    select(msg) {
+        case 0x201/*_WM_LBUTTONDOWN*/{
+            winform.richedit.print("左键按下",x,y)
+        }
+        case 0x202/*_WM_LBUTTONUP*/{
+            winform.richedit.print("左键弹起",x,y)
+        }
+        case 0x204/*_WM_RBUTTONDOWN*/{
+            winform.richedit.print("右键按下",x,y)
+        }
+        case 0x205/*_WM_RBUTTONUP*/{
+            winform.richedit.print("右键弹起",x,y)
+        }
+        case 0x207/*_WM_MBUTTONDOWN*/{
+            winform.richedit.print("中键按下",x,y)
+        }
+        case 0x208/*_WM_MBUTTONUP*/{
+            winform.richedit.print("中键弹起",x,y)
+        }   
+    }   
+}
+
+/**
+winform.onClose = function(hwnd,msg,wParam,lParam){
+   
+   if(msg == 0x10/*_WM_CLOSE*/) {
+       global.hk.close();
+       win.close(winform.hwnd)
+       return true;
+   }
+}
+**/
+
+
+winform.show() 
+win.loopMessage();

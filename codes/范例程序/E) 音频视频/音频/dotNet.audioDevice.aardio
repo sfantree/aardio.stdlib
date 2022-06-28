@@ -1,0 +1,18 @@
+﻿//切换设备
+import console; 
+import dotNet.audioDevice;
+
+var defRenderId = dotNet.audioDevice.getDefaultRenderId();
+var defCaptureId = dotNet.audioDevice.getDefaultCaptureId();
+
+for( dev,devId,devName in dotNet.audioDevice.each() ){
+	if(devId == defRenderId) console.writeText("默认音频输出设备");  
+	if(devId == defCaptureId) console.writeText("默认录音设备"); 
+	
+	console.log(devId,devName);
+	if(!string.find(devName,"XGIMI") ){
+		dotNet.audioDevice.setDefault(devId);
+	}
+}
+
+console.pause(true);

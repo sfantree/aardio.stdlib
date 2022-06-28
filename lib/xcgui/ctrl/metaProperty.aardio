@@ -1,0 +1,421 @@
+﻿//metaProperty 控件公用属性
+import xcgui.ctrl.event;
+import xcgui.background;
+import xcgui.layoutObject;
+import util.metaProperty;
+import xcgui.font;
+
+namespace xcgui.ctrl;
+
+class metaProperty{
+	ctor( meta ){
+		this = ..util.metaProperty(meta); 
+		this._topointer = function(){
+			return owner.hPointer;
+		}
+	};
+	@_metaPrototype;
+} 
+
+var event = event;
+namespace metaProperty { 
+
+	commonProperty = {
+
+		on = function( message,func ){  
+			return event.reg(owner,message,func);
+ 		};
+ 		post = function(message,wParam,lParam,ele){
+ 			return event.post( owner.hPointer,ele : owner.hPointer,message,wParam,lParam);	
+ 		};
+ 		send = function(message,wParam,lParam,ele){
+ 			return event.send( owner.hPointer,ele : owner.hPointer,message,wParam,lParam);	
+ 		};
+ 		background = {
+			_get=function(){
+				var hbk = ::Xcgui.XEle_GetBkManager( owner.hPointer );
+				if(hbk) owner[["background"]] =  ..xcgui.background(hbk);
+				return owner[["background"]]; 
+			} 
+		};
+		bkAddBorder = function(state,width,alpha,color,g,b){
+			return owner.background.addBorder(state,width,alpha,color,g,b)
+		};
+		bkAddFill = function(state,alpha,color,g,b){
+			return owner.background.addFill(state,alpha,color,g,b)
+		};
+		bkAddImage = function(state,image,repeat,left,top,right,bottom){
+			return owner.background.addImage(state,image,repeat,left,top,right,bottom)
+		};
+		bkImage = {
+			_set = function(image){
+				var repeat = owner.bkRepeat;
+				var left,top,right,bottom;
+				if( repeat == "expand") left,top,right,bottom = owner.bkLeft,owner.bkTop,owner.bkRight,owner.bkBottom;
+			
+				owner.bkAddImage(8, image,repeat,left,top,right,bottom); 
+				owner.bkAddImage(4, image,repeat,left,top,right,bottom);
+			}
+		};
+		bgcolor = {
+			_set = function(color){
+				if(color){
+				owner.bkAddFill(8,color>> 24 & 0xFF, color & 0xFFFFFF); 
+				owner.bkAddFill(4,color>> 24 & 0xFF, color & 0xFFFFFF);
+				}
+			}
+		};
+		skin = function(s){
+			if( type(s[["background"]]) != type.table ) error("参数的background应当是一个表",2);
+			
+			var repeat = s.repeat : owner.bkRepeat;
+			var left,top,right,bottom;
+			if( repeat == "expand") left,top,right,bottom = owner.bkLeft,owner.bkTop,owner.bkRight,owner.bkBottom;
+				
+			for(state,img in s.background){
+				if( type(img) == type.number ){
+					owner.bkAddFill(state,img & 0xFFFFFF,img>> 24 & 0xFF);
+				}
+				else{
+					owner.bkAddImage(state, img,repeat,left,top,right,bottom);
+				}
+			}
+		}
+		id = {
+			_get = function(){
+				return ::Xcgui.XEle_GetID(owner);
+			}
+			_set = function(v){
+				::Xcgui.XEle_SetID(owner,v);
+			}	
+		};
+		uid = {
+			_get = function(){
+				return ::Xcgui.XEle_GetUID(owner);
+			}
+			_set = function(v){
+				::Xcgui.XEle_SetUID(owner,v);
+			}	
+		};
+		z = {
+			_get = function(){
+				return ::Xcgui.XEle_GetZOrder(owner); 
+			}
+			_set = function(v){
+				::Xcgui.XEle_SetZOrder(owner,v)
+			}
+		};
+		topmost = function(v){
+			return ::Xcgui.XEle_SetTopmost(owner,v);
+		};
+		getWindow = function(){
+			return ..xcgui.window( ::Xcgui.XEle_GetHWINDOW(owner ) ) ; 
+		};
+		getScrollView = function(){
+			return ..xcgui.ctrl.scrollview( ..raw.toPointer(owner) );
+		};
+		hitEle = function(x,y){
+			return ..xcgui.ctrl.queryObject( ::Xcgui.XEle_HitChildEle(owner,{int x=x;int y=y}) ) ; 
+		};
+		getParent = function(){
+			return ..xcgui.ctrl.queryObject( ::Xcgui.XEle_GetParentEle(owner) ) ; 
+		};
+		getParentHandle = function(){
+			return topointer( ::Xcgui.XEle_GetParent(owner) ); 
+		};
+		getParentType = function(){
+			return ::Xcgui.XC_GetObjectType(topointer( ::Xcgui.XEle_GetParent(owner) )); 
+		};
+		getObjectType = function(){
+			return ::Xcgui.XC_GetObjectType(owner); 
+		};
+		addEle = function(child){
+			return !!::Xcgui.XEle_AddEle(owner,child); 
+		};
+		insertEle = function(child,index){
+			return !!::Xcgui.XEle_InsertEle(owner,child,index); 
+		};
+		remove = function(){
+			::Xcgui.XEle_RemoveEle(owner); 
+		};
+		disabled = {
+			_get = function(){
+				return !!::Xcgui.XEle_IsEnable(owner); 
+			}
+			_set = function(v){
+				::Xcgui.XEle_Enable(owner,v); 
+			}
+		};
+		hide = {
+			_get = function(){
+				return !!::Xcgui.XEle_IsShow(owner); 
+			}
+			_set = function(v){
+				::Xcgui.XEle_ShowEle(owner,!v);
+			}
+		};
+		pointerEvents = {
+			_get = function(){
+				return !::Xcgui.XEle_IsMouseThrough(owner); 
+			}
+			_set = function(v){
+				::Xcgui.XEle_EnableMouseThrough(owner,!v); 
+			}
+		};
+		transparent = {
+			_get = function(){
+				return ::Xcgui.XEle_IsBkTransparent(owner); 
+			}
+			_set = function(v){
+				::Xcgui.XEle_EnableBkTransparent(owner,v); 
+			}
+		};
+		alpha = {
+			_get=function(){
+				return owner[["(alpha)"]];
+			}
+			_set=function(v){
+				owner[["(alpha)"]] = v;
+				::Xcgui.XEle_SetAlpha(owner,v)
+			}
+		};
+		color = {
+			_get=function(){
+				return ::Xcgui.XEle_GetTextColor(owner)
+			}
+			_set=function(v){
+				::Xcgui.XEle_SetTextColor(owner,v & 0xFFFFFF,v>> 24 & 0xFF);
+			}
+		};
+		border = {
+			_set=function(v){
+				::Xcgui.XEle_EnableDrawBorder(owner,v);
+			}
+		};
+		focusBorderColor = {
+			_get=function(){
+				return ::Xcgui.XEle_GetFocusBorderColor(owner)
+			}
+			_set=function(v){
+				::Xcgui.XEle_SetFocusBorderColor(owner,v & 0xFFFFFF,v>> 24 & 0xFF);
+			}
+		};
+		focusBorder = {
+			_get = function(){
+				return !!::Xcgui.XEle_IsEnableFocus(owner); 
+			}
+			_set = function(v){
+				::Xcgui.XEle_EnableFocus(owner,v); 
+			}
+		};
+		enableDrawFocus = {
+			_get = function(){
+				return ::Xcgui.XEle_IsDrawFocus(owner); 
+			}
+			_set = function(v){
+				::Xcgui.XEle_EnableDrawFocus(owner,v); 
+			}
+		};
+		scrollView = {
+			_get = function(){
+				return ::Xcgui.XEle_IsInScrollView(owner); 
+			}
+			_set = function(v){
+				::Xcgui.XEle_EnableInScrollView(owner,v); 
+			}
+		};
+		tabstop = {
+			_get = function(){
+				return !!::Xcgui.XEle_IsSwitchFocus(owner); 
+			}
+			_set = function(v){
+				::Xcgui.XEle_EnableSwitchFocus(owner,v); 
+			}
+		};
+		tooltip = {
+			_get = function(){
+				return !!::Xcgui.XEle_IsShow(owner); 
+			}
+			_set = function(v){
+				var p = ..raw.realloc(400);
+				::Xcgui.XEle_GetToolTip (owner,p,200)
+				var s = ..raw.str(p,true); 
+				..raw.realloc(0,p);
+				return s;
+			}
+		};
+		css = function(name){
+			if( name === null ) {
+				var p = topointer(::Xcgui.XEle_GetCssName(owner));
+				return p ? ..string.str(p,true);
+			}
+			::Xcgui.XEle_SetCssName(owner,name)
+		};
+		popupToolTip = function(x,y){
+			::Xcgui.XEle_PopupToolTip(owner,x,y);
+		};
+		getFont = function(){
+			return ..xcgui.font( topointer( ::Xcgui.XEle_GetFont(owner) ) ); 
+		};
+		setFont = function(font,size,style){ 
+			font = ..xcgui.font(font,size,style);
+			if(font) ::Xcgui.XEle_SetFont(owner,font)
+		};
+		getClientRect = function(){
+			var rc = ::RECT()
+			::Xcgui.XEle_GetClientRect(owner,rc)
+			return rc; 
+		};
+		getRect = function(){
+			var rc = ::RECT()
+			::Xcgui.XEle_GetRect(owner,rc)
+			return rc; 
+		};
+		setRect = function(rect,redraw){
+			var restoreRatio = owner._savePosRatio();
+			::Xcgui.XEle_SetRect(owner,rect,redraw);
+			if(restoreRatio){
+				restoreRatio(); 
+				if(owner.adjust){
+					var x,y,cx,cy = owner.getPos();
+					owner.adjust(cx,cy);
+				}
+			} 
+		};
+		setRectEx = function(x,y,cx,cy,redraw){
+			return owner.setRect(::RECT(x,y,x+cx,y+cy),redraw); 
+		};
+		resetRect = function(x,y,cx,cy,redraw){
+			::Xcgui.XEle_SetRectEx(owner,x,y,cx,cy,redraw);
+		};
+		getPos = function(x,y,cx,cy){  
+			var rc = owner.getRect();
+			return rc.left,rc.top,rc.width(),rc.height();
+		};
+		setPos = function(x,y,cx,cy){  
+			var rc = owner.getRect();
+			if(x!==null)rc.left = x;
+			if(y!==null)rc.top = y;
+			if(cx!==null)rc.right = rc.left + cx;
+			if(cy!==null)rc.bottom = rc.top + ccy;
+		};
+		getLogicRect = function(){
+			var rc = ::RECT()
+			::Xcgui.XEle_GetRectLogic(owner,rc)
+			return rc; 			
+		};
+		setLogicRect = function(rect,redraw = true){
+			var restoreRatio = owner._savePosRatio();
+			::Xcgui.XEle_SetRectLogic(owner,rect,redraw);
+			if(restoreRatio){
+				restoreRatio(); 
+				if(owner.adjust){
+					var x,y,cx,cy = owner.getPos();
+					owner.adjust(cx,cy);
+				}
+			}
+		};
+		getWidth = function(){
+			return ::Xcgui.XEle_GetWidth(owner);  
+		};
+		getHeight = function(){
+			return ::Xcgui.XEle_GetHeight(owner);  	
+		};
+		_savePosRatio = function(){ 
+			var defRc = owner[["_defRect"]];
+			if(defRc){ 
+				var this = owner;
+				var rc = this.getRect();
+				var xr,tr,rr,br = rc.left?( rc.left / defRc.left),rc.top ? (rc.top / defRc.top) ,rc.right / defRc.right,rc.bottom / defRc.bottom
+				return function(){
+					rc = this.getRect();
+					defRc.left  = xr?(rc.left / xr); 
+					defRc.top  = tr?(rc.top / tr);
+					defRc.right  = rr?(rc.right / rr);
+					defRc.bottom  = br?(rc.bottom / br);
+				} 
+			}	
+		};
+		cursor = {
+			_get = function(){
+				return topointer( ::Xcgui.XEle_GetCursor(owner) )
+			}
+			_set = function(v){
+				::Xcgui.XEle_SetCursor(owner,v)
+			}
+		};
+		redraw = function(immediate){
+			::Xcgui.XEle_RedrawEle(owner,immediate)
+		};
+		redrawRect = function(rc){
+			::Xcgui.XEle_RedrawRect(owner,rc)	
+		};
+		layoutObject = {
+			_get = function(){
+				if(owner[["(layoutObjectCache)"]]) return owner[["(layoutObjectCache)"]]; 
+				var layoutObj = ..xcgui.layoutObject( topointer( ::Xcgui.XEle_GetLayoutObject(owner) ) );
+				if(!layoutObj){
+					layoutObj = ..xcgui.layoutObject();
+					::Xcgui.XEle_BindLayoutObject(owner,layoutObj)
+				}
+				owner[["(layoutObjectCache)"]] = layoutObj;
+				return layoutObj;
+			}
+			_set = function(v){
+				owner[["(layoutObjectCache)"]] = v;
+				::Xcgui.XEle_BindLayoutObject(owner,v);
+				if(type(v)==type.table ? v.adjust ) v.adjust();
+			}
+		};
+		getParentLayoutObject = function(){
+			return ..xcgui.layoutObject( topointer(::Xcgui.XEle_GetParentLayoutObject(owner)) );	
+		};	
+		adjustLayoutObject = function(){
+			::Xcgui.XEle_AdjustLayoutObject(owner);	
+		};
+		setLayoutHeight = function(v,t){
+			::Xcgui.XEle_SetLayoutHeight(owner,t,v);
+		};
+		setLayoutWidth = function(v,t){
+			::Xcgui.XEle_SetLayoutWidth(owner,t,v);	
+		};
+		getLayoutHeight = function(){
+			var v,t = {int value},{int value}
+			::Xcgui.XEle_GetLayoutHeight(owner,t,v);
+			return v.value,t.value;
+		};
+		getLayoutWidth = function(){
+			var v,t = {int value},{int value}
+			::Xcgui.XEle_GetLayoutWidth(owner,t,v);
+			return v.value,t.value;
+		};
+		adjustLayout = function(){
+			::Xcgui.XEle_AdjustLayout(owner);	
+		}; 
+		autoResize = { 
+			_get = function(){
+				if(!owner._defRect) return;
+				var p = owner.getWindow();
+				return p ? p.form[["_xcCtrlAutoResize"]][[owner.hPointer]]
+			} 
+			_set = function(v){ 
+				if(!owner._defRect) return;
+				var p = owner.getWindow();
+				if( p ? p.form[["_xcCtrlAutoResize"]] ){
+					p.form[["_xcCtrlAutoResize"]][owner.hPointer] = v?owner:null;
+				} 
+			} 
+		};
+		close = function(){
+			if(::Xcgui.XC_IsHELE(owner) ){
+				var p = owner.getWindow();
+				if( p ? p.form[["_xcCtrlAutoResize"]] ){
+					p.form[["_xcCtrlAutoResize"]][owner.hPointer] = null;
+				} 
+				::Xcgui.XEle_Destroy(owner);
+			} 
+		};
+	};
+	
+	_metaPrototype = { _get = commonProperty  }; 
+}

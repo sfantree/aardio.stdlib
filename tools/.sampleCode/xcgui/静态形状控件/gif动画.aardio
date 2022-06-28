@@ -1,0 +1,25 @@
+/*
+使用import xcgui; 替换原来的 import win.ui;
+修改标准库的 win.form 指向 xcgui.window, 并保留 win.form的所有功能。
+
+所谓“shape”（形状）其实就是静态控件（不响应事件，只有显示功能）
+在窗体设计器上添加自定义控件，类名修改为 "xc" + "炫彩静态控件类名",
+例如 xcgui.shape.gif, 类名为 "xcgif"
+*/
+import xcgui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=996;bottom=723;parent=...)
+winform.add(
+closebutton={cls="xcclosebutton";text="r";left=964;top=1;right=988;bottom=27;dr=1;dt=1;font=LOGFONT(name='Marlett');transparent=1;z=1};
+gif={cls="xcgif";left=41;top=45;right=360;bottom=320;bkImage="\res\dog.gif";db=1;dl=1;dr=1;dt=1;repeat="center";transparent=1;z=2}
+)
+/*}}*/
+
+/*
+炫彩的gif动画控件绘制模式参数(repeat)是无效的,
+如果需要在播放GIF时使用repeat参数，请使用aardio提供的plus控件。
+*/
+
+winform.show(true);
+win.loopMessage();
+

@@ -1,0 +1,27 @@
+import console;
+import process; 
+	
+	var vadBin = "C:\Users\lin\CLionProjects\speech-vad-demo\cmake-build-debug\vad-demo.exe"
+
+	
+	var filename = "C:\Users\lin\AppData\Local\Temp\迷踪一击必杀：听懂一节课你将明白什么聊天【更多情感课程+VX：DS857333】.mp3.pcm";
+	var filename_ansi = string.fromto( filename );
+	
+	var output_filename_prefix = "16k_1.pcm";
+	var output_filename_prefix_ansi = string.fromto( output_filename_prefix );
+	
+	var output_dir = "C:\Users\lin\AppData\Local\Temp\20210605_154349";
+	var output_dir_ansi = string.fromto( output_dir );
+	
+	//var result = main1(filename_ansi, output_filename_prefix_ansi, output_dir_ansi);
+	// C:\Users\lin\CLionProjects\speech-vad-demo\cmake-build-debug\vad-demo.exe pcm/16k_1.pcm 16k_1.pcm output_pcm
+	
+	//C:\Users\lin\CLionProjects\speech-vad-demo\cmake-build-debug\vad-demo.exe "C:\Users\lin\AppData\Local\Temp\迷踪一击必杀：听懂一节课你将明白什么聊天【更多情感课程+VX：DS857333】.mp3.pcm" "16k_1.pcm" "C:\Users\lin\AppData\Local\Temp\20210605_154349"
+	
+	var parameterString2 = string.format(' "%s" "%s" "%s"', filename_ansi, output_filename_prefix_ansi, output_dir_ansi);
+	console.log(vadBin)
+	console.log(parameterString2)
+	var pid2 = process.executeWait(vadBin, parameterString2);
+	console.log(pid2)
+	
+console.pause(true);

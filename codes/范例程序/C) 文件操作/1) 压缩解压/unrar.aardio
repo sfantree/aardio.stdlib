@@ -1,0 +1,7 @@
+//解压 rar 压缩包
+//不需要安装 WinRAR 等软件,一句代码解压 RAR 文件
+
+import fsys.unrar;
+
+fsys.unrar.extract("/my.rar")
+ 

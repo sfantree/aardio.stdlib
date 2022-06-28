@@ -1,0 +1,102 @@
+
+//jQuery UI 简单范例
+import win.ui;
+/*DSG{{*/
+var winform = win.form(parent=...; text="Web Form";bottom=361;right=648;border="resizable";cls="AAU_WEBFORM" )
+winform.add(  )
+/*}}*/
+
+import web.form;
+winform.show()
+//创建web窗体
+var wb = web.form( winform
+    ,0x4 /*_UIFLAG_NO3DBORDER*/
+    ,//可输入_DLCTL_ 前缀的常量以控制下载行为
+    ,//"USER AGENT"
+    );
+   
+wb.showMenu=function(x,y,id,ele){
+    return false; //禁用右键菜单,也可以在这里弹出自定义的菜单
+}
+   
+uiHtml = /**********
+    <html>
+    <head>
+        
+        <script src="https://cdn.bootcdn.net/ajax/libs/jquery/1.2.3/jquery.js"></script>
+        <script src="https://cdn.bootcdn.net/ajax/libs/jqueryui/1.8.13/jquery-ui.min.js"></script>
+        <link href="https://cdn.bootcdn.net/ajax/libs/jquery/1.10.1/themes/base/jquery.ui.all.css" rel="stylesheet">
+   
+        <style type="text/css">
+        body,#tab{ font-size: 9pt;margin 0px;padding: 0; }
+        </style>
+    </head>
+   
+   
+    <body>
+        <div id="tabs" >
+            <ul>
+                <li><a href="#tab-page1">主页</a></li>
+                <li><a href="#tab-page2">JQuery</a></li>
+                <li><a href="#tab-page3">演示</a></li>
+            </ul>
+            
+            <div id="tab-page1">
+                <BUTTON type=submit>调用aardio调码</BUTTON>  
+                <br /><br /><BUTTON type=submit>调用aardio调码</BUTTON>  
+                <br /><br /><BUTTON type=submit>调用aardio调码</BUTTON>  
+            </div>
+            <div id="tab-page2">  
+                <br /> 关于JQuery: <br />
+                <a href="http://baike.baidu.com/view/1020297.htm" target="_blank">http://baike.baidu.com/view/1020297.htm</a> <br /> 　
+                <br /><br /> 关于JQuery UI: <br />
+                <a href="http://baike.baidu.com/view/2998196.htm" target="_blank">http://baike.baidu.com/view/2998196.htm</a> <br /> 　
+
+            </div>
+            <div id="tab-page3">
+                <br />下面是通过链接直接选择Tabs选项卡操作：
+                <br />
+                <br /><a href="" onclick="$('#tabs').tabs('select',1);return false;">点击这里</a>选择第二选项卡
+                <br />源码:<a href="" onclick="$('#tabs').tabs('select',1);return false;">
+                <br />
+                <br /><a href="" onclick="$('#tabs').tabs('select',0);return false;">点击这里</a>选择第一选项卡。
+                <br />源码:<a href="" onclick="$('#tabs').tabs('select',0);return false;">
+            </div>
+        </div>
+        
+        <p>
+        jQuery是一个优秀的Javascrīpt框架,可免费使用,并且在网络上有大量的开源插件,可以轻松制作出漂亮的Web界面.
+        而aardio与Javascript的语法非常接近,在两种语言之间也可以自由的相互调用,在aardio中,使用Javascript编写桌面软件将不再是神话.
+        更多内容请参考《 aardio帮助文档 - Web程序设计 》
+        </p>
+    </body>
+    </html>
+**********/
+
+wb.write( uiHtml ) //写入HTML
+wb.wait("");
+
+wb.external={
+    msgbox = win.msgbox;
+}
+jQueryReady = /*
+    var aardio = external;
+    $( 'button', '#tab-page1' ).button().click(
+        function() {
+            aardio.msgbox( 'Hello! 我是ID为"tab-page1"中的"button"节点'
+                ,"JS调用aardio函数演示" )
+        }
+    );
+   
+    //创建tab
+    $('#tabs').tabs()  
+
+*/
+wb.doScript( jQueryReady );
+
+//显示web窗体
+
+
+//启动消息循环
+win.loopMessage();
+return winform,wb;

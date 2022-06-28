@@ -1,0 +1,20 @@
+//打包Java程序
+import fsys.dlg;
+//import java.jre.v8; //可选导入指定版本的 Java 运行时
+import java.ffdec;
+
+/*
+ffdec 是一个 Java 编写的 Flash 反编译器：JPEXS Free Flash Decompiler
+请右键点上面的 java.ffdec，然后点「跳转到定义」查看源代码，
+
+Java 运行时不像 .Net 安装方式统一并且系统自带，
+安装与分发方式很多，但 aardio 可以快速探测到系统已经存在的 Java 运行时，
+如果没有找到也会快速地、自动下载独立的 Java 运行时（不修改注册表或系统环境变量）。
+
+所以我们可以方便地用 aardio 打包和分发 Java 编写的程序。
+*/
+var prcs = java.ffdec(fsys.dlg.open("*.swf|*.swf"))
+/*
+上面的 prcs 是一个 process.popen 对象，可读写进程输入输出。
+这种方式调用 Java 程序可以兼容 32位 / 64位 Java 运行时。
+*/

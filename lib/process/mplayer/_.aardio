@@ -1,0 +1,261 @@
+import process.popen;
+import process.job.limitKill;
+import inet.url;
+
+namespace process;
+
+class mplayer {
+
+	ctor(playerPath,winform){
+		if( !playerPath ){
+			playerPath = getDefaultPath(winform);
+			if(!playerPath){
+				return null,"请指定视频文件路径"
+			} 
+		}
+		
+		if( ! ( winform[["hwnd"]] ? winform.isForm ) ){
+			error("参数@2必须是 win.form 窗体对象或 custome 控件对象.",2);
+		}
+		if( winform.mplayer ? winform.mplayer.quit ){
+			winform.mplayer.quit();
+		}
+		
+		if(!winform.onDestroy){
+			winform.onDestroy = function(){
+    			this.quit();
+			}			
+		}  
+		
+		winform.bgcolor = 0;
+		winform.onEraseBkgnd  = function(){
+			if(this.core ){
+				if(this.core.process.stillActive())return 0;
+				else {
+					this.core.close();
+					this.core = null;
+				}
+			}
+		}
+	};  
+	loadfile = function(path,...){
+		if(this.core){
+			this.quit();
+		}
+		
+		if(..io.exist(path)){
+			path = ..io.fullpath(path)
+		}
+		else {
+			return;
+		}
+		
+		
+		if( !... ) {
+			this.core = ..process.popen( playerPath,path,
+			"-slave","-wid",tostring( winform[["hwnd"]] ),"-vo","gl","-quiet", 
+			  "-mc","0",   "-fontconfig","0","-subcp", "936")
+		}
+		else {
+			this.core = ..process.popen( playerPath, path,
+			"-slave","-wid",tostring( winform[["hwnd"]] ),... )
+		}
+		
+		if( !this.core ) return;
+		
+		//下面这句可以让软件退出时创建的 Mplayer 子进程自动关闭
+		this.core.assignToJobObject(..process.job.limitKill);
+		
+		//this.core.codepage = 65001;
+		this.print = this.core.print; 
+		this.printf = this.core.printf; 
+		this.expect = this.core.expect;
+		
+		winform.mplayer = this;
+		..win.delay(1000);
+		
+		//首次启动初始化较慢,下面的代码用于确认初始化完成
+		this.print("get_property path"); 
+		this.path = this.expect("ANS_path=(\N+?)\s*\r*\n"); 
+		
+		return true;
+	};
+	subLoad = function(path){
+		if(!path) return;
+		path = ..io.fullpath(path);
+		path = ..string.replace(path,"@@\","\\");
+	
+		this.printf( 'ausing_keep_force sub_load "%s" ',path ); 
+		var out  = this.expect("\N+",1000)
+		if( out ){
+			var value = ..string.match(out,"SUB\:\s*Added subtitle file\s*\((\d+)\)")
+			if( value ) this.subSelect(value);
+			if( value ) return tonumber(value);
+		}
+	}; 
+	subSelect = function(value){
+		if(this.core)this.print( "ausing_keep_force ub_select",value ); 
+	};
+	subAlignment = function(value){
+		if(this.core)this.print( "ausing_keep_force sub_alignment",value ); 
+	}; 
+	subDelay = function(value,abs){
+		if(this.core)this.print( "ausing_keep_force sub_delay",value,abs?1:0 ); 
+	};  
+	pause = function(){
+		if(this.core)this.print( "pause" );  
+	};  
+	frameStep = function(){
+		if(this.core)this.print( "ausing_keep_force frame_step"); 
+	};
+	seek = function(value){
+		if(this.core)this.print( "seek",value,'0'); 
+	};
+	seekPercent = function(value){
+		if(this.core)this.print( "seek",value,'1'); 
+	};
+	seekSecond = function(value){
+		if(this.core)this.print( "seek",value,'2'); 
+	};
+	volume = function(value,abs){
+		if(this.core)this.print( "ausing_keep_force volume",value,abs?1:0); 
+	}; 
+	keyDownEvent = function(value){
+		if(this.core)this.print( "ausing_keep_force key_down_event ",value); 
+	};
+	fullscreen = function(value){ 
+		return winform.fullscreen(value);
+	};
+	getFullscreen = function(){ 
+		return winform.restoreFullScreen;
+	};
+	getProperty = function(name,timeout){
+		if(!this.core) return false; 
+		if( timeout === null ) timeout = 100;
+		this.print("ausing_keep_force get_property",name); 
+		var out  = this.expect("ANS\N+=(\N+?)\s*\r*\n",timeout)
+		if( out ) return out;	
+	};
+	setProperty = function(name,value){
+		if(this.core) this.print("ausing_keep_force set_property",name,value);  
+	};
+	isPaused = function(){
+		if(!this.core) return false; 
+		
+		//必须加上pausing_keep_force前缀,不然结果错误,并且自动恢复播放
+		this.print("pausing_keep_force get_property pause"); 
+		var out  = this.expect("ANS\N+=(\N+?)\s*\r*\n",100) 
+		return out == "yes";	
+	};
+	isPlaying = function(){
+		if(this.core){
+			if(this.core.process.stillActive()){
+				return !this.isPaused();
+			}
+			else {
+				this.core.close();
+				this.core = null;
+			}
+		}
+	};
+	getVideoResolution = function(){
+		this.print("pausing_keep_force get_video_resolution"); 
+		var x,y = this.expect("ANS_VIDEO_RESOLUTION='(\d+) x (\d+)'",100)
+		if( x ) return tonumber(x),tonumber(y);
+	};
+	getPercentPos = function(){
+		if(!this.core) return 0; 
+		
+		this.print("pausing_keep_force get_percent_pos"); 
+		var out  = this.expect("ANS_PERCENT_POSITION=(\d+)",100)
+		if( out ) return tonumber( out );
+	};
+	getTimeLength = function(){
+		if(!this.core) return 0; 
+		this.print("pausing_keep_force get_time_length"); 
+		var out  = this.expect("ANS_LENGTH=([\d\.]+)",100)
+		if( out ) return tonumber( out ); 
+	};
+	getTimePos = function(){
+		if(!this.core) return 0; 
+		
+		this.print("pausing_keep_force get_time_pos"); 
+		var out  = this.expect("ANS_TIME_POSITION=([\d\.]+)",100)
+		if( out ) return tonumber( out );  
+	};
+	stop = function(){
+		if(this.core) this.print( "stop"); 
+	};
+	quit  = function(exitCode){
+		if(this.core){
+			this.print( "quit",exitCode : 0); 
+			this.core.close();	
+			this.core = null;	
+			this.print = null;	
+		} 
+	};  
+}
+
+namespace mplayer{
+   
+    getDefaultPath = function(winform){
+        var mplayerPath = ..io.appData("aardio\std\mplayer\mplayer\mplayer-svn-38151-x86_64\mplayer.exe");
+        if(..io.exist(mplayerPath)){
+        	return mplayerPath;
+        }
+        
+    	import ..sevenZip.decoder2.httpFile;
+    	var exDir = ..sevenZip.decoder2.httpFile.download( 
+    		"https://jaist.dl.sourceforge.net/project/"
+    		+  ( ..process().isWow64() ? "mplayer-win32/MPlayer%20and%20MEncoder/r38328%2Bg30322ebe3c/MPlayer-x86_64-r38328%2Bg30322ebe3c.7z":"mplayerwin/MPlayer-MEncoder/r38151/mplayer-svn-38151.7z" ) 
+    		,"正在下载 MPlayer 组件",..io.appData("aardio/std/mplayer/"),,"mplayer.7z",winform) 
+    		
+    	if(exDir){
+    		if(..io.exist(mplayerPath)){
+        		return mplayerPath;
+        	}
+    	} 
+    } 
+}
+ 
+/**intellisense()
+process.mplayer = MPlayer 播放器组件，\n基于标准库 process.popen 实现管道调用 MPlayer 播放器。[MPlayer / slave  mode] http://www.mplayerhq.hu/DOCS/tech/slave.txt
+process.mplayer( = 创建播放器
+process.mplayer(.(播放器路径,输出窗口,默认视频路径,其他启动参数,->->-> ) = 创建播放器\n参数@1 可省略，参数@2可指定窗口对象或 custom 控件对象，\n其他参数可选 - 启动参数用于process.popen
+process.mplayer() = !process_mplayer.
+!process_mplayer.core = 播放器管道对象，\n如果当前未打开播放器进程则返回 null，\n除了检测 null 值，不应直接使用此对象，\n!process_popen.
+!process_mplayer.expect(  = 等待直到模式匹配成功,返回匹配结果,
+!process_mplayer.expect(.("模式表达式",超时,文本最大长度) = 超时参数是以毫秒为单位的估算值,可省略\n参数@3可省略，默认为1024
+!process_mplayer.print("__") = 写入命令，支持一个或多个参数\n多个参数间添加空格,尾部添加换行
+!process_mplayer.printf("__") = 写入命令，\n调用string.format函数格式化参数,尾部添加换行
+!process_mplayer.keyDownEvent(.(虚拟键码) = 发送按键事件
+!process_mplayer.getResponse(.("模式表达式") = 获取格式输出
+!process_mplayer.loadfile( = 打开视频文件,成功返回 true，失败返回 nulll
+!process_mplayer.loadfile(.("视频文件",是否添加到播放列表) = 打开视频文件，\n成功返回 true，失败返回 nulll，\n不指定参数@1直接返回 null，\n参数@2默认为false
+!process_mplayer.subLoad( = 添加字幕文件
+!process_mplayer.subLoad(.("字幕文件") = 添加字幕文件
+!process_mplayer.stop() = 停止播放
+!process_mplayer.quit() = 退出
+!process_mplayer.pause() = 暂停
+!process_mplayer.frameStep() = 播放一帧
+!process_mplayer.quit() = 退出\n
+!process_mplayer.subAlignment( = 字幕对齐\n0 顶部对齐\n1 居中对齐\n2 底部对齐
+!process_mplayer.subDelay( = 调整字幕偏移值
+!process_mplayer.subDelay(.(偏移值,是否绝对值) = 参数@2可省略
+!process_mplayer.volume( = 调整声音大小
+!process_mplayer.volume(.(音量,是否绝对值) = 参数@1为百分比\n参数@2请指定为true
+!process_mplayer.getVideoResolution() = 返回视频分辨率\n返回两个值
+!process_mplayer.fullscreen(__/*是否全屏*/) = 设置全屏
+!process_mplayer.getFullscreen() = 当前是否全屏
+!process_mplayer.getPercentPos() = 返回播放进度\n百分比
+!process_mplayer.getTimeLength() = 返回视频总长度
+!process_mplayer.getTimePos() = 返回当前播放位置\n视频播放结束返回null
+!process_mplayer.seekSecond( = 移动到指定位置
+!process_mplayer.seekPercent( = 按百分比移动到指定位置
+!process_mplayer.seek( = 移动到指定位置\n参数为相对当前位置的值
+!process_mplayer.getProperty("__/*名字*/") = 获取属性值\n可选使用参数@2指定超时,默认为100毫秒,传入0表示禁用超时
+!process_mplayer.getProperty(
+!process_mplayer.getProperty(.("属性名","属性值") = 修改属性值
+!process_mplayer.isPaused() = 当前是否暂停状态
+!process_mplayer.isPlaying() = 当前是否播放状态,\n这需要发送查询指令，不必要在获取播放进度前调用这个函数，\n检测播放器进程是否已创建可以简单地检测 core 属性是否为 null
+end intellisense**/

@@ -1,0 +1,205 @@
+﻿import sys.comPort;
+import sys.cp210x;
+import sio;
+
+namespace fsys.kerming;
+
+class ly40s01{
+	ctor(){};
+	open = function(portName){
+		if(!portName){
+			
+			var cp210x = ..sys.comPort.find("Silicon Labs CP210x USB to UART Bridge");
+			if(cp210x){
+				portName = cp210x.portName;
+			}
+			else {
+				..sys.cp210x.require();
+				..sys.cp210x.ignoreHardwareSerialNumber(); 
+				
+				var cp210x = ..sys.comPort.find("Silicon Labs CP210x USB to UART Bridge");
+				if(cp210x){
+					portName = cp210x.portName;
+				}
+				else {
+					return null,"未找到 USB 串口设备";
+				} 
+			} 
+		}
+		
+		var err,err,errCode;
+		this.comPort,err,errCode = ..sio.port(portName);
+		if(!this.comPort){
+			return null,err,errCode;
+		}
+		
+		this.comPort.ioctl(115200,8,1,0);
+		
+		if(!this.comPort){
+			return null,err,errCode;
+		}
+		
+		this.comPort.termCntIrq(1,function(port){
+			var str = this.comPort.read();
+			if(!str){ return; }
+			
+			var status,event,data = ..string.match(str,"^(\a+)\+(\a+)\:?(\N*)");
+			if(status&&event){
+				if(this.onStatusChange){
+					this.onStatusChange(status,event,data);
+				}
+				
+				if(status=="OK"){
+    				if(event=="LOST"){
+    					if(this.onDisconnected)this.onDisconnected();
+    				}
+    				elseif(event=="CONN") {
+    					if(this.onConnected)this.onConnected();
+    				} 
+    			}
+				
+				return;
+			}
+			
+			if(this.onRecive){
+				this.onRecive(str);
+			}
+		} )	
+		
+		return true;
+	};
+	isConnected  = function(){
+		return this.comPort.request("AT+STATE?","OK\+Get\:(.+)")=="1"; 
+	};
+	disconnect  = function(){
+		if(!this.isConnected()){
+			return true;
+		}
+		return this.comPort.request("AT+DISCON") == "OK+LOST"; 
+	};
+	at = function(){
+		return this.comPort.request("AT");
+	}; 
+	getMac = function(){
+		return this.comPort.request("AT+ADDR?","OK\+Get\:0x(.+)"); 
+	};
+	getVersion = function(){
+		var str = this.comPort.request("AT+VERS?");
+		return str ? ..string.match(str,"OK\+Get\:(.+)");
+	};
+	getRole = function(){
+		var v = this.comPort.request("AT+ROLE?","OK\+Get\:(.+)"); 
+		return ({["0"]="slave",["1"]="master"})[v]
+	}; 
+	setRole = function(v){
+		v =({slave=0;master=1})[v] : v
+		return this.comPort.request("AT+ROLE"+v,"OK\+Set\:(.+)"); 
+	};
+	getBaud = function(){
+		var idx = this.comPort.request("AT+BAUD?","OK\+Get\:(.+)"); 
+		if(idx){
+			return ({[0]=9600,19200,38400,57600,115200})[tonumber(idx)]
+		}
+	};
+	setBaud = function(idx){
+		var idx = ({[0]=9600,19200,38400,57600,115200})[idx] :idx;
+		return this.comPort.request("AT+BAUD"+idx,"OK\+Set\:(\d+)"); 
+	};
+	getName = function(){
+		return this.comPort.request("AT+NAME?","OK\+Get\:(.+)"); 
+	};
+	setName = function(name){
+		this.disconnect();
+		name = ..string.left(name,20);
+		if( this.comPort.request("AT+NAME"+name,"OK\+Set\:(.+)") ){
+			return this.reset();
+		} 
+	};
+	reset = function(){
+		return this.comPort.request("AT+RESET") == "OK+RESET"; 
+	}; 
+	renew = function(){
+		return this.comPort.request("AT+RENEW") == "OK+RENEW";
+	};
+	getPair = function(){
+		return tonumber( this.comPort.request("AT+PAIR?","OK\+Get\:(.+)") ); 
+	}; 
+	setPair = function(v){
+		return this.comPort.request("AT+PAIR"+v,"OK\+Set\:(.+)"); 
+	};
+	getPassword = function(){
+		return tonumber( this.comPort.request("AT+PASS?","OK\+Get\:(.+)") ); 
+	}; 
+	setPassword = function(v){
+		return this.comPort.request("AT+PASS"+v,"OK\+Set\:(.+)"); 
+	};
+	getServiceId = function(){
+		//128位基本ID 0x0000****-0000-1000-8000-00805F9B34FB
+		return this.comPort.request("AT+SERV?","OK\+Get\:(.+)"); 
+	}; 
+	setServiceId = function(v){
+		v = ..string.replace(v,"\-","");
+		return this.comPort.request("AT+SERV"+v,"OK\+Set\:(.+)"); 
+	};
+	getReceiverCharacteristicId = function(){
+		return this.comPort.request("AT+CHRX?","OK\+Get\:(.+)"); 
+	}; 
+	setReceiverCharacteristicId = function(v){
+		v = ..string.replace(v,"\-","");
+		return this.comPort.request("AT+CHRX"+v,"OK\+Set\:(.+)"); 
+	};
+	getTransmitterCharacteristicId = function(){
+		return this.comPort.request("AT+CHTX?","OK\+Get\:(.+)"); 
+	};  
+	setTransmitterCharacteristicId = function(v){
+		v = ..string.replace(v,"\-","");
+		return this.comPort.request("AT+CHTX"+v,"OK\+Set\:(.+)"); 
+	};
+}
+
+/*
+文档：http://wiki.kerming.com/lib/exe/fetch.php?media=menu:ble%E8%93%9D%E7%89%994.0%E6%A8%A1%E5%9D%97:ly40s01_%E6%A8%A1%E5%9D%97%E6%89%8B%E5%86%8Cv20.pdf
+设备：https://item.taobao.com/item.htm?spm=a1z10.3-c.w4002-7269529226.13.603c6c86Wh5zUT&id=563918602638
+*/
+
+/**intellisense()
+fsys.kerming.ly40s01() = 科名 USB 蓝牙串口设备 LY40S1 接口，\n可用于手机控制电脑，支持小程序，\n手机必须打开「蓝牙」与「定位」功能，\nkermingLy40s01.
+end intellisense**/
+
+/**intellisense(kermingLy40s01)
+comPort = 串口对象\n!stdsioport.
+setRole("slave") = 设为从机模式
+setRole("master") = 设为主机模式
+at() = 测试 AT 指令，应返回 "OK"\n注意断开蓝牙连接才能使用 AT 指令。
+getBaud() = 获取波特率
+setBaud() = 设置波特率
+getName() = 获取设备名
+setName(__) = 设置设备名\n设备名支持 UTF-8 编码字符,也即 aardio 的默认文本编码\n设备名应小于20个字节
+isConnected() = 是否已连接
+disconnect() = 断开连接\n大部分AT控制制令都要求断开连接
+reset() = 重新启动
+renew() = 恢复出厂设置
+getPair() = 查询配对模式\n0 无需配对, 不需要密码直接连接 (默认值)\n1 简单配对, 静态密码验证\n2 动态配对模式, 动态密码验证
+setPair(__) = 设置配对模式\n0 无需配对, 不需要密码直接连接 (默认值)\n1 简单配对, 静态密码验证\n2 动态配对模式, 动态密码验证
+getPassword() = 查询配对密码\n密码范围：000000-999999
+setPassword(__) = 设置配对密码\n密码范围：0000000-999999 
+getServiceId() = 获取服务ID\n16位ID的基础ID为0x0000****-0000-1000-8000-00805F9B34FB
+setServiceId(__) = 设置服务ID\n16位ID的基础ID为0x0000****-0000-1000-8000-00805F9B34FB
+getReceiverCharacteristicId() = 获取接收特征值 UUID\n在BLE主机中可以对这个特征值读或写，\n16位ID的基础ID为0x0000****-0000-1000-8000-00805F9B34FB
+setReceiverCharacteristicId() = 设置接收特征值 UUID\n在BLE主机中可以对这个特征值读或写，\n16位ID的基础ID为0x0000****-0000-1000-8000-00805F9B34FB
+getTransmitterCharacteristicId() = 获取发送特征值 UUID\n在BLE主机中可以对这个特征值读或写，\n16位ID的基础ID为0x0000****-0000-1000-8000-00805F9B34FB
+setTransmitterCharacteristicId() = 设置发送特征值 UUID\n在BLE主机中可以对这个特征值读或写，\n16位ID的基础ID为0x0000****-0000-1000-8000-00805F9B34FB	
+onStatusChange(status,event,data) = @.onStatusChange = function(status,event,data){ 
+	__/*状态变更\n成功status为"OK"\nevent为大写字符串*/
+}
+onRecive(data) = @.onRecive = function(data){
+	__/*收到数据*/
+}
+onDisconnected() = @.onDisconnected = function(){
+	__/*断开蓝牙连接,切换到 AT 指令模式*/
+}
+onConnected() = @.onConnected = function(){
+	__/*已建立蓝牙连接,关闭 AT 指令模式*/
+}
+end intellisense**/
+

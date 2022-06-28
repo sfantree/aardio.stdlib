@@ -1,0 +1,11 @@
+
+if( ___sqlite_dll__ ) error("不能导入不同版本的sqlite支持库",2)
+___sqlite_dll__ = raw.loadDll($"~/lib/sqlite/latest/.res/sqlite3.dll","sqlite3-latest.dll","cdecl")
+
+import sqlite.base;
+sqlite["latest"] = sqlite.base;
+
+/**intellisense()
+sqlite.latest = sqlite 扩展库别名,但引入新版 SQLite.dll 组件,\n导入此扩展库以后,代码中应当继续使用 sqlite 而非 sqlite.latest\n\n标准库 sqlite 考虑体积不会使用最新版本 SQLite.dll。\nsqlite.latest 扩展库则会不定期更新 SQLite.dll,\n但不会过于频繁更新，也不保证与 SQLite 官方同步。\n\n大家可以参考此扩展库的源码引入指定版本的 SQLite.dll
+sqlite.latest() = !sqliteConn.
+end intellisense**/

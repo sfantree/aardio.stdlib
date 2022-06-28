@@ -1,0 +1,20 @@
+import console; 
+import gdip.bitmap;
+
+srcpath = "C:\Users\lin\Pictures\anki-icon-f503dd0f8f5bee05532a0dade34527e0.png";
+
+s1 = string.load(srcpath);
+
+console.log(string.hex(s1));
+
+gdipbitmap = gdip.bitmap(s1);
+
+s2 = gdipbitmap.saveToBuffer("*.jpg", 90);
+
+
+
+console.log(string.hex(s2));
+
+
+
+console.pause(true);

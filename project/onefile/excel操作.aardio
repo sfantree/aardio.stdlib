@@ -1,0 +1,319 @@
+import console;
+import win.ui;
+import win.ui.atom;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=991;bottom=391)
+winform.add(
+button={cls="button";text="刷新workbook";left=16;top=136;right=240;bottom=160;z=2};
+button2={cls="button";text="刷新worksheet";left=16;top=240;right=240;bottom=264;z=8};
+button3={cls="button";text="获取选中";left=296;top=72;right=520;bottom=96;z=9};
+button4={cls="button";text="获取ActiveCell";left=296;top=168;right=520;bottom=192;z=15};
+button5={cls="button";text="重载Excel对象";left=16;top=8;right=240;bottom=32;z=16};
+button6={cls="button";text="挂载事件";left=296;top=280;right=520;bottom=304;z=19};
+button7={cls="button";text="选中到ListView";left=536;top=8;right=760;bottom=32;z=22};
+combobox={cls="combobox";left=16;top=72;right=240;bottom=96;edge=1;items={};mode="dropdown";z=1};
+combobox2={cls="combobox";left=16;top=176;right=240;bottom=200;edge=1;items={};mode="dropdown";z=7};
+edit={cls="edit";left=192;top=104;right=240;bottom=128;edge=1;z=4};
+edit2={cls="edit";left=192;top=208;right=240;bottom=232;edge=1;z=6};
+edit3={cls="edit";left=472;top=40;right=520;bottom=64;edge=1;z=11};
+edit4={cls="edit";left=472;top=8;right=520;bottom=32;edge=1;z=13};
+edit5={cls="edit";left=296;top=104;right=520;bottom=152;edge=1;multiline=1;z=14};
+edit6={cls="edit";left=296;top=328;right=520;bottom=376;edge=1;multiline=1;z=17};
+edit7={cls="edit";left=296;top=208;right=520;bottom=256;edge=1;multiline=1;z=20};
+listview={cls="listview";left=536;top=40;right=976;bottom=376;bgcolor=12639424;edge=1;gridLines=1;z=21};
+static={cls="static";text="工作簿数量：";left=16;top=104;right=96;bottom=128;center=1;transparent=1;z=3};
+static2={cls="static";text="工作表数量：";left=16;top=208;right=96;bottom=232;center=1;transparent=1;z=5};
+static3={cls="static";text="选中列数量：";left=296;top=40;right=376;bottom=64;center=1;transparent=1;z=10};
+static4={cls="static";text="选中行数量：";left=296;top=8;right=376;bottom=32;center=1;transparent=1;z=12};
+static5={cls="static";text="事件：";left=296;top=304;right=376;bottom=328;center=1;transparent=1;z=18}
+)
+/*}}*/
+
+import com;
+import com.excel;
+import win.dlg.message;
+
+winDlgMessage = win.dlg.message(winform);
+
+var atom,hwnd/*冲突窗口的句柄,该函数会自动激活此窗口*/ = winform.atom("{D253A6BA-AB22-4857-8B26-964C9054C846}.excel");
+if(!atom){
+	/*为窗口设置原子值可以避免一个程序重复运行多个实例*/
+	win.quitMessage();	return;
+}
+
+// 移除列标题
+winform.listview.modifyStyle(,0x4000/*_LVS_NOCOLUMNHEADER*/);
+// 设置双缓冲
+winform.listview.setExtended(0x10000/*_LVS_EX_DOUBLEBUFFER*/);
+
+winform.button5.oncommand = function(id,event){
+	var isFirstRun = true;
+	if(oExcel){
+	    oExcel = null;
+	    isFirstRun = false;
+	    collectgarbage("collect");
+	}
+	oExcel = com.excel(false);
+	if(oExcel == null) {
+    	if(isFirstRun == true) {
+		   winDlgMessage.err("Excel未打开或未安装，初始化对象失败！", 3000);
+		} else {
+		    winDlgMessage.ok("重载Excel对象失败！", 3000);
+		}
+	} else {
+		if(isFirstRun == true) {
+		    winDlgMessage.ok("初始化Excel对象成功！", 3000);
+		} else {
+		    winDlgMessage.ok("重载Excel对象成功！", 3000);
+		}
+	}
+}
+
+winform.button.oncommand = function(id,event){
+	if(not oExcel) {
+	    return;
+	}
+	
+	var workbook_number = -1;
+	
+	try{
+		workbook_number = oExcel.WorkBooks.count;
+	}
+	catch(e){
+		
+	}
+	
+	var workbook_name = {};
+	if(workbook_number > 0) {
+		
+		winform.edit.text = tostring(workbook_number)
+		
+	    try{
+	        
+	        for(i=1;workbook_number;1){
+	        	table.push(workbook_name, oExcel.WorkBooks[i].Name);
+	        }
+	    }
+		catch(e){
+			
+		}
+	}
+	
+	
+	if(#workbook_name > 0 ) {
+		winform.combobox.clear();
+	    for(i=1; #workbook_name;1){
+		    winform.combobox.add(workbook_name[i]);
+	    }
+	    winform.combobox.selIndex = 1;
+	}
+	
+}
+
+winform.button2.oncommand = function(id,event){
+	//console.dump(winform.combobox.selIndex);
+	var workbook_selct = 0;
+	workbook_selct = winform.combobox.selIndex;
+	
+	if(workbook_selct == 0){
+		win.msgbox("请选择workbook！");
+		return;
+	}
+	
+	var oWorkBook = null;
+	var workbook_number = -1;
+	
+	try{
+		workbook_number = oExcel.WorkBooks.count;
+	}
+	catch(e){
+		
+	}
+	
+	if(workbook_number > 0) {
+	    try{
+	        for(i=1;workbook_number;1){
+	        	if(winform.combobox.selText == oExcel.WorkBooks[i].Name) {
+	        	    oWorkBook = oExcel.WorkBooks[i];
+	        	    break;
+	        	}
+	        }
+	    }
+		catch(e){
+			
+		}
+	}
+	
+	
+	var worksheet_number = -1;
+	try{
+		worksheet_number = oWorkBook.WorkSheets.count;
+	}
+	catch(e){
+		
+	}
+	
+	var worksheet_name = {};
+	if(worksheet_number > 0) {
+	    winform.edit2.text = tostring(worksheet_number);
+	    try{
+	        
+	        for(i=1;worksheet_number;1){
+	        	table.push(worksheet_name, oWorkBook.WorkSheets[i].Name);
+	        }
+	    }
+		catch(e){
+		
+		}
+			
+	}
+	
+	if(#worksheet_name > 0 ) {
+		winform.combobox2.clear();
+	    for(i=1; #worksheet_name;1){
+		    winform.combobox2.add(worksheet_name[i]);
+	    }
+	    winform.combobox2.selIndex = 1;
+	}
+	
+}
+
+winform.edit3.oncommand = function(id,event){
+	
+}
+
+winform.button3.oncommand = function(id,event){
+	if(not oExcel) {
+	    return;
+	}
+	
+	if(not oExcel.Selection) {
+	    return;
+	}
+	
+	var ColumnCount = oExcel.Selection.Columns.Count;
+	if(ColumnCount) {
+	    winform.edit3.text = tostring(ColumnCount);
+	}
+	
+	var RowsCount = oExcel.Selection.Rows.Count;
+	if(RowsCount) {
+	    winform.edit4.text = tostring(RowsCount);
+	}
+	
+/*
+    // https://stackoverflow.com/questions/47812115/get-first-selected-cell-in-a-range
+	var ActiveCellAddress = oExcel.ActiveCell.Address();
+	if(ActiveCellAddress) {
+	    winform.edit5.text = tostring(ActiveCellAddress);
+	}
+*/
+	
+	var SelectionAddress = oExcel.Selection.Address();
+	if(SelectionAddress) {
+	    winform.edit5.dump(SelectionAddress);
+	}
+	
+}
+
+winform.edit5.oncommand = function(id,event){
+	
+}
+
+winform.edit4.oncommand = function(id,event){
+	
+}
+
+winform.button4.oncommand = function(id,event){
+	if(not oExcel) {
+	    return;
+	}
+	if(not oExcel.ActiveCell) {
+	    return;
+	}
+	var ActiveCellAddress = oExcel.ActiveCell.Address();
+	if(#ActiveCellAddress) {
+	    winform.edit7.text = ActiveCellAddress;
+	}
+}
+
+
+
+
+
+//winform.button.oncommand();
+//winform.button2.oncommand();
+
+winform.edit6.oncommand = function(id,event){
+	
+}
+
+winform.button6.oncommand = function(id,event){
+}
+
+winform.edit7.oncommand = function(id,event){
+	
+}
+
+winform.listview.onnotify = function(id,code,ptr){
+	
+}
+
+winform.button7.oncommand = function(id,event){
+	// 
+	if(not oExcel) {
+	    return;
+	}
+	
+	if(not oExcel.Selection) {
+	    return;
+	}
+	
+	// 选中区域总数
+	var SelectionCount = oExcel.Selection.Cells.Count;
+	// 选中区域列数
+	var ColumnCount = oExcel.Selection.Columns.Count;
+	// 选中区域行数
+	var RowsCount = oExcel.Selection.Rows.Count;
+	
+	if(not SelectionCount) {
+	    return;
+	}
+	
+	var FirstCellRow = oExcel.Selection.Cells(1).Row;
+	var FirstCellColumn = oExcel.Selection.Cells(1).Column;
+	
+	var CellValue1D = {};
+	for(i=1;SelectionCount;1){
+		var CellValue = oExcel.Selection.Cells(i).Value2;
+		if(CellValue == null) {
+		    CellValue = "";
+		}
+	    ..table.push(CellValue1D, tostring(CellValue));
+	}
+	
+	winform.listview.clear(true);
+	// 列表框增加列
+	for(i=1;ColumnCount;1){
+		winform.listview.insertColumn("",100);
+	}
+	// 插入数据
+	for(i=1;RowsCount;1){
+		var RowData = {};
+		for(j=1;ColumnCount;1){
+			..table.push(RowData, CellValue1D[(RowsCount ) * (i - 1) + j ] );
+		}
+		winform.listview.addItem({ 
+ 		        text = RowData ;
+		    } 
+		)
+	}
+}
+
+
+
+winform.show();
+win.setTopmost(winform.hwnd);
+win.delay(300);
+winform.button5.oncommand();
+win.loopMessage();

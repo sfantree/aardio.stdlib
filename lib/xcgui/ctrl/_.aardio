@@ -1,0 +1,105 @@
+﻿import xcgui.ctrl.button;
+import xcgui.ctrl.edit;
+import xcgui.ctrl.ele;
+import xcgui.ctrl.tab;
+import xcgui.ctrl.datetimepick;
+import xcgui.ctrl.calendar;
+import xcgui.ctrl.trackbar;
+import xcgui.ctrl.progress;
+import xcgui.ctrl.combobox;
+import xcgui.ctrl.pane;
+import xcgui.ctrl.scrollbar;
+import xcgui.ctrl.scrollview;
+import xcgui.ctrl.link;
+import xcgui.ctrl.list;
+import xcgui.ctrl.listbox;
+import xcgui.ctrl.listview;
+import xcgui.ctrl.treeview;
+import xcgui.ctrl.propertygrid;
+import xcgui.shape.text;
+import xcgui.shape.ellipse;
+import xcgui.shape.gif;
+import xcgui.shape.groupbox;
+import xcgui.shape.line;
+import xcgui.shape.picture;
+import xcgui.shape.rect;
+import xcgui.shape.text;
+import xcgui.ctrl.menubar;
+
+namespace xcgui.ctrl{
+
+	create = function(tParam){
+			
+			if(!tParam.cls)return;
+			if(!..string.startWith(tParam.cls,"xc") ) return;
+			tParam.className = ..string.right(tParam.cls,-3);
+			if( tParam.className == "event" ) error("禁止使用的控件类名:xcevent",3)
+			
+		    tParam.exstyle := 0;
+			tParam.style := 0; 
+			tParam.style |= 0x40000000/*_WS_CHILD*/ ;
+			
+		    if(!tParam.border) tParam.border = false;
+			
+			var cls = ..xcgui.ctrl[tParam.className];
+			if(cls){
+				var parent = tParam.parent;
+				tParam.parent = null;
+				var obj = cls(parent.hPointer,tParam);
+				
+				if(obj){
+					if( tParam.font){
+						obj.setFont( tParam.font);
+		    			tParam[["font"]]= null;
+		    		}
+		    	} 
+				return obj;
+			} 
+	}
+	
+	queryObject = function(hPointer){
+		if( type(hPointer) == type.table ) return hPointer; 
+		hPointer = topointer(hPointer);
+		
+		var t  = hPointer ? ::Xcgui.XC_GetObjectType(hPointer);
+		if(t<=0) return;
+		
+		if( ( t== 1/*_XC_WINDOW*/) || (t==3/*_XC_FRAMEWND*/) || (t ==2/*_XC_MODALWINDOW*/) ) return ..xcgui.window(hPointer);
+		elseif( t == 0x65/*_XC_LAYOUT_OBJECT*/ ){
+			return ..xcgui.layoutObject(hPointer);
+		}
+		
+		var cls  = _type_[t];
+		if(cls) return ..xcgui.ctrl[cls](hPointer);
+		return hPointer;
+	}
+	
+	_type_ = { 
+		[0x16/*_XC_BUTTON*/] = "button";
+		[0x17/*_XC_RICHEDIT*/] = "edit";
+		[0x15/*_XC_ELE*/] = "ele";
+		[0x28/*_XC_TABBAR*/] = "tab";
+		[0x24/*_XC_DATETIME*/] = "datetimepick";
+		[0x23/*_XC_MONTHCAL*/] = "calendar";
+		[0x20/*_XC_SLIDERBAR*/] = "trackbar";
+		[0x21/*_XC_PROGRESSBAR*/] = "progress";
+		[0x18/*_XC_COMBOBOX*/] = "combobox";
+		[0x2A/*_XC_PANE*/] = "pane";
+		[0x19/*_XC_SCROLLBAR*/] = "scrollbar";
+		[0x1A/*_XC_SCROLLVIEW*/] = "scrollview";
+		[0x29/*_XC_TEXTLINK*/] = "link";
+		[0x1B/*_XC_LIST*/] = "list";
+		[0x1C/*_XC_LISTBOX*/] = "listbox";
+		[0x1D/*_XC_LISTVIEW*/] = "listview";
+		[0x1E/*_XC_TREE*/] = "treeview";
+		[0x25/*_XC_PROPERTYGRID*/] = "propertygrid";
+		[0x3E/*_XC_SHAPE_TEXT*/] = "text";
+		[0x41/*_XC_SHAPE_ELLIPSE*/] = "ellipse";
+		[0x44/*_XC_SHAPE_GIF*/] = "gif";
+		[0x43/*_XC_SHAPE_GROUPBOX*/] = "groupbox";
+		[0x42/*_XC_SHAPE_LINE*/] = "line";
+		[0x3F/*_XC_SHAPE_PICTURE*/] = "picture";
+		[0x40/*_XC_SHAPE_RECT*/] = "rect";
+		[0x3E/*_XC_SHAPE_TEXT*/] = "text";
+	};
+}

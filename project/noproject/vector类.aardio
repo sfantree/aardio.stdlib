@@ -1,0 +1,165 @@
+import console; 
+
+/*
+
+2022年4月24日13:25:22
+
+
+实现一个类似C++ STL的vector类 
+作为更好的理解aardio面向对象封装方法
+
+aardio知识点：
+命名空间 class 元表 owner raw
+
+STL的vector底层使用数组
+对外表现为可自动扩容的数组
+
+C++ 实现 STL的vector类
+http://dsa.cs.tsinghua.edu.cn/~deng/ds/src_link/vector/vector.h.htm
+
+self表示当前名字空间
+this是用在类里面表示当前实例对象
+owner是调用函数时 函数名字前面的集合对象
+*/
+
+io.open();
+
+class vector {
+	// vector的构造函数
+    ctor(argv1, argv2) {
+        
+        // 定义元表
+	    this@ = _meta;
+        
+        // 无参构造函数 vector()
+        if(argv1 == null and argv2 == null) {
+            this.size = 0;
+            this.capacity = 32;
+            
+            this.ptr = ..raw.realloc( 32 * 4 );
+        }
+        
+        // 有参构造函数 vector(5)
+        if(type(argv1) == type.number and argv2 == null) {
+            this.size = argv1;
+            this.capacity = 2 * argv1;
+            
+            this.ptr = ..raw.realloc( this.capacity , 0);
+            for(i=1; this.size ;1){
+            	..raw.convert( {int v = 0}, topointer(this.ptr, 4 * (i - 1)) );
+            }
+        }
+        
+        // 有参构造函数 vector(5, 10)
+        if(type(argv1) == type.number and type(argv2) == type.number) {
+            this.size = argv1;
+            this.capacity = 2 * argv1;
+            // int * ptr = (int *)malloc(capacity *  sizeof(int))
+            this.ptr = ..raw.realloc( this.capacity , 0);
+            for(i=1; this.size; 1){
+                // raw.convert类似C的memcpy 带类型转换的字节层的拷贝
+                // int v;
+                // memcpy(((int *)ptr)[i - 1], (void)&v, sizeof(int) )
+            	..raw.convert( {int v = argv2}, topointer(this.ptr, 4 * (i - 1)));
+            }
+        }
+        
+        // 复制构造函数 vector(v)
+        // 比较元表 判断参数为vector对象
+       if((argv1) != null and argv2 == null) {
+            if(argv1@ ==_meta) {
+                //..io.print((type(argv1)));
+                //..console.dump(argv1.ptr)
+                this.size = argv1.size;
+                this.capacity = 2 * this.size;
+                //..raw.copy(this.ptr, argv1.ptr);
+                this.ptr = ..raw.realloc( this.capacity , 0);
+                for(i=1; this.size; 1){
+                	// raw.convert类似C的memcpy 带类型转换的字节层的拷贝
+                	// int v;
+                	// memcpy(((int *)ptr)[i - 1], (void)&v, sizeof(int) )
+            		//..raw.convert( topointer(argv1.ptr, 4 * (i - 1)) , topointer(this.ptr, 4 * (i - 1)));
+            		
+            		var e = {int v = 0};
+	                ..raw.convert(topointer( argv1.ptr , 4 * (i - 1)) , e );
+            		..raw.convert(e, topointer(this.ptr, 4 * (i - 1)));
+            	}
+                
+            }
+        }
+        
+        // 参数为数组时
+        if (type(argv1) == "table" and argv2 == null) {
+            //..io.print("table");
+            if (..table.isArray(argv1) == true) {
+                
+                this.size = 0;
+                this.capacity = 2 * (#argv1);
+                this.ptr = ..raw.realloc( this.capacity , 0);
+                for(i=1; #argv1; 1){
+                    var e = argv1[i];
+                	if(type(e) == type.number) {
+                	    var t_ = {int v = e};
+                	    ..raw.convert( t_ , topointer(this.ptr, 4 * (this.size)));
+                	    this.size = this.size + 1;
+                	}
+            	}
+            
+            }
+        }
+        
+        else {}
+		// 垃圾回收
+		..table.gc(this, "free");
+	};
+	
+	// 释放内存
+	free = function() {
+		if(this.ptr != null) {
+		    ..raw.realloc(0, this.ptr);
+		    this.ptr = null;
+		}
+	};
+	
+	
+};
+
+namespace vector {
+	// 作为vector的元表 多个vector对象共享一个元表
+	
+	// 元表 包含元方法
+	_meta = {
+	    _tostring = function() {
+	        var res = "[";
+	        var size = owner[["size"]];
+	        //var size = ..raw.sizeof(owner[["ptr"]]);
+	        //..io.print(size);
+	        var ptr = owner[["ptr"]];
+	        for(i=1;size;1) {
+	            var e = {int v = 0};
+	            ..raw.convert(topointer( ptr , 4 * (i - 1)) , e );
+	        	res = res ++ tostring(e.v);
+	        	if(i < size) {
+	        	    res = res ++ " ";
+	        	}
+	        }
+	        res = res ++ "]";
+			return res;
+		};
+		_topointer = lambda() owner.ptr;
+	}
+}
+
+// 单元测试
+
+var v = vector(5,25);
+//console.dump(v);
+
+//console.dump(type(v));
+//console.dump(v.ptr));
+var v2 = vector(v);
+
+var v3 = vector({1,2,3,4,56,7,8, 99, 21887});
+console.dump(tostring(v3));
+
+console.pause(true);

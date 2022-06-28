@@ -1,0 +1,72 @@
+import win.ui;
+/*DSG{{*/
+var mainForm = win.form(text="ankineko2";right=959;bottom=591)
+mainForm.add(
+btnRtf2xml={cls="button";text="转换为xml";left=84;top=182;right=215;bottom=226;z=2};
+button2={cls="button";text="Button";left=742;top=97;right=883;bottom=137;z=3};
+edit={cls="edit";text="Edit";left=68;top=98;right=688;bottom=142;edge=1;multiline=1;z=1}
+)
+/*}}*/
+
+//
+import fsys.log;
+import time;
+var tm = time.now();
+tm.format = "%Y%m%d-%H%M%S";
+var timestr = tostring(tm);
+fsys.log.setPath("/setting_" + timestr + "_log.txt");
+
+// 单实例运行功能
+import win.ui.atom;
+var atom,hwndConflict = mainForm.atom("21FD3719-8C39-4D33-8DC2-9B0103A4DE69");   
+if(!atom){  
+    /*为窗口设置原子值可以避免一个程序重复运行多个实例*/  
+    win.quitMessage();//程序退出  
+    return;  
+};
+
+
+// 配置文件
+import io
+var iniFilePath = io.fullpath("/config.ini");
+if( !..io.exist(iniFilePath) ){
+    // 释放默认配置文件
+    import fsys.ini
+    var iniObj = ..fsys.ini(iniFilePath);
+    var sec = iniObj.getSection("main");
+    sec.api = "http://127.0.0.1:8765";
+    sec.save();
+    iniObj = nil;
+}
+
+
+
+
+/*软件功能区菜单代码{{*/
+// 创建主菜单
+import win.ui.menu;
+var onMenuSetting = function(id) {
+    var child, wb = mainForm.loadForm("\res\setting.aardio");
+    child.show();
+}
+
+var onMenuAbout = function(id) {
+    
+}
+
+// 添加菜单栏
+var menu = win.ui.menu(mainForm);
+menu.add( "菜单", {
+    { "设置"; onMenuSetting};  
+    { "关于"; onMenuAbout}; 
+} )
+/*}}*/
+
+mainForm.btnRtf2xml.oncommand = function(id,event){
+	var cmdStr = "";
+	
+}
+
+fsys.log.print("start!");
+mainForm.show();
+return win.loopMessage();

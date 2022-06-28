@@ -1,0 +1,41 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469;parent=...)
+winform.add()
+/*}}*/
+
+import web.form;
+var wb = web.form( winform,5/*_UIFLAG_DIALOG*/,,,true);
+wb.noScriptErr = true; 
+
+wb.html = /** 
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />  
+    <title>FastCGI安装配置说明</title>
+</head>
+<body style="white-space:pre;font-size:	11pt;word-wrap: break-word;word-break: normal;">
+
+<pre>
+后台服务可在系统启动时自动运行。
+应先生成EXE文件、并注册为NT服务才能使用。
+
+后台服务程序本质也是一个控制台程序，
+发布后在服务进程中启动以后,不能在用户桌面上直接显示界面，如果需要在桌面显示控制台输出，请在控制面板->管理工具->服务管理器中右键点击注册的服务，属性中勾选：本地系统服务->允许与桌面交互。另外aardio提供 service.msgbox() 等函数可以用于服务进程在当前用户桌面上显示交互对话框。
+
+编写服务程序,可以调用fsys.log输出日志文件记录运行状态以及错误信息
+</pre>
+
+</body>
+</html>
+**/
+
+winform.getTemplatePath = function(){
+	return io.fullpath("/template/service/") 
+}
+
+winform.show(true);
+win.loopMessage();
+return winform;

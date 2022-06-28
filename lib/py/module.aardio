@@ -1,0 +1,39 @@
+//module 模块
+namespace py
+
+class module{
+	ctor( object ){
+	
+		if(!object) return;
+		this = ..py.object( object,true );
+		// 避免调用 set 元方法
+		this[["getDict"]] = function(){
+			return ..py.dict( PyModule_GetDict(owner.pyObject) );
+		};
+		
+		this[["getFilename"]] = function(){
+			var p = ::Python.PyModule_GetFilenameP(owner.pyObject);
+			if(p) return ..raw.str(p);
+		};
+	};  
+}
+
+namespace module{
+	PyModule_GetDict = ::Python.api("PyModule_GetDict","pyObject(PyObject mod)");
+}
+
+/**intellisense(!py3Module) 
+getFilename() = 返回模块文件路径
+getDict() = 如果对象是一个模块,返回字典对象\n!py3Dict.
+getAttr("__/*属性名*/") = 读写属性成员\n属性值为python对象
+setAttr("__/*属性名*/",) = 写属性成员的值,也可以用成员操作符赋值
+getAttr() = !p3yObject.
+has("__/*属性名*/") = 是否存在指定的属性
+callObject(__/*参数*/) = 该对象为函数对象时支持此方法\n参数支持python对象,或字符串、数值
+call(__/*不定个数参数*/) = 该对象为函数对象时支持此方法\n参数为不定个数的字符串或数值
+callObject() = !py3Object.
+call() = !py3Object.
+getFuncDesc() = 获取函数原型
+getFuncName() = 获取函数名
+? = !py3Object.
+end intellisense**/

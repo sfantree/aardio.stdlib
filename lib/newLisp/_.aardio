@@ -1,0 +1,101 @@
+//newLisp 语言 
+import console;
+import web.json;
+namespace newLisp;
+
+var dll = ..raw.loadDll( $"~/lib/newLisp/.res/newlisp.dll","newlisp-new.dll")
+__newlispEvalStr = dll.api("newlispEvalStr","string(string)");
+__newlispCallback = dll.api("newlispCallback","int(string funcName,POINTER funcAddr,string callType)");  
+__newlispEvalStr( '(define (get-json cstr) (json-parse (get-string cstr) ))'); 
+
+__callback = {};
+callback = function(name,proto,func){
+	if( type(name)!="string" ) error("参数@1必须指定函数名",2);
+	if( type(proto)!="string"){
+		if( type(proto)=="function" && type(func)=="string" ) proto,func = func,proto;
+		else error("参数@2必须指定函数原型",2);
+	} 
+	elseif( type(func)!="function" ) error("参数@3必须指定函数对象",2); 
+	
+	__callback[name] = ..raw.tostdcall( func,proto );
+	return __newlispCallback(name,__callback[name],"stdcall");
+} 
+
+jsonCallback = function(name,proto,func){
+	callback(name,proto,function(...){
+		var ret = func(...);
+		return ..web.json.stringify(ret);
+	} )
+}
+
+self.eval = function(code){
+	::Kernel32.SetCurrentDirectory( ..io.fullpath("/") );
+	var out = __newlispEvalStr(code);
+	if(#out) return ..string.left(out,-2);
+	return out;
+}
+
+exec = function(code){ 
+	if(!#code) return;
+	
+	var x,y = ..console.getPos();
+	var out = self.eval(code)
+	var x2,y2 = ..console.getPos();
+	
+	if(x==x2 && y==y2){
+		..console.print(out);
+	} 
+	else {
+		..console.print("");
+	} 
+}
+
+libConsole = lambda(v) dll.newlispLibConsole(!!v);
+libConsole(true);
+
+run = function(){
+	..console.open();
+	//dll.debugConsole //这函数有 BUG，且不必要调用
+	
+	..io.stdout.write('>>> ');
+	while( var line = ..io.stdin.read() ) {
+		
+		if(!#line){
+			var lisp = "";
+			while( var line = ..io.stdin.read() ) {
+				if(!#line){
+					break;
+				}
+				
+				lisp = lisp + line;
+			} 
+			
+			line = lisp
+		}
+		
+		if(#line){
+			exec(line);
+		}
+		
+		..io.stdout.write('>>> ');
+	}
+}
+
+/***intellisense(newLisp)
+eval(__) = 执行 LISP 代码，返回字符串
+exec(__) = 执行 LISP 代码，并输出到控制台
+callback(name,proto,func) = @.callback("__/*回调函数名，LISP 可用 get-string 等获取返回值*/","string(int,double,string)",\n	function(i,n,str){\n		return web.json.stringify({i,n,str});\n	}\n)
+jsonCallback(name,proto,func) = @.callback("__/*回调函数名，LISP 可用 get-json 获取返回值*/","string(int a,int b)",\n	function(a,b){\n		return {a,b};\n	}\n)
+run() = 启动 NewLisp REPL（Read Eval Print Loop）命令行解释器\n每一个非空行在回车后执行并输出结果,\n如果输入一个空行，则读取输入直到下一个空行后执行代码\n按Ctrl + C退出程序
+
+libConsole(true) = 允许 LISP 代码输出到控制台
+libConsole(false) = 禁止 LISP 代码输出到控制台
+end intellisense***/
+
+/**details(官网文档)
+http://www.newlisp.org/
+http://www.newlisp.org/newlisp_manual.html
+http://www.newlisp.org/CodePatterns-cn.html
+end details**/
+
+

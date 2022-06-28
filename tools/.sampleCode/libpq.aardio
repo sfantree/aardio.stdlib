@@ -1,0 +1,21 @@
+import console;
+import libpq;
+
+//PostgreSQL 服务端: https://get.enterprisedb.com/postgresql/postgresql-10.0-1-windows-binaries.zip
+var db = libpq(
+    dbname = "postgres";
+    port = 5432 ;
+    user = "postgres";
+    password = "密码";
+)
+
+var rs = db.exec(`SELECT 123,'{"a": "abc","b":false}'::json`);
+
+for(a,b in rs.each() ){
+    console.log(a,b);
+}
+
+var t = rs.getTable();
+console.dumpJson(t);
+
+console.pause();

@@ -1,0 +1,98 @@
+//fuzzyMatching 模糊匹配
+namespace string; 
+
+var replace =  ..string.replace;
+var left = ..string.left;
+var right = ..string.right;
+var push = ..table.push;
+
+class fuzzyMatching{
+	ctor(str,m=":|<[\a\p]+>"){ 
+		
+		this.tmplate = {}
+		for t in ..string.gmatch( str,m) { 
+			..table.push(this.tmplate,"@"+t);
+		}
+		
+		this.length = ..string.len(str);
+		this.str = ..string.trim(str);
+	};
+	match = function(strCmp){ 
+		if(strCmp==this.str) return 1; 
+		if(!strCmp) return 0;
+		
+		var rs,rc = strCmp,0;  
+		var count = 0; 
+		for(i,t in this.tmplate){ 
+			rs,rc = replace(rs,t,"",1);
+			if(rc)count += rc;
+		}
+
+		var ls;
+		var str = this.str;
+		for(i=this.length;1;-1){ 
+			
+			if( left(str,i,true) == left(strCmp,i,true) ){ 
+				count += i; 
+				ls = i;
+				break;
+			} 
+		}; 
+		
+		
+		for(i=this.length;(ls:1);-1){ 
+			
+			if( right(str,i,true) == right(strCmp,i,true) ){ 
+				count += i;
+				break;
+			} 
+		}; 
+		
+		return count / ( ( this.length + #this.tmplate + ..math.abs(this.length-..string.len(strCmp)) )/100 )/100;
+	}; 
+	find = function(array,minSimilar){
+		var tMatch = {}
+		for(i=1;#array;1){
+			push(tMatch,{string=array[i];similar=this.match(array[i]);index=i })
+		}
+		..table.sort(tMatch,function(b){ 
+			return owner.similar > b.similar
+		} ); 
+		
+		var match = tMatch[1].string; 
+		if(minSimilar===null) minSimilar = 0.6;
+		if(minSimilar && tMatch[1].similar<minSimilar){
+			return; 
+		}
+		
+		return match,tMatch[1].similar,tMatch[1].index; 
+	}; 
+	search = function(strCmp,minSimilar){ 
+		if(minSimilar===null) minSimilar = 0.8; 
+		
+		var len  = ..string.len(strCmp); 
+		if(len < this.length ) {
+			return  this.match(strCmp) >= minSimilar; 
+		}
+		
+		if(..string.indexOf(strCmp,this.str)){
+			return true;
+		}
+		 
+		for(i=1;len-this.length+1;1){
+			var temp = ..string.slice(strCmp,i,i+this.length-1,true);
+			if(this.match(temp) >= minSimilar){ 
+				return true;
+			}
+		} 
+	};
+}
+
+/**intellisense()
+string.fuzzyMatching = 模糊匹配字符串
+string.fuzzyMatching("模板字符串") = 创建模糊匹配对象
+string.fuzzyMatching() = !string_fuzzyMatching.
+!string_fuzzyMatching.search(.(字符串,最小相似度) = 模糊检测参数传入的字符串是否包含模板字符串\n最小相似度默认为 0.8
+!string_fuzzyMatching.match(.(匹配字符串) = 返回文本相似度\n相似度为小数,最大相似为1,不相似为0\n比较规则为先比较相同字符数,\n然后再自左侧或右侧查找相同的最长字符串
+!string_fuzzyMatching.find(.(匹配字符串数组,最小相似度) = 在文本数组中查找最接近的字符串\n最小相似度为可选参数,默认值为 0.6,\n成功则返回值@1为找到的文本,\n返回值@2为相似度（小数,最大相似为1,不相似为0）,\n返回值 @3 为匹配索引,\n无匹配则返回 null
+end intellisense**/

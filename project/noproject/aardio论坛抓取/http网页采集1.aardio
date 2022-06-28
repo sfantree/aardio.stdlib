@@ -1,0 +1,146 @@
+import win.ui;
+import win.ui.menu;
+import win.inputBox;
+import sqlite;
+/*DSG{{*/
+var winform = win.form(text="新增股票(自动)";right=1325;bottom=501;border="dialog frame";max=false;parent=...)
+winform.add(
+groupbox={cls="groupbox";text="采集数据：";left=339;top=9;right=1317;bottom=457;edge=1;z=1};
+groupbox1={cls="groupbox";text="日志：";left=11;top=9;right=325;bottom=457;edge=1;z=2};
+listbox={cls="listbox";left=25;top=45;right=310;bottom=413;color=-1;edge=1;items={};vscroll=1;z=3};
+listview={cls="listview";left=351;top=45;right=585;bottom=409;edge=1;fullRow=1;vscroll=1;z=4};
+listview2={cls="listview";left=1023;top=45;right=1308;bottom=409;edge=1;fullRow=1;vscroll=1;z=6};
+listview3={cls="listview";left=594;top=45;right=1012;bottom=409;edge=1;fullRow=1;vscroll=1;z=5};
+static={cls="static";text="条数：";left=1023;top=434;right=1106;bottom=450;transparent=1;z=7};
+static2={cls="static";text="条数：";left=594;top=434;right=677;bottom=450;transparent=1;z=8}
+)
+/*}}*/
+
+
+
+var xiancheng2 = function(){
+        
+        shishi = thread.create(
+                function(v1){
+                        import sqlite;
+                    import inet.http;
+                    var http = inet.http();
+                    var db = sqlite("/stock.db");
+                    var str;
+                    var fenzu;
+                        var jisuan1;
+                        var jisuan2;
+                        var jisuan3;
+                        var tm;
+                        var res;
+                    v1.listbox.add("线程2：开始执行...");
+                    
+                        for stockid,jys,zongguben in db.each("select id,交易所,总股本 from 基本信息 where 状态=1") {                        
+                                
+                                str = http.get("http://hq.sinajs.cn/list=s_"++jys++stockid);
+                                if(!str){
+                                        v1.listbox.add(stockid++",线程2采集失败！");
+                                        continue ; 
+                                }
+                                fenzu = string.split(str,'<,>');  //fenzu[2] 股票价格
+                                if(fenzu[2]=0){//股价=0，停牌跳过 
+                                        io.print(stockid++"  停牌跳过！");
+                                        continue ;
+                                }
+                                
+                                //总市值
+                                jisuan1 = string.format("%.2f",fenzu[2]*zongguben/10000);  //总市值
+                                
+                                //市净率
+                                tm = time.now().year-1;
+                                res = db.stepQuery("select ["++tm++"-12-31] from 每股净资产 where id='"+stockid+"'");
+                                if(#res=0){
+                                        res = db.stepQuery("select ["++tm-2++"-12-31] from 每股净资产 where id='"+stockid+"'");
+                                }
+                                for(k,v in res){
+                                        jisuan2 = string.format("%.2f",fenzu[2]/v);  //市净率
+                                }
+                                
+                                //市盈率
+                                tm = time.now().year-1;
+                                res = db.stepQuery("select ["++tm++"-12-31] from 每股收益 where id='"+stockid+"'");
+                                if(#res=0){
+                                        res = db.stepQuery("select ["++tm-2++"-12-31] from 每股收益 where id='"+stockid+"'");
+                                }
+                                for(k,v in res){
+                                        jisuan3 = string.format("%.2f",fenzu[2]/v);  //市盈率 
+                                }
+                                
+                                v1.listview3.addItem({stockid;fenzu[2];jisuan2;jisuan3;jisuan1});
+                                v1.listview3.ensureVisible(v1.listview3.count);
+                                v1.static2.text = v1.listview3.count++"条";
+                        } 
+                v1.listbox.add("线程2，执行完毕！");                
+                db.close();        
+                },winform
+                
+        )        
+}
+
+
+//创建菜单
+var caidan = win.ui.menu(winform);
+caidan.add("  工  具  ",{
+
+        {//数组一
+                "开始采集";function(){
+                        io.open(,"新增股票采集动态");
+                        caidan.enable(1,false);
+                        caidan.redraw();
+                        winform.listbox.add("开始采集！时间："++tostring(time()));
+                        
+                        xiancheng2();
+                        thread.waitOne(shishi);
+                        
+                        thread.invoke( 
+                                function(v1){
+                                        import win.ui;
+                                        import sqlite;
+                                        import fsys.config;
+                                        var peizhi = fsys.config("/config/");
+                                        var db = sqlite("/db/stock.db");
+                                        
+                                        
+                                        //线程2：将数据写入数据库...
+                                        for(i=1;v1.listview3.count;1){
+                                                io.print(v1.listview3.getItemText(i,1)++"  线程2:写入数据库");
+                                                 db.exec("update 基本信息 set 股价='"+v1.listview3.getItemText(i,2)+"',市净率='"+v1.listview3.getItemText(i,3)+"',市盈率='"+v1.listview3.getItemText(i,4)+"',总市值='"+v1.listview3.getItemText(i,5)+"' where id='" +v1.listview3.getItemText(i,1)+"'");
+                                                 win.delay(10);
+                                         }
+                                        
+                        
+                                        v1.listbox.add("数据写入完成！");
+                                        v1.listbox.add("采集全部结束！时间："++tostring(time()));
+                                        peizhi.config.caijishijian = tostring(time());//采集时间
+                                        //io.close();
+                                        db.close();
+                                                
+                                },winform
+                        )
+                        caidan.enable(1,true);//启用菜单
+                        caidan.redraw();
+
+                        
+                }
+                
+        };
+})        
+
+winform.listview3.insertColumn("股票代码",80,1);
+winform.listview3.insertColumn("股价",80,2);
+winform.listview3.insertColumn("市净率",80,3);
+winform.listview3.insertColumn("市盈率",80,4);
+winform.listview3.insertColumn("总市值",100,5);
+winform.listview3.fillParent(/*列序号*/);
+
+
+winform.enableDpiScaling();
+winform.show();
+
+win.loopMessage();
+return winform;

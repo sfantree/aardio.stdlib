@@ -1,0 +1,114 @@
+﻿//httpFile 下载压缩包
+import fsys;
+import fsys.untar;
+import zlib.unzip;
+import inet.downBox;
+namespace zlib.httpFile;
+
+download = function(url,title="下载",saveDir,extraDir,saveName,parentForm,endProc){	
+	saveDir = ..io.fullpath(saveDir : "~\download\" )
+	..fsys.createDir(saveDir);
+	
+	if(saveName){
+		saveDir = ..fsys.joinpath(saveDir,saveName);
+	}
+	
+	var downBox = ..inet.downBox( parentForm,title,false);
+	downBox.headers = self.headers;
+	downBox.referer = self.referer;
+	downBox.userAgent = self.userAgent;
+	downBox.preget = self.preget;
+	
+	downBox.endProc = function(){  
+		var tPath = ..io.splitpath(downBox.savePath)
+		downBox.text = "正在解压:" + tPath.file;
+		 
+		if(!extraDir){
+			extraDir = ..string.match(tPath.file,"(.+)\.[^\.]+$"  ); 
+			if(!extraDir) extraDir = tPath.file + ".uncompress";
+			extraDir = ..fsys.joinpath(saveDir,extraDir) 
+		}
+		else {
+			extraDir = ..io.fullpath(extraDir);
+		} 
+		
+		if(..string.endWith(downBox.savePath,".tar.gz",true)
+			|| ..string.endWith(downBox.savePath,".tgz",true)){
+				 
+			var tar = ..fsys.untar(downBox.savePath,extraDir);
+			
+			downBox.progress.hide = false;
+			downBox.progress.setProgressRange(1,1000);
+			downBox.progress.progressPos = 0;
+			downBox.labProgress.text = "正在解压缩,文件块总数: " + tar.blocksCount;
+		   
+			for(fileName,writeSize,remainSize,progress in tar.eachBlock(1000) ){ 
+				downBox.progress.progressPos = progress
+    			downBox.labInfo.text = fileName;
+    			..win.peekPumpMessage();
+    			if(!downBox.continueModal){
+    				return;
+    			} 
+			} 
+		}
+		else{
+			
+			var ok,err = ..zlib.unzip.extract( downBox.savePath,extraDir,
+				function(fileName,extractPath,fileInfo,size,unitSize,unitName){
+					downBox.labInfo.text = fileName;
+					downBox.progress.stepProgress(); 
+					..win.peekPumpInputMessage();
+					
+					if(extractPath){ 
+						return downBox.continueModal;
+					}  
+				}, ,
+				function(numEntries){
+					downBox.progress.hide = false;
+					downBox.progress.setProgressRange(1,..math.min(numEntries,0xFFFF));
+					downBox.progress.progressPos = 0;
+					downBox.labProgress.text = "正在解压缩,文件目录总数: " + numEntries;
+				}
+			) 
+			
+			if(!ok){
+				downBox.labProgress.text = "解压缩时遇到错误"
+				downBox.labInfo.text = err;
+				downBox.complete = false;
+				return;
+			} 
+		}
+		
+		if(type(endProc) === type.function){
+			if(downBox.complete && extraDir){
+				var ret,err = endProc(downBox,extraDir);
+				if(err){
+					downBox.labProgress.text = "解压缩时遇到错误"
+					downBox.labInfo.text = err = err ? ..string.replace(err,"[\r\n]","");
+					downBox.complete = false;
+					return;
+				}
+			}
+		}
+		owner.endModal(); 
+	}
+	downBox.download(url,saveDir ) 
+	
+	if(!downBox.complete){ 
+		return;
+	} 
+	
+	if( ! ..io.exist(downBox.savePath,4) ){  
+		return; 
+	}  
+	return extraDir; 		
+}
+
+/**intellisense(zlib)
+httpFile = 自网络下载并解压*.zip、*.tar.gz、*.tgz 文件
+httpFile.headers =下载时添加的HTTP请求头
+httpFile.referer = 下载时的HTTP引用页
+httpFile.userAgent =  下载时用到的User Agent
+httpFile.preget = 首次连接慢的下载服务器请设为true
+httpFile.download(.(下载网址,对话框标题,下载路径,解压目录,存储文件名,父窗口) = 自网络下载并解压*.zip、*.tar.gz、*.tgz 文件\n,除下载网址以外，其他所有参数可选,\n下载网址允许传入一个动态返回 url 的线程函数,\n下载路径可指定存储目录或存储文件路径\n失败返回null\n成功返回解压目录
+end intellisense**/

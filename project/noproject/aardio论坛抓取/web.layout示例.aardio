@@ -1,0 +1,147 @@
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form(text="HTMLayout 无边框窗体";right=1850;bottom=1100;border="none";parent=...)
+winform.add()
+/*}}*/
+
+import web.layout;
+import web.layout.behavior.windowCommand;
+import web.layout.behavior.windowSizer;
+
+//创建网页浏览器
+var wbLayout = web.layout( winform )
+
+wbLayout.html = /**  
+<html>
+<body>
+    <!-- 下面是标题栏,凡在CSS中指定 behavior:windowCommand 的节点(含子节点) 可用 command 属性指明命令类型 -->
+    <div #title-bar command="window-caption"> <span .title> O A 管 理 </span>
+        <div .ctrl-bar>
+         
+            <!-- 弹出菜单,类似这种包含弹出节点的最好用div或button,
+                div主要用作布局容器 - 可更好的支持弹出子节点或浮动子节点,
+                而a,li等节点存在的主要目的不是用来做其他节点的容器 -->
+            <div .window-menu>u
+               <menu .popup> <!-- .popup是内置的弹出菜单样式 -->
+                    <li>在线帮助</li>
+                    <li>子菜单
+                    <menu >
+                        <li>这是子菜单</li>
+                    </menu>
+                    </li>
+                    <li #exit>退出</li>
+                </menu>
+            </div>
+            
+            <!-- 下面是标题栏按钮,必须使用a标记表示,command属性指示该按钮执行的命令 -->
+            <a command="window-min">0</a>
+            <a command="window-max">1</a>
+            <a command="window-close">r</a>
+        </div>
+    </div>
+
+    <!--下面这句用来支持可拖动的边框,必须在aardio中调用 import web.layout.behavior.windowSizer -->
+    <div style="behavior:windowSizer"/>
+</body>
+</html>
+**/
+  
+wbLayout.css = /**
+
+body{
+    margin:0;
+    background:#fff;/*网页背景色*/
+}
+
+#title-bar{
+    behavior:windowCommand;  /*必须在aardio中 import web.layout.behavior.windowCommand */
+    width:100%; /*宽度撑满窗口*/
+    height:28px; /*指定高度*/
+    background:#5a5a5a; /*背景色*/  
+}
+
+/*最大化后body会自动添加maximize属性*/
+body[maximize]{
+    border-radius:0;/*最大化去掉圆角*/
+}
+
+body[maximize] #title-bar{
+    border-radius:0;/*最大化去掉圆角*/
+}
+
+#title-bar span.title{
+    font:system;
+    margin:6px 0 0 10px;
+    color:#CCCCCC;
+}
+
+/*CSS选择器中,空格表示节点间的父子包含关系*/
+#title-bar .ctrl-bar{
+    position:absolute;//标题栏按钮容器绝对定位到窗口右上角
+    top:1px;//顶坐标
+    right:8px;//右坐标
+    width:95px
+}
+
+/*CSS选择器中,方括号指定节点拥有的属性*/
+#title-bar .ctrl-bar a{
+    display:block; //显示为块节点
+    float:left;//块节点左浮动( 从左向右排 )
+    height:14px;
+    font-family:"Marlett";/*该字体显示按钮符号*/  
+    font-size:14px;
+    padding:4px;
+    color:#fff;
+}
+
+#title-bar a[command]:hover{
+    background:#6ebccf;
+}
+
+#title-bar a[command]:active{
+    background:#FF0000;
+}
+
+#title-bar a[command="window-restore"]{
+    content:"2";/*改变文本,Marlett字体为还原符号*/
+}
+
+#title-bar .window-menu{
+    behavior:popup-menu;
+    float:left;
+    height:14px;
+    font-family:"Marlett";/*该字体显示按钮符号*/  
+    font-size:14px;
+    padding:4px;
+    color:#fff;
+}
+#title-bar .window-menu:hover{
+    background:#6ebccf;
+}
+#title-bar .window-menu:owns-popup /*菜单已弹出*/
+{
+    background-color: #FF0000;
+    color: #FFFFFF;
+}
+**/
+
+// 响应菜单点击事件
+wbLayout.onMenuItemClick =  {
+
+    // 事件可以是一个函数或列表,如果是列表键名匹配节点的id或name属性
+    exit = function (ltTarget,ltOwner,reason,behaviorParams) {
+        winform.close();
+    }
+     
+    // 在这里没有匹配不到id的节点会触发default函数*/
+    default = function (ltTarget,ltOwner,reason,behaviorParams) {
+        var ltPopupOwner = web.layout.element( behaviorParams.he );//这是弹出菜单的按钮节点
+        winform.msgbox( ltTarget.innerText )
+    }
+}
+
+import win.ui.shadow;
+win.ui.shadow(winform); //添加阴影边框
+
+winform.show();
+win.loopMessage();

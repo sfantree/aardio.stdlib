@@ -1,0 +1,17 @@
+﻿//vlistview 虚表
+import win.ui.ctrl.listview;
+namespace win.ui.ctrl;
+
+class vlistview {
+	ctor (parent,tParam) {
+		tParam.style |= 0x1000/*_LVS_OWNERDATA*/; 
+		this = ..win.ui.ctrl.listview(parent,tParam);
+	};
+	onCreate = function(){
+		this.enableDoubleBuffering();
+	};
+}
+
+/**intellisense()
+win.ui.ctrl.vlistview() = 虚表控件,\n因为项目是虚拟的，不支持设置项目复选框\n虚表控件继承自 listview,\n所以可以选添加并设置好 listview 属性再把类名改为 vlistview,\n也可以直接添加自定义控件，并将类名改为 vlistview\n!listview.
+end intellisense**/

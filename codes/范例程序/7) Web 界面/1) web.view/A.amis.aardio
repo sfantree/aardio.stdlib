@@ -1,0 +1,73 @@
+//低代码框架 amis
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="WebView2 - 调用百度低代码前端框架 amis";right=966;bottom=622)
+winform.add()
+/*}}*/
+
+import web.view;
+var wb = web.view(winform);
+	
+wb.external = {
+	getUiJson  = function(){
+		return web.json.stringify({
+			"type":"page",
+			"title":"表单页面", 
+			"body":{
+				"type":"form",
+				"mode":"horizontal",
+				"api":"/saveForm",
+				"body":{
+					{"type":"input-text","name":"name","label":"Name","required":true},
+					{"type":"input-email","name":"email","label":"Email","required":true},
+					{"type":"static-tpl","tpl":"生成的id为：${id}"}
+				}, 
+			}
+		});
+	};
+}
+
+import wsock.tcp.asynHttpServer;
+var httpServer = wsock.tcp.asynHttpServer(); 
+httpServer.run( {
+	["/index.html"] = /**
+<!DOCTYPE html>
+<html lang="zh">
+	<head>
+	<meta charset="UTF-8" />
+	<title>amis demo</title>
+	<link rel="stylesheet" href="https://unpkg.com/amis/sdk/antd.min.css" />
+	<link rel="stylesheet" href="https://unpkg.com/amis/sdk/helper.min.css" />
+	<script src="https://unpkg.com/amis/sdk/sdk.min.js"></script>
+	<style> html, body, .app-wrapper { position: relative; width: 100%; height: 100%; margin: 0; padding: 0; }  </style>
+	</head>
+	<body>
+	<div id="root" class="app-wrapper"></div>
+	
+	<script type="text/javascript">
+		(async function () {
+		let amis = amisRequire('amis/embed');
+		let amisJson = await aardio.getUiJson(); 
+		let amisScoped = amis.embed('#root', JSON.parse(amisJson),{},{
+			theme: 'antd'//https://github.com/baidu/amis/issues/2465
+		});
+		})();
+	</script>
+	</body>
+</html>
+**/;
+	["/saveForm"] = function(response,request){
+		var data = request.postJson();//读取表单请求发送的数据，已解析为 aardio 对象
+		response.write({
+			"status": 0,
+				"msg": "保存成功",
+				"data": { "id":  1 } 
+		}) 
+	};
+}); 
+
+//需要通过HTTP服务器访问才能支持 localStorage( 也可以指定资源文件内响应 HTTP 请求的 aardio 代码路径 ）。
+wb.go( httpServer.getUrl("index.html") ) 
+
+winform.show();
+win.loopMessage();

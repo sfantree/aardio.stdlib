@@ -1,0 +1,30 @@
+import console; 
+
+// socks5请求头
+var req = {
+	BYTE ver = 0x05;
+	BYTE nmethods = 0x01;
+	BYTE methods[0] = {0x00};
+}
+
+var buffer = raw.buffer(req);
+console.log(string.hex(buffer));
+
+buffer = '\x05\x01\x00';
+console.log(string.hex(buffer));
+
+buffer = string.unhex("050100","");
+console.log(string.hex(buffer));
+
+class SOCKS5_REQ {
+    BYTE ver = 0x05;
+	BYTE nmethods = 0x01;
+	BYTE methods[0] = {0x00};
+    _struct_aligned = 1;
+}
+
+buffer = raw.buffer(SOCKS5_REQ());
+console.log(string.hex(buffer));
+
+
+console.pause(true);

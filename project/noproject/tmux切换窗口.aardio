@@ -1,0 +1,146 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="tmux切换窗口";right=319;bottom=183)
+winform.add(
+button={cls="button";text="上一个窗口";left=80;top=136;right=184;bottom=168;z=6};
+button2={cls="button";text="下一个窗口";left=200;top=136;right=304;bottom=168;z=7};
+editHwnd={cls="edit";left=80;top=8;right=304;bottom=31;dl=1;dt=1;edge=1;hidesel=1;multiline=1;readonly=1;tabstop=1;z=3};
+editPath={cls="edit";left=80;top=40;right=304;bottom=128;autohscroll=false;dl=1;dr=0.05;dt=1;edge=1;hidesel=1;multiline=1;readonly=1;tabstop=1;z=5};
+picturebox={cls="picturebox";left=8;top=136;right=43;bottom=168;dr=1;dt=1;notify=1;transparent=1;z=1};
+static10={cls="static";text="窗口句柄:";left=8;top=8;right=71;bottom=32;align="right";dl=1;dt=1;z=2};
+static11={cls="static";text="启动文件:";left=8;top=48;right=72;bottom=65;align="right";dl=1;dt=1;z=4}
+)
+/*}}*/
+
+import com.picture;
+import win.image;
+
+var IconCount = win.image.extractIcon("D:\Program Files\MacroCreator\Resources.dll", 1);
+//console.log("IconCount", IconCount);
+
+//内存图像 - 创建自"工具->转义字符串生成器"
+gifCur = 'GIF\56\57a \0 \0\x91\0\0\xc0\xc0\xc0\0\0\xff\0\0\0\xff\xff\xff\33\xff\11XMP DataXMP<?xpacket begin=\34\xef\xbb\xbf\34 id=\34W\53M\48MpCehiHzreSzNTczkc\57d\34?> <x:xmpmeta xmlns:x=\34adobe:ns:meta\47\34 x:xmptk=\34Adobe XMP Core \53\46\48\45c\48\54\48 \54\49\46\49\51\52\55\55\55\44 \50\48\49\48\47\48\50\47\49\50\45\49\55:\51\50:\48\48		\34> <rdf:RDF xmlns:rdf=\34http:\47\47www\46w\51\46org\47\49\57\57\57\47\48\50\47\50\50\45rdf\45syntax\45ns\35\34> <rdf:Description rdf:about=\34\34 xmlns:xmp=\34http:\47\47ns\46adobe\46com\47xap\47\49\46\48\47\34 xmlns:xmpMM=\34http:\47\47ns\46adobe\46com\47xap\47\49\46\48\47mm\47\34 xmlns:stRef=\34http:\47\47ns\46adobe\46com\47xap\47\49\46\48\47sType\47ResourceRef\35\34 xmp:CreatorTool=\34Adobe Photoshop CS\53 Windows\34 xmpMM:InstanceID=\34xmp\46iid:\57\50E\56\53\49\55\48\57D\50\57\49\49DFA\52F\52ED\48\52\51\56\52\57\56EB\54\34 xmpMM:DocumentID=\34xmp\46did:\57\50E\56\53\49\55\49\57D\50\57\49\49DFA\52F\52ED\48\52\51\56\52\57\56EB\54\34> <xmpMM:DerivedFrom stRef:instanceID=\34xmp\46iid:\57\50E\56\53\49\54E\57D\50\57\49\49DFA\52F\52ED\48\52\51\56\52\57\56EB\54\34 stRef:documentID=\34xmp\46did:\57\50E\56\53\49\54F\57D\50\57\49\49DFA\52F\52ED\48\52\51\56\52\57\56EB\54\34\47> <\47rdf:Description> <\47rdf:RDF> <\47x:xmpmeta> <?xpacket end=\34r\34?>\1\xff\xfe\xfd\xfc\xfb\xfa\xf9\xf8\xf7\xf6\xf5\xf4\xf3\xf2\xf1\xf0\xef\xee\xed\xec\xeb\xea\xe9\xe8\xe7\xe6\xe5\xe4\xe3\xe2\xe1\xe0\xdf\xde\xdd\xdc\xdb\xda\xd9\xd8\xd7\xd6\xd5\xd4\xd3\xd2\xd1\xd0\xcf\xce\xcd\xcc\xcb\xca\xc9\xc8\xc7\xc6\xc5\xc4\xc3\xc2\xc1\xc0\xbf\xbe\xbd\xbc\xbb\xba\xb9\xb8\xb7\xb6\xb5\xb4\xb3\xb2\xb1\xb0\xaf\xae\xad\xac\xab\xaa\xa9\xa8\xa7\xa6\xa5\xa4\xa3\xa2\xa1\xa0\x9f\x9e\x9d\x9c\x9b\x9a\x99\x98\x97\x96\x95\x94\x93\x92\x91\x90\x8f\x8e\x8d\x8c\x8b\x8a\x89\x88\x87\x86\x85\x84\x83\x82\x81\x80\x7f\x7e}|{zyxwvutsrqponmlkjihgfedcba`_^]\\[ZYXWVUTSRQPONMLKJIHGFEDCBA@?>=<;:\57\56\55\54\53\52\51\50\49\48\47\46\45\44\43\42\41\40\39\38%\36\35\34\33 \31\30\29\28\27\26\25\24\23\22\21\20\19\18\17\16\15\14\13\12\11\10\9\8
+\7\6\5\4\3\2\1\0\0\33\xf9\4\0\0\0\0\0\44\0\0\0\0 \0 \0\0\2\x8d\x94\x8f\xa9\x9b\xe0 \x82\x9c\xb4V\xf1 \54\xd0z\xbf\x85Y\xf4\x95\18\xf6\48\xea\xba\12\xee\11\xc7\xf2\xec\26\xf4\x8d\xbfv\xce\xcb{\15\28\xfc\x82\xbc\33\45\xd1\51\xc6v\x82Z\19\xa7\xd4\57\15\53\xe8\xd3\xb7\xcc\30\xaf\48\46R:\x8br\xabZ\xdfX\x88\x7eR\xd3h\51\xb6\9\x97\xc6\xcf\xc2s\11\xae\8\xdb\xd9\xd7y{\xb9\23W\xa7\xc6\xe6\x86U\6f\x88\xf8E\xa6\x88\xf8\xd7\xe8\xa8\xf5E\xa7S\xe9D\22\xd5ui\xb9\x96\xa3I\36\25\xba\53Z\xc4Y:\xc8\xa2\xbaP\0\0;'
+gifBlank ='GIF\56\57a \0 \0\x91\0\0\xc0\xc0\xc0\0\0\xff\0\0\0\xff\xff\xff\33\xff\11XMP DataXMP<?xpacket begin=\34\xef\xbb\xbf\34 id=\34W\53M\48MpCehiHzreSzNTczkc\57d\34?> <x:xmpmeta xmlns:x=\34adobe:ns:meta\47\34 x:xmptk=\34Adobe XMP Core \53\46\48\45c\48\54\48 \54\49\46\49\51\52\55\55\55\44 \50\48\49\48\47\48\50\47\49\50\45\49\55:\51\50:\48\48		\34> <rdf:RDF xmlns:rdf=\34http:\47\47www\46w\51\46org\47\49\57\57\57\47\48\50\47\50\50\45rdf\45syntax\45ns\35\34> <rdf:Description rdf:about=\34\34 xmlns:xmp=\34http:\47\47ns\46adobe\46com\47xap\47\49\46\48\47\34 xmlns:xmpMM=\34http:\47\47ns\46adobe\46com\47xap\47\49\46\48\47mm\47\34 xmlns:stRef=\34http:\47\47ns\46adobe\46com\47xap\47\49\46\48\47sType\47ResourceRef\35\34 xmp:CreatorTool=\34Adobe Photoshop CS\53 Windows\34 xmpMM:InstanceID=\34xmp\46iid:\57CCE\48\56\52\57\57D\50\57\49\49DF\56\57BEE\49D\56\49\48\48D\51EA\55\34 xmpMM:DocumentID=\34xmp\46did:\57CCE\48\56\52A\57D\50\57\49\49DF\56\57BEE\49D\56\49\48\48D\51EA\55\34> <xmpMM:DerivedFrom stRef:instanceID=\34xmp\46iid:\57CCE\48\56\52\55\57D\50\57\49\49DF\56\57BEE\49D\56\49\48\48D\51EA\55\34 stRef:documentID=\34xmp\46did:\57CCE\48\56\52\56\57D\50\57\49\49DF\56\57BEE\49D\56\49\48\48D\51EA\55\34\47> <\47rdf:Description> <\47rdf:RDF> <\47x:xmpmeta> <?xpacket end=\34r\34?>\1\xff\xfe\xfd\xfc\xfb\xfa\xf9\xf8\xf7\xf6\xf5\xf4\xf3\xf2\xf1\xf0\xef\xee\xed\xec\xeb\xea\xe9\xe8\xe7\xe6\xe5\xe4\xe3\xe2\xe1\xe0\xdf\xde\xdd\xdc\xdb\xda\xd9\xd8\xd7\xd6\xd5\xd4\xd3\xd2\xd1\xd0\xcf\xce\xcd\xcc\xcb\xca\xc9\xc8\xc7\xc6\xc5\xc4\xc3\xc2\xc1\xc0\xbf\xbe\xbd\xbc\xbb\xba\xb9\xb8\xb7\xb6\xb5\xb4\xb3\xb2\xb1\xb0\xaf\xae\xad\xac\xab\xaa\xa9\xa8\xa7\xa6\xa5\xa4\xa3\xa2\xa1\xa0\x9f\x9e\x9d\x9c\x9b\x9a\x99\x98\x97\x96\x95\x94\x93\x92\x91\x90\x8f\x8e\x8d\x8c\x8b\x8a\x89\x88\x87\x86\x85\x84\x83\x82\x81\x80\x7f\x7e}|{zyxwvutsrqponmlkjihgfedcba`_^]\\[ZYXWVUTSRQPONMLKJIHGFEDCBA@?>=<;:\57\56\55\54\53\52\51\50\49\48\47\46\45\44\43\42\41\40\39\38%\36\35\34\33 \31\30\29\28\27\26\25\24\23\22\21\20\19\18\17\16\15\14\13\12\11\10\9\8\7\6\5\4\3\2\1\0\0\33
+\xf9\4\0\0\0\0\0\44\0\0\0\0 \0 \0\0\2\\\x94\x8f\xa9\x9b\xe0 \x82\x9c\xb4V\xf1 \54\xd0z\xbf\x85Y\xf4\x95\18\xf6\48\xea\xba\12\xee\11\xc7\xf2\xec\26\xf4\x8d\xbfv\xce\xcb{\15\28\xfc\x82\xbc\33\17g<\xd2\x92J\x9f\xa0\x99cBu\xcf\xe9\xb2jufgRkw\xfa\x85\x86\x9bce\xf9x\38\xa6\x83k`\xbb\xf7\46b\xb7Tz\x8c\x85_\21\0\0;'
+spyCur = '\x00\x00\x02\x00\x01\x00\x20\x20\x02\x00\x10\x00\x10\x000\x01\x00\x00\x16\x00\x00\x00(\x00\x00\x00\x20\x00\x00\x00@\x00\x00\x00\x01\x00\x01\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xFF\xFF\xFF\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x20\x00\x00\x00\x20\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFC\x1F\xFF\xFF\xF3g\xFF\xFF\xEC\x1B\xFF\xFF\xDF}\xFF\xFF\x9C\x1E\xFF\xFF\x9F~\xFF\xFFV5\x7F\xFFU\xD5\x7F\xFF\x01@\x7F\xFFU\xD5\x7F\xFFV5\x7F\xFF\xBF~\xFF\xFF\xBC\x1E\xFF\xFF\xDF}\xFF\xFF\xEC\x1B\xFF\xFF\xF3g\xFF\xFF\xFC\x1F\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF'
+var hCursor = com.picture.load(spyCur).CopyHandle();
+
+
+winform.wndproc = function(hwnd,message,wParam,lParam){
+	select( message ) { 
+		case 0x205/*_WM_RBUTTONUP*/{
+			//鼠标右键弹起,下面获取坐标
+			var x,y = win.getMessagePos(lParam);
+			
+		}
+	}
+	//无返回值则继续调用默认回调函数
+}
+
+import console;
+import win;
+import winex;
+// console.open();
+
+import process.cmdline;
+
+
+
+function showWindowInfo(hwnd){
+	
+    winform.editHwnd.text = tostring(hwnd); 
+    var tid,pid = win.getThreadProcessId(hwnd);
+	winform.editPath.text = process.cmdline(pid);
+    
+}
+
+g_targetHwnd = 0;
+
+genCode = function(){
+	winform.spying = null; 
+	var x, y = win.getCursorPos();
+	var hwnd = winex.fromPoint(x, y);
+	
+	var classname = win.getClass(hwnd);
+	g_targetHwnd = hwnd;
+	//console.log("hwnd", hwnd, "classname", classname);
+	
+	showWindowInfo(hwnd);
+	
+	winform.spying = true; 
+}
+
+import win.cur;  
+winform.picturebox.image = gifCur;
+var timeSpyId;
+winform.picturebox.wndproc = function (hwnd,message,wParam,lParam){
+	select (message){
+		case 0x201/*_WM_LBUTTONDOWN*/{
+		
+			if(timeSpyId)
+				return; 
+			
+			winform.picturebox.image = gifBlank;  
+			winform.picturebox.capture = true;
+			win.cur.beginCur(hCursor);//持续设定鼠标指针
+			 
+			winform.spying = true;  
+			
+			timeSpyId = winform.setInterval(
+				function(hwnd,msg,id,tick){//定时执行代码
+					genCode()
+					winform.spying = true;
+				},500/*毫秒*/
+			);
+		}
+		case 0x202/*_WM_LBUTTONUP*/{ 
+			if( timeSpyId ){ 
+				winform.clearInterval(timeSpyId)
+				winform.picturebox.image = gifCur; 
+				winform.picturebox.capture = false
+				win.cur.endCur(); //恢复正常鼠标指针 
+				genCode() ;
+				winform.spying = false;
+				timeSpyId = null;
+			}
+		}  
+	}
+}
+
+import key;
+
+/**
+import key;
+import winex;
+win.delay(9047)
+key.combine("CTRL","B")
+win.delay(5140)
+key.press("N")
+win.delay(18110)
+key.combine("CTRL","C")
+**/
+
+winform.button.oncommand = function(id,event){
+	if(g_targetHwnd > 0) {
+	    win.setForeground(g_targetHwnd);
+	    win.delay(50);
+	    key.combine("CTRL","B");
+	    win.delay(50);
+	    key.press("P");
+	}
+}
+
+winform.button2.oncommand = function(id,event){
+	if(g_targetHwnd > 0) {
+	    win.setForeground(g_targetHwnd);
+	    win.delay(50);
+	    key.combine("CTRL","B");
+	    win.delay(50);
+	    key.press("P");
+	}
+}
+
+win.setTopmost(winform.hwnd);
+winform.show();
+win.loopMessage();

@@ -1,0 +1,19 @@
+import console;
+
+// 字符编码检测  判断编码
+
+//转换编码
+var utf8 = "这是UTF8字符串";
+var gbk = string.fromto(utf8,65001,0);
+
+//检测编码
+import com.interface.IMultiLanguage2;
+var multiLanguage = com.interface.IMultiLanguage2.Create();
+
+var codepage = multiLanguage.detectInputCodepageEx(utf8);
+console.log( codepage )
+
+codepage = multiLanguage.detectInputCodepageEx(gbk);
+console.log( codepage )
+
+console.pause(true);

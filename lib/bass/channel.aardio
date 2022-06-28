@@ -1,0 +1,366 @@
+﻿import bass;
+import inet.url;
+
+namespace bass;
+
+class channel{
+	ctor( channelHandle ){
+		this.channelHandle = channelHandle;
+		this._synThreadStdcall =  {}; 
+		
+		this._messageOnly = ..win.form().messageOnly()
+		this._messageOnly.translateSynCallback = function(hSync,data){
+			var callback = this._synThreadStdcall[hSync][["callback"]]
+			if(callback){
+				return callback(data)
+			}
+		}
+	};
+	
+	free = function() {
+		if( this.channelHandle ){ 
+			::Bass.BASS_StreamFree(this.channelHandle);
+			this.channelHandle = null;
+			
+			for(p,cb in this._synThreadStdcall){
+				cb.remove();
+			}
+			
+			this._messageOnly.close();
+		}
+	};
+	
+	play = function(restart){
+		return ::Bass.BASS_ChannelPlay( this.channelHandle,!!restart)
+	};
+	
+	pause = function(){
+		if( this.channelHandle ){
+			 return ::Bass.BASS_ChannelPauseB(this.channelHandle); 
+		}
+	}
+ 
+	stop = function() {
+		if( this.channelHandle ){
+			return  ::Bass.BASS_ChannelStopB(this.channelHandle); 
+		}	
+	};
+	 
+	isActive = function() {
+		if( this.channelHandle ){
+			return ::Bass.BASS_ChannelIsActiveB(this.channelHandle); 
+		}
+	};
+	
+	getPosition = function(mode=0/*_BASS_POS_BYTE*/){
+		if( this.channelHandle ){
+			if( ::Bass.BASS_ChannelIsActive( this.channelHandle ) ){
+				return ::Bass.BASS_ChannelGetPositionL(this.channelHandle, mode) 
+			} 
+		} 
+		return 0;
+	};
+	 
+	setPosition = function(pos,mode=0/*_BASS_POS_BYTE*/){
+		if( this.channelHandle ){ 
+			return ::Bass.BASS_ChannelSetPositionB( this.channelHandle,..math.size64(pos),mode) );
+		}
+	};
+	
+	getTime = function(){ 
+		var bytes = this.getPosition();
+		if( bytes){
+			return  ::Bass.BASS_ChannelBytes2SecondsD( this.channelHandle, bytes);
+		} 	
+		return 0;	
+	};  
+	
+	setTime = function( seconds ){
+		if( this.channelHandle ){
+			var bytes = BASS_ChannelSeconds2Bytes(this.channelHandle, seconds);  
+			if( bytes ){
+				return ::Bass.BASS_ChannelSetPositionB( this.channelHandle, bytes, 0/*_BASS_POS_BYTE*/) );
+			}
+		}
+	};
+	
+	duration = function() {
+		if(this.channelHandle) {
+			var len = ::Bass.BASS_ChannelGetLengthL( this.channelHandle, 0/*_BASS_POS_BYTE*/);
+			if(len){
+				return ::Bass.BASS_ChannelBytes2SecondsD( this.channelHandle, len);
+			}
+		}
+	};
+
+	setFlags = function(flags,mask){
+		if( this.channelHandle ){
+			return ::Bass.BASS_ChannelFlags( this.channelHandle,flags,mask);
+		}
+	};
+	
+	loop = function(enable) {
+		return this.setFlags(enable?4:0,4/*_BASS_SAMPLE_LOOP*/) 
+	};
+	
+	getAttribute = function(attrib){
+		if( this.channelHandle ){
+			var value = {float v}
+			if ::Bass.BASS_ChannelGetAttribute( this.channelHandle, attrib, value){
+				return value.v;
+			}
+		}	
+	};
+	
+	setAttribute = function(attrib,value){
+		if( this.channelHandle ){
+			return BASS_ChannelSetAttribute( this.channelHandle,attrib,value); 
+		}	
+	};
+	
+	slideAttribute = function(attrib,value,milliseconds){
+		if( this.channelHandle ){
+			return BASS_ChannelSlideAttribute( this.channelHandle,attrib,value,milliseconds); 
+		}	
+	}; 
+	 
+	getVolume = function(){
+		return this.getAttribute(2/*_BASS_ATTRIB_VOL*/); 
+	};
+	
+	setVolume = function(v){
+		return this.setAttribute(2/*_BASS_ATTRIB_VOL*/,v); 
+	};
+	
+	slideVolume = function(vol,milliseconds) {
+		return this.slideAttribute(2/*_BASS_ATTRIB_VOL*/,vol,milliseconds)
+	};
+	
+	resetEffect = function(){
+		return ::Bass.BASS_FXReset(this.channelHandle);
+	};
+	
+	effect = function(typ,priority) {
+		if( this.channelHandle ){
+			var hfx = ::Bass.BASS_ChannelSetFX(this.channelHandle,typ,priority);
+			if(hfx){
+				var effect = {
+					delete = function(){
+						if(hfx){
+							::Bass.BASS_ChannelRemoveFX(this.channelHandle,hfx);
+							hfx = null;
+						}
+					}
+					setParameters = function(v){
+						if(hfx){
+							::Bass.BASS_FXSetParameters(hfx,v);
+							hfx = null;
+						}
+					}
+					getParameters = function(v){
+						if(hfx){
+							::Bass.BASS_FXGetParameters(hfx,v); 
+							return v; 
+						}
+					}
+					setPriority = function(priority){
+						return ::Bass.BASS_FXSetPriority(hfx,priority);
+					}
+					
+				}
+				
+				..table.gc(effect,"delete");
+				return effect;
+			}
+		}	
+	};
+	
+	getData = function(flag=0x80000002/*_BASS_DATA_FFT1024*/,data) {
+		if(!data){
+			var size =({
+			    [0x80000000/*_BASS_DATA_FFT256*/] = 128;  
+			    [0x80000001/*_BASS_DATA_FFT512*/] = 256;  
+			    [0x80000002/*_BASS_DATA_FFT1024*/] = 512;  
+			    [0x80000003/*_BASS_DATA_FFT2048*/] = 1024; 
+			    [0x80000004/*_BASS_DATA_FFT4096*/] = 2048;
+			    [0x80000005/*_BASS_DATA_FFT8192*/] = 4096; 
+			    [0x80000006/*_BASS_DATA_FFT16384*/] = 8192;  
+			    [0x80000007/*_BASS_DATA_FFT32768*/] = 16384;
+			})[flag]
+			data = {float values[]={length=size}}
+			if(!size){
+				error("参数错误",2)
+			}
+		}
+
+		if( this.channelHandle ){
+			var size = ..raw.sizeof(data) & 0xFFFFFFF;
+			var len = ::Bass.BASS_ChannelGetData( this.channelHandle,data, size | flag);
+			return data.values;	
+		}
+	}; 
+	
+	setDevice = function(device){
+		if(!::Bass.BASS_ChannelSetDeviceB(this.channelHandle,device)){
+			
+			if(..bass.errorCode() == 8/*_BASS_ERROR_INIT*/){
+				..bass.init(device);
+				return ::Bass.BASS_ChannelSetDeviceB(this.channelHandle,device); 
+			} 
+		}
+		else  return true; 
+	};
+	
+	getDevice = function(device){
+		return ::Bass.BASS_ChannelGetDevice(this.channelHandle) ; 
+	};
+		
+	getInfo = function(){
+		var info = {
+    		INT freq; 
+    		INT chans;
+    		INT flags;
+    		INT ctype; 
+    		INT origres;
+    		INT plugin;
+    		INT sample;
+    		ustring filename; 
+		}
+ 		if(::Bass.BASS_ChannelGetInfo( this.channelHandle,info)){
+ 			return info;
+ 		}
+	};
+	 
+	posCallback = function(callback,interval=1000){
+		if(this.timer){
+			this._messageOnly.clearInterval(this.timer);
+		}
+		
+		this.timer  = this._messageOnly.setInterval( 
+			interval,function(){
+				if( this.channelHandle ){
+					if( ::Bass.BASS_ChannelIsActive( this.channelHandle ) ){
+						callback( this.getTime() );
+					} 
+				} 
+			} 
+		)
+	}
+	
+	syncCallback = function(callback,syncType,syncParam){
+		var pCallback = ..thread.tostdcall(function(hSync,channel,data){
+			owner.translateSynCallback(hSync,data);
+		},"void(ptr,INT,INT,pointer)",this._messageOnly);
+		var hSync = ::Bass.BASS_ChannelSetSyncP( this.channelHandle,syncType,..math.size64(syncParam),pCallback,null);
+
+		if(hSync){  
+			this._synThreadStdcall[hSync] = {
+				pCallback = pCallback;
+				callback = callback;
+				remove = function(){
+					if(hSync){
+						this._synThreadStdcall[hSync] = null; 
+						::Bass.BASS_ChannelRemoveSync(this.channelHandle,hSync);
+						hSync = null;	
+					} 
+				} 
+			}; 
+			return this._synThreadStdcall[hSync] 
+		}
+	};
+}
+ 
+namespace channel{ 
+    BASS_ChannelSeconds2Bytes = ::Bass.api("BASS_ChannelSeconds2Bytes","LONG(PTR handle,double pos)");
+    BASS_ChannelSetAttribute = ::Bass.api("BASS_ChannelSetAttribute","bool(PTR handle,int attrib,float value)");
+    BASS_ChannelSlideAttribute = ::Bass.api("BASS_ChannelSlideAttribute","bool(PTR handle,int attrib,float value,INT time)");
+    BASS_StreamCreateFile = ::Bass.api("BASS_StreamCreateFileW","ptr(bool,ptr,LONG,LONG,INT)")
+    BASS_StreamCreateURL = ::Bass.api("BASS_StreamCreateURL","ptr(ustring path,INT offset,INT flags,ptr proc,ptr user)") 
+ 
+	open = function(path,flags) {
+    	if(flags===null){
+    		flags = 0x40000/*_BASS_STREAM_AUTOFREE*/ | 0x80/*_BASS_SAMPLE_FX*/
+    	}
+    	
+		var stream;
+		if(..inet.url.is(path,0/*_URLIS_URL*/)){
+		 	stream = BASS_StreamCreateURL(path,0,(flags:0)|0x80000000/*_BASS_UNICODE*/,null,null); 
+		 	if(stream)return ..bass.channel(stream);
+		} 
+		elseif( #path<= 0x410/*_MAX_PATH_U8*/  ) {
+			
+			if(..io.exist(path)){
+				stream = BASS_StreamCreateFile( false,..string.toUnicode(..io.fullpath(path)),
+					0,0,(flags:0)|0x80000000/*_BASS_UNICODE*/)
+					
+				if(stream)return ..bass.channel(stream);
+			}
+			elseif(..io.localpath(path)){
+				var buf = ..string.loadBuffer(path);
+				if(buf){
+					stream = BASS_StreamCreateFile( true,buf,0,#buf,flags )
+					if(stream){
+						var channel =  ..bass.channel(stream);
+						channel.gcBuffer = buf;
+						return channel;
+					}
+				}			
+			}
+		}
+		else {
+			stream = BASS_StreamCreateFile( true,path,0,#path,flags )
+			if(stream){
+				var channel =  ..bass.channel(stream);
+				channel.gcBuffer = buf;
+				return channel;
+			}	
+		}
+		 
+		return null,"打开音频时遇到错误: " + ..bass.errorName();
+	}
+
+}
+
+/**intellisense()
+bass.channel() = !stdbasschannel.
+bass.channel.open( = 成功返回bass.channe对象,\n失败返回null,错误信息
+bass.channel.open(.(path,flags) = 打开音频,\n参数@1可以指定本地文件路径、资源文件路径、网址、内存数据,\n可选使用参数@2指定选项\n详细用法请参考bass文档
+bass.channel.open() = !stdbasschannel.
+end intellisense**/
+
+/**intellisense(!stdbasschannel)
+free() = 释放对象\n音频对象不会自动释放,\n必须在不再使用该音频时手动调用些函数释放对象
+play() = 播放音频
+pause() = 暂停播放
+stop() = 停止播放	
+isActive() = 音频是否可用
+getPosition() = 返回当前位置,可选使用参数@1指定使用的单位
+setPosition(.(pos) = 设置位置,可选使用参数@2指定使用的单位
+getTime() = 返回以秒为单位的当前播放时间位置
+setTime(.(seconds) = 设置当前播放时间位置,参数指定秒数
+duration() = 返回总时长,以秒为单位
+setFlags(.(flags,mask) = 设置选项
+loop(__) = 设置是否循环播放
+getAttribute(attrib) = 获取属性值
+setAttribute(.(attrib,value) = 设置属性值
+slideAttribute(.(attrib,value,milliseconds) = 在参数@3指定的时间内\n渐变参数@1指定的属性到参数@2指定的值
+getVolume() = 返回音量,\n返回值为0到1之间表示百分比的小数
+setVolume(__) = 使用0到1之间表示百分比的小数设置音量
+slideVolume(.(vol,milliseconds) = 渐变音量到 @vol 参数指定的值,\n使用0到1之间表示百分比的小数表示音量\n,参数@3指定渐变时长
+resetEffect() = 重置效果
+effect(.(type,priority) = 创建效果
+effect()  = !stdbasseffect.
+getData(_BASS_DATA__) = 获取FFT频谱数据
+setDevice(__) = 指定音频设备索引,\n参数为 bass.getDeviceInfos 返回的音频设备数组中对应设备的数组索引值,\n参数指定的设备索引如果未初始化则自动调用 bass.init 函数初始化
+getDevice() = 返回音频设备索引
+getInfo() = 返回音频信息,返回格式请参考些函数源码
+posCallback(callback,interval) = @.posCallback(\n	function(seconds){\n		__/*播放进度改变时触发此函数,\nseconds为当前播放时长,以秒为单位*/	\n	}\n)
+syncCallback(callback,syncType,syncParam) = @.syncCallback(function(data){\n	\n},_BASS_SYNC__/*指定同步回调类型,可选用参数@3指定附加参数\n此函数详细用法请参数函数源码以及bass.dll的文档*/)
+end intellisense**/
+
+/**intellisense(!stdbasseffect)
+delete() = 删除效果
+setParameters(__) = 设置参数
+getParameters(__) = 获取参数
+setPriority(__) = 设置优先级
+end intellisense**/

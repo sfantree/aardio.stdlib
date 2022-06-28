@@ -1,0 +1,334 @@
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form( text="专用批量重命名";bottom=586;max=false;right=798;border="thin";parent=...)
+winform.add(
+editYczc={ num=1;right=340;bottom=465;text="0";left=316;top=444;z=27;edge=1;cls="edit" };
+static22={ bottom=572;text="分隔符";left=466;top=558;transparent=1;z=62;right=503;cls="static" };
+editYczh={ num=1;right=340;bottom=488;text="0";left=316;top=467;z=28;edge=1;cls="edit" };
+ckbCgth={ bottom=441;right=241;left=148;top=427;z=18;text="开启常规替换";cls="checkbox" };
+static21={ bottom=550;text="递增";left=466;top=536;transparent=1;z=60;right=494;cls="static" };
+spinYcd={ bottom=489;right=432;left=412;top=467;z=75;edge=1;cls="spin" };
+groupbox={ bottom=407;right=794;left=4;top=368;z=2;text="设置";edge=1;cls="groupbox" };
+spinBhz={ bottom=577;right=376;left=356;top=555;z=76;edge=1;cls="spin" };
+ckbYcsz={ bottom=464;right=535;left=492;top=450;z=35;text="数字";cls="checkbox" };
+static24={ bottom=571;text="扩展名";left=569;top=557;transparent=1;z=66;right=607;cls="static" };
+editTjhz={ bottom=575;right=134;left=36;top=554;z=44;edge=1;cls="edit" };
+trvDir={ bgcolor=16777215;vscroll=1;right=290;left=4;top=30;bottom=365;z=3;hscroll=1;edge=1;cls="treeview" };
+static12={ bottom=570;text="后缀";left=8;top=556;transparent=1;z=42;right=36;cls="static" };
+groupbox5={ bottom=494;right=794;left=284;top=411;z=23;text="移除";edge=1;cls="groupbox" };
+ckbFile={ checked=1;bottom=401;right=77;left=8;top=386;z=7;text="显示文件";cls="checkbox" };
+static6={ bottom=460;text="最初";left=288;top=446;transparent=1;z=25;right=316;cls="static" };
+spinYczh={ bottom=489;right=361;left=341;top=467;z=73;edge=1;cls="spin" };
+spinYczc={ bottom=466;right=361;left=341;top=444;z=72;edge=1;cls="spin" };
+groupbox7={ bottom=582;right=711;left=553;top=499;z=63;text="杂项";edge=1;cls="groupbox" };
+editDir={ bottom=26;color=255;right=794;left=70;top=4;z=6;readonly=1;edge=1;cls="edit" };
+static18={ bottom=550;text="开始";left=385;top=536;transparent=1;z=54;right=413;cls="static" };
+spinBhdz={ bottom=554;right=545;left=525;top=532;z=80;edge=1;cls="spin" };
+static15={ bottom=571;text="在位置";left=150;top=557;transparent=1;z=47;right=190;cls="static" };
+ckbYc={ bottom=441;right=381;left=288;top=427;z=24;text="开启移除";cls="checkbox" };
+static8={ bottom=460;text="从";left=372;top=446;transparent=1;z=29;right=390;cls="static" };
+ckbYczm={ bottom=463;right=486;left=443;top=449;z=33;text="字母";cls="checkbox" };
+editBhws={ num=1;text="0";bottom=576;right=437;left=413;top=555;z=57;edge=1;cls="edit" };
+static7={ bottom=483;text="最后";left=288;top=469;transparent=1;z=26;right=316;cls="static" };
+cmbBhfs={ bottom=551;right=376;left=316;top=531;z=59;
+items={ [1]="无";[2]="前缀";[3]="后缀";[4]="前后缀";[5]="插入" };mode="dropdownlist";edge=1;cls="combobox" };
+ckbTj={ bottom=528;right=101;left=8;top=514;z=40;text="开启添加";cls="checkbox" };
+cmbZxzwjm={ bottom=552;right=657;left=608;top=532;z=67;
+items={ [1]="不变";[2]="小写";[3]="大写" };mode="dropdownlist";edge=1;cls="combobox" };
+editRegex={ bottom=403;color=16711680;right=790;left=437;top=381;z=9;edge=1;cls="edit" };
+ckbDir={ bottom=401;right=163;left=94;top=386;z=8;text="显示目录";cls="checkbox" };
+static4={ bottom=460;text="替换";left=148;top=446;transparent=1;z=19;right=176;cls="static" };
+cmbZxkzm={ bottom=575;text="combobox3";left=608;top=555;right=657;z=68;
+items={ [1]="不变";[2]="小写";[3]="大写";[4]="固定";[5]="移除" };mode="dropdownlist";edge=1;cls="combobox" };
+static3={ bottom=483;text="替换";left=8;top=469;transparent=1;z=14;right=36;cls="static" };
+ckbYchz={ bottom=485;right=486;left=443;top=471;z=34;text="汉字";cls="checkbox" };
+editYcc={ num=1;right=411;bottom=465;text="0";left=387;top=444;z=31;edge=1;cls="edit" };
+static16={ bottom=548;text="方式";left=288;top=534;transparent=1;z=51;right=316;cls="static" };
+static9={ bottom=483;text="到";left=372;top=469;transparent=1;z=30;right=390;cls="static" };
+static={ bottom=22;text="当前位置：";left=8;top=9;transparent=1;z=5;right=83;cls="static" };
+static10={ bottom=464;text="字词";left=542;top=450;transparent=1;z=38;right=568;cls="static" };
+editBhdz={ num=1;right=524;bottom=553;text="1";left=493;top=532;z=61;edge=1;cls="edit" };
+ckbZzth={ bottom=441;right=101;left=8;top=427;z=12;text="开启正则替换";cls="checkbox" };
+editZzth={ bottom=488;right=134;left=36;top=467;z=16;edge=1;cls="edit" };
+editTjzwz={ right=255;bottom=576;text="0";left=189;top=555;z=48;edge=1;cls="edit" };
+editBhks={ num=1;right=437;bottom=553;text="1";left=413;top=532;z=56;edge=1;cls="edit" };
+static2={ bottom=460;text="匹配";left=8;top=446;transparent=1;z=13;right=36;cls="static" };
+ckbBh={ bottom=529;right=381;left=288;top=515;z=50;text="开启自动编号";cls="checkbox" };
+groupbox4={ bottom=581;right=279;left=4;top=498;z=39;text="添加";edge=1;cls="groupbox" };
+editTjcr={ bottom=553;right=276;left=178;top=532;z=46;edge=1;cls="edit" };
+ckbZx={ bottom=532;right=685;left=557;top=515;z=64;text="开启杂项";cls="checkbox" };
+editCgth={ bottom=465;right=274;left=176;top=444;z=21;edge=1;cls="edit" };
+groupbox2={ bottom=494;right=139;left=4;top=411;z=1;text="正则替换";edge=1;cls="groupbox" };
+static14={ bottom=547;text="插入";left=150;top=534;transparent=1;z=45;right=178;cls="static" };
+btnRestore={ bottom=527;right=795;left=717;top=500;z=71;text="重置";cls="button" };
+editYcd={ num=1;right=411;bottom=488;text="0";left=387;top=467;z=32;edge=1;cls="edit" };
+spinTjzwz={ bottom=577;right=276;left=256;top=555;z=77;edge=1;cls="spin" };
+ckbRegex={ bottom=401;right=435;left=254;top=386;z=10;text="文件(夹)名称过滤[正则表达式]";cls="checkbox" };
+editCgy={ bottom=488;right=274;left=176;top=467;z=22;edge=1;cls="edit" };
+groupbox6={ bottom=582;right=548;left=284;top=499;z=49;text="自动编号";edge=1;cls="groupbox" };
+editTjqz={ bottom=552;right=134;left=36;top=531;z=43;edge=1;cls="edit" };
+groupbox3={ bottom=494;right=279;left=144;top=411;z=17;text="常规替换";edge=1;cls="groupbox" };
+static17={ bottom=571;text="在";left=300;top=557;transparent=1;z=52;right=312;cls="static" };
+spinBhws={ bottom=577;right=458;left=438;top=555;z=79;edge=1;cls="spin" };
+spinYcc={ bottom=466;right=432;left=412;top=444;z=74;edge=1;cls="spin" };
+editZxkzm={ bottom=577;right=708;left=660;top=556;z=69;edge=1;cls="edit" };
+lsvFile={ bgcolor=16777215;bottom=365;right=794;left=293;fullRow=1;top=30;z=4;gridLines=1;edge=1;cls="listview" };
+static19={ bottom=571;text="位数";left=385;top=557;transparent=1;z=55;right=413;cls="static" };
+editBhz={ num=1;right=355;bottom=576;text="0";left=316;top=555;z=53;edge=1;cls="edit" };
+editZzpp={ bottom=465;right=134;left=36;top=444;z=15;edge=1;cls="edit" };
+static5={ bottom=483;text="用";left=160;top=469;transparent=1;z=20;right=178;cls="static" };
+ckbCDir={ bottom=401;right=237;left=180;top=386;z=11;text="子目录";cls="checkbox" };
+static11={ bottom=546;text="前缀";left=8;top=533;transparent=1;z=41;right=36;cls="static" };
+static23={ bottom=548;text="主文件名";left=557;top=534;transparent=1;z=65;right=609;cls="static" };
+ckbYcfh={ bottom=486;right=535;left=492;top=472;z=36;text="符号";cls="checkbox" };
+editBhfgf={ bottom=576;right=545;left=504;top=555;z=58;edge=1;cls="edit" };
+spinBhks={ bottom=554;right=458;left=438;top=532;z=78;edge=1;cls="spin" };
+btnRename={ bottom=582;right=795;left=716;top=533;z=70;text="重命名";cls="button" };
+editYczf={ bottom=488;right=790;left=542;top=467;z=37;edge=1;cls="edit" }
+)
+/*}}*/
+
+// https://bbs.aardio.com/forum.php?mod=viewthread&tid=11160
+
+winform.lsvFile.insertColumn("原文件名",160);
+winform.lsvFile.insertColumn("类型",60);
+winform.lsvFile.insertColumn("新文件名",160);
+winform.lsvFile.insertColumn("结果",80);
+
+winform.cmbBhfs.selIndex = 1;
+winform.cmbZxzwjm.selIndex = 1;
+winform.cmbZxkzm.selIndex = 1;
+
+winform.spinYczc.setRange(0,20);
+winform.spinYczh.setRange(0,20);
+winform.spinYcc.setRange(0,20);
+winform.spinYcd.setRange(0,20);
+winform.spinTjzwz.setRange(0,20);
+winform.spinBhz.setRange(0,20);
+winform.spinBhks.setRange(0,20);
+winform.spinBhws.setRange(0,20);
+winform.spinBhdz.setRange(0,20);
+
+winform.editRegex.setFocus();
+winform.show();
+
+import sys.volume;
+import fsys;
+import string.regex;
+
+var insEmpytItem = function(item){ //添加空项
+    winform.trvDir.insertItem("",item);
+}
+
+var isEmptyDir = function(path,item){ //是否有子目录
+    fsys.enum(path, "*.*",
+        function(dir,filename,fullpath,findData){
+            if(!filename){
+                insEmpytItem(item);
+                return false;
+            }
+        }
+        ,false
+    );
+}
+
+var clearItem = function(item){ //清空当前项的所有子项
+    var tab = {};
+    var cItem = winform.trvDir.getChildItem(item);
+    table.push(tab,cItem);
+    cItem = winform.trvDir.getNextItem(cItem)
+    while(cItem){
+        table.push(tab,cItem);
+        cItem = winform.trvDir.getNextItem(cItem)   
+    }
+    for(i=1;#tab;1){
+        winform.trvDir.delItem(tab[ i ]);
+    }
+}
+
+var getDir = function(item){ //获取当前项完整路径
+    var ctxt = winform.trvDir.getItemText(item);
+    var pitem = winform.trvDir.getParentItem(item);
+    if(!pitem){
+        winform.editDir.text = "";
+        return false;
+    }
+    while(pitem){
+        ctxt = winform.trvDir.getItemText(pitem) ++ "\" ++ ctxt;
+        winform.editDir.text = string.replace(ctxt,"驱动器\\","");
+        pitem = winform.trvDir.getParentItem(pitem);
+    }  
+}
+
+var getDriveList = function(){ //获取驱动器列表
+    winform.trvDir.clear();
+    var fItem = winform.trvDir.insertItem("驱动器");
+    var drives = sys.volume.getLogicalDrives();
+    for(i,drv in drives){
+        var info = sys.volume.getInfo(drv);
+        if(info){
+            item = winform.trvDir.insertItem(info.drive,fItem);
+            isEmptyDir(info.drive,item);
+        }
+    }
+    winform.trvDir.expand(fItem);
+}
+
+var getList = function(hitem){ //获取当前路径下的文件和目录
+    fsys.enum( winform.editDir.text ++ "\", "*.*",
+        function(dir,filename,fullpath,findData){
+            if(filename){
+                if(winform.ckbFile.checked){
+                    winform.lsvFile.addItem({filename;"文件"});
+                }
+            }
+            else{
+                var item = winform.trvDir.insertItem(dir,hitem);
+                isEmptyDir(fullpath,item);
+                if(winform.ckbDir.checked){
+                    winform.lsvFile.addItem({dir;"目录"});
+                }
+            }
+        }
+        ,false
+    );  
+}
+
+var getListReg = function(flag){ //获取当前路径下的文件和目录
+    if(winform.editDir.text == ""){return false;}
+    winform.lsvFile.clear();
+    var regex = string.regex(winform.editRegex.text);
+    fsys.enum( winform.editDir.text ++ "\", "*.*",
+        function(dir,filename,fullpath,findData){
+            if(filename){
+                if(winform.ckbFile.checked){
+                    if(winform.ckbRegex.checked and (winform.editRegex.text != "")){
+                        var flag = regex.find(filename);
+                        if(flag){
+                            winform.lsvFile.addItem({filename;"文件"});
+                        }
+                    }else {
+                        winform.lsvFile.addItem({filename;"文件"});
+                    }
+                }
+            }
+            else{
+                if(winform.ckbDir.checked){
+                    if(winform.ckbRegex.checked and (winform.editRegex.text != "")){
+                        var flag = regex.find(dir);
+                        if(flag){
+                            winform.lsvFile.addItem({dir;"目录"});
+                        }
+                    }else {
+                        winform.lsvFile.addItem({dir;"目录"});
+                    }
+                }
+            }
+        }
+        ,flag
+    );  
+}
+
+getDriveList();
+
+winform.ckbFile.oncommand = function(id,event){
+    getListReg(false);
+}
+
+winform.ckbDir.oncommand = function(id,event){
+    getListReg(false);
+}
+
+winform.ckbCDir.oncommand = function(id,event){
+    if(winform.ckbCDir.checked){
+        getListReg(true);
+    }else {
+        getListReg(false);
+    }
+}
+
+winform.ckbRegex.oncommand = function(id,event){
+    getListReg(false);
+}
+
+winform.editRegex.oncommand = function(id,event){
+    if(event == 0x300/*_EN_CHANGE*/ and winform.ckbRegex.checked){
+        if(!string.endWith(winform.editRegex.text,"\")){getListReg();}
+    }
+}
+
+winform.trvDir.onnotify = function(id,code,ptr){
+    select(code) {
+        case 0xFFFFFFFE/*_NM_CLICK*/ {
+            winform.lsvFile.clear();
+            var hitem = winform.trvDir.hitTest();
+            if(hitem){
+                clearItem(hitem);
+                getDir(hitem);
+                if(winform.trvDir.getItemText(hitem) == "驱动器"){ //如果当前项文本为“驱动器”则显示驱动器列表
+                    getDriveList();
+                    return false;
+                }
+                getList(hitem);
+            }
+        }
+        case 0xFFFFFFFB/*_NM_RCLICK*/ {
+        }
+    }
+}
+
+winform.spinYczc.oncommand = function(id,event,pos){
+    if( pos ){
+        winform.editYczc.text = pos;
+    }
+}
+
+winform.spinYczh.oncommand = function(id,event,pos){
+    if( pos ){
+        winform.editYczh.text = pos;
+    }
+}
+
+winform.spinYcc.oncommand = function(id,event,pos){
+    if( pos ){
+        winform.editYcc.text = pos;
+    }
+}
+
+winform.spinYcd.oncommand = function(id,event,pos){
+    if( pos ){
+        winform.editYcd.text = pos;
+    }
+}
+
+winform.spinTjzwz.oncommand = function(id,event,pos){
+    if( pos ){
+        winform.editTjzwz.text = pos;
+    }
+}
+
+winform.spinBhz.oncommand = function(id,event,pos){
+    if( pos ){
+        winform.editBhz.text = pos;
+    }
+}
+
+winform.spinBhks.oncommand = function(id,event,pos){
+    if( pos ){
+        winform.editBhks.text = pos;
+    }
+}
+
+winform.spinBhws.oncommand = function(id,event,pos){
+    if( pos ){
+        winform.editBhws.text = pos;
+    }
+}
+
+winform.spinBhdz.oncommand = function(id,event,pos){
+    if( pos ){
+        winform.editBhdz.text = pos;
+    }
+}
+
+win.loopMessage();

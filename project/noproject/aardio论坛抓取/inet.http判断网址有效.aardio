@@ -1,0 +1,11 @@
+import console;
+import inet.http;
+
+var http = inet.http();
+if( http.head("https://dldir1.qq.com/qqfile/qq/QQ9.0.4/23786/QQ9.0.4.exe") ){
+    if(http.statusCode < 400){
+        console.log("有效")
+    }
+}
+
+console.pause()

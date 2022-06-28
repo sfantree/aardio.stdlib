@@ -1,0 +1,32 @@
+
+import win.ui;
+/*DSG{{*/
+mainForm = win.form(text="SQL连贯操作";right=367;bottom=391)
+mainForm.add(
+edit={cls="edit";text="edit";left=19;top=46;right=344;bottom=370;edge=1;hscroll=1;multiline=1;vscroll=1;z=3};
+userId={cls="edit";text="edit";left=98;top=8;right=167;bottom=30;edge=1;z=2};
+userName={cls="edit";text="edit";left=18;top=7;right=87;bottom=29;edge=1;z=1}
+)
+/*}}*/
+
+import sqlite;
+var sqlConnection = sqlite("/testModel.db");
+
+//SQL连贯操作,这种写法有时候会把简单的事搞复杂,一般推荐大家还是直接写SQL省事
+import sqlite.model;
+var model = sqlite.model(sqlConnection);
+
+//绑定字段名
+model.table("user2").fields("userId", "userName")
+
+//创建表
+model.create().exec()
+
+//把窗体上同名控件的值插入数据库
+model.insert(mainForm).exec();
+
+import web.json;
+mainForm.edit.print( model.fields("rowid","*").getTable() )
+
+mainForm.show();
+win.loopMessage();

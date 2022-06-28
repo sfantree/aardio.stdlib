@@ -1,0 +1,54 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add(
+button={cls="button";text="Button";left=16;top=408;right=112;bottom=448;z=2};
+edit={cls="edit";left=16;top=16;right=376;bottom=392;edge=1;multiline=1;z=1};
+edit2={cls="edit";left=384;top=16;right=744;bottom=392;edge=1;multiline=1;z=3}
+)
+/*}}*/
+
+/*
+	global.wb = wb;
+	global.winform = winform; 
+	
+	var func,err = loadcode(winform.editCode.text)
+	if(!func){
+		if( string.find( winform.editCode.text,"/**") )
+			winform.msgbox(err,"载入代码时遇到错误","网页探针")
+		else {
+			winform.msgbox( "请先拖动右上角瞄准器图标到网页上以选定对象.","网页探针")
+		}
+		
+		return;
+	}
+	try{ func() } catch(e){ winform.msgboxErr(e) }
+*/
+
+winform.button.oncommand = function(id,event){
+	var func,err = loadcode(winform.edit.text)
+	if(!func){
+		if( string.find( winform.edit.text,"/**") )
+			winform.msgbox(err,"载入代码时遇到错误","网页探针")
+		else {
+			winform.msgbox( "请先拖动右上角瞄准器图标到网页上以选定对象.","网页探针")
+		}
+		
+		return;
+	}
+	winform.func = func;
+	thread.invoke( 
+	    function(winform) {
+	        try{ winform.func() } catch(e){ winform.msgboxErr(e) }
+	    }
+	    , winform);
+	
+	//try{ func() } catch(e){ winform.msgboxErr(e) }
+}
+
+winform.edit.oncommand = function(id,event){
+	
+}
+
+winform.show();
+win.loopMessage();

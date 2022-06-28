@@ -1,0 +1,87 @@
+﻿//ellipse 圆形
+import xcgui.shape.metaProperty;
+namespace xcgui.shape;
+
+
+class ellipse{
+
+	ctor(hParentPointer,tParam){ 
+		if(! (hParentPointer || tParam) ) return null;
+		if(type(tParam)!=type.table){
+			this.hPointer = topointer( hParentPointer);
+		}
+		else {
+			if( tParam.resource ) ..xcgui.res.load(tParam.resource);
+			if(tParam.layout){
+				var hEle = ..xcgui.loadLayout(tParam.layout,hParentPointer);
+				if( ::Xcgui.XC_IsHELE (hEle) ){ 
+					if( ::Xcgui.XEle_GetType(hEle) != 0x41/*_XC_SHAPE_ELLIPSE*/ ) return null; 
+					::Xcgui.XShape_AdjustLayout(hEle);
+					this.hPointer = topointer(hEle);
+				}
+				else {
+					return null;
+				}
+			}
+			else {
+				this.hPointer = topointer( ::Xcgui.XShapeEllipse_Create(tParam.left,tParam.top,tParam.right-tParam.left,tParam.bottom-tParam.top,hParentPointer) ); 	
+			}
+			
+			
+		}
+	};
+	
+	@_metaProperty;
+	
+}
+
+ellipse._metaProperty = metaProperty(
+	setBorderColor = function(color,alpha){
+		return ::Xcgui.XShapeEllipse_SetBorderColor(owner.hPointer,color,alpha);
+	}
+	setFillColor = function(color,alpha){
+		return ::Xcgui.XShapeEllipse_SetFillColor(owner.hPointer,color,alpha);
+	}
+	enableBorder = function(bEnable){
+		return ::Xcgui.XShapeEllipse_EnableBorder(owner.hPointer,bEnable);
+	}
+	enableFill = function(bEnable){
+		return ::Xcgui.XShapeEllipse_EnableFill(owner.hPointer,bEnable);
+	}
+)
+
+..xcgui.ctrl.ellipse = ..xcgui.shape.ellipse;
+
+/**intellisense()
+xcgui.shape.ellipse(.(父窗口,参数表) = 创建一个基础元素
+xcgui.shape.ellipse() = !stdxcellipse.
+win.ui.ctrl.xcellipse() = !stdxcellipse.
+end intellisense**/
+
+/**intellisense(!stdxcellipse)
+setBorderColor(.(color,alpha) = 设置边框颜色
+setFillColor(.(color,alpha) = 设置填充颜色
+enableBorder(__) = 启用绘制圆边框
+enableFill(__) = 启用填充圆
+id = ID值
+uid = UID值
+topmost(true) = Z序置顶
+getWindow() = 返回父窗体\n!stdxcwnd
+getParent() = 获取父节点\n!stdxcele
+getParentHandle() = 获取父节点句柄
+getParentType() = 获取父节点类型
+getObjectType() = 获取节点类型
+remove() = 移除元素,但不销毁.
+getContentSize() = 返回客户区区块,::SIZE对象\n!size. 
+getRect = 返回控件区块,::RECT对象\n!rect. 
+setRect(.(rect,是否重绘) = 设置区块,参数@1为::RECT对象
+setPos(.(x坐标,y坐标,宽,高) = 调整控件位置或排序,所有参数可选\n同时指定x,y坐标则移动位置\n同时指定宽高则改变大小
+getPos() = 返回相对坐标,宽,高,返回4个值：x,y,cx,cy
+autoResize = 是否允许aardio窗口自动调整控件位置\n只有在窗口设计器中添加的控件,并是aardio窗口对象的成员时此属性才有效
+getWidth() = 获取宽度
+getHeight() = 获取高度
+getParentLayout() = 获取所在布局对象
+adjustLayout() = 调整布局
+redraw() = 重绘
+close() = 销毁控件
+end intellisense**/

@@ -1,0 +1,27 @@
+import win.ui;
+import win.dlg.message;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469;bgcolor=16777215)
+winform.add()
+/*}}*/
+
+import web.form;
+var wb = web.form( winform,5/*_UIFLAG_DIALOG*/,,,true);
+
+//使用external接口定义网页脚本可调用的本地函数
+wb.external = { 
+	hello = function( name,setValue ){ 
+		
+		//回调 React Hook 函娄
+		setValue( time.tick() );
+		
+		winform.msgInfo("网页脚本调用aardio函数,参数：" + name)
+	}
+}
+
+wb.go("\web\index.html") 
+winform.show(); //显示窗体
+
+winform.show();
+win.loopMessage();
+return winform;

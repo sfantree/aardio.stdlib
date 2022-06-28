@@ -1,0 +1,63 @@
+//aardio 一键提取淘宝店铺商品链接
+
+import win.ui;
+import win.clip;
+import console;
+//创建web窗体
+import web.form;
+import web.form.util;
+//增加IE连接数,提升IE网络访问能力
+web.form.util.featureControl("FEATURE_MAXCONNECTIONSPER1_0SERVER",32,false)
+web.form.util.featureControl("FEATURE_MAXCONNECTIONSPERSERVER",32,false)
+//禁用、启用安装ACTIVEX
+web.form.util.featureControl("FEATURE_RESTRICT_ACTIVEXINSTALL",1,false)
+web.form.util.featureControl("FEATURE_SCRIPTURL_MITIGATION",1,false)
+web.form.util.featureControl("FEATURE_SECURITYBAND",1,false)
+web.form.util.featureControl("FEATURE_XSSFILTER",1)
+//以上代码用来防止IE能正常点击,程序不能正常点击
+//http://bbs.aardio.org/forum.php?mod=viewthread&tid=544&extra=page%3D1
+/*DSG{{*/
+var winform = win.form(text="淘宝提取宝贝地址";right=1024;bottom=768)
+winform.add(
+button={cls="button";text="获取";left=915;top=714;right=1006;bottom=752;z=1};
+button2={cls="button";text="访问";left=808;top=714;right=905;bottom=752;z=2};
+edit={cls="edit";text="请输入淘宝店铺网址";left=46;top=714;right=795;bottom=752;bgcolor=0;color=65280;edge=1;multiline=1;z=3}
+)
+/*}}*/
+
+var wb = web.form( winform ,/*_UIFLAG_*/,/*_DLCTL_*/,"Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0)",true/*securityTrusted*/ );
+/*USER AGENT*/
+wb.noScriptErr=true;//禁用脚本报错弹窗
+
+wb.go("https://www.taobao.com") //打开网页
+wb.wait();//一定要记住调用下面的代码等待页面完全打开
+
+winform.show();//显示窗口
+
+
+winform.button.oncommand = function(id,event){
+	var urls = {}
+	var eles = wb.document.querySelectorAll("dd.detail > a")
+	winform.text="本页有"+eles.length+"个宝贝"
+	for(i = 0; eles.length - 1; 1 ){
+		//console.log(i+1,eles[i].href)
+		table.push(urls, eles[i].href)
+	}
+	win.clip.write(string.join(urls,'\r\n'))
+	winform.text="本页有"+eles.length+"个宝贝--已复制到剪贴板"
+}
+
+winform.button2.oncommand = function(id,event){
+	wb.go(winform.edit.text) //打开网页
+	wb.wait();//一定要记住调用下面的代码等待页面完全打开")
+}
+
+winform.close = function(hwnd){
+	::PostMessage(hwnd,0x10/*_WM_CLOSE*/,0,0);
+}
+
+winform.edit.oncommand = function(id,event){
+
+}
+return win.loopMessage(); 
+//作者：卧似栗球圆 https://www.bilibili.com/read/cv10009806?spm_id_from=333.999.0.0 出处：bilibili

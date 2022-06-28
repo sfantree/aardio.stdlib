@@ -1,0 +1,83 @@
+
+// http://bbs.aardio.com/forum.php?mod=redirect&goto=findpost&ptid=11447&pid=63945
+
+import vc6;
+ import console; 
+ var vc = vc6( "/",, console.open() )  
+ 
+ //输入C++源码
+ vc.cpp = /****** 
+     #include <windows.h> 
+       
+     struct TestInfo{
+         int x;
+         int y;
+         BYTE name[256];
+     };
+     
+     class CTestObject
+     {
+     public: 
+         //注意函数声明前加上virtual以支持aardio中的raw.interface
+         virtual        void getName(char *buffer,int len); 
+         virtual        BOOL getInfo(TestInfo *pInfo);
+     };
+     
+     void CTestObject::getName(char *buffer,int len){
+         strcpy(buffer,"测试");
+     }
+     
+     BOOL CTestObject::getInfo(TestInfo *pInfo){
+         pInfo->x = 1;
+         pInfo->y = 2;
+         strcpy((char *)pInfo->name,"测试");
+         return TRUE; 
+     }
+     
+     extern "C" __declspec(dllexport) CTestObject* __cdecl CreateTestObject() { 
+         return new CTestObject();
+     }
+     
+     extern "C" __declspec(dllexport) void __cdecl DeleteTestObject( CTestObject* pTest) {
+         delete pTest;
+     }
+ ******/
+  
+ /*
+ vc.exec(
+ "rc.exe /l 0x804 test.rc"
+ )
+ */
+ 
+ //编译生成DLL 
+ vc.exec(
+     'cl *.cpp'
+     ,'/W3' /*警告等级*/
+     ,'/MD' /*使用多线程动态运行库*/
+     ,'/O2 /Ot /EHsc' /*代码优化选项*/
+     ,'/D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL"' /*定义常数和宏*/
+     ,'/I"./INCLUDE"'/*指定头文件目录*/
+     ,'kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib' /*导入库*/
+     ,'/link /SUBSYSTEM:WINDOWS /MACHINE:X86' /*后面是链接参数 */
+     ,'/out:test.dll'/*输出文件名*/
+     ,'/dll' /*输出DLL*/ 
+     ,'/LIBPATH:".\LIB" /LIBPATH:".\LIB2"' /*指定库目录*/
+ )
+ 
+ var dll = raw.loadDll("/test.dll",,"cdecl");
+ var pTest = dll.CreateTestObject();
+ 
+ import raw.interface;
+ var testObject = raw.interface( pTest,"
+     void getName(string &buffe,int len);
+     bool getInfo(struct &pInfo); 
+     ","thiscall" //注意调用约定为thiscall
+ )
+ 
+ console.log( testObject.getName(25,25)  )
+ 
+ var ret,info = testObject.getInfo({ int x;int y;BYTE name[256]})
+ console.log( info.name  )
+ console.pause()
+ 
+ dll.DeleteTestObject( pTest );

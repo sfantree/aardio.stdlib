@@ -1,0 +1,24 @@
+import console; 
+import thread;
+
+Task = function(){
+	thread.lock("临界区名称",function(){
+		import console;
+		console.log("haha");
+	})
+	
+}
+
+
+Main = function(){
+	..console.open();
+	console.log("hehe");
+	for(i=1;5;1){
+	    thread.create(Task);	
+	}
+	sleep(1000);
+}
+
+Main();
+
+console.pause(true);

@@ -1,0 +1,74 @@
+﻿namespace string;
+
+class keywords{
+	ctor(keywords,codePage){
+		if(type.isString(keywords)) keywords = ..string.split(keywords,"|");
+		if(codePage!=null){
+			for(k,v in keywords) keywords[k] = ..string.fromto(v,65001,codePage);
+		}
+		
+		var keywordSizes = {}
+		for(i=1;#keywords) keywordSizes[i] = #keywords[i]; 
+		
+		this.keywords = keywords;//避免字符串失去引用被回收
+		var pKeywordSizes = ..raw.buffer({int items[]=keywordSizes});
+		var pKeyWords = ..raw.buffer({string items[]=keywords});
+		var keywordLength = #keywordSizes;
+		var dll = _dll;
+		
+		var result;
+		var push = ..table.push;
+		var getstr = ..raw.tostring;
+		this.callback = ..raw.tocdecl( function(p,n){
+			push(result,getstr(p,1,n));
+		},"void(ptr p,int len)") 
+		
+	};
+	findOne = function(data){
+		return dll.findOne(data,#data,pKeyWords,pKeywordSizes,keywordLength);
+	};
+	findAll = function(data){
+		return 0 == dll.findAll(data,#data,pKeyWords,pKeywordSizes,keywordLength);
+	};
+	anyMatchLines = function(data){
+		result = {}
+		dll.anyMatchLines(data,#data,pKeyWords,pKeywordSizes,keywordLength,this.callback);
+		return result;
+	};
+	allMatchLines = function(data){
+		result = {}
+		dll.allMatchLines(data,#data,pKeyWords,pKeywordSizes,keywordLength,this.callback);
+		return result;
+	};
+	noneMatchLines = function(data){
+		result = {}
+		dll.noneMatchLines(data,#data,pKeyWords,pKeywordSizes,keywordLength,this.callback);
+		return result;
+	};
+}
+
+namespace keywords{
+     _dll = ..raw.loadDll($"~/lib/string/keywords/.res/keywords.dll","string.keyword.dll","cdecl");
+}
+
+/**intellisense()
+string.keywords = 用于禁用模式匹配并快速搜索多关键字，区分大小写，\n支持非 UTF-8 编码文本或二进制数据
+string.keywords( = 创建关键字搜索 
+string.keywords(.(keywords) = 参数 @keywords 可用一个数组指定多个要搜索的字符串或 buffer\n也可以用一个字符串指定要搜索的关键字,多个关键字用竖线 | 分隔
+string.keywords(.(utf8Keywords,dataCodePage) = 参数 @keywords 可用一个数组指定多个要搜索的字符串或 buffer\n也可以用一个字符串指定要搜索的关键字,多个关键字用竖线 | 分隔,\n如果参数@1 指定的关键字使用默认的 UTF-8 编码,\n则允许用参数 @2 指定待搜索文本的代码页
+string.keywords() = !stdStringKeywords.
+end intellisense**/
+
+/**intellisense(!stdStringKeywords)
+findOne( = 查找任意关键字
+findOne(.(data) = 参数 @data 指定要搜索关键字的数据,\n@data 可以指定字符串、buffer、内存指针，\n找到任意关键字则返回非 0 值表示的关键字索引，\n否则返回 0
+findAll( = 查找全部关键字
+findAll(.(data) = 参数 @data 指定要搜索关键字的数据,\n@data 可以指定字符串、buffer、内存指针，\n找到所有关键字返回 true，否则返回 false
+anyMatchLines( = 查找所有包含任意关键字的文本行
+anyMatchLines(.(data) = 参数 @data 指定要搜索关键字的数据,\n@data 可以指定字符串、buffer、内存指针，\n返回一个数组包含所有找到任意关键字的文本行,\n返回文本行不包含行尾的回车换行，不修改文本编码
+allMatchLines( = 查找所有包含全部关键字的文本行
+allMatchLines(.(data) = 参数 @data 指定要搜索关键字的数据,\n@data 可以指定字符串、buffer、内存指针，\n返回一个数组包含所有找到全部关键字的文本行,\n返回文本行不包含行尾的回车换行，不修改文本编码
+noneMatchLines( = 查找所有不含任何关键字的文本行
+noneMatchLines(.(data) = 参数 @data 指定要搜索关键字的数据,\n@data 可以指定字符串、buffer、内存指针，\n返回一个数组包含所有找不到任何关键字的文本行,\n返回文本行不包含行尾的回车换行，不修改文本编码
+end intellisense**/
+

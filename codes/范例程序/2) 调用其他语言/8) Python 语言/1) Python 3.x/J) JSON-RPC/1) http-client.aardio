@@ -1,0 +1,20 @@
+//HTTP 客户端
+import py3;
+import py3.lib.jsonrpclib;//这个扩展库是自动安装 Python 扩展模块的一个演示
+
+//启动 aardio 实现的 JSON RPC 服务端
+thread.create("~\codes\范例程序\8) Web 应用\2) JSON\rpcServer.aardio")
+thread.delay(1000);
+
+var pyCode = /**
+def testRpc():
+	import jsonrpclib
+	server = jsonrpclib.Server('http://127.0.0.1:8610/jsonrpc')
+	return server.hello("jacen" ) 
+**/
+ 
+py3.exec(pyCode);
+
+import console;
+console.log( py3.main.testRpc() )
+console.pause()

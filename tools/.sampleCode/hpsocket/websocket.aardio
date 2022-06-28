@@ -1,0 +1,76 @@
+import win.ui;
+/*DSG{{*/
+mainForm = win.form(text="WebSocket服务器";right=759;bottom=469)
+mainForm.add(
+edit={cls="edit";left=18;top=19;right=739;bottom=444;db=1;dl=1;dr=1;dt=1;edge=1;multiline=1;z=1}
+)
+/*}}*/
+
+import hpsocket.httpServer;
+var hpHttpServer = hpsocket.httpServer();
+
+mainForm.edit.threadCallable();
+hpHttpServer.threadGlobal = {
+	mainForm = mainForm;
+}
+
+//监听线程被创建后触发
+hpHttpServer.onThreadCreated = function(){}
+
+//监听线程退出前触发此事件
+hpHttpServer.onThreadEnd = function(){}
+
+//允许升级为WebSocket协议
+hpHttpServer.onUpgrade = function(hpHttpServer,connId,upgradeType){
+
+	if(upgradeType!=1) return -1;
+	hpHttpServer.sendWsSwitchingProtocols(connId);
+}
+
+
+hpHttpServer.onWsMessageHeader = function(hpHttpServer,connId,final,reserved,opCode,mask,bodyLen){
+	/*
+		final：是否结束帧
+		opCode：
+			0：标识一个中间数据包 
+			1：标识一个text类型数据包,UTF8编码 
+			2：标识一个binary类型数据包 
+			8：标识一个断开连接类型数据包 
+			9：标识一个ping类型数据包
+			10：表示一个pong类型数据包
+		bodyLen：数据长度
+		
+		其他参数不用理会
+	*/
+	hpHttpServer.reallocString(connId,bodyLen);//初始化缓冲区
+}
+
+//接收到WebSocket请求数据
+hpHttpServer.onWsMessageBody = function(hpHttpServer,connId,pData,len){
+	hpHttpServer.appendString(connId,pData,len);
+}
+
+//WebSocket请求数据接收完成
+hpHttpServer.onWsMessageComplete = function(hpHttpServer,connId){
+
+	var data = hpHttpServer.getString(connId);
+	if( data ){
+		//向客户端发送数据
+		hpHttpServer.sendWsMessage(connId,"我是服务端，收到了你的："+data);
+		mainForm.edit.printf("收到客户端消息:%s",data)
+	}
+}
+
+hpHttpServer.onClose = function(hpHttpServer,connId,enOperation,errCode){
+	hpHttpServer.reallocString(connId,0);//释放缓冲区
+}
+
+hpHttpServer.start(/*IP*/,7511)
+mainForm.edit.printf("已启动：%s",hpHttpServer.getWsUrl() )
+
+mainForm.onClose = function(hwnd,message,wParam,lParam){
+    hpHttpServer.stop();
+}
+
+mainForm.show() 
+win.loopMessage();

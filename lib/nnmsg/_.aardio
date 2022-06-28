@@ -1,0 +1,446 @@
+﻿namespace nnmsg;
+
+var dll =  ..raw.loadDll( $"~\lib\nnmsg\.res\nanomsg.dll","nanomsg.dll","cdecl" );
+
+class socket{
+    
+	ctor(protocol,domain){
+		this.handle = topointer(dll.nn_socket(domain:1/*_AF_SP*/,protocol));
+		this.protocol = protocol;
+		..table.gc(this,"close");
+	}	
+	close = function(){
+		if( this.handle ){
+			var ret = dll.nn_close( this.handle );
+			this.handle = null;
+		}
+	}
+	bind = function(addr){
+		var endpointId =  dll.nn_bind( this.handle,addr );
+		if( endpointId >= 0 ){
+			this.lastEndpointId = endpointId;
+			return true;
+		};
+	}  
+	connect = function(addr){
+		var endpointId =  dll.nn_connect( this.handle,addr );
+		if( endpointId >= 0 ){
+			this.lastEndpointId = endpointId;
+			return true;
+		};
+	} 
+	shutdown = function(endpointId){
+		if(endpointId===null) endpointId = this.lastEndpointId;
+		return dll.nn_shutdown( this.handle,endpointId ) == 0; 
+	}
+	send = function(s,flags){
+		var size = dll.nn_send(this.handle,s,#s,flags);
+		if( size >= 0 ) return size;
+		return null,lasterr();
+	}
+	recv = function(flags){
+		var s = {ptr value};
+		var size = dll.nn_recv(this.handle,s,-1,flags);
+		if( size >= 0 ) {
+			var str = ..raw.tostring(s.value,1,size);
+			dll.nn_freemsg(s.value);
+			return str;
+		}
+		return null,lasterr();
+	}
+	sendBuffer = function(s,len,flags=0){
+		if(!len) len = #s;
+		var size = dll.nn_send(this.handle,s,len,flags);
+		if( size >= 0 ) return size;
+		return null,lasterr();
+	}
+	recvBuffer = function(s,len,flags=0){
+		if(!len) len = #s;
+		var size = dll.nn_recv(this.handle,s,len,flags);
+		if( size >= 0 ) return s,size; 
+		return null,lasterr();
+	}
+	sendStruct = function(s,flags){
+		var size = dll.nn_send(this.handle,s,..raw.sizeof(s),flags);
+		if( size >= 0 ) return size;
+		return null,lasterr();
+	}
+	recvStruct = function(s,flags){
+		var size = dll.nn_recv(this.handle,s,..raw.sizeof(s),flags);
+		if( size >= 0 ) return s,size; 
+		return null,lasterr();
+	}
+	sendTable = function(s,flags){
+		var s = ..table.tostring(s,true)
+		var size = dll.nn_send(this.handle,s,#s,flags);
+		if( size >= 0 ) return size;
+		return null,lasterr();
+	}
+	recvTable = function(flags){
+		var s = {ptr value};
+		var size = dll.nn_recv(this.handle,s,-1,flags);
+		if( size >= 0 ) {
+			var str = ..raw.tostring(s.value,1,size);
+			dll.nn_freemsg(s.value);
+			var r,t = call(eval,,str);
+			if(r) return t;
+			return null,t;
+		}
+		return null,lasterr();
+	} 
+	device = function(s2){
+		if(-1==nn_device(this.handle,s2.handle))
+			return lasterr()
+	}
+	getStatistic = function(s){
+		var s = dll.nn_get_statisticL(this.handle,s)
+		if( s != ..math.size64(-1) ) return s;
+	}
+	setopt = function( opt,v,level ){ 
+		if(v[["_struct"]]){
+			return dll.nn_setsockopt( this.handle,level,opt,v,..raw.sizeof(v) ) == 0;
+		}
+		elseif( type(v) == "number" ){
+			return dll.nn_setsockopt( this.handle,level,opt,{int v = v},4 ) == 0;
+		}
+		else{
+			return dll.nn_setsockopt( this.handle,level,opt,v,#v ) == 0;
+		}
+	}
+	getopt = function( opt,v,level ){
+		if( v === null ){
+			var v,len = this.getopt(opt,{int n});
+			if( len == 4 ) return v.n;
+		}
+		var len = {int value = ..raw.sizeof(v)} 
+		var r = dll.nn_getsockopt( this.handle,level,opt,v,len );
+		if(r==0)
+			return v,len.value;
+	}
+	subscribe = function(tag){
+		return this.setopt(1/*_NN_SUB_SUBSCRIBE*/,tag,0x21/*_NN_SUB*/);
+	}
+	unsubscribe = function(tag){
+		return this.setopt(2/*_NN_SUB_UNSUBSCRIBE*/,tag,0x21/*_NN_SUB*/);	
+	} 
+	@_meta;
+} 
+
+namespace socket{
+    
+	_meta ={
+		_topointer = function(){
+			return owner.handle;
+		}
+	} 
+
+	lasterr = function(){
+		var e = dll.nn_errno(); 
+		if(e) return ..raw.str( dll.nn_strerrorP(e) ),e
+	}	
+
+	pull = function(){
+		return ..nnmsg.socket(0x51/*_NN_PULL*/);
+	}
+	
+	push = function(){
+		return ..nnmsg.socket(0x50/*_NN_PUSH*/);
+	}
+		
+	pair = function(){
+		return ..nnmsg.socket(0x10/*_NN_PAIR*/);
+	}
+
+	pub = function(){
+		return ..nnmsg.socket(0x20/*_NN_PUB*/);
+	}
+	
+	sub = function(){
+		return ..nnmsg.socket(0x21/*_NN_SUB*/);
+	}
+		
+	surveyor = function(){
+		return ..nnmsg.socket(0x62/*_NN_SURVEYOR*/);
+	} 
+	
+	respondent = function(){
+		return ..nnmsg.socket(0x63/*_NN_RESPONDENT*/);
+	}
+	
+	bus = function(){
+		return ..nnmsg.socket(0x70/*_NN_BUS*/);
+	}
+	
+	rawbus = function(){
+		return ..nnmsg.socket(0x70/*_NN_BUS*/,2/*_AF_SP_RAW*/);
+	}
+	
+	rep = function(){
+		return ..nnmsg.socket(0x31/*_NN_REP*/);
+	}
+	
+	req = function(){
+		return ..nnmsg.socket(0x30/*_NN_REQ*/);
+	}
+	
+}
+
+
+lasterrno = dll.nn_errno;
+lasterr = socket.lasterr;
+term = dll.nn_term;
+
+poll = function(items,timeout){
+	if(timeout===null) timeout = 0x7FFFFFFF;
+
+	var pfds = {}
+	for(i=1;#items;1){ 
+		var f = items[i];
+	
+		pfds[i] = {
+    		ptr fd = f.fd;
+    		word events = f.events;
+    		word revents;
+		};
+	}
+	
+	var n = dll.nn_poll({ struct items[] = pfds },#pfds,timeout);
+	if( 0 < n ){
+		for(i=1;#pfds;1){
+			pfds[i].fd = items[i].fd;
+		}
+		return pfds;
+	}
+	elseif( 0 === n ) {
+		return n;
+	}
+}
+
+eachInOut = function(items,timeout,events){
+	if(timeout===null) timeout = 0x7FFFFFFF;
+	if(events===null) events = 1/*_NN_POLLIN*/ | 2/*_NN_POLLOUT*/;
+	
+	var pfds = {}
+	for(i=1;#items;1){   
+		pfds[i] = {
+    		ptr fd = items[i];
+    		word events = events;
+    		word revents;
+		};
+	}
+
+	var n = dll.nn_poll({ struct items[] = pfds },#pfds,timeout);
+	if( 0 < n ){
+		for(i=1;#pfds;1){
+			pfds[i].fd = items[i]; 
+		} 
+	}
+	else {
+		return function(){ }
+	}
+	
+	return function(){
+		var pfd = ..table.pop(pfds);
+		while(pfd && !pfd.revents){
+			pfd = ..table.pop(pfds); 
+		}
+		
+		if(pfd)return pfd.fd,pfd.revents;
+	} 
+}
+
+eachIn = function(items,timeout){
+	return eachInOut( items,timeout,1/*_NN_POLLIN*/);
+}
+
+eachOut = function(items,timeout){
+	return eachInOut( items,timeout,2/*_NN_POLLOUT*/);
+}
+
+/**intellisense(!nn_socket)
+close() = 关闭socket 
+bind("tcp://*:26666__/*地址*/") = 绑定\n成功返回true，并设置端点ID到lastEndpointId
+lastEndpointId = 最后一次成功bind或connect的端点ID\n可用于shutdown函数的调用参数
+connect("tcp://localhost:26666__/*地址*/") = 连接\n成功返回true，并设置端点ID到lastEndpointId
+shutdown(__) = 关闭连接\n参数可选设置端点ID，如果无参数则取lastEndpointId的值作为参数
+sendBuffer(.(缓冲区,长度) = 发送消息帧\参数一可以是缓冲区、字符串、指针、结构体\n如果是指针、结构体则必须指定长度\n成功返回发送长度
+recvBuffer(.(缓冲区,长度) = 接收消息帧\n参数一可以是缓冲区、指针、结构体\n如果是指针、结构体则必须指定长度\n成功返回参数@1,以及接收长度
+sendBuffer(.(缓冲区,长度,1) = 发送消息帧,不等待直接返回\参数一可以是缓冲区、字符串、指针\n如果是指针则必须指定长度\n成功返回发送长度
+recvBuffer(.(缓冲区,长度,1) = 接收消息帧,消息未到达时不等待直接返回\n参数一可以是缓冲区、指针\n如果是指针则必须指定长度\n成功返回参数@1,以及接收长度
+sendStruct(.(结构体) = 发送结构体\n成功返回发送长度
+recvStruct(.(结构体) = 接收结构体\n成功返回参数@1,以及接收长度
+sendStruct(.(结构体,1) = 发送结构体,不等待直接返回\n成功返回发送长度
+recvStruct(.(结构体,1) = 接收结构体,消息未到达时不等待直接返回\n成功返回参数@1,以及接收长度
+sendTable(.(对象) = 发送table对象\参数一可以是字符串或缓冲区,\n其他参数可选
+recvTable(.() = 接收table对象\n成功返回字符串
+sendTable(.(对象,1) = 发送table对象,不等待直接返回\参数一可以是字符串或指针.\n其他参数可选
+recvTable(.(1) = 接收table对象,消息未到达时不等待直接返回\n接收符串消息\n成功返回字符串
+send(.(字符串) = 发送字符串消息\参数一可以是字符串或缓冲区,\n其他参数可选
+recv(.() = 接收符串消息\n成功返回字符串
+send(.(字符串,1) = 发送符串消息,不等待直接返回\参数一可以是字符串或指针.\n其他参数可选
+recv(.(1) = 接收符串消息,消息未到达时不等待直接返回\n接收符串消息\n成功返回字符串
+device(__/*socket对象*/) = 创建路由设备在两个套接字间转发消息\n此函数创建一个循环,直到返回错误代码
+getStatistic( _NN_STAT__ ) = 返回统计信息，该数据仅有参考意义\n成功则返回math.size64对象
+setopt(.(选项,值,级别) = 值可以是数值，字符串，缓冲区，或者一个结构体对象\n成功返回true\n\n级别参数可选，默认为_NN_SOL_SOCKET
+getopt(.(选项,值,级别) = 获取指定选项的值,\n值如果是一个结构体，成功返回填充值的原结构体\n值如果省略,则获取int类型的\n\n级别参数可选，默认为_NN_SOL_SOCKET
+subscribe("__") = 用于sub套接字设置订阅的主题前缀\n如果为空则订阅所有主题
+unsubscribe("__") = 用于sub套接字取消订阅的主题前缀\n如果为空则订阅所有主题
+protocol = 当前套接字协议类型
+end intellisense**/
+
+/**intellisense()
+nnmsg = nanomsg消息通信组件 v1.1.2\n该组件主要用于服务端开发,不支持vista以下的操作系统
+nnmsg.socket(.(protocol,domain) = 创建套接字\nprotocol必须指定,\ndomain为可选参数,默认为_AF_SP
+nnmsg.socket() = !nn_socket.
+nnmsg.socket.pull() = 创建pull类型套接字 - 即用于拉消息的客户端,\npush/pull套接字结合使用可实现消息队列的扇出模式，\n这是一个1对多的模式，服务端不能有多个，但客户端可以多个，\n服务端或客户端不管谁先启动，都会等待对方连接，中间绝不会丢弃消息,\n服务端只发不收，客户端只收不发，一个消息不会重复发给多个客户端\n一般用于任务分派、负载均衡\n下面官网示意图是指传输方式为单向管道（Pipeline）\n并不是指此模型只1对1的,请注意区分，\n![官网示意图](http://nanomsg.org/gettingstarted/pipeline.png) \n!nn_socket.
+nnmsg.socket.push() = 创建push类型套接字 - 即用于推送消息的服务端,\npush/pull套接字结合使用可实现消息队列的扇出模式，\n这是一个1对多的模式，服务端不能有多个，但客户端可以多个，\n服务端或客户端不管谁先启动，都会等待对方连接，中间绝不会丢弃消息,\n服务端只发不收，客户端只收不发，一个消息不会重复发给多个客户端\n一般用于任务分派、负载均衡\n下面官网示意图是指传输方式为单向管道（Pipeline）\n并不是指此模型只1对1的,请注意区分，\n![官网示意图](http://nanomsg.org/gettingstarted/pipeline.png) \n!nn_socket.
+nnmsg.socket.sub() = 创建sub类型套接字 - 即用于订阅消息的客户端,\nsub/pub套接字结合使用可实现消息广播模式（Topics && Broadcast）\n服务端只管发布，不管客户端是否连接，也不管是不是丢消息\n但客户端连接上来以后就不会丢消息\n![示意图](http://nanomsg.org/gettingstarted/pubsub.png) \n!nn_socket.
+nnmsg.socket.pub() = 创建pub类型套接字 - 即用于发布消息的服务端,\nnsub/pub套接字结合使用可实现消息广播模式（Topics && Broadcast）\n服务端只管发布，不管客户端是否连接，也不管是不是丢消息\n但客户端连接上来以后就不会丢消息\n![示意图](http://nanomsg.org/gettingstarted/pubsub.png) \n!nn_socket.
+nnmsg.socket.surveyor() = 创建surveyort套接字 - 即用于发出问询消息的服务端\nsurveyor/respondent套接字结合使用可实现调查模式\n![示意图](http://nanomsg.org/gettingstarted/survey.png) \n!nn_socket.
+nnmsg.socket.respondent() = 创建respondent套接字 - 即用于发出回应调查的客户端\nsurveyor/respondent套接字结合使用可实现调查模式\n![示意图](http://nanomsg.org/gettingstarted/survey.png) \n!nn_socket.
+nnmsg.socket.pair() = 创建pair套接字，\n服务端和客户端可以1对1的收发消息\n![示意图](http://nanomsg.org/gettingstarted/pair.png) \n!nn_socket.
+nnmsg.socket.bus() = 创建消息总线（bus）套接字,\n连接到消息总线的任何一个套接字发送消息，消息总线上的其他套接字都能收到,\n这种模式只适合在局域网内使用\n![示意图](http://nanomsg.org/gettingstarted/bus.png) \n!nn_socket
+nnmsg.socket.rawbus() = 创建原始消息总线（rawbus）套接字,\nrawbus套接字不会发送消息给发送端\n![示意图](http://250bpm.wdfiles.com/local--files/blog:17/bus5.png) \n!nn_socket
+nnmsg.socket.req() = 创建req类型套接字 - 即用于应答消息的客户端,\n一个服务端对应多个客户端,\n先由req客户端发出请求，rep服务端收到请求后进行应答\n!nn_socket.
+nnmsg.socket.rep() = 创建rep类型套接字 - 即用于应答消息的服务端,\n一个服务端对应多个客户端,\n先由req客户端发出请求，rep服务端收到请求后进行应答\n!nn_socket.
+
+nnmsg.poll(套接字事件数组,超时) = @.poll( { \n	{ fd = __/*nnmsg.socket对象*/; events=1/*_NN_POLLIN*/}\n} )	
+nnmsg.eachIn(套接字数组,超时) = @for(socket in nnmsg.eachIn({__/*nnmsg.socket对象*/}) ){
+	var str  = socket.recv();
+}
+nnmsg.eachOut(套接字数组,超时) = @for(socket in nnmsg.eachOut({__/*nnmsg.socket对象*/}) ){
+	socket.send("数据");
+}
+nnmsg.eachInOut(套接字数组,超时) = @for(socket,revents in nnmsg.eachInOut({__/*nnmsg.socket对象*/}) ){
+	if(revents & 1/*_NN_POLLIN*/){
+		var str  = socket.recv();
+	}
+}
+nnmsg.term() = 关闭当前进程中的所有nanomsg套接字,解除所有阻塞执行的任务
+nnmsg.lasterrno() = 返回最后一次错误的错误代码
+nnmsg.lasterr() = 返回最后一次错误的错误信息,错误代码
+_NN_PROTO_PAIR=@1/*_NN_PROTO_PAIR*/
+_NN_PAIR=@0x10/*_NN_PAIR*/
+_AF_SP=@1/*_AF_SP*/
+_AF_SP_RAW=@2/*_AF_SP_RAW*/
+_NN_PROTO_PIPELINE=@5/*_NN_PROTO_PIPELINE*/
+_NN_PUSH=@0x50/*_NN_PUSH*/
+_NN_PULL=@0x51/*_NN_PULL*/
+_NN_HAUSNUMERO=@0x9523DC8/*_NN_HAUSNUMERO*/
+_NN_ENOTSUP=@0x9523DC9/*_NN_ENOTSUP*/
+_NN_EPROTONOSUPPORT=@0x9523DCA/*_NN_EPROTONOSUPPORT*/
+_NN_ENOBUFS=@0x9523DCB/*_NN_ENOBUFS*/
+_NN_ENETDOWN=@0x9523DCC/*_NN_ENETDOWN*/
+_NN_EADDRINUSE=@0x9523DCD/*_NN_EADDRINUSE*/
+_NN_EADDRNOTAVAIL=@0x9523DCE/*_NN_EADDRNOTAVAIL*/
+_NN_ECONNREFUSED=@0x9523DCF/*_NN_ECONNREFUSED*/
+_NN_EINPROGRESS=@0x9523DD0/*_NN_EINPROGRESS*/
+_NN_ENOTSOCK=@0x9523DD1/*_NN_ENOTSOCK*/
+_NN_EAFNOSUPPORT=@0x9523DD2/*_NN_EAFNOSUPPORT*/
+_NN_EPROTO=@0x9523DD3/*_NN_EPROTO*/
+_NN_EAGAIN=@0x9523DD4/*_NN_EAGAIN*/
+_NN_EBADF=@0x9523DD5/*_NN_EBADF*/
+_NN_EINVAL=@0x9523DD6/*_NN_EINVAL*/
+_NN_EMFILE=@0x9523DD7/*_NN_EMFILE*/
+_NN_EFAULT=@0x9523DD8/*_NN_EFAULT*/
+_NN_EACCES=@0x9523DD9/*_NN_EACCES*/
+_NN_ENETRESET=@0x9523DDA/*_NN_ENETRESET*/
+_NN_ENETUNREACH=@0x9523DDB/*_NN_ENETUNREACH*/
+_NN_EHOSTUNREACH=@0x9523DDC/*_NN_EHOSTUNREACH*/
+_NN_ENOTCONN=@0x9523DDD/*_NN_ENOTCONN*/
+_NN_EMSGSIZE=@0x9523DDE/*_NN_EMSGSIZE*/
+_NN_ETIMEDOUT=@0x9523DDF/*_NN_ETIMEDOUT*/
+_NN_ECONNABORTED=@0x9523DE0/*_NN_ECONNABORTED*/
+_NN_ECONNRESET=@0x9523DE1/*_NN_ECONNRESET*/
+_NN_ENOPROTOOPT=@0x9523DE2/*_NN_ENOPROTOOPT*/
+_NN_EISCONN=@0x9523DE3/*_NN_EISCONN*/
+_NN_ETERM=@0x9523DFD/*_NN_ETERM*/
+_NN_EFSM=@0x9523DFE/*_NN_EFSM*/
+_NN_BUS=@0x70/*_NN_BUS*/
+_NN_DOMAIN=@0xC/*_NN_DOMAIN*/
+_NN_DONTWAIT=@1/*_NN_DONTWAIT*/
+_NN_INPROC=@-1/*_NN_INPROC*/
+_NN_IPC=@-2/*_NN_IPC*/
+_NN_IPV4ONLY=@0xE/*_NN_IPV4ONLY*/
+_NN_LINGER=@1/*_NN_LINGER*/
+_NN_MAXTTL=@0x11/*_NN_MAXTTL*/
+_NN_NS_DOMAIN=@2/*_NN_NS_DOMAIN*/
+_NN_NS_ERROR=@0xB/*_NN_NS_ERROR*/
+_NN_NS_EVENT=@0xD/*_NN_NS_EVENT*/
+_NN_NS_FLAG=@0xA/*_NN_NS_FLAG*/
+_NN_NS_LIMIT=@0xC/*_NN_NS_LIMIT*/
+_NN_NS_NAMESPACE=@0/*_NN_NS_NAMESPACE*/
+_NN_NS_OPTION_LEVEL=@5/*_NN_NS_OPTION_LEVEL*/
+_NN_NS_OPTION_TYPE=@8/*_NN_NS_OPTION_TYPE*/
+_NN_NS_OPTION_UNIT=@9/*_NN_NS_OPTION_UNIT*/
+_NN_NS_PROTOCOL=@4/*_NN_NS_PROTOCOL*/
+_NN_NS_SOCKET_OPTION=@6/*_NN_NS_SOCKET_OPTION*/
+_NN_NS_STATISTIC=@0xE/*_NN_NS_STATISTIC*/
+_NN_NS_TRANSPORT=@3/*_NN_NS_TRANSPORT*/
+_NN_NS_TRANSPORT_OPTION=@7/*_NN_NS_TRANSPORT_OPTION*/
+_NN_NS_VERSION=@1/*_NN_NS_VERSION*/
+_NN_PAIR=@0x10/*_NN_PAIR*/
+_NN_POLLIN=@1/*_NN_POLLIN*/
+_NN_POLLOUT=@2/*_NN_POLLOUT*/
+_NN_PROTOCOL=@0xD/*_NN_PROTOCOL*/
+_NN_PUB=@0x20/*_NN_PUB*/
+_NN_PULL=@0x51/*_NN_PULL*/
+_NN_PUSH=@0x50/*_NN_PUSH*/
+_NN_RCVBUF=@3/*_NN_RCVBUF*/
+_NN_RCVFD=@0xB/*_NN_RCVFD*/
+_NN_RCVMAXSIZE=@0x10/*_NN_RCVMAXSIZE*/
+_NN_RCVPRIO=@9/*_NN_RCVPRIO*/
+_NN_RCVTIMEO=@5/*_NN_RCVTIMEO*/
+_NN_RECONNECT_IVL=@6/*_NN_RECONNECT_IVL*/
+_NN_RECONNECT_IVL_MAX=@7/*_NN_RECONNECT_IVL_MAX*/
+_NN_REP=@0x31/*_NN_REP*/
+_NN_REQ=@0x30/*_NN_REQ*/
+_NN_REQ_RESEND_IVL=@1/*_NN_REQ_RESEND_IVL*/
+_NN_RESPONDENT=@0x63/*_NN_RESPONDENT*/
+_NN_SNDBUF=@2/*_NN_SNDBUF*/
+_NN_SNDFD=@0xA/*_NN_SNDFD*/
+_NN_SNDPRIO=@8/*_NN_SNDPRIO*/
+_NN_SNDTIMEO=@4/*_NN_SNDTIMEO*/
+_NN_SOCKADDR_MAX=@0x80/*_NN_SOCKADDR_MAX*/
+_NN_SOCKET_NAME=@0xF/*_NN_SOCKET_NAME*/
+_NN_SOL_SOCKET=@0/*_NN_SOL_SOCKET*/
+_NN_STAT_ACCEPTED_CONNECTIONS=@0x66/*_NN_STAT_ACCEPTED_CONNECTIONS*/
+_NN_STAT_ACCEPT_ERRORS=@0x6B/*_NN_STAT_ACCEPT_ERRORS*/
+_NN_STAT_BIND_ERRORS=@0x6A/*_NN_STAT_BIND_ERRORS*/
+_NN_STAT_BROKEN_CONNECTIONS=@0x68/*_NN_STAT_BROKEN_CONNECTIONS*/
+_NN_STAT_BYTES_RECEIVED=@0x130/*_NN_STAT_BYTES_RECEIVED*/
+_NN_STAT_BYTES_SENT=@0x12F/*_NN_STAT_BYTES_SENT*/
+_NN_STAT_CONNECT_ERRORS=@0x69/*_NN_STAT_CONNECT_ERRORS*/
+_NN_STAT_CURRENT_CONNECTIONS=@0xC9/*_NN_STAT_CURRENT_CONNECTIONS*/
+_NN_STAT_CURRENT_EP_ERRORS=@0xCB/*_NN_STAT_CURRENT_EP_ERRORS*/
+_NN_STAT_CURRENT_SND_PRIORITY=@0x191/*_NN_STAT_CURRENT_SND_PRIORITY*/
+_NN_STAT_DROPPED_CONNECTIONS=@0x67/*_NN_STAT_DROPPED_CONNECTIONS*/
+_NN_STAT_ESTABLISHED_CONNECTIONS=@0x65/*_NN_STAT_ESTABLISHED_CONNECTIONS*/
+_NN_STAT_INPROGRESS_CONNECTIONS=@0xCA/*_NN_STAT_INPROGRESS_CONNECTIONS*/
+_NN_STAT_MESSAGES_RECEIVED=@0x12E/*_NN_STAT_MESSAGES_RECEIVED*/
+_NN_STAT_MESSAGES_SENT=@0x12D/*_NN_STAT_MESSAGES_SENT*/
+_NN_SUB=@0x21/*_NN_SUB*/
+_NN_SUB_SUBSCRIBE=@1/*_NN_SUB_SUBSCRIBE*/
+_NN_SUB_UNSUBSCRIBE=@2/*_NN_SUB_UNSUBSCRIBE*/
+_NN_SURVEYOR=@0x62/*_NN_SURVEYOR*/
+_NN_SURVEYOR_DEADLINE=@1/*_NN_SURVEYOR_DEADLINE*/
+_NN_TCP=@-3/*_NN_TCP*/
+_NN_TCP_NODELAY=@1/*_NN_TCP_NODELAY*/
+_NN_TYPE_INT=@1/*_NN_TYPE_INT*/
+_NN_TYPE_NONE=@0/*_NN_TYPE_NONE*/
+_NN_TYPE_STR=@2/*_NN_TYPE_STR*/
+_NN_UNIT_BOOLEAN=@4/*_NN_UNIT_BOOLEAN*/
+_NN_UNIT_BYTES=@1/*_NN_UNIT_BYTES*/
+_NN_UNIT_COUNTER=@6/*_NN_UNIT_COUNTER*/
+_NN_UNIT_MESSAGES=@5/*_NN_UNIT_MESSAGES*/
+_NN_UNIT_MILLISECONDS=@2/*_NN_UNIT_MILLISECONDS*/
+_NN_UNIT_NONE=@0/*_NN_UNIT_NONE*/
+_NN_UNIT_PRIORITY=@3/*_NN_UNIT_PRIORITY*/
+_NN_VERSION_AGE=@0/*_NN_VERSION_AGE*/
+_NN_VERSION_CURRENT=@5/*_NN_VERSION_CURRENT*/
+_NN_VERSION_REVISION=@0/*_NN_VERSION_REVISION*/
+_NN_WS=@-4/*_NN_WS*/
+_NN_WS_MSG_TYPE=@1/*_NN_WS_MSG_TYPE*/
+_NN_WS_MSG_TYPE_BINARY=@2/*_NN_WS_MSG_TYPE_BINARY*/
+_NN_WS_MSG_TYPE_TEXT=@1/*_NN_WS_MSG_TYPE_TEXT*/
+end intellisense**/

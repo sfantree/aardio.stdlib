@@ -1,0 +1,34 @@
+﻿//wow64 禁用重定向
+import process;
+import fsys.wow64;
+
+namespace process;
+
+class wow64{
+	ctor(...){
+		return ..fsys.wow64.disableRedirection(..process,...)
+	};
+}
+
+wow64.execute = ..fsys.wow64.disableRedirectionEx( ..process.execute );
+wow64.executeWait = ..fsys.wow64.disableRedirectionEx(..process.executeWait);
+wow64.executeEx = ..fsys.wow64.disableRedirectionEx( ..process.execute );    
+wow64.explore = ..fsys.wow64.disableRedirectionEx( ..process.explore );  
+
+/**intellisense()
+process.wow64 = 用于禁用 64 位重定向并运行目标程序,\n可在64位系统运行64位程序，在32位下兼容运行64位程序
+process.wow64( = 运行执行文件或关联文档。\n如果省略所有参数则打开当前进程\n失败则返回 null,错误信息,错误代码\n成功返回进程对象
+process.wow64(.(进程ID,权限) =  打开指定ID的进程,\n参数@2可选用一个数值指定请求的权限，\n不指定权限时默认尝试 _PROCESS_ALL_ACCESS 权限,\n如果失败则尝试以 _SYNCHRONIZE 权限打开进程,\n_SYNCHRONIZE权限打开时只能使用 wait,waitOne函数,\n非管理权限进程创建管理权限进程时只能以_SYNCHRONIZE权限打开进程
+process.wow64(.(进程句柄,负责释放进程句柄) =  使用指定的进程句柄创建进程对象,\n参数@2为可选参数,默认为true
+process.wow64(.( ,系统命令行) = 如果省略第一个参数,并仅指定命令行,则作为系统命令行启动运行
+process.wow64(.(执行文件,命令行参数,更多命令行参数,->->->) = 命令行参数可以是一个数组、一个或多个字符串参数,\n\n数组或多个命令行参数调用 process.joinArguments 合并,\n不在双引号内、且包含空白或需要转义的参数转义处理后首尾添加双引号,\n命令参数最大长度为8191/0x1FFFF个字符\n\n要特别注意某些跨平台程序需要将首参数指定为应用程序自身路径,\n否则会启动失败
+process.wow64(.(执行文件,命令行参数,STARTUPINFO) = 命令行参数可以是字符串或由多个字符串组成的数组,\n数组参数调用 process.joinArguments 合并,\n不在双引号内、且包含空白或需要转义的参数转义处理后首尾添加双引号,\nSTARTUPINFO参数为process.STARTUPINFO 结构体,可选参数\n如果该参数是普通table对象.将自动创建为STARTUPINFO结构体\n\n要特别注意某些跨平台程序需要将首参数指定为应用程序自身路径,\n否则会启动失败
+process.wow64() = !process.
+process.wow64.executeEx( = 禁用 64 位重定向并运行目标程序
+process.wow64.executeEx(.("__", parameters="",operation="open",showCmd,workDir,hwnd,fmask) = 运行应用程序,返回SHELLEXECUTEINFO结构体,\n参数@1指定要运行的执行程序路径,\n参数@2可用一个字符串或字符串数组指定启动参数,\n其他参数详细用法请参考本函数源码以及WINAPI中ShellExecuteEx函数用法\n除参数@1以外所有参数可选
+process.wow64.execute( = 禁用 64 位重定向并运行目标程序,成功返回进程ID,\n参数详细用法请参考本函数源码以及WINAPI中ShellExecuteEx函数用法\n运行UWP应用请使用com.shell.activateApp函数
+process.wow64.execute(.("__", parameters="",operation="open",showCmd,workDir,hwnd) = 参数@1为程序路径或系统命 令\n参数@parameters 可以是字符串或字符串数组，用于指定启动参数,\n参数@operation 为启动模式\n参数@showCmd使用_SW_前缀常量与win.show参数用法相同\n参数@workdir为工作目录\n参数@hwnd 为父窗口句柄
+process.wow64.executeWait( = 禁用 64 位重定向并运行目标程序
+process.wow64.executeWait(.("__", parameters="",operation="open",showCmd,workDir=",hwnd=0) = 运行应用程序\n并等待应用程序关闭\n除参数@1以外所有参数可选
+process.wow64.explore("__/*目录路径*/") = 禁用 64 位重定向并使用资源管理器打开目录\n打开WIN10应用这样写:process.explore("shell:appsFolder\appPath")\n使用 com.shell.eachApp 可列出WIN10所有appPath
+end intellisense**/

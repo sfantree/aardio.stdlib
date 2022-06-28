@@ -1,0 +1,82 @@
+
+import fonts.fontAwesome;
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=839;bottom=511;bgcolor=16777215)
+winform.add(
+btnUpdate={cls="plus";text="保 存";left=600;top=424;right=703;bottom=460;align="left";bgcolor=11580047;db=1;dl=1;font=LOGFONT(h=-13);iconStyle={align="left";font=LOGFONT(h=-13;name='FontAwesome');padding={left=22}};iconText='\uF0C7';notify=1;textPadding={left=40};z=5};
+editHttpPort={cls="plus";left=288;top=136;right=368;bottom=160;align="left";bgcolor=16777215;border={bottom=1;color=-8355712};db=1;dl=1;editable="edit";font=LOGFONT(h=-16);textPadding={bottom=1};z=8};
+editLanPacUrl={cls="plus";left=290;top=367;right=709;bottom=391;align="left";bgcolor=16777215;border={bottom=1;color=-8355712};db=1;dl=1;editable="edit";font=LOGFONT(h=-16);textPadding={bottom=1};z=3};
+editPacUrl={cls="plus";left=288;top=328;right=707;bottom=352;align="left";bgcolor=16777215;border={bottom=1;color=-8355712};db=1;dl=1;editable="edit";font=LOGFONT(h=-16);textPadding={bottom=1};z=1};
+editSocksPort={cls="plus";left=288;top=101;right=368;bottom=125;align="left";bgcolor=16777215;border={bottom=1;color=-8355712};db=1;dl=1;editable="edit";font=LOGFONT(h=-16);textPadding={bottom=1};z=6};
+static={cls="static";text="SOCKS 代理服务端口：";left=78;top=105;right=276;bottom=131;align="right";bgcolor=16777215;db=1;dl=1;font=LOGFONT(h=-16);transparent=1;z=7};
+static2={cls="static";text="HTTP  代理服务端口：";left=18;top=142;right=276;bottom=168;align="right";bgcolor=16777215;db=1;dl=1;font=LOGFONT(h=-16);transparent=1;z=9};
+static3={cls="static";text="本机 PAC 地址：";left=118;top=335;right=276;bottom=361;align="right";bgcolor=16777215;db=1;dl=1;font=LOGFONT(h=-16);notify=1;transparent=1;z=2};
+static4={cls="static";text="局域网 PAC 地址：";left=118;top=374;right=276;bottom=400;align="right";bgcolor=16777215;db=1;dl=1;font=LOGFONT(h=-16);transparent=1;z=4};
+static5={cls="static";text="支持 SOCKS4,SOCKS4A,SOCKS5";left=376;top=106;right=663;bottom=132;bgcolor=16777215;color=5921370;db=1;dl=1;font=LOGFONT(h=-13);transparent=1;z=10}
+)
+/*}}*/
+
+import win.ui.tooltip;
+var tooltipCtrl = win.ui.tooltip( winform );
+tooltipCtrl.addTool(winform.editSocksPort,"点击右键可以复制IP:端口" ); 
+
+import win.dlg.message;
+win.dlg.message.install();
+
+winform.btnUpdate.skin(
+	background = { 
+		hover = "/res/images/btn-hover.png";
+		focus = "/res/images/btn-focus.jpg";
+		active = "/res/images/btn-active.png";
+		disabled = "/res/images/btn-disabled.png"; 
+	}
+)
+
+import wsock.tcp.client;
+winform.btnUpdate.oncommand = function(id,event){
+	winform.btnUpdate.disabledText = {'\uF254';'\uF251';'\uF252';'\uF253';'\uF250'};
+	
+	var client = wsock.tcp.client();  
+	//var oldPort = xray.core.socksProxyPort;
+	if( tonumber(winform.editSocksPort.text)
+		&& tonumber(winform.editSocksPort.text) != oldPort
+		&& client.connectTimeout("127.0.0.1",tonumber(winform.editSocksPort.text) ,0.5) ){
+		winform.editSocksPort.editBox.showErrorTip(,"端口已被占用");
+		winform.btnUpdate.disabledText = null;
+		return client.close(); 
+	} 
+	client.close();  
+	
+	
+	
+	winform.btnUpdate.disabledText = null;
+	winform.msgOk("配置已更新",1200);
+}
+
+import win.clip;
+import wsock.tcp.client;
+winform.editSocksPort.editBox.enablePopMenu(function(){
+	var lanIp = wsock.tcp.client.getLocalIp("www.baidu.com");
+	return {
+			{ "复制端口" + winform.editSocksPort.text;
+				function(id){ 
+					win.clip.write("" + winform.editSocksPort.text)	
+				}
+			};
+			{ "复制本机IP与端口 127.0.0.1:" + winform.editSocksPort.text;
+				function(id){ 
+					win.clip.write("127.0.0.1:" + winform.editSocksPort.text)	
+				}
+			}; 
+			{ "复制局域网IP与端口 "+lanIp+":" + winform.editSocksPort.text;
+				function(id){ 
+					win.clip.write(lanIp+":" + winform.editSocksPort.text)
+				}
+			}; 
+	}
+} )
+
+winform.show();
+win.loopMessage();
+return winform;

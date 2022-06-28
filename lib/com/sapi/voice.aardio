@@ -1,0 +1,178 @@
+﻿import com;
+namespace com.sapi;
+
+class voice{
+	ctor(  ){
+		this = ..com.CreateObject("Sapi.SpVoice"); 
+
+		this[["getVoicesEx"]] = function(attr){
+			var result = {};
+			var voices = this.GetVoices();
+			for(i=1;this.GetVoices().Count;1){
+				var v = voices.Item(i-1);
+				..table.push(result,{
+					name = v.GetAttribute("Name");
+					language = v.GetAttribute("Language");
+					gender = v.GetAttribute("Gender");
+					age = v.GetAttribute("Age");
+					vendor = v.GetAttribute("Vendor");
+					description = v.GetDescription();
+				}) 
+    		}
+    		
+    		if(attr){
+    			return ..table.map(result,lambda(v,k,result)v[attr])	
+    		}
+    		return 	result;
+		}
+		
+		this[["eachVoices"]] = function(attr){
+			var voices = this.getVoicesEx();
+			var i,v;
+			return function(){
+				i,v = ..table.next(voices,i);
+				if(v){
+					return v.name,v.language,v.gender,v.age,v.vendor,v.description
+				}
+			} 
+		}
+		
+		this[["setVoiceByIndex"]] = function(idx){
+			var v = this.GetVoices().Item(idx-1);
+			if(v){
+				this.setVoice(v);
+			} 
+		}
+		
+		this[["setVoiceByAttributes"]] = function(required,optional){
+			var v = this.GetVoices(required,optional).Item(0);
+			if(v){
+				return this.setVoice(v);
+			} 
+		}
+		
+		this[["setVoiceByName"]] = function(name){
+			var v = this.GetVoices("Name="+name).Item(0);
+			if(v){
+				return this.setVoice(v);
+			} 
+		}
+		
+		this[["setVoiceByLanguage"]] = function(lang){
+			var v = this.GetVoices("Language="+lang).Item(0);
+			if(v){
+				return this.setVoice(v);
+			} 
+		}
+		
+		this[["speakAsync"]] = function(text,flags){ 
+			return this.speak(text,(flags:0) | 1)
+		}
+		 
+		this[["speakXml"]] = function(text,flags){ 
+			return this.speak(text,(flags:0) | 8 | 1)
+		}
+		
+		this[["speakCompleteEvent2"]] = this.speakCompleteEvent;
+		this[["speakCompleteEvent"]] = function(){
+			return topointer( this.speakCompleteEvent2() );
+		}
+		
+		this[["waitOne"]] = function(){
+			return ..thread.waitOne( topointer( this.speakCompleteEvent2() ) );
+		}
+		
+		this[["event"]] = {
+			@{
+				_set = function(k,v){ 
+					if(k=="AudioLevel"){
+						this.setEventInterests( this.EventInterests | this.SVEAudioLevel ); 
+					}
+					owner[[k]] = v;
+				} 
+			}
+		}
+		..com.Connect(this,this.event);  
+	};
+}
+
+/**intellisense()
+com.sapi.voice = SAPI语音对象,\nSAPI为正常系统自带组件，如果是精简过删除了SAPI组件的系统请自行安装修复该组件
+com.sapi.voice() = 创建SAPI语音对象\n!stdcomsapivoice.
+end intellisense**/
+
+/**intellisense(!stdcomsapivoice)
+getVoicesEx() = 返回数组,数组由所有语音库的属性列表组成\n如果在参数中使用一个字符串参数指定要返回的属性,\n则返回由所有语音库的对应属性值组成的数组
+setVoiceByIndex(__) = 使用索引设置语音库
+setVoiceByAttributes(.(必需属性,可选属性) =  使用属性设置语音库\n属性使用"Attribute = Value"或者"Attribute != Value" 格式的字符串表示
+setVoiceByName(__) = 使用名称设置语音库
+setVoiceByLanguage(__) = 使用语言代码设置语音库\n804 表示中文,409表示英文
+setVoice(__) = 设置当前语音库
+voice = 当前语音库
+rate =  说话速度，值范围从 -10到10
+volume = 音量，值范围从 0到100
+speak(.(text,flags) = 朗读,text参数指定要朗读的字符串\nflags为可选参数,可指定如下值：\n    SVSFDefault = 0\n    SVSFlagsAsync = 1\n    SVSFPurgeBeforeSpeak = 2\n    SVSFIsFilename = 4 \n    SVSFIsXML = 8\n    SVSFIsNotXML = 16\n    SVSFPersistXML = 32 \n    SVSFNLPSpeakPunc = 64 \n    SVSFNLPMask = 64\n    SVSFVoiceMask = 127\n    SVSFUnusedFlags = -128   
+speakAsync(.(text,flags) = 异步非阻塞朗读,text参数指定要朗读的字符串\nflags为可选参数,参考speak函数flags参数的说明\n此函数与speak用法相同,但flags默认指定了SVSFlagsAsync选项
+speakXml(.(text,flags) = 异步非阻塞朗读XML格式文本,text参数指定要朗读的字符串\nflags为可选参数,参考speak函数flags参数的说明\n此函数与speak用法相同,但flags默认指定了SVSFlagsAsync,SVSFIsXML选项
+speakStream(.(stream,flags) = 朗读文件流，例如SAPI.SpFileStream
+skip(.(type,numItems) = 跳过指定的文本
+pause() = 暂停朗读
+resume() = 继续朗读
+waitUntilDone(_) = 等待直到完成,参数指定超时,超时指定为-1表示直到朗读完成
+isUiSupported(.(typeOfUI,extraData) = 是否支持指定界面
+displayUI(.(hWndParent,title,typeOfUI,extraData) = 显示指定界面
+getStatus() = 返回当前状态\n!stdcomsapivoicestatus.
+status = 当前状态\n!stdcomsapivoicestatus.
+event = 回调事件表\n!stdcomsapivoiceevent.
+eachVoices() = @for name,lang,gender,age,vendor,description in ??.eachVoices(){
+	__/*遍历所有语音库,\nname为名称,lang为语言代码,gender为性别,age为年龄,vendor为厂商,description为详细说明*/
+}
+speakCompleteEvent() = 返回一个用于等待的事件句柄,\n可作为 thread.waitOne 的参数使用
+waitOne() = 异步朗读时,可使用此函数等待朗读结束
+end intellisense**/
+
+/**intellisense(!stdcomsapivoicestatus)
+currentStreamNumber = 输入流数目. 
+inputSentenceLength = 当前语句长度
+inputSentencePosition = 当前语句开始位置
+inputWordLength = 当前朗读的单词长度
+inputWordPosition = 当前朗读的单词开始位置
+runningState = 当前朗读状态\nSRSEIsSpeaking 值为2 表示正在朗读\nSRSEDone 值为1表示朗读已完成
+visemeId = 当前口形ID
+phonemeId = 当前音素ID
+lastStreamNumberQueued = 朗读的最后一个音频流编号
+lastHResult = 最后一次调用speak,speakStream的状态码
+lastBookmark = 最后一个书签的字符串值
+lastBookmarkId = 最后一个书签的ID
+end intellisense**/
+
+/**intellisense(!stdcomsapivoiceevent)
+AudioLevel = @.AudioLevel = function(streamNumber,streamPosition,audioLevel){ 
+	__/*音频变化触发*/  
+}
+Word = @.Word =  function(streamNumber,streamPosition,characterPosition,length ){ 
+   __/*一个新单词开始*/
+} 
+Viseme = @.Viseme =  function(streamNumber,streamPosition,duration,nextVisemeId,feature,currentVisemeId){
+   __/*新的嘴形*/
+}
+Phoneme = @.Phoneme =  function(streamNumber, streamPosition,Duration,nextPhoneId,Feature,currentPhoneId){
+   __/*新的音素*/
+}
+
+Sentence = @.Sentence =  function(streamNumber,streamPosition,characterPosition,length){
+   __/*新的句子*/
+}
+EndStream = @.EndStream = function(streamNumber ,streamPosition){ 
+    
+}
+StartStream = @.StartStream = function(streamNumber,streamPosition ){ 
+    
+}
+VoiceChange = @.VoiceChange =  function(streamNumber,streamPosition ,voiceObjectToken ){ 
+    var v = voiceObjectToken.GetDescription();
+} 
+EnginePrivate = @.EnginePrivate =  function(streamNumber,streamPosition,engineData){
+	
+}
+end intellisense**/

@@ -1,0 +1,265 @@
+import fsys;  
+import util.metaProperty; 
+import fsys.ini;
+import inet.url;
+
+namespace chm;
+
+class compiler{
+	ctor( hhpPath ){
+	
+		if( ! ( hhpPath && ..string.endWith(hhpPath,".hhp",true ) ) ){
+			return null,"HHP项目文件路径错误"
+		}
+		this.hhpPath = hhpPath;
+		
+		var hhpDir = ..fsys.getParentDir(hhpPath);
+		hhpDir = ..fsys.createDir(hhpDir);
+		if( !hhpDir){
+			return null,"HHP项目文件路径错误"
+		}
+		this.hhpDir = hhpDir;
+		
+		if(!..io.exist(hhpPath) ){ 
+			var hhk = "Index.hhk"
+			..fsys.enum( hhpDir, "*.hhk",
+				function(dir,filename,fullpath,findData){ 
+					if(filename){ 
+			           hhk = ..fsys.path.relative(fullpath,hhpDir,false);
+					} 
+				} 
+				,false
+			);
+			
+			var hhc = "Table of Contents.hhc"
+			..fsys.enum( hhpDir, "*.hhc",
+				function(dir,filename,fullpath,findData){ 
+					if(filename){ 
+			           hhc = ..fsys.path.relative(fullpath,hhpDir,false);
+					} 
+				} 
+				,false
+			);
+			
+			var defaultTopic = "";
+			defaultTopic = ..fsys.searchFile("index.html",hhpDir)
+			if(!defaultTopic){
+				defaultTopic = ..fsys.searchFile("index.htm",hhpDir)
+				
+				if(!defaultTopic){
+					defaultTopic = ..fsys.searchFile("default.html",hhpDir)
+					
+					if(!defaultTopic){
+						defaultTopic = ..fsys.searchFile("default.htm",hhpDir)
+						
+						if(!defaultTopic){
+							defaultTopic = ..fsys.searchFile("introduction.html",hhpDir)
+							
+							if(!defaultTopic){
+								..fsys.enum( hhpDir, {"*.html";"*.htm"},
+									function(dir,filename,fullpath,findData){ 
+										if(filename){ 
+							            	defaultTopic = fullpath;
+										} 
+									},false
+								);
+							}
+						}
+					}
+				}
+			}
+			if(defaultTopic) defaultTopic = ..fsys.path.relative(defaultTopic,hhpDir,false);
+			else defaultTopic = "";
+			
+			var default = "
+[OPTIONS]
+Auto Index=Yes
+Compatibility=1.1 Or later
+Default window=Main
+Default font=Tahoma,10,0
+Contents file=" + hhc + "
+Index file=" + hhk + "
+Default topic=" + defaultTopic + "
+Display compile progress=Yes
+Full-text search=Yes
+Compiled file=" + ..io.splitpath(hhpPath).name + ".chm" + "
+Language=" + ::Kernel32.GetSystemDefaultLCID()
+			..string.save(hhpPath, ..string.fromto(default,65001,0) )
+		}
+		
+		this.hhpInfo = ..fsys.ini(hhpPath) 
+		this.navigationPaneWidth = 220;
+		this.navigationStyle = 0x60420; 
+	};
+	compile = function(chmPath){ 
+		if( !this.onPrint_c ) this.onPrint = function(){return true};
+		if( !this.onProgress_c ) this.onProgress = function(){return true};
+		if(chmPath) this.compiledFile = chmPath;
+		
+		this.hhpInfo.write("WINDOWS",this.defaultWindow,
+			..string.format('"%s","%s","%s","%s",,,,,,%d,%d,0x2006,[0,0,1284,774],0x0,0x0,,,,,0', 
+				this.title : "",this.contentsFile,this.indexFile,this.defaultTopic,this.navigationStyle,this.navigationPaneWidth)
+		)
+
+		..fsys.setCurDir(this.hhpDir)	
+		return HHA_CompileHHP( ..fsys.shortpath(this.hhpPath),this.onPrint_c,this.onProgress_c,0);
+	}
+	
+	@_metaProperty;
+}
+
+namespace compiler{
+
+	var hha = ..raw.loadDll(..io.appData("aardio\std\chm\hha.dll",$"~\lib\chm\.res\hha.dll"));
+	HHA_CompileHHP = hha.api("HHA_CompileHHP","bool(string pszHhpFile,pointer pLogString,pointer pProgress,INT nRes)" )
+	
+	var itcc = ..raw.loadDll(..io.appData("aardio\std\chm\itcc.dll",$"~\lib\chm\.res\itcc.dll"));
+	itcc.DllRegisterServer();
+	
+	_metaProperty = ..util.metaProperty(
+	
+		onPrint = { 
+			_set = function( value ){
+				owner.onPrint_c = value ? ..raw.tostdcall(value,"bool(string)") ; 
+				owner.onPrint_a = value;
+			} 	
+		}; 
+		onProgress = { 
+			_set = function( value ){
+				owner.onProgress_c = value ? ..raw.tostdcall(value,"bool(string)") ; 
+				owner.onProgress_a = value;
+			} 	
+		};  
+		title = { 
+			_set = function( value ){
+				owner.hhpInfo.write("OPTIONS","Title",value)
+			} 
+			_get = function( value ){
+				return owner.hhpInfo.read("OPTIONS","Title")
+			}	
+		}; 
+		displayCompileProgress = { 
+			_set = function( value ){
+				owner.hhpInfo.write("OPTIONS","Display compile progress",value)
+			} 
+			_get = function( value ){
+				return owner.hhpInfo.read("OPTIONS","Display compile progress")
+			}	
+		};
+		fullTextSearch = { 
+			_set = function( value ){
+				owner.hhpInfo.write("OPTIONS","Full-text search",value)
+			} 
+			_get = function( value ){
+				return owner.hhpInfo.read("OPTIONS","Full-text search")
+			}	
+		};
+		defaultFont = { 
+			_set = function( value ){
+				owner.hhpInfo.write("OPTIONS","Default font",value)
+			} 
+			_get = function( value ){
+				return owner.hhpInfo.read("OPTIONS","Default font")
+			}	
+		}; 
+		language = { 
+			_set = function( value ){
+				owner.hhpInfo.write("OPTIONS","Language",value)
+			} 
+			_get = function( value ){
+				return owner.hhpInfo.read("OPTIONS","Language")
+			}	
+		};
+		defaultWindow = { 
+			_set = function( value ){ 
+				owner.hhpInfo.write("OPTIONS","Default window",value )
+			} 
+			_get = function( value ){
+				return owner.hhpInfo.read("OPTIONS","Default window")
+			}	
+		};
+		defaultTopic = { 
+			_set = function( value ){
+				var newPath = ..io.fullpath(value);
+				newPath = ..fsys.path.relative(newPath,owner.hhpDir,false) : newPath ;
+				owner.hhpInfo.write("OPTIONS","Default topic",newPath )
+			} 
+			_get = function( value ){
+				return owner.hhpInfo.read("OPTIONS","Default topic")
+			}	
+		};
+		compiledFile = { 
+			_set = function( value ){
+				var newPath = ..io.fullpath(value);
+				newPath = ..fsys.path.relative(newPath,owner.hhpDir,false) : newPath ;
+				owner.hhpInfo.write("OPTIONS","Compiled file",newPath )
+			} 
+			_get = function( value ){
+				return owner.hhpInfo.read("OPTIONS","Compiled file")
+			}	
+		}; 
+		contentsFile = { 
+			_set = function( value ){
+				var newPath = ..io.fullpath(value);
+				var oldPath = owner.contentsFile; 
+				owner.hhpInfo.write("OPTIONS","Contents file",newPath)
+				
+				var main = owner.mainWindow;
+				if( main && oldPath ){
+					main = ..string.replace(main,"@@" + oldPath,newPath);
+				}
+			} 
+			_get = function( value ){
+				return owner.hhpInfo.read("OPTIONS","Contents file")
+			}	
+		}; 
+		indexFile = { 
+			_set = function( value ){
+				var newPath = ..io.fullpath(value);
+				var oldPath = owner.indexFile;
+					
+				owner.hhpInfo.write("OPTIONS","Index file",newPath)
+				var main = owner.mainWindow;
+				if( main && oldPath ){
+					main = ..string.replace(main,"@@" + oldPath,newPath);
+				}
+			} 
+			_get = function( value ){
+				return owner.hhpInfo.read("OPTIONS","Index file")
+			}	
+		}; 
+	)
+}
+
+/**intellisense(chm)
+compiler(.("HHP文件路径") = 创建可打开CHM工程文件
+compiler() = !chm_compiler.
+end intellisense**/
+
+/**intellisense(!chm_compiler)
+hhpInfo = 配置文件\n!ini.
+defaultTopic = 默认首页
+indexFile = 索引文件
+contentsFile = 目录文件
+title = 窗口标题
+defaultWindow = 默认窗体名字
+displayCompileProgress = 是否显示进度,默认为"Yes"
+fullTextSearch = 是否全文搜索,默认为 "Yes"
+defaultFont = 默认字体,默认为 "Tahoma,10,0"
+navigationPaneWidth = 左侧导航栏宽度,默认为 220
+navigationStyle = 左侧导航栏样式,数值,\n默认为 0x60420
+language = LCID 语言代码 
+compiledFile = 输出的CHM文件路径
+compile() = 编译生成CHM文件\n可选在参数中指定输出CHM文件路径
+onPrint = @.onPrint = function( str ){
+	io.print( str )__/*参数为输出信息,\n此回调函数返回 true 继续编译*/
+	return true;
+}
+onProgress = @.onProgress = function( str ){
+	io.print( str )__/*参数指示进度,\n此回调函数返回 true 继续编译*/
+	return true;
+}
+end intellisense**/
+
+
+	

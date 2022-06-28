@@ -1,0 +1,752 @@
+if( _STUDIO_INVOKED && _STUDIO_INVOKED != "process" ){ 
+	error("web.blink不能在IDE嵌入线程模式下启动!",2)
+}
+
+namespace web.blink {
+	if( !_STUDIO_INVOKED){
+		_dllPath = ..io.appData("aardio/std/miniblink/211220/node.dll",$"~\lib\web\blink\.dll\node.dll");
+		_dllPathX = ..io.appData("aardio/std/miniblink/211220/wkex.dll",$"~\lib\web\blink\.dll\wkex.dll");
+	}
+	else {
+		_dllPath = "~\lib\web\blink\.dll\node.dll";
+		_dllPathX = "~\lib\web\blink\.dll\wkex.dll";
+	}
+	
+	_dll = ..raw.loadDll(_dllPath,"webblink.miniblink.dll","cdecl");
+	_dll.wkeInitialize()
+
+	..table.gc(self,function(){
+		_dll.wkeFinalize();
+	} );
+	
+	_dllx  = ..raw.loadDll(_dllPathX,,"cdecl");
+}
+
+import web.json;
+import web.blink.view;
+
+namespace web.blink {
+    	
+	var wke = _dll; 
+	var __view__ = view;
+
+	jsInt = wke.api("jsInt","LONG(int)" );
+	jsFloat = wke.api("jsFloat","LONG(float)" );
+	jsDouble = wke.api("jsDouble","LONG(double)" );
+	jsToDouble = wke.api("jsToDouble","double(POINTER jsExecState,LONG value)" );
+	
+	jsBoolean = wke.api("jsBoolean","LONG(bool)" );
+	jsUndefined = wke.api("jsUndefined","LONG()" );
+	jsNull = wke.api("jsNull","LONG()" );
+	jsTrue = wke.api("jsTrue","LONG()" );
+	jsFalse = wke.api("jsFalse","LONG()" );
+	
+	jsString = wke.api("jsString","LONG(POINTER jsExecState,string s)" );
+	jsEval = wke.api("jsEval","LONG(POINTER jsExecState,string s)" );
+	runJs = wke.api("wkeRunJS","LONG(addr hWebView,string s)" );
+	jsCall = wke.api("jsCall","LONG(POINTER jsExecState,LONG func,LONG thisObject,struct args,int argCount)" )
+	jsCallGlobal = wke.api("jsCallGlobal","LONG(POINTER jsExecState,LONG func,struct args,int argCount)" )
+	jsIsArray = wke.jsIsArrayB;
+	
+	jsBuildValue = function(jsExecState,v,aardioOwner){
+		if(v===null){
+			return jsNull();
+		}
+		
+		var t,mt = type(v);
+		if( t == type.number ){
+			return jsDouble(v);
+		}
+		elseif( t == type.string ){
+			return jsString(jsExecState,v );
+		}
+		elseif( t == type.boolean ){
+			return jsBoolean(v);
+		}
+		elseif( t == type.table ){
+			if( v.jsValue ) return v.jsValue;
+			
+			if( #v || ..table.isArray(v) ){
+				return jsEmptyArray(jsExecState,,v).jsValue;
+			} 
+			
+			if(..time.istime(v) ){
+				return jsEval(jsExecState,"return new Date("+ tonumber(v) + " * 1000)");
+			}
+			
+			return jsData(jsExecState,v).jsValue;
+		}
+		elseif( t == "cdata"  ){
+			if(mt == "math.size64") return v;
+			return jsData(jsExecState,v,aardioOwner).jsValue;
+		}
+		elseif( t == type.function ){
+			return jsData(jsExecState,v,aardioOwner).jsValue;
+		}
+		elseif( t == type.buffer ){
+			return wke.jsArrayBufferL(jsExecState,v,#v);
+		}
+		return jsNull(); 
+	}
+	var jsBuildValue = jsBuildValue;
+	
+	jsObjectTypeof = function(v){
+		if(v[["jsValue"]]) return jsTypeOf(v[["jsValue"]]);
+	}
+	
+	jsObjectIsFunction = function(v){
+		if(v[["jsValue"]]) return jsTypeOf(v[["jsValue"]])==4/*JSTYPE_FUNCTION*/;
+	}
+	
+	jsObjectIsArray = function(v){
+		if(v[["jsValue"]]) return jsTypeOf(v[["jsValue"]])==6/*JSTYPE_ARRAY*/;
+	}
+	
+	jsObjectIsObject = function(v){
+		if(v[["jsValue"]]) return jsTypeOf(v[["jsValue"]])==3/*JSTYPE_OBJECT*/;
+	}
+	
+	var __ind__ = 0/0;
+	var __parse__ = {
+		[0/*JSTYPE_NUMBER*/] = function(jsExecState,v){
+			return jsToDouble(jsExecState,v);
+		};
+		[1/*JSTYPE_STRING*/]= function(jsExecState,v){  
+			var s = wke.jsToTempString(jsExecState,v);
+			if( s ) return ..raw.str( topointer(s) );
+		}
+		[2/*JSTYPE_BOOLEAN*/] = function(jsExecState,v){
+			return !!( wke.jsToBoolean(jsExecState,v) & 0xFF);
+		};
+		[3/*JSTYPE_OBJECT*/] = function(jsExecState,v){
+			if( wke.jsIsNullB(v) ){
+				return null;
+			}
+			elseif( wke.jsIsArrayB(v) ){
+				return jsEmptyArray(jsExecState,v);
+			}
+			else {
+				var obj = jsEmptyObject(jsExecState,v);
+				if( obj.getTime && ( type( obj.toUTCString ) == type.function)  ){
+					return ..time.gmt( obj.toUTCString() );
+				}
+				elseif(obj.byteLength){
+					var p = wke.jsGetArrayBufferP(jsExecState,v);
+					if(!p) return obj;
+					var m =  ..raw.convert(p,{
+    					int size;
+    					ptr data;
+    					INT length;
+					})
+					var b = ..raw.buffer(m.length,m.data);
+					wke.wkeFreeMemBuf(p);
+					return b;
+				}
+				
+				return obj;
+			}
+		};
+		[6/*JSTYPE_ARRAY*/] = function(jsExecState,v){
+			return jsEmptyArray(jsExecState,v);
+		};
+		[4/*JSTYPE_FUNCTION*/] = function(jsExecState,jsFunctionValue,thisObject,k){
+		 
+		 	var jsFunction;
+			if( thisObject ){
+				
+				jsFunction = function(...){ 
+					var args = {...};
+					var _,len = ..table.range(args);
+					var jsargs;
+					if(len){
+						jsargs = { LONG args[] = {} };
+						for(i=1;len;1){
+						 	..table.push(jsargs.args,jsBuildValue(jsExecState,args[i]));
+						} 
+					}
+					else {
+						jsargs = {};
+					} 
+					
+					var ret =  jsParseValue( jsExecState,jsCall(jsExecState,jsFunctionValue,thisObject.jsValue,jsargs,len) );
+					if( wke.jsGetLastErrorIfExceptionP(jsExecState) ){
+						e = ..web.blink.jsLasterr(jsExecState);
+						..web.blink.onJsCallError(e);
+					}
+					
+					return ret;
+				}  
+				
+			}
+			else {
+				jsFunction = function(...){ 
+					var args = {...};
+					var _,len = ..table.range(args);
+					var jsargs;
+					if(len){
+						jsargs = { LONG args[] = {} };
+						for(i=1;len;1){
+						 	..table.push(jsargs.args,jsBuildValue(jsExecState,args[i]));
+						} 
+					}
+					else {
+						jsargs = {};
+					}
+					
+					var ret = jsParseValue( jsExecState,jsCallGlobal(jsExecState,jsFunctionValue,jsargs,len) );
+					if( wke.jsGetLastErrorIfExceptionP(jsExecState) ){
+						e = ..web.blink.jsLasterr(jsExecState);
+						..web.blink.onJsCallError(e);
+					}
+					
+					return ret;
+				} 	
+			}
+			
+			return jsEmptyObject(jsExecState,jsFunctionValue,,jsFunction); 
+		};
+		[5/*JSTYPE_UNDEFINED*/] = function(jsExecState,v){
+			return null;
+		};
+	} 
+	jsTypeOf = wke.jsTypeOf;
+	jsParseValue = function(jsExecState,v,thisObject,k){
+		var t = wke.jsTypeOf(v);
+		var f = __parse__[t];
+		if(f) return f(jsExecState,v,thisObject,k);
+	}
+	var jsParseValue = jsParseValue;
+
+	jsArg = wke.api("jsArg","LONG(pointer jsExecState,int idx)") 
+	jsParseArg = function(jsExecState){
+		lastCallbackJsExecState = jsExecState;
+
+		var args = {}; 
+		var count = wke.jsArgCount(jsExecState);
+		
+		for(i=1;count;1){ 
+			var t = wke.jsArgType(jsExecState,i-1);
+			var f = __parse__[t];
+			var v = jsArg(jsExecState,i-1);
+			args[i] =  f(jsExecState,v,thisObject);
+		}
+		return ..table.unpackArgs(args,1,count);
+	}
+	var jsParseArg = jsParseArg;
+	
+	lastView = function(){
+		return lastCallbackJsExecState ? __view__.fromJsExecState(lastCallbackJsExecState)
+	}
+	
+	lastForm = function(){
+		v = lastView();
+		return v ? v.getForm()
+	}
+	
+	xcall = function(...){
+		view.xcall(...);
+	}
+	
+	each = view.each;
+	
+	jsSaveCallback = function(...){
+		var view = lastCallbackJsExecState ? __view__.fromJsExecState(lastCallbackJsExecState);
+		if(view)return view.jsSaveCallback(...);
+	} 
+	
+/*jsData{{*/
+	class jsData{
+		ctor( jsExecState,aardioData,aardioOwner ){
+			this._value = aardioData;
+			this._owner = aardioOwner;
+			this._valuePointer = ..raw.malloc( {
+					BYTE typeName[100] = (type(aardioData) == type.function ? "Function" : "Object");
+    				pointer propertyGet = _propertyGetCallback;
+    				pointer propertySet = _propertySetCallback;
+    				pointer finalize = _jsFinalizeCallback;
+    				pointer callAsFunction = _jsCallAsFunctionCallback;
+    				INT id  = _registry.reg(this);
+			} )
+			
+			if( type(aardioData) == type.function )
+				this.jsValue = jsFunction(jsExecState,this._valuePointer);
+			else 
+				this.jsValue = jsObject(jsExecState,this._valuePointer);	
+		};
+	
+	}
+	
+	import util.registry;
+	namespace jsData{
+		_registry = ..util.registry();
+		jsFunction = wke.api("jsFunction","LONG(PTR es,ptr obj)" );
+		jsObject = wke.api("jsObject","LONG(PTR es,ptr obj)" );
+		jsGetData = wke.api("jsGetData","ptr(PTR es,LONG object)" ); 
+		var jsNull = ..web.blink.jsNull;
+		
+		_propertyGetCallback = ..raw.tocdecl( 
+			function(jsExecState,object,propertyName){
+				var jsData = jsGetData(jsExecState,object);
+				var dataId = ..raw.convert(jsData,{INT id},116).id;
+				var data  = _registry[dataId];
+				if(!data) return jsNull();
+
+				return jsBuildValue(jsExecState,data._value[propertyName],data._value);
+			},"LONG(ptr jsExecState,LONG object,string propertyName)");
+
+		_propertySetCallback = ..raw.tocdecl( 
+			function(jsExecState,object,propertyName,value){
+				var jsData = jsGetData(jsExecState,object);
+				var dataId = ..raw.convert(jsData,{INT id},116).id;
+				var data  = _registry[dataId];
+				if(!data) return false;
+				
+				if( type(data._value) == type.table ){
+					data._value[propertyName] = jsParseValue(jsExecState,value,{jsValue = object});
+				}
+			},"bool(ptr jsExecState,LONG object,string propertyName,LONG value)");
+			
+		_jsFinalizeCallback = ..raw.tocdecl( 
+			function(jsData){
+				var dataId = ..raw.convert(jsData,{INT id},116).id;
+				_registry.unReg(dataId);
+			},"void(ptr data)");
+		
+		_jsCallAsFunctionCallback  = ..raw.tocdecl( 
+			function(jsExecState,object,args,argCount){
+				var jsData = jsGetData(jsExecState,object);
+				var dataId = ..raw.convert(jsData,{INT id},116).id;
+				var data  = _registry[dataId]; 
+				if(!data) return jsNull();
+	 	
+				var ok,ret = call(data._value,data._owner, jsParseArg(jsExecState));
+				if( ok )return jsBuildValue( jsExecState,ret );
+				else {
+					..web.blink.jsThrow(jsExecState,ret);
+					..web.blink.onError(ret);
+				}
+			},"LONG(ptr jsExecState,LONG object,LONG args, int argCount)");
+	}
+/*}}*/	
+	 
+/*jsEmptyObject{{*/
+	class jsEmptyObject{
+		ctor( jsExecState,jsEmptyObject,tab,jsFunction ){
+			this.jsValue = jsEmptyObject ? jsEmptyObject : jsCreateObject( jsExecState );
+			this.jsExecState = jsExecState;
+			this.jsFunction = jsFunction;
+			
+			//目前测试这个接口不起作用
+			this.$jsAddRef = function(){
+				if(this.jsRefCount) return;
+				
+				if( wke.jsAddRef( this.jsExecState,this.jsValue ) ){
+					this.jsRefCount = 1;
+					if(!this._gc)..table.gc(this,this.jsReleaseRef);
+				}
+			}
+			
+			//目前测试这个接口不起作用
+			this.$jsReleaseRef = function(){
+				if(this.jsRefCount){ 
+					this.jsRefCount = null;
+					wke.jsReleaseRef( this.jsExecState,this.jsValue) 
+				}
+			}
+			
+			//用于执行js里的delete操作
+			this.$jsDelete = function(prop){
+				wke.jsDeleteObjectProp(this.jsExecState,this.jsValue,prop)
+			}
+			
+			this@ = _meta;
+			for(k,v in tab){
+				this[k] = v;
+			} 
+		}; 
+	}
+	namespace jsEmptyObject{
+		jsCreateObject = wke.api("jsEmptyObject","LONG(POINTER jsExecState)" );
+		jsGet = wke.api("jsGet","LONG(POINTER jsExecState,LONG object,string prop)" );
+		jsSet = wke.api("jsSet","LONG(POINTER jsExecState,LONG object,string prop,LONG v)" ); 
+		
+		_meta = {
+			_get = function(k){
+				var v = jsGet( owner.jsExecState,owner.jsValue,tostring(k)/*js里数值key实际上也是字符串*/);
+				v = jsParseValue(owner.jsExecState,v,owner,k);
+				if( type(v) == type.function ) owner[[k]] = v;
+				return v;
+			}; 
+			_set = function(k,v){
+				var v = jsBuildValue(owner.jsExecState,v);
+				jsSet( owner.jsExecState,owner.jsValue,tostring(k),v); 
+			}; 
+			_keys = function(){
+				var p = wke.jsGetKeysP(owner.jsExecState,owner.jsValue);
+				if(p){
+					var hdrSize  = ..raw.convert(p,{INT length;ptr pstr});
+					if(hdrSize.length){
+						return  ..raw.convert(hdrSize.pstr,{str keys[] = hdrSize}).keys;
+					} 
+				}
+			};
+			_startIndex = 0;
+		    _tostring = function(){
+		        if(owner.jsFunction) return '[object Function]';
+				return owner.toString(); 
+			};
+			_serialize = ..thread._callableSerialize;
+			_call = function(...){
+				if(owner.jsFunction){
+					return owner.jsFunction(...); 
+				}
+			}
+		} 
+	}
+/*}}*/
+	
+/*jsEmptyArray{{*/
+	class jsEmptyArray{
+		ctor( jsExecState,jsEmptyArray,tab ){
+			this.jsValue = jsEmptyArray ? jsEmptyArray : jsCreateArray( jsExecState );
+			this.jsExecState = jsExecState;
+			
+			this.jsAddRef = function(){
+				if(this.jsRefCount) return;
+				
+				if( wke.jsAddRef( this.jsExecState,this.jsValue ) ){
+					this.jsRefCount = 1;
+					if(!this._gc)..table.gc(this,this.jsReleaseRef);
+				}
+			}
+			
+			this.jsReleaseRef = function(){
+				if(this.jsRefCount){ 
+					this.jsRefCount = null;
+					wke.jsAddRef( this.jsExecState,this.jsValue ) 
+				}
+			}
+			
+			this@ = _meta;
+			for(i=1;#tab;1){
+				this[ i - 1 ] = tab[i]; 
+			}  
+		}; 
+	}
+	namespace jsEmptyArray{
+		jsCreateArray = wke.api("jsEmptyArray","LONG(POINTER jsExecState)" );
+		jsGet = wke.api("jsGetAt","LONG(POINTER jsExecState,LONG object,int prop)" );
+		jsSet = wke.api("jsSetAt","LONG(POINTER jsExecState,LONG object,int idx,LONG v)" ); 
+		
+		_meta = {
+			_get = function(k){
+				if( type(k) == "number"){
+					var v = jsGet( owner.jsExecState,owner.jsValue,k);
+					return jsParseValue(owner.jsExecState,v,owner,k);
+				}
+				elseif(k=="length"){
+					return wke.jsGetLength( owner.jsExecState,owner.jsValue);
+				}
+				
+			} 
+			_set = function(k,v){
+				if( type(k) == "number"){
+					var v = jsBuildValue(owner.jsExecState,v);
+					var v = jsSet( owner.jsExecState,owner.jsValue,k,v); 
+				}
+				elseif(k=="length"){
+					if( type(v) != "number" ) error("length必须是数值",2);
+					wke.jsSetLength( owner.jsExecState,owner.jsValue);
+				}
+			}
+			_tostring = function(){
+				return ..string.format("JS Array: %X",tonumber(owner.jsExecState) ); 
+			}
+			_startIndex = 0;
+			_serialize = ..thread._callableSerialize;
+		} 
+	}
+/*}}*/ 
+
+	__function__ = {};
+	__getter__ = {};
+	__setter__ = {};
+	
+	jsLasterr = function(jsExecState,p){
+		if(!p) p = wke.jsGetLastErrorIfExceptionP(jsExecState);
+		if(p){
+			return ..raw.convert(p, {
+    			str message;
+    			str sourceLine; 
+    			str sourceName;
+    			int lineNumber;
+    			int startPosition;
+    			int endPosition;
+    			int startColumn;
+    			int endColumn; 
+    			str callstackString;
+			})
+		}
+	}
+	
+	onJsCallError = function(e){
+		if( e ){
+			var s = ..string.concat("Javascript错误：",e.message 
+				,'	\n',"sourceLine:",e.sourceLine
+				,'	\n',"sourceName:",e.sourceName
+				,'	\n',"lineNumber:",e.lineNumber
+				,'	\n',"startColumn:",e.startColumn
+				,'	\n',"endColumn:",e.endColumn
+				,'	\n',"startPosition:",e.startColumn
+				,'	\n',"endPosition:",e.endColumn
+				,'	\n',"callstackString:",e.callstackString
+			);
+			
+			onError(s);
+		}
+	}
+	
+	jsThrow = function(jsExecState,exception){
+		return jsParseValue(jsExecState,wke.jsThrowExceptionL(jsExecState,exception));
+	}
+	
+	onError = function(err){
+		if(!err) return;
+		
+		if( type( global.onError ) == type.function  ){
+			err = global.onError(err);
+		}
+		if(!err) return;
+		
+		if( _STUDIO_INVOKED ){
+			global.import("ide.debug");
+			err = ..ide.debug.onError(err)
+		}
+		if(!err) return;
+		if( ..win ? ..win.msgboxErr ){
+			..win.msgboxErr(err)
+		}
+		else {
+			..io.stderr.write(err,'\n');
+		}
+	}
+	
+	jsBindFunction = function(name,argCount,func){
+		if(argCount===null)argCount=0;
+		if( type(name) != type.string ) error("参数@1必须指定函数名",2); 
+		if( type(func) != type.function ) error("参数@3必须是函数对象",2);
+		
+ 		var fc = ..raw.tofastcall( function(jsExecState){
+				var ok,ret = call(func,__view__.fromJsExecState(jsExecState) ,jsParseArg(jsExecState));
+				if( ok )return jsBuildValue( jsExecState,ret );
+				else {
+					jsThrow(jsExecState,ret);
+					onError(ret);
+				}
+				
+			},"LONG(pointer jsExecState)");
+		__function__[name] = fc;
+		wke.jsBindFunction(name,fc,argCount);
+	}
+	
+	jsBindGetter = function(name,func){
+		if( type(name) != type.string ) error("参数@1必须指定函数名",2); 
+		if( type(func) != type.function ) error("参数@2必须是函数对象",2);
+		
+		var fc = ..raw.tofastcall( function(jsExecState){
+			var ok,ret = call(func,__view__.fromJsExecState(jsExecState) ,jsParseArg(jsExecState));
+			if( ok )return jsBuildValue( jsExecState,ret );
+			else {
+				jsThrow(jsExecState,ret);
+				onError(ret);
+			}
+		},"LONG(pointer jsExecState)");
+		
+		__getter__[name] = fc;
+		wke.jsBindGetter(name,fc,0);
+	}
+	
+	jsBindSetter = function(name,func){
+		if( type(name) != type.string ) error("参数@1必须指定函数名",2); 
+		if( type(func) != type.function ) error("参数@2必须是函数对象",2); 
+		
+		var fc = ..raw.tofastcall( function(jsExecState){
+			var ok,ret = call(func,__view__.fromJsExecState(jsExecState) ,jsParseArg(jsExecState));
+			if(!ok) {
+				jsThrow(jsExecState,ret);
+				onError(ret);
+			}
+		},"LONG(pointer jsExecState)");
+		
+		__setter__[name] = fc;
+		wke.jsBindSetter(name,fc,1);
+	}
+	
+		
+	//预定义JS函数
+	jsBindFunction("alert",1,function(str){
+		var wkeWebView = owner;
+		if( wkeWebView.onAlertBox ){
+			wkeWebView.onAlertBox(str); 
+			return;
+		}
+		var winform = wkeWebView.getForm();
+		if( winform ) winform.msgbox(tostring(str));
+	})
+
+	jsBindFunction("confirm",1,function(str){
+		var wkeWebView = owner;
+		if( wkeWebView.onConfirmBox ){
+			return wkeWebView.onConfirmBox(str);
+		}
+		var winform = wkeWebView.getForm();
+		if( winform ) return winform.msgboxTest(str);
+	})
+	
+	jsBindFunction("aardioFullscreen",,function(requested){
+    	owner.getForm(true).fullscreen(requested)
+	})
+	
+	jsBindGetter("external",function(){
+		var ext = jsEval(owner.jsExecState,"return $_aardioNativeExternal");
+		if(wke.jsTypeOf(ext)==3/*JSTYPE_OBJECT*/){
+			if( !wke.jsIsNullB(ext) ) return ext;
+		}
+		
+		if(owner[["external"]]){
+			e = owner[["external"]]
+		}
+		elseif(type(external)=="class"){
+			e = external(owner,owner.getForm());	
+		}
+		owner.window.$_aardioNativeExternal = e;
+		return owner.window.$_aardioNativeExternal; 
+	} )
+	
+	export = function(name,value){
+		if( type(name) == "table" ){
+			for(k,v in name) jsBindGetter(k,lambda() v); 
+			return;
+		}
+		jsBindGetter(name,lambda() value);
+	}
+	
+	config = function(name,value){
+		wke.wkeSetDebugConfig(null,name,value);
+	};
+	config("antiAlias","1");
+	
+	enableDpiScaling = wke.wkeEnableHighDPISupport;
+	
+	plugins = {..io.fullpath("\plugins\");..io.appData("aardio\std\np-plugin\plugins");..io.fullpath("~\lib\web\blink\.dll\plugins\");}
+} 
+
+
+/*
+修正：文件对话框会跑到网页窗口后面的问题(原因是对话框没有正确指定所有窗口: hwndOnwer ) 
+<input type="file" accept="image/png, image/jpeg">
+*/
+import thread.apiHook;
+var hookGetOpenFileNameW = function (pfn) { 
+    var ofn = raw.convert(pfn,{INT structSize; INT hwndOwner;pointer instance;ptr filter;});
+    if(ofn.structSize!=76 || owner.mainThreadId === ..thread.getId() ) return owner.callApi(pfn);
+
+	//ChooserClass指定了_WS_EX_TOPMOST，先把这个窗口干掉才能正常
+	if( ofn.hwndOwner ) ::User32.DestroyWindow(ofn.hwndOwner);
+	
+    var threadInfo = {
+  		INT cbSize = 48;
+  		INT flags;
+  		addr  hwndActive;
+  		addr  hwndFocus;
+  		addr  hwndCapture;
+  		addr  hwndMenuOwner;
+  		addr  hwndMoveSize;
+  		addr  hwndCaret;
+  		struct  rcCaret = {int l;int t;int r;int b};
+	}
+    ::User32.GetGUIThreadInfo(owner.mainThreadId,threadInfo)
+    
+    if(!threadInfo.hwndActive) threadInfo.hwndActive = ::User32.GetForegroundWindow();
+    if(!threadInfo.hwndActive){
+        import winex;
+        var pid = ::Kernel32.GetCurrentProcessId();
+    	for hwnd,title,threadId,processId in winex.each(  ) { 
+    		if(pid === processId && !win.getOwner(hwnd)){
+    			threadInfo.hwndActive = hwnd;
+    			break;
+    		}
+    	}
+    }
+    
+    ofn.hwndOwner = threadInfo.hwndActive ;
+ 	raw.mixin(pfn,ofn);
+
+  	return owner.callApi(pfn);
+}
+
+var hook = thread.apiHook("comdlg32.dll", "GetOpenFileNameW", "int(pointer)"
+	, hookGetOpenFileNameW,{mainThreadId = ..thread.getId() })
+hook.install();
+
+/**details(用前必读)
+1、如果自js中读取aardio对象
+每一次读取都是实时的将aardio对象转换为js对象，
+例如在js中调用aardio函数external.hitCaption，
+external与external.hitCaption的每次访问都是实时转换。
+在js中定义的external将会被忽略,对于需要大量重复调用的函数，
+一个优化的技巧是换个名字保存在js中，例如在JS代码中执行：
+var hitCaption = external.hitCaption
+下次调用hitCaption时即可以避免不必要的自aardio中实时获取external.hitCaption
+
+2、如果反过来在 aardio 中调用JS对象
+要注意 Miniblink 随时会回收在 aardio 中获取的 JavaScript 对象，
+有可能一两句代码前获取的JavaScript 对象都随时会失效。
+所以千万不要把获取的JavaScript 对象保存起来，过一会再使用。
+一个例外是使用 mb.jsSaveCallback 则可以在aardio中缓存JS的函数对象。
+
+3、如果使用 Miniblink 遇到崩溃的问题
+请换其他网页试试是不是也会崩溃，然后再换其他编程语言是不是也会崩溃，
+然后请再换 aardio 中的其他浏览器组件试试，例如  web.view,web.form,web.sciter,chrome.app 试试，
+是否其他浏览器组件都正常。
+
+如果担心是 web.blink 扩展库的源码有问题 —— 这个扩展库是开源的并且源代码很少很少，非常欢迎你指出具体问题。
+end details**/
+
+/**intellisense()
+web.blink = Miniblink / Chromium 内核浏览器组件
+web.blink.sample = @import win.ui;\n/*DSG{{*/\nvar winform = win.form(text="简单示例";right=1345;bottom=780)\n/*}}*/\n\nimport web.blink.form;\nvar mb = web.blink.form(winform);\nmb.go("__/*请在这里输入网址,\n按Ctrl+Shift+K可删除当前行*/")\n\nwinform.show();\nwin.loopMessage();
+web.blink.enableDpiScaling() = 适配高分屏
+end intellisense**/
+
+/**intellisense(web.blink)
+plugins = 默认搜索 NPAPI 插件的目录路径数组,
+lastView() = 获取JS最后一次回调aardio时使用的浏览器对象
+lastForm() = 获取JS最后一次回调aardio时使用的窗口对象\n!static.
+xcall(.(jsMethod,->->->) = 调用当前线程所有web.blink加载的浏览器实例的全局JS函数\njsMethod必须是全局函数名,可指定任意个调用参数\n如果指定的JS函数不存在,则忽略该浏览器实例
+each = @for view in ??.each() {\n	__/*遍历当前线程创建的所有web.blink视图*/\n}
+each() = !web_blink_view.
+export(.(JS变量名,aardio对象) = 导出aardio对象为JS全局变量,仅对主框架有效,\n参数也可以使用一个表包含多个需要绑定到JS的变量名值对
+jsBindFunction("主框架函数名",参数个数,函数对象) = @.jsBindFunction("JS函数名",__/*参数个数*/,function(){\n    var mb = owner;\n    var winform = mb.getForm();\n    winform.close();\n})
+jsParseValue（.(jsExecState,js值句柄) = 解析JS值对象
+jsUndefined() = JS未定义变量
+jsTypeOf(.(js值句柄) = 返回变量类型
+jsObjectTypeof(.(js对象) = 返回转换为aardio对象的JS对象（包含数组、函数）的实际类型
+jsObjectIsArray(.(js对象) = 返回转换为aardio对象的JS对象是否JS中的数组
+jsObjectIsFunction(.(js对象) = 返回转换为aardio对象的JS对象是否JS中的函数
+jsObjectIsObject(.(js对象) = 返回转换为aardio对象的JS对象是否JS中的对象（不是数组、函数）
+config("antiAlias","0") = 关闭抗锯齿,默认值已设为"1",即打开抗锯齿
+onJsCallError(e) = @.onJsCallError = function(err){
+	__/*调用JS函数遇到JS异常时会触发此函数\n自定义此函数前请打开web.blink查看默认实现*/
+}
+onError = @.onError = function(err){
+	__/*web.blink遇到异常时会触发此函数,\n自定义此函数前请打开web.blink查看默认实现*/
+}
+external = @class web.blink.external{
+    ctor( view,winform ){
+        this.form = winform
+        this.view = view;
+    };
+    __/*预定义所有浏览器视图可用的默认external接口*/
+}
+end intellisense**/

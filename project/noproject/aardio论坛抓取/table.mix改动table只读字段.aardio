@@ -1,0 +1,10 @@
+tab = { _action = 123; b = 456 }
+
+// 修改 tab 里面的只读成员
+tab = table.mix( {
+        _action = 456
+},tab )
+
+import console;
+import web.json;
+console.log( web.json.stringify(tab,true) )

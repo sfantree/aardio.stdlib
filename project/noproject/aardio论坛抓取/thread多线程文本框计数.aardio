@@ -1,0 +1,35 @@
+import win.ui;
+import thread.manage;
+
+/*DSG{{*/
+var winform = win.form(parent=...; text="aardio Form";right=349;bottom=249 )
+winform.add(
+static2={ transparent=1;bottom=226;right=248;left=205;top=207;font=LOGFONT( name="宋体";h=-12 );z=4;text="B";cls="static" };
+static={ transparent=1;bottom=227;right=111;left=68;top=208;font=LOGFONT( name="宋体";h=-12 );z=3;text="A";cls="static" };
+edit2={ bottom=189;right=271;left=174;multiline=1;top=35;font=LOGFONT( name="宋体";h=-12 );z=2;text="";edge=1;cls="edit" };
+edit={ bottom=191;right=136;left=39;multiline=1;top=37;font=LOGFONT( name="宋体";h=-12 );z=1;text="";edge=1;cls="edit" }
+)
+/*}}*/
+
+manage=thread.manage()//创建线程管理器
+
+//线程函数要独立封包,参数传递控件句柄
+计数=function(hwnd,sl=1000){
+    import win.ui   
+    edit=win.ui.ctrl.edit()
+    edit.hwnd=hwnd
+    for(i=1;10;1){
+        sleep(sl)
+        edit.text=i     
+    }
+   
+}
+
+winform.show()
+
+manage.create(计数,winform.edit.hwnd)
+manage.create(计数,winform.edit2.hwnd,500)
+
+manage.waitClose()
+
+win.loopMessage();

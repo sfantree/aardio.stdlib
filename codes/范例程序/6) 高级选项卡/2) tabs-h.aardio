@@ -1,0 +1,70 @@
+//水平选项卡
+import fonts.fontAwesome;
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="前端教程";right=992;bottom=623;bgcolor=16777215)
+winform.add(
+nav1={cls="plus";text="网页开发";left=672;top=573;right=779;bottom=605;border={top=1;color=-16744448};db=1;dr=1;font=LOGFONT(name='FontAwesome');z=1};
+nav2={cls="plus";text="JavaScript 脚本";left=779;top=573;right=904;bottom=605;border={top=1;color=-16744448};db=1;dr=1;font=LOGFONT(name='FontAwesome');z=2};
+nav3={cls="plus";text="React";left=904;top=573;right=978;bottom=605;border={top=1;color=-16744448};db=1;dr=1;font=LOGFONT(name='FontAwesome');z=3};
+navBegin={cls="plus";left=412;top=573;right=672;bottom=574;bgcolor=32768;border={color=-16744448};db=1;dl=1;dr=1;forecolor=16777215;linearGradient=180;z=4};
+navEnd={cls="plus";left=978;top=573;right=988;bottom=605;border={top=1;color=-16744448};db=1;dr=1;z=5};
+static={cls="static";left=0;top=0;right=991;bottom=570;db=1;dl=1;dr=1;dt=1;transparent=1;z=6}
+)
+/*}}*/
+
+import web.view;
+var wb = web.view(winform.static);
+
+import win.ui.tabs;
+var tbs = win.ui.tabs(winform.nav1,winform.nav2,winform.nav3,winform.nav4,winform.nav5,winform.nav6,winform.nav7)
+tbs.margin = 0;
+
+/*
+高级选项卡自动查找附近合适的 custom 控件作为页面容器控件,
+页面容器控件用于加载子窗口,优先选择未禁用、未隐藏、未设置透明的 custom 控件。
+
+垂直选项卡应在右侧放置 custom 控件作为选项页面容器,
+水平选项卡应在下侧放置 custom 控件作为选项页面容器。
+
+也可以用代码 tbs.container = winform.custom 直接指定页面容器控件。
+*/
+
+var urls = {
+	"https://chinese.freecodecamp.org/learn/responsive-web-design/";
+	"https://chinese.freecodecamp.org/learn/javascript-algorithms-and-data-structures/";
+	"https://chinese.freecodecamp.org/learn/front-end-libraries/#react"
+}
+
+tbs.onSelchange = function(idx,strip,form){
+	var url = urls[idx]
+	if(url){ 
+		
+		strip.disabledText = {'\uF254';'\uF251';'\uF252';'\uF253';'\uF250'}
+		wb.go(url);
+		
+		win.delay(500);
+		strip.disabledText = null;
+	}
+}
+	
+tbs.skin({
+	foreground={
+		active=0xFFFFFFFF;
+		default=0x00FFFFFF;
+		hover=0xFFCCCCCC;
+	};
+	checked={
+		foreground={ 
+			default=0x00FFFFFF; 
+		};
+		border = { 
+			default = {left=1;right=1;bottom=1;color=0xFF008000} 
+			disabled = {left=1;right=1;bottom=1;color=0xFF008000} 
+		}; 
+	}
+}); 
+tbs.selIndex = 1;
+
+winform.show(3/*_SW_MAXIMIZE*/);
+win.loopMessage();

@@ -1,0 +1,13 @@
+import console; 
+io.open();//打开控制台
+
+io.print(tostring(7609070609240380) );
+io.print( string.format("%s",7609070609240380) )
+
+// 不转换 科学记数法
+io.print( string.format("%.0f",7609070609240380) )
+io.print( string.format("%.0f",7609070609240380) )   //精度值为零
+io.print( string.format("%.2f",760907060.9240380) )   //精度值为2，小数点后保留两位
+
+console.log("您输入的是" ,num );
+console.pause(true);

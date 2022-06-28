@@ -1,0 +1,30 @@
+import console; 
+import chrome.driver;
+
+driver = chrome.driver();
+
+
+// pref_name 大全
+// https://chromium.googlesource.com/chromium/src/+/refs/heads/main/chrome/common/pref_names.cc
+var prefsValue = {
+	// 关闭图片
+    ["profile.default_content_setting_values.images"] = 2;
+    ["profile.default_content_settings.popups"] = 0;
+    // 关闭通知弹出窗口
+    ["profile.default_content_setting_values.notifications"] = 2;
+    //["profile.download.default_directory"] = io.fullpath("/");
+    //["profile.default_zoom_level"] = 150;
+    //["profile.intl.accept_languages"] = "en";
+    
+}
+
+driver.setOptions(
+     excludeSwitches = {"enable-logging"},   
+     prefs = prefsValue,
+)
+
+browser = driver.startBrowser();
+browser.go("https://www.bilibili.com/")
+
+console.log("您输入的是" ,num );
+console.pause(true);

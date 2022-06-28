@@ -1,0 +1,7 @@
+﻿//customCtrl 自定义控件
+namespace ide.customCtrl{
+	vlistview = "listview";
+	close = "plus";
+}
+
+__IDE_CUSTOMCTRL = ide.customCtrl;

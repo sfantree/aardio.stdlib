@@ -1,0 +1,43 @@
+import access;
+import console;
+
+//创建数据库
+var db = access("/test.mdb")
+
+//创建表
+if(!db.existsTable("homepage2") ){
+        db.exec("create table homepage2 (url char(30), comment char(20))")
+}
+
+//使用命令参数 - 参数化可避免SQL注入
+var cmd = db.createCommand( "insert into homepage2(url,comment) values(@url,@comment)" );  
+cmd.bind("homepage2").parameters(
+        url = "http://www.aardio.com";
+        comment = "hi!";
+)
+cmd.Execute() //执行命令
+
+//增 - 调用 access.formatParameter() 格式化命名参数生成SQL语句
+db.exec( "insert into homepage2(url,comment) values(@url,@comment)",{
+        url = "http://www.aardio.net";
+        comment = "字符串包含'单引号' 测试一下"
+} )
+
+//删 - 自动调用 string.format() 函数格式化SQL语句,简单拼接字符串应避免包含单引号
+db.exec("delete * from homepage2 where url='%s'","http://www.aardio.com");
+
+//改
+db.exec("update homepage2 set url='%s' where comment='%s' ","http://bbs.aardio.com","这是说明")
+
+//查
+for(rs,fields in db.each("select * from homepage2") ){
+        console.log( rs("url").value,rs("comment").value )  
+}
+
+//将查询结果转换为普通数组
+var tab = db.getTable("select * from homepage2");
+console.varDump(tab);
+
+//关闭数据库连接
+db.close();
+console.pause(true);

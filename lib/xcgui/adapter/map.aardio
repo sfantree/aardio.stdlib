@@ -1,0 +1,68 @@
+﻿import util.metaProperty;
+namespace xcgui.adapter;
+
+class map{
+	ctor(hAdapter){
+		if(hAdapter===null){
+			this.hAdapter = topointer( ::Xcgui.XAdMap_Create() );
+		}
+		else {
+			this.hAdapter = topointer(hAdapter);
+		}
+		if(!this.hAdapter)return;
+	};
+	@_metaProperty;
+}
+
+
+namespace map{
+		
+	_metaProperty = ..util.metaProperty(
+		addString = function(pName,pValue){
+			return ::Xcgui.XAdMap_AddItemText(owner.hAdapter,pName,pValue);
+		}
+		addImage = function(pName,image,repeat,top,right,bottom){
+			if(type(image) == type.string) image = ..xcgui.image(image,repeat,top,right,bottom);
+			return ::Xcgui.XAdMap_AddItemImage(owner.hAdapter,pName,image);
+		}
+		delete = function(pName){
+			return ::Xcgui.XAdMap_DeleteItem(owner.hAdapter,pName);
+		}
+		count = function(){
+			return ::Xcgui.XAdMap_GetCount(owner.hAdapter);
+		}
+		getString = function(pName){
+			var sb = ..string.builder(500);
+			return ::Xcgui.XAdMap_GetItemText(owner.hAdapter,pName,sb,250);
+			return sb.fromUnicode();
+		}
+		getImage = function(pName){
+			return ..xcgui.image( topointer(::Xcgui.XAdMap_GetItemImage(owner.hAdapter,pName)));
+		}
+		setString = function(pName,pValue){
+			return ::Xcgui.XAdMap_SetItemText(owner.hAdapter,pName,pValue);
+		}
+		setImage = function(pName,hImage){
+			return ::Xcgui.XAdMap_SetItemImage(owner.hAdapter,pName,hImage);
+		}
+		_topointer = function(){
+			return owner.hAdapter; 
+		}
+	)		
+}
+
+/**intellisense()
+xcgui.adapter.map() = 数据适配器\n!stdxcadaptermap.
+end intellisense**/
+
+/**intellisense(!stdxcadaptermap)
+addString(.(pName,pValue) = 增加数据项
+addImage(.(pName,hImage) = 增加数据项
+getImage(.(pName) = 获取项图像数据
+getImage(） = !stdxcimage.
+setImage(.(pName,hImage) = 设置项内容
+delete(.(pName) = 删除数据项
+count() = 获取项数量
+getString(.(pName,pOut,nOutLen) = 获取项内容,如果内容为文本
+setString(.(pName,pValue) = 设置项内容
+end intellisense**/

@@ -1,0 +1,32 @@
+//任意坐标提示
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="屏幕任意坐标显示提示";right=759;bottom=469)
+winform.add(
+btnPopup={cls="button";text="显示简单提示";left=462;top=351;right=707;bottom=421;color=14120960;font=LOGFONT(h=-14);note="只需要一句代码";z=1}
+)
+/*}}*/
+
+import winex.tooltip;
+var tooltipCtrl = winex.tooltip();
+
+//不想显示标题栏与关闭按钮，去掉下面这句即可。
+tooltipCtrl.setInfo("屏幕任意坐标显示提示");
+
+//显示提示 
+tooltipCtrl.trackPopup("这是提示内容",100,100);
+
+//延时
+thread.delay(1000);
+
+//隐藏提示
+tooltipCtrl.trackPopup(false);
+
+winform.btnPopup.oncommand = function(id,event){
+	
+	//显示简单提示，允许捕获鼠标点击并自动关闭提示
+	winex.tooltip.trackPopup("这是提示内容",100,100);
+}
+
+winform.show();
+win.loopMessage();

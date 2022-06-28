@@ -1,0 +1,34 @@
+import console; 
+//var num = console.getNumber( "请输入数值:" )
+
+//
+//console.log(tonumber("FF", 16 ));
+
+/*
+
+字节集_十六进制到字节集
+
+将一串十六进制文本还原为字节集。还原为字节集可以将默认的16进制文本转换成字节集。如“00BFAD00”可还原为{0,191,173,0}
+    .参数 原始16进制文本, 文本型, , 如“00BFAD00AFD4FD4F9E054F9FF91FC5FF2076FBAFDB071044”
+*/
+var Hex2Buffer = function (HexString){
+	if((type(HexString) != type.string) or ((#HexString) % 2 != 0)) {
+	    return "";
+	}
+	var t ={};
+	for(i=1;#HexString;2){
+		var s = string.slice(HexString, i, i+1);
+		var sn = tonumber(s, 16 )
+		table.push(t, sn);
+		//console.log(tonumber(s, 16 ));
+		//console.log(tonumber(s, 16 ));
+		//console.log( (HexString[i] - 'A'#) * 16 + (HexString[ i+1 ] - 'A'#)   );
+	}
+	return string.pack(t);
+}
+
+var sb = Hex2Buffer("00BFAD00AFD4FD4F9E054F9FF91FC5FF2076FBAFDB071044")
+console.log(string.hex(sb))
+console.pause(true);
+
+win.delay()

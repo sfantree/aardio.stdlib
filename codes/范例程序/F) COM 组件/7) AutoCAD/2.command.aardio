@@ -1,0 +1,26 @@
+﻿//执行命令
+import com.cad;
+var cad = com.cad();
+cad.Visible = true //必须显示 AutoCAD 窗口，不然访问文档对象等可能会出现异常
+
+//可以执行 AutoCAD 里所有命令以及 AutoLISP 表达式，跟在 AutoCAD 里敲命令效果一样。 
+cad.SendCommand(`
+(setq c:hello nil)
+(defun c:hello(/ name)
+(set 'name (getstring "What's your name? "))
+(set 'msg (strcat "Hello, " name <?= time(),"这是 aardio 对象" ?>))
+(write-line msg))
+hello`)
+
+/*
+cad.SendCommand() 函数的参数@1 支持 aardio 模板语法。
+
+模板中非数值、布尔值一律转字符串,
+一次输出多个模板参数或数组参数时,字符串自动加引号,多参数自动以空格分开,
+可选用 参数@2 指定模板 owner 参数。
+*/
+ 
+/*
+cad.SendCommand 是同步执行命令，
+如果要异步执行命令请使用 cad.PostCommand 
+*/

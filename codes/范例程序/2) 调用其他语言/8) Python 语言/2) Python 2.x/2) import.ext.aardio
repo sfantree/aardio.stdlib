@@ -1,0 +1,82 @@
+//安装模块
+import console;
+import py2;
+
+//如下查看 py2 扩展库使用的 Python 运行时版本信息
+console.log( py2.sysObject("version"),'\n' );
+
+var moduleName = "numpy";
+var pyModule = py2.import(moduleName); //请用这段代码仔细测试第三方模块的依赖关系
+if(pyModule){
+	console.log(moduleName + "已安装，版本：", pyModule.__version__);
+}
+else { 
+	console.printf("安装模块 ‘%s’ 失败",moduleName);
+	console.log(py2.lasterr()); //查看导入模块失败的错误原因。
+	/*
+	1、低级错误，模块放错了位置。。
+	2、模块的版本与 Python 版本不兼容。
+	3、可能缺少了其他依赖模块和依赖文件，而依赖模块又可能重复出现这几个问题。
+	*/
+}
+
+/*
+系统 Python 用 pip 安装的模块只能在你自己电脑上用，
+而 aardio 安装的模块可以随自带的 Python 运行时分发到其他电脑，用户不用再安装，也不会出现版本冲突。
+请理解 Python 模块安装比 aardio 装扩展库要复杂，如果安装 Python 模块遇到点问题就那个啥 …… 这样你很难继续前进。
+*/
+
+/*
+aardio 内默认的 Python 搜索模块的路径为:
+"~\lib\py2\.res\Lib.zip" //为避免升级时被替换,不建议在这里添加模块，而且有些模块放到 zip 文件加载里会出错。
+"~\lib\py2\.res\DLLs" //在这个目录下添加的文件会在发布时复制到发布目录。
+"\"
+"\py"
+
+aardio 规定文件路径开始为波浪线表示 EXE 所在的目录（开发时为 aardio.exe 所在目录），
+文件路径开始为斜杠（或反斜杠）表示应用程序根目录，应用程序根目录在开发时指工程根目录（工程外单独启动代码则为文件所在目录），
+发布后应用程序根目录就是指 EXE 所在的目录。
+*/
+ 
+console.pause();
+/*
+Python2.7 使用的是 VC90(VC2008) 的运行库，
+而 VC90 使用了坑人的 WinSxS 动态加载 DLL 技术，要绿色打包 Python 非常的困难，
+Python2.7 的官方版本是直接给安装包安装 VC90 的运行库，还好微软自 VC2010 开始废弃了这个技术，
+所以 aardio 里的 Python2.7 是使用 VC10 编译的版本。
+
+如果你需要其他的模块，请到以下地址下载 python2.7.10.x32.vc10.aardio.7z 
+https://download.aardio.com/v10/pages/download-python2-libs/ (如果网址失效请给我发邮件)
+该压缩包已经包含了 Python 2.7 的全部模块，以及第三方模块，
+该版本来自：http://p-nand-q.com/python/2015.07.12-python2710-x32.7z 
+
+下载后删除 *.pdb, *_d.dll, *_d.pyd 这些用于调试的文件，
+参考扩展库 py2.lib.numpy 的源代码引入需要的模块。
+
+添加模块步骤：
+--------------------------------------------------------------------
+1、请先运行 aardio 代码 import py2.lib.numpy 以自动安装该扩展库。
+
+2、请把 py2.lib.numpy 扩展库复制为 py2.lib.你要添加的模块名字。
+
+3、删除 ~\lib\py2\lib\你的模块名字\.py\numpy ，
+然后在 python2.7.10.x32.vc10.aardio.7z 解压后的 
+python2.7.10.x32.vc10.aardio\Lib\site-packages 
+python2.7.10.x32.vc10.aardio\Lib\
+目录下找到你需要的模块，复制粘贴到 ~\lib\py2\lib\你的模块名字\.py\ 目录下。
+
+4、然后打开下面 2 个文件：
+~\lib\py2\lib\你的模块名字\_.aardio
+~\lib\py2\lib\你的模块名字\.build\main.aardio
+把里面的 "numpy" 全部替换为 "你的模块名字"
+-------------------------------------------------------------------- 
+
+现在你可以愉快的绿色打包 Python2.7 运行库了，
+当你在 aardio 中调用 import py2 或 import py2 以后，
+生成 EXE 就会自动复制 python 运行库到 exe 同一目录下。
+
+Python 运行需要大量的模块、DLL(pyd)等组件，
+所以不要浪费时间去追求生成独立EXE，这样的生成工具有一大堆的坑等着你去踩，
+这年头你基本找不到几个正经的软件只有一个EXE的，所以不要在这上面浪费时间。
+*/
+ 

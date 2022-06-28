@@ -1,0 +1,40 @@
+import console;
+import table;
+
+var str = /*
+张同学=张先生,张女士;
+李同学=李先生,李女士;
+王同学=王先生,王女士;
+刘同学=刘先生,刘女士;
+*/
+
+//第一种方法，克隆表
+var info1,fm1 = {}, {};
+if (str){
+    for  m,m2 in string.gmatch(str ,"(\S+?)=(.+?);") { 
+               var  tab = string.split(m2,',');
+               fm1.父亲 = tab[1]
+               fm1.母亲 = tab[2] 
+                info1[m]=table.clone(fm1); 
+        }
+    
+    console.dump(info1); 
+}    
+
+
+//第一种方法，语句块内定义变量
+var info2 = {};
+if (str){
+    for  m,m2 in string.gmatch(str ,"(\S+?)=(.+?);") { 
+               var tab = string.split(m2,',');
+               var fm2 = {};
+               fm2.父亲 = tab[1]
+               fm2.母亲 = tab[2] 
+                info2[m]=fm2; 
+                // 局部变量超出作用局自动就是null
+                fm2 = null  //此行有没有必要写？  
+    }
+    
+    console.dump(info2); 
+}    
+console.pause(true);

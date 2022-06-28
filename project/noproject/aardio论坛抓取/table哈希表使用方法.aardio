@@ -1,0 +1,26 @@
+import console; 
+
+io.open();
+{
+	var tab = {};
+	tab["x"] = "b";
+	tab["y"] = "cd";
+	tab["q"] = 1;
+	io.print(table.tostring(tab));
+}
+
+
+// table中不符合变量命名规则的键必须通过[]操作符访问
+// key 可以是任何类型
+{
+	var tab = {};
+	tab[1]=300;
+	tab["1"]=200;
+	tab[2]=400;
+	tab["+"]=200;
+	tab[1+1]=200;
+	io.print(table.tostring(tab));
+}
+
+//console.log("您输入的是" ,num );
+console.pause(true);

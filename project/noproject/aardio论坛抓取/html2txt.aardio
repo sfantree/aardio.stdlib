@@ -1,0 +1,32 @@
+import console;
+
+import string.html;
+
+
+var srcPath = "E:\aardio论坛抓取网页备份";
+var dstPath = "E:\aardio论坛抓取网页备份txt"
+
+var html2Txt = function(html){
+	
+}
+
+
+var getAllHtml = function(objPath){
+	var HtmlFiles = {};
+	fsys.enum( objPath, "*.html",
+		function(dir, filename, fullpath, findData){ 
+			if(filename){
+				 table.push(HtmlFiles, fullpath);
+				 
+	           	//winform.edit.printf('%s\n', filename)
+	        }
+		},
+		false
+	);
+	return HtmlFiles;
+}
+
+
+
+console.log(pause);
+

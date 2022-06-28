@@ -1,0 +1,42 @@
+import console;
+import wsock.tcp.client;
+import win.timer
+
+var tcp = wsock.tcp.client();
+tcp.connect("127.0.0.1", 7510)
+
+sendData = function(str){
+    var postData = {
+        int len;
+        struct msg = {
+            int len2;
+            int magic = 0x2b1;
+            byte body[] = str;
+            byte e;
+        }
+    }
+    postData.len = raw.sizeof(postData.msg);
+    postData.msg.len2 = postData.len;
+    tcp.write(postData);
+}
+
+//**心跳消息 每45秒发送一次
+var aTimer = win.timer(, 1450)
+aTimer.onTimer = function(hwnd,msg,id,tick){
+    sendData("type@=keeplive/tick@="+ tonumber(..time()) +"/")
+}
+aTimer.enable()
+//**/
+
+//登录房间
+sendData("type@=loginreq/roomid@=244548/");
+//接收数据
+for(str,size in tcp.eachRead()){
+    var msg = ..string.fromto(..string.slice(str, 13, #str-1), 65001, 0)
+    if(..string.match(msg, "@type@=loginres")){
+        sendData("type@=joingroup/rid@=244548/gid@=-9999/");
+    }
+    console.log(size, msg)
+    win.delay(1)
+}
+console.pause(true);

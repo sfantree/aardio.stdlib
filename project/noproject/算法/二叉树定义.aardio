@@ -1,0 +1,52 @@
+import console; 
+
+class TreeNode {
+	ctor( val ){
+	    this.val = val;
+	    this.lchild = null;
+	    this.rchild = null;
+	};
+	lchild;
+	rchild;
+}
+
+var node1 = TreeNode(1);
+var node2 = TreeNode(2);
+var node3 = TreeNode(3);
+var node4 = TreeNode(4);
+var node5 = TreeNode(5);
+var node6 = TreeNode(6);
+var node7 = TreeNode(7);
+
+node1.lchild = node2;
+node1.rchild = node3;
+node2.lchild = node4;
+node3.lchild = node5;
+node5.lchild = node6;
+node5.rchild = node7;
+
+/*
+        1
+       / \
+      /   \
+     /     \
+    2       3
+   /       / 
+  4       5   
+         / \ 
+        6   7   
+       
+*/
+
+function PreTravel(node){
+	if(node == null) {
+	    return ; 
+	}
+	console.log(node.val);
+	PreTravel(node.lchild);
+	PreTravel(node.rchild)
+}
+
+PreTravel(node1);
+
+console.pause(true);

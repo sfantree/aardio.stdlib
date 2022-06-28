@@ -1,0 +1,25 @@
+import win.ui;
+import console
+import fsys.cookies
+import web.json
+/*DSG{{*/
+mainForm = win.form(text="aardio form";right=814;bottom=735)
+mainForm.add(
+button={cls="button";text="button";left=650;top=19;right=787;bottom=48;z=2};
+custom={cls="custom";text="custom";left=16;top=20;right=650;bottom=721;z=1}
+)
+/*}}*/
+import web.blink.portable
+import web.blink.form
+wb=web.blink.form(mainForm.custom)
+wb.userAgent=`User-Agent:Mozilla/5.0 (iPhone; CPU iPhone OS 9_1 like Mac OS X) AppleWebKit/601.1.46 (KHTML, like Gecko) Version/9.0 Mobile/13B143 Safari/601.1`
+wb.enableTouch(true)
+wb.go("http://www.aardio.com/")
+console.log(wb.cookieData())
+//保存cookie到桌面
+zz=web.json.stringify(wb.cookieData())
+//string.save("C:\Users\Administrator\Desktop\1.txt",zz )
+/*？？？那么怎么能读取出aardio.com的cookie,另外如何用fsys.cookies这个函数里面的push更换cookie达到换号登陆的情况了*/
+mainForm.enableDpiScaling();
+mainForm.show();
+return win.loopMessage();

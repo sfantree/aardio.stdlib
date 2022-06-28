@@ -1,0 +1,37 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=247;bottom=119)
+winform.add(
+edit={cls="edit";left=112;top=40;right=152;bottom=64;edge=1;z=2};
+static={cls="static";text="CPU使用率：";left=32;top=40;right=104;bottom=64;center=1;transparent=1;z=1};
+static2={cls="static";text="%";left=160;top=40;right=184;bottom=64;center=1;transparent=1;z=3}
+)
+/*}}*/
+
+import com;
+import console;
+
+thread.invoke(
+	function(winform) {
+		// 定时执行参数@2指定的回调函数,参数@1指定间隔毫秒数
+		import com;
+		import win;
+		var wmi = com.GetObject("winmgmts:{impersonationLevel=Impersonate}!\\");
+		
+		while (true) {
+		    var cpus = wmi.instancesof("win32_processor");
+			for index, cpu in com.each(cpus) {
+				
+				//console.log(cpu.deviceid())//CPU
+				//console.log(cpu.LoadPercentage);//
+				
+				winform.edit.text = tostring( cpu.LoadPercentage );
+				win.delay(300);
+			}
+		}
+		
+	}, winform
+);
+
+winform.show();
+win.loopMessage();

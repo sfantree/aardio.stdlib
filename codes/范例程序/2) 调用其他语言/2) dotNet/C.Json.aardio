@@ -1,0 +1,27 @@
+﻿//JSON 转换
+import console; 
+import web.json;
+import dotNet.json;
+import System.Collections;
+
+//创建 .Net 的 ArrayList 数组
+var arrList = System.Collections.ArrayList();
+
+arrList.Add(123);
+arrList.Add("字符串");
+
+//.Net 对象转换为 JSON
+var json = dotNet.json.SerializeObject(arrList);
+console.log(json);
+
+//导入 dotNet.json 以后 web.json 会自动支持 .Net对象
+console.log(web.json.stringify(arrList));
+
+//这个函数内部也是调用 web.json.stringify
+console.dumpJson(arrList);
+
+//JSON 解析为 .Net 对象
+var obj = dotNet.json.DeserializeObject(json);
+console.log(obj);
+
+console.pause();

@@ -1,0 +1,19 @@
+import win.ui;
+//导入自定义的用户库
+/*DSG{{*/
+mainForm = win.form(text="haha";right=468;bottom=158;border="dialog frame";edge=1;frame=1;parent=...)
+mainForm.add(
+combobox={cls="combobox";left=242;top=68;right=418;bottom=88;edge=1;items={};mode="dropdown";z=2};
+static={cls="static";text="选择窗口边框的样式";left=35;top=64;right=222;bottom=96;font=LOGFONT(h=-19);transparent=1;z=1}
+)
+/*}}*/
+
+//mainForm.combobox.se
+
+mainForm.combobox.oncommand = function(id,event){
+	
+}
+
+
+mainForm.show()
+win.loopMessage();

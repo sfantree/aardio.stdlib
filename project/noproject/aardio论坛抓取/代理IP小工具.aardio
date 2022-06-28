@@ -1,0 +1,185 @@
+/*
+*代理IP小工具
+*作者：cbtan
+*日期：2010年11月11日
+*修改：2011年3月16日,修改了下！
+*备注：本程序为学习之用
+*/
+import win.ui;
+import win.clip;
+import process
+import inet.http
+import inet.conn
+import inet
+/*DSG{{*/
+var winform = win.form(parent=...; bottom=374;max=false;right=213;text="IP获取" )
+winform.add(
+button2={ bottom=300;right=91;left=31;top=271;font=LOGFONT( name="宋体";h=-12 );z=1;text="获取";cls="button" };
+static3={ bottom=328;color=255;text="";left=18;top=310;font=LOGFONT( name="宋体";h=-12;out=3;family=2;clip=2;quality=1 );z=5;right=195;transparent=1;cls="static" };
+static2={ text="代理列表";bottom=29;right=135;left=76;top=10;font=LOGFONT( name="宋体";h=-12 );z=4;transparent=1;cls="static" };
+static={ bottom=370;color=128;text="点击进入aardio论坛         by:cbt";left=14;top=347;font=LOGFONT( name="宋体";h=-12;out=3;family=2;clip=2;quality=1 );z=6;notify=1;right=203;transparent=1;cls="static" };
+listbox={ bgcolor=16777215;vscroll=1;text="listbox";left=24;right=194;top=35;font=LOGFONT( name="宋体";h=-12 );z=2;bottom=257;
+items={  };edge=1;cls="listbox" };
+button3={ bottom=300;right=182;left=122;top=271;font=LOGFONT( name="宋体";h=-12 );z=3;text="开启代理";cls="button" }
+)
+/*}}*/
+
+//获取连接名
+//照搬 范例 模拟自动化==》进程操作==》管道   不让它出现黑窗口
+连接名=function(){
+    //这个结构体在创建管道时会用到
+    SECURITY_ATTRIBUTES = class{
+        INT nLength;
+        pointer lpSecurityDescriptor;
+        bool bInheritHandle;
+    }
+    saPipe =SECURITY_ATTRIBUTES();
+    saPipe.bInheritHandle = true;
+    CreatePipe = ::Kernel32.api( "CreatePipe", "bool(pointer& hRead,pointer& hWrite,struct attributes,INT size)");
+    ok,outPipeRead,outPipeWrite = CreatePipe(,,saPipe,0)
+    ok,errPipeRead,errPipeWrite = CreatePipe(,,saPipe,0)
+   
+    import process
+    import fsys.file;
+   
+    //启动进程时,可以使用STARTUPINFO()结构体指定一些高级参数,
+    //当然这个参数不是必须的,而且这个结构体里的所有参数都设定了默认值,所有字段都是可选的
+    //甚至你用一个普通的table也可以,process构造函数会自动转换为结构体
+    startInfo = process.STARTUPINFO()
+    startInfo.flags =  0x100/*_STARTF_USESTDHANDLES*/ | 0x1/*_STARTF_USESHOWWINDOW*/
+    //要在上面的sa.flag中指定_STARTF_USESHOWWINDOW下面这个参数才有作用哦
+    //下面隐藏窗口,因为0是默认值,所以这句可以省略
+    startInfo.showWindow = 0x0/*_SW_HIDE*/  
+    //我们在下面设置启动进程的管道,也就是控制台程序的输入输出了
+    //注意要在 startInfo.flags 中指定 _STARTF_USESTDHANDLES 下面的参数才起作用
+    startInfo.stdInput = _INVALID_HANDLE_VALUE
+    startInfo.stdOutput =  process.dup( outPipeWrite )
+    startInfo.stdError =  process.dup( errPipeWrite )
+    startInfo.creationFlag = 0x8/*_DETACHED_PROCESS*/  //禁止子进程附加到当前进程的控制台
+    startInfo.inheritHandles = true; //允许子进程继承句柄
+    // startInfo.suspended = true; //这个参数也很有用,如果为真,创建的进程会处于等待状态并不运行
+   
+    //下面我们创建进程
+    var prcs = process( ,"ipconfig" , startInfo);
+    //你也可以有其他的写法,总之很自由 var prcs = process( "ping","www.baidu.com" , { suspended = true } );
+   
+    //子继承已经继承了此句柄,我们可以关掉了
+    //这样ping.exe一关掉,fileCon.read()就会失败停止,不然他就卡在那里一直读,因为管道没关闭吗
+    raw.closehandle(startInfo.stdOutput)
+    raw.closehandle(startInfo.stdError)
+   
+    //我们现在来创建一个文件对象,用来读取控制台程序的输出
+    //fsys.file这个对象比较有意思,可以直接打开管道的句柄,创建一个文件对象.
+    //fileCon = fsys.file(outPipeRead)
+   
+    fileCon = io.open(outPipeRead)
+   
+    //读取一行
+    line = fileCon.read();
+    while(line){
+        m=string.match(line,"PPP\s.*?\s(.*?)\:")
+        if(m){break ;}
+        line =  fileCon.read();
+    }
+    inet.conn.setProxy(m,"")
+}
+
+
+
+winform.static.oncommand = function(id,event){
+    process.execute("bbs.aardio.com")
+}
+
+
+开始=function(url){
+    http=inet.http()
+    html=http.down(url)
+    if(html){  
+        for m in string.gmatch(html,"p\(\'(.*?)\'\)\;alert\(") {
+            if(m){
+                thread.create(线程,m,winform.listbox.hwnd)
+                win.delay(200)
+            }
+        }
+    }
+    else {
+    win.msgbox("网络不通,请检查网络设置","提示")
+    }  
+}      
+
+
+线程=function(ip,hwnd){
+    import win.ui
+    import inet
+    import inet.http
+    http=inet.http()
+    import win.ui.ctrl.listbox
+    listbox=win.ui.ctrl.listbox()
+    listbox.hwnd=hwnd
+    http.flags = 0x80000000/*_INTERNET_FLAG_RELOAD*/
+               | 0x4000000/*_INTERNET_FLAG_DONT_CACHE*/        
+    inet.setProxy(ip,,http.session);
+    html=http.down("http://www.ip138.com/ip2city.asp")
+    if(html){
+        ww=string.match(html,"\[(.*)\]")
+        hh=string.match(ip,"(.*)\:")
+        if(ww=hh){
+            listbox.add(ip)
+        }           
+    }   
+}
+
+
+/*---获取按键---*/
+
+winform.button2.oncommand = function(id,event){
+    连接名()
+    开始("http://www.proxycn.com/html_proxy/http-1.html") //获取IP来源，可自行更换
+}
+
+
+/*---IP事件---*/
+
+winform.listbox.wndproc = function(hwnd,message,wparam,lparam){
+    if(winform.button3.text="关闭代理"){
+        select(message) {//判断消息类型
+            case 0x202{
+                if(winform.listbox.selText){
+                 inet.conn.setProxy(m,winform.listbox.selText)
+                 winform.static3.text="已设置IP "+winform.listbox.selText
+                 }  
+            }
+        }
+    }
+    else {
+        select(message) {//判断消息类型
+            case 0x202{
+                if(winform.listbox.selText){
+                  win.clip.write(winform.listbox.selText)
+                  winform.static3.text="已复制IP "+winform.listbox.selText
+                }            
+            }
+         }
+    }
+}
+   
+/*------设置IP---*/
+
+winform.button3.oncommand = function(id,event){
+    if(winform.button3.text="开启代理"){   
+        winform.button3.text="关闭代理"
+        if(#winform.listbox.selText){
+            winform.static3.text="已设置IP "+winform.listbox.selText
+            inet.conn.setProxy(m,winform.listbox.selText)         
+        }
+    }
+    else {
+        inet.conn.setProxy(m,"")
+        winform.button3.text="开启代理"
+    }   
+}
+winform.show()
+win.loopMessage();
+return winform;
+
+

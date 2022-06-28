@@ -1,0 +1,104 @@
+//popup 屏幕通知窗口
+import win.animate;
+//namespace win.util;
+
+class pop_load{
+    ctor(winform,delay=0,clickClose=false,offset=0,speed=100,direction=0x8/*垂直自下向上*/,pos=0,parent){                   
+        this = winform;  
+             var x,y,width,height = this.getPos();
+             var sRight = ::GetSystemMetrics(0x10/*_SM_CXFULLSCREEN*/);
+        var sBottom = ::GetSystemMetrics(0x11/*_SM_CYFULLSCREEN*/) + ::GetSystemMetrics(0x4/*_SM_CYCAPTION窗口标题的高度*/) ;
+        
+    calc_bottom = function(){
+                sRight -= offset;
+                x = sRight - width;  
+                y = sBottom - height;                ;
+                return this.setPos(x,y,width,height,,0x18/*_SWP_NOREDRAW | _SWP_NOACTIVATE*/ );
+                           }
+          
+        calc_left = function(){
+                x = offset + 0
+                y = sBottom - height;
+                return this.setPos(x,y,width,height,,0x18/*_SWP_NOREDRAW | _SWP_NOACTIVATE*/ );
+                        }
+       
+        calc_right = function(){
+                x = sRight-width-offset
+                y = 0
+                return this.setPos(x,y,width,height,,0x18/*_SWP_NOREDRAW | _SWP_NOACTIVATE*/ );
+                        }
+        calc_center = function(){
+                x = (sRight-width)/2
+                y = (sBottom-height)/2
+                return this.setPos(x,y,width,height,,0x18/*_SWP_NOREDRAW | _SWP_NOACTIVATE*/ );
+        }
+               
+        set_pos = function(){                        //选择弹出位置
+                select(pos) {
+                        case 0 {calc_bottom()}  //右下角
+                        case 1 {calc_left()}    //左下
+                        case 2 {calc_right()}   //右上
+                        case 3 {return this.setPos(offset,0,width,height,,0x18/*_SWP_NOREDRAW | _SWP_NOACTIVATE*/ );} //左上
+                        case 4 {calc_center()} //屏幕居中                       
+                        else {
+                        }
+                }               
+        }
+       
+        waitClick = function(){
+            this.capture = true;
+            this.wndproc = function(hwnd,message,wParam,lParam){
+                                if( message == 0x201/*_WM_LBUTTONDOWN*/ ){  
+                                        var x,y = ..win.getMessagePos(lParam);
+                                        if( x < 0 || y < 0 || x > width || y > height ){
+                                    this.close();
+                            }
+                                }
+                        }  
+     
+        }
+
+        set_pos()
+    ..win.setTopmost(this.hwnd)  
+   
+    if(..win.isVisible(this.hwnd)){..win.setActive(this.hwnd)}else{
+            ..win.animate.slide( this ).show(speed,direction)
+                            if(clickClose)waitClick();
+                            if(delay){
+                                        ..win.delay(delay);
+                                        ..win.animate.fade( this ).hide()
+                                this.close() }else {
+                                           return true ;
+                                }
+                                }
+       
+       
+
+       
+         
+
+    }
+}
+
+
+
+
+
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add()
+/*}}*/
+
+pop_load(winform);
+
+winform.show();
+win.loopMessage();
+
+
+/**intellisense()
+win.util.pop_load(.(winform对象,显示超时,点击是否关闭,屏幕右侧边距,移动速度,位置) =  创建一个通知窗口\n需要弹出的窗口,\n延时: 毫秒,0表示一直显示\n点击是否关闭: 为true则在显示超时以后点击窗口范围外时关闭自身\n动画速度:毫秒为单位\n弹出方向:参照win.animate.slide\n显示位置:0右下,1,2,3,4
+}
+
+win.util.pop_load() = !pop_load.
+end intellisense**/

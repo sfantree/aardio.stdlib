@@ -1,0 +1,33 @@
+// 指定模式DES算法
+
+//java Code
+/*
+public static String a(String str1, String str2) {
+    String encodeToString;
+    try {
+      str2 = new DESKeySpec(str2.getBytes("UTF-8"));
+      str2 = SecretKeyFactory.getInstance("DES").generateSecret(str2);
+      Cipher localCipher = Cipher.getInstance("DES/ECB/PKCS5Padding");
+      localCipher.init(1, str2);
+      str1 = Base64.encodeToString(localCipher.doFinal(str1.getBytes("UTF-8")), 0);
+      str2 = str1;
+    } catch (Exception e) {
+        e.printStackTrace();
+        encodeToString = null;
+    }
+    return encodeToString == null ? " " : encodeToString;
+}
+*/
+// arrdio Code
+
+import crypt.des;
+import crypt.bin;
+
+str2 = "123";
+
+obDes=crypt.des()
+obDes.setPassword(str2)
+obDes.setKeyParamMode(2/*_CRYPT_MODE_ECB*/)
+obDes.setKeyParamPadding(1/*_PKCS5_PADDING*/)
+obDes.setInitVector(1)
+s=crypt.bin.encodeBase64(obDes.encrypt(str1))

@@ -1,0 +1,46 @@
+﻿import web.kit.flash;
+import wsock.tcp.asynHttpServer;
+import string.conv;
+
+namespace com;
+
+class cube3{
+	ctor( winform,param ){
+		this = ..web.kit.flash(winform);
+	}; 
+	start = function(param){
+		if(param){
+			var fm = function(move){
+				if(!#move) return; 
+				move = ..string.conv.fromWide( move ); 
+				move = ..string.replace(move,"\n","\\n");
+				move = ..string.replace(move,'\t',' ') ;
+				return move;
+			}
+
+			param.initmove = fm(param.initmove);
+        	param.move = fm( param.move );
+        	param.speed = param.speed;
+        	param.mirror = param.mirror;
+        	
+        	this.flashVars = param;
+		}
+		
+		this.movie = httpServer.getUrl("/cube3.swf");  
+	} 
+}
+
+namespace cube3{
+    httpServer = ..wsock.tcp.asynHttpServer();
+    httpServer.run({ 
+    	["/cube3.swf"] = $"~\lib\com\cube3\.res\cube3.swf"
+    });
+}
+
+
+/**intellisense()
+com.cube3 = 嵌入 cube3.swf 并返回 web.kit.flash 对象
+com.cube3(.(winform) = 嵌入 cube3.swf 并返回 web.kit.flash 对象\n参数 @1 指定窗体或控件对象
+com.cube3()= !com_cube3.
+!com_cube3.start(param) = @.start(\n	face = "123456";\n	initmove = "";\n	move = move;\n	speed = 1;\n	mirror = 0;\n)
+end intellisense**/

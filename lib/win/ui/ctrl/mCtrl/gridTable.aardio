@@ -1,0 +1,150 @@
+﻿import util.metaProperty;
+namespace win.ui.ctrl.mCtrl;
+
+class gridTable{
+	ctor( hTable ){
+		if(!hTable){
+			this.hTable = _dll.mcTable_Create(0,0,0);
+		}
+		else {
+			this.hTable = hTable;
+		}
+	};
+	@_metaProperty;
+}
+
+class MC_TABLECELL { 
+    INT mask = 0; 
+    ustring text; 
+    int length; 
+    int lParam; 
+    INT flags; 
+}
+
+gridTable._dll = _dll;
+gridTable._metaProperty = ..util.metaProperty(
+		_topointer = lambda() owner.hTable;
+		
+		addRef = function(){
+            return _dll.mcTable_AddRef(owner.hTable);
+        };
+       
+        release = function(){
+            return _dll.mcTable_Release(owner.hTable);
+        };
+        
+        columnCount = function(){
+            return _dll.mcTable_ColumnCount(owner.hTable);
+        };
+        
+        rowCount = function(){
+            return _dll.mcTable_RowCount(owner.hTable);
+        };
+        
+        resize = function(rowCount,columnCount,defHeaders){
+            var ret = _dll.mcTable_Resize(owner.hTable,columnCount,rowCount);
+            
+            if(defHeaders===null || defHeaders){
+            	if(columnCount){
+            		var c;
+            		for(i=1;columnCount;1){
+            			c = (i%26); 
+						owner.setCellText( ,i,..string.pack('A'# + (!c?25:c-1) )); 
+					}
+            	}
+            	
+            	if(rowCount){
+            		for(i=1;rowCount;1){
+						owner.setCellText(i,,i); 
+					}
+            	}	
+            } 
+        };
+        
+        /*
+        * When set to zero,
+ 		* all table contents (including header cells) is cleared. When non-zero, the
+ 		* value is interpreted as a bit-mask of cells to clear:
+ 		* Set bit @c 0x1 to clear all ordinary cells, @c 0x2 to clear column
+ 		* headers and bit @c 0x4 to clear row cells.
+ 		*/
+        clear = function(what){
+            return _dll.mcTable_Clear(owner.hTable,what);
+        };
+        
+		setCell = function(row,col,cell){
+            cell = ..table.assign(MC_TABLECELL(),cell)
+            if(cell.text!==null) cell.mask = cell.mask | 1;
+            if(cell.lParam!==null) cell.mask = cell.mask | 4;
+            if(cell.flags!==null) cell.mask = cell.mask | 8; 
+            
+  			if(row)row--; else row = 0xffff/*HEADER*/;
+  			if(col)col--; else col = 0xffff/*HEADER*/;
+  			
+            return _dll.mcTable_SetCellW(owner.hTable,col,row,cell);
+        };
+        setCellText = function(row,col,text){
+            var cell = MC_TABLECELL();
+            cell.text = tostring(text);
+            cell.mask = 1; 
+            
+			if(row)row--; else row = 0xffff/*HEADER*/;
+  			if(col)col--; else col = 0xffff/*HEADER*/;
+  			
+            return _dll.mcTable_SetCellW(owner.hTable,col,row,cell);
+        };
+        getCell = function(row,col){
+            var cell = MC_TABLECELL();
+            cell.mask = 1 | 4 | 8; 
+    		cell.text = ..raw.buffer(128); 
+    		cell.length = 128/2;  
+			
+			if(row)row--; else row = 0xffff/*HEADER*/;
+  			if(col)col--; else col = 0xffff/*HEADER*/;
+  			
+ 			if _dll.mcTable_GetCellW(owner.hTable,col,row,cell) {
+ 				if(cell.length) cell.text = ..string.fromUnicode(cell.text,,cell.length);
+ 				else cell.text = "";
+ 				return cell;
+ 			}
+        };
+        getCellText = function(row,col){
+ 			var cell = owner.getCel(row,col);
+ 			if(cell) return cell.text;
+        };
+        setCellAlign = function(row,col,align){
+            var cell = owner.getCell(row,col);
+            if(!cell) return;
+            
+            var flags = 0;
+            if(align){
+                if(align.left) flags = flags | 1;
+                if(align.right) flags = flags | 2;
+                if(align.center) flags = flags | 3;
+                if(align.top) flags = flags | 4;
+                if(align.bottom) flags = flags | 8;
+                if(align.middle) flags = flags | 0xC; 
+                cell.flags = cell.flags | flags;
+            }
+
+            cell.mask = 8; 
+            
+            if(row)row--; else row = 0xffff/*HEADER*/;
+  			if(col)col--; else col = 0xffff/*HEADER*/;
+            return _dll.mcTable_SetCellW(owner.hTable,col,row,cell);
+        };
+)
+
+/**intellisense(!mCtrlGridTable)
+addRef() = 增加引用计数
+release() = 减少引用计数
+columnCount() = 列总数
+rowCount() = 行总数
+resize(.(行总数,列总数) = 调整表格大小
+clear(.(行总数,列总数) = 清空表格,\n不指定清空全部内容\n| 1 清空普通单元格,\n| 2 清空列标题\n| 4 清空行标题
+setCell(.(行号,列号,MC_TABLECELL结构体) = 设置格列，参数@3为MC_TABLECELL结构体\n行号省略表示列标题，列号省略表示行标题
+setCellText(.(行号,列号,文本) = 设置列文本\n行号省略表示列标题，列号省略表示行标题
+getCell(.(行号,列号) = 返回指定列的MC_TABLECELL结构体\n行号省略表示列标题，列号省略表示行标题
+getCellTextl(.(行号,列号) = 返回指定列的文本\n行号省略表示列标题，列号省略表示行标题
+setCellAlign(.(行号,列号,对齐选项) = 设置对齐选项,\n参数@3应使用一个表指定对齐方式,\n对齐表可用left,right,center指定水平对齐选项\n可用top bottom,middle指定垂直对齐选项\n指定的对齐选项字段值为真时使用该对齐方式
+end intellisense**/

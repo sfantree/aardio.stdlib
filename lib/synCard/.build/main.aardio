@@ -1,0 +1,12 @@
+import ide;
+import fsys;
+
+var publisDir = ide.getPublisDir();
+if(!#publisDir)return; 
+
+var synCardPubDir =  fsys.joinpath(publisDir,"\lib\synCard" ); 
+if( ! io.exist(synCardPubDir) ){ 
+	..fsys.createDir(synCardPubDir);
+	var libPath,libDir = io.libpath("synCard") 
+	..fsys.copy( fsys.joinpath(libDir,"\.res") ,synCardPubDir,0x10/*_FOF_NOCONFIRMATION*/  | 0x200/*_FOF_NOCONFIRMMKDIR*/); 
+}

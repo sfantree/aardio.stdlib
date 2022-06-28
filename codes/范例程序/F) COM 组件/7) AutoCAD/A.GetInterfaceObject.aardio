@@ -1,0 +1,27 @@
+//进程内对象
+import console
+import com.cad;
+
+var cad = com.cad();
+cad.ShowForeground();
+
+/*
+上面的 cad 是进程外对象( 也就是 ActiveX EXE)。
+但是通过 cad.GetInterfaceObject(progId) 可以创建 AutoCAD 进程内对象，
+这就非常有趣了，下面看例子：
+*/ 
+
+//在 AutoCAD 内创建 WSH 对象
+var wsh = cad.GetInterfaceObject("WScript.Shell")
+ 
+//访问 AutoCAD 进程内环境变量
+var cadEnv = wsh.Environment("Process") 
+
+//修改 AutoCAD 进程内环境变量
+cadEnv.setItem("aarEnvName","这是在 aardio 中设置的环境变量 ")
+
+//读取 AutoCAD 进程内环境变量
+var env = cadEnv.getItem("aarEnvName") 
+
+//AutoLISP 读取第一次设置的环境变量以后似乎会缓存，再次修改环境变量可能无效。
+cad.SendCommand(`(getenv "aarEnvName")`);

@@ -1,0 +1,242 @@
+﻿
+class hiredis{
+	ctor( ip,port ){
+		this.client = dll.redisConnectP(ip:"localhost",tonumber(port:6379 ));
+		if(!this.client ) return null;
+		
+		..table.gc(this,"free");
+	};
+	free = function(){
+		if(this.client){
+			dll.redisFree(this.client);
+			this.client = null;
+		}
+	};
+	command = function(argv,...){
+		if( type(argv) != type.table ) argv = {argv;...};
+		
+		var argvlen = {};
+		for(i=1;#argv;1) {
+			argvlen[i] = #(argv[i]);
+		}
+		
+		var r = dll.redisCommandArgvP(this.client,#argv,{ptr argv[] = argv },{INT argvlen[] = argvlen } );
+		return replyObject(r); 
+	};
+	commandf = function(f,...){
+		var r = dll.redisCommandP(this.client,f,...);
+		return replyObject(r); 
+	};
+	appendf = function(f,...){
+		return 0 == dll.redisAppendCommand(this.client,f,...) ;
+	};
+	replyFromReader = function(){
+		var r = {ptr value}
+		if( 0==dll.redisGetReplyFromReader(this.client,r) ) return replyObject(r.value);
+	};
+	reply = function(){
+		var r = {ptr value}
+		if( 0==dll.redisGetReply(this.client,r) ) return replyObject(r.value);
+	};
+	format = function(f,...){
+		var out = {ptr c}
+		var len = ( dll.redisFormatCommand(out,f,...) );
+		if(len) return ..raw.tostring(out.c,1,len); 
+	};
+	enableKeepAlive = function(){
+		return dll.redisEnableKeepAlive(this.client) ;
+	};
+	freeKeepFd = function(){
+		return dll.redisFreeKeepFd(this.client) ;
+	};
+	setTimeout = function(sec,usec){
+		return dll.redisSetTimeout(this.client,{int sec =sec;int usec=usec}) ;
+	};
+	del = function(k){ 
+		var replay = this.command("del",k);
+		if( replay ? ( replay.type==5/*_REDIS_REPLY_STATUS*/ && replay.str == "OK") ){
+			replay.free();
+			return true;
+		}	
+	};
+	ttl = function(k){
+		return tonumber(this.command("ttl",k)) ; 	
+	};
+	persist = function(k){
+		return !!tonumber(this.command("persist",k)) ; 	
+	};
+	setex = function(k,v,timeout){
+		var replay = this.command("setex",k,tostring(timeout),v);
+		if( replay ? ( replay.type==5/*_REDIS_REPLY_STATUS*/ && replay.str == "OK") ){
+			replay.free();
+			return true;
+		}	
+	};
+	setnx = function(k,v){
+		var replay = this.command("setnx",k,v);
+		if( replay ? ( replay.type==5/*_REDIS_REPLY_STATUS*/ && replay.str == "OK") ){
+			replay.free();
+			return true;
+		}	
+	};
+	mset = function(t){
+		for(k,v in t) this.command("set",k,v);
+	};
+	set = function(k,v){
+		if(v===null) return this.del(k);
+		var replay = this.command("set",k,v);
+		if( replay ? ( replay.type==5/*_REDIS_REPLY_STATUS*/ && replay.str == "OK") ){
+			replay.free();
+			return true;
+		}	
+	};
+	get = function(k){
+		var replay = this.command("get",k);
+		if( replay ? ( replay.type==1/*_REDIS_REPLY_STRING*/ ) ){
+			replay.free();
+			return replay.str;
+		}	
+	};
+	@{_get=this.get;_set=this.set}
+}
+
+namespace hiredis{
+
+	//https://github.com/redis/hiredis
+	dll = ..raw.loadDll($"~\lib\hiredis\.dll\hiredis.dll","std.hiredis.dll","cdecl");
+	
+	replyObject = function(pRedisReply){
+		if(!pRedisReply) return;
+		
+		var r = ..raw.convert(pRedisReply,{
+			int type;
+			long integer;
+			double dval;
+			int len; 
+			ptr str; 
+			BYTE vtype[4];
+			INT elements; 
+			ptr element;
+			pRedisReply = pRedisReply;
+			free = function(){
+				if(owner.pRedisReply){
+					dll.freeReplyObject(owner.pRedisReply);
+					owner.pRedisReply = null;
+				}	
+			}
+			@_replyObjectMeta;
+		});
+		
+		var t = r.type;
+		if( t==2/*_REDIS_REPLY_ARRAY*/
+			|| t==9/*_REDIS_REPLY_MAP*/ 
+			|| t==10/*_REDIS_REPLY_SET*/ 
+			|| t==12/*_REDIS_REPLY_PUSH*/){
+			if( r.elements ) { 
+				r.element = ..raw.convertArray(r.element,r.elements,"ptr");
+				for(i=1;r.elements;1){
+					r.element[i] = replyObject(r.element[i]);
+					r.element[i].free = null;
+				} 
+			}
+			else {
+				r.element = null;
+			}
+		}
+		elseif( t==1/*_REDIS_REPLY_STRING*/ 
+			|| t==5/*_REDIS_REPLY_STATUS*/ 
+			|| t==6/*_REDIS_REPLY_ERROR*/  ){
+			if( r.len ) r.str = ..raw.tostring(r.str,1,r.len);
+			else r.str = null;
+		}
+		elseif( t==4/*_REDIS_REPLY_NIL*/ ){
+			return;
+		}
+		
+		return r;
+	}
+	_replyObjectMeta = {
+		_topointer = function(){
+			return owner.pRedisReply;
+		}
+		_tostring = function(){
+			var t = owner.type;
+			
+			if( t==1/*_REDIS_REPLY_STRING*/ 
+				|| t==13/*_REDIS_REPLY_BIGNUM*/ 
+				|| t==5/*_REDIS_REPLY_STATUS*/ 
+				|| t==6/*_REDIS_REPLY_ERROR*/  ){
+				return owner.str;
+			}
+			elseif( t == 3/*_REDIS_REPLY_INTEGER*/ ){
+				return tostring(owner.integer);
+			}
+			elseif( t == 7/*REDIS_REPLY_DOUBLE*/ ){
+				return tostring(owner.dval);
+			}
+			elseif( t == 2/*_REDIS_REPLY_ARRAY*/){
+				var t = {};
+				for(i=1;owner.elements;1){
+					..table.push( t,(tostring(owner.element[i])) )
+				}
+				return ..string.join(t,";")
+			}
+			elseif( t == 14/*_REDIS_REPLY_VERB*/ ){
+				return owner.vtype;
+			}
+		}
+		_tonumber = function(){
+			var t = owner.type;
+			
+			if( t == 3/*_REDIS_REPLY_INTEGER*/ ){
+				return owner.integer;
+			}
+			elseif( t == 7/*REDIS_REPLY_DOUBLE*/ ){
+				return owner.dval;
+			}
+			elseif( t==1/*_REDIS_REPLY_STRING*/ 
+				|| t==5/*_REDIS_REPLY_STATUS*/ 
+				|| t==6/*_REDIS_REPLY_ERROR*/ 
+				|| t==13/*_REDIS_REPLY_BIGNUM*/  ){
+				return tonumber( owner.str );
+			}
+		}
+	}
+}
+
+/**intellisense()
+hiredis = Redis 客户端组件
+hiredis(.(IP,端口) = 所有参数可选,默认连接到 localhost,6379 端口\n返回客户端对象
+hiredis() = !stdhiredis.
+!stdhiredis.format("__") = 格式化一个或多个参数并返回字符串命令\n格式化语法类似string.format，但注意%b对应的是二进制数据,以及数据的长度2个参数,\ 
+!stdhiredis.commandf("__") = 格式化一个或多个参数并执行字符串命令\n格式化语法类似string.format，但注意%b对应的是二进制数据,以及数据的长度2个参数,\n返回replyObject对象,如果执行失败返回值为空
+!stdhiredis.appendf("__") = 格式化一个或多个参数并添加字符串命令\n可在后面用reply函数执行并获取结果
+!stdhiredis.reply() = 用于appendf函数后获取应答结果\n!stdhiredisreplay.
+!stdhiredis.replyFromReadery() = 用于appendf函数后使用redisReader的API获取应答结果
+!stdhiredis.command("__") = 执行命令,参数可以是任意多个字符串参数,或直接指定一个字符串数组\n并由redis执行并返回replyObject对象,如果执行失败返回值为空
+!stdhiredis.enableKeepAlive() = 允许保持连接
+!stdhiredis.setTimeout(.(秒,毫秒) = 设置超时
+!stdhiredis.get("__/*键名*/") = 读取值
+!stdhiredis.del("__/*键名*/") = 删除键
+!stdhiredis.set(.("键","值") = 写入值
+!stdhiredis.setex("键","值",生存时间) = 写入值并指定生存时间
+!stdhiredis.setnx("键","值") = 写入值但不覆盖已存在的值,\nsetnx是SET if Not eXists的缩写
+!stdhiredis.? = 使用 get 函数读取键值,或使用 set 函数设置键值
+!stdhiredis.command() = !stdhiredisreplay.
+!stdhiredis.commandf() = !stdhiredisreplay.
+!stdhiredisreplay.type = 类型
+!stdhiredisreplay.str = 字符串
+!stdhiredisreplay.dval = double 类型浮点数
+!stdhiredisreplay.vtype = 类别字符串,例如 "md" 表示 markdown
+!stdhiredisreplay.integer = 数值
+!stdhiredisreplay.element = 数组值,成员都是replyObject对象
+end intellisense**/
+
+/**intellisense()
+_REDIS_REPLY_STRING=@1/*_REDIS_REPLY_STRING*/
+_REDIS_REPLY_ARRAY=@2/*_REDIS_REPLY_ARRAY*/
+_REDIS_REPLY_INTEGER=@3/*_REDIS_REPLY_INTEGER*/
+_REDIS_REPLY_NIL=@4/*_REDIS_REPLY_NIL*/
+_REDIS_REPLY_STATUS=@5/*_REDIS_REPLY_STATUS*/
+_REDIS_REPLY_ERROR=@6/*_REDIS_REPLY_ERROR*/
+end intellisense**/

@@ -1,0 +1,447 @@
+namespace zeromq
+
+_dll = ..raw.loadDll(  ..io.exist("~\lib\zeromq\.res\libzmq.dll") : 
+	$"~\lib\zeromq\.res\libzmq.dll","zeromq.dll","cdecl" );
+var _dll = _dll;
+
+strerror = _dll.api("zmq_strerror","string(int errnum)") 
+lasterr = function(){
+	var e = _dll.zmq_errno(); 
+	if(e) return strerror(e),e
+}
+var lasterr = lasterr;
+
+version = _dll.api("zmq_version","void(int &major, int &minor, int &patch)"  )
+
+/*message{{*/
+message = class {
+	ctor( data,size,zmq_free_fn,hint){
+		this.zmq_msg = ..raw.buffer(64);
+		var dataType = type(data);
+		 
+		if( data@[["_tostring"]] || (dataType == type.number) ){
+			data = tostring(data)
+			dataType = type.string;
+		}
+		 
+		if( !data || (dataType==type.string) ){
+			if( _dll.zmq_msg_init(this.zmq_msg) != 0 )
+				error( (lasterr()),2)
+			
+			if( dataType==type.string ){
+				_dll.zmq_msg_init_size(this.zmq_msg,#data)
+				::CopyMemory( topointer( _dll.zmq_msg_data(this.zmq_msg) ),data,#data); 
+			}
+			elseif(size){	
+				_dll.zmq_msg_init_size(this.zmq_msg,size);
+			}
+		} 
+		else {  
+			if(zmq_free_fn){ 
+				this.zmq_free_fn = zmq_free_fn;
+				this.zmq_free_fn_c = ..raw.tocdecl(zmq_free_fn,"void(pointer data,pointer hint )")
+			}
+			
+			if( !( dataType == type.cdata || dataType == type.pointer ) ){
+			
+				if( data[["_struct"]] ){
+					this.zmq_data_struct = data;
+					this.zmq_data = ..raw.buffer(data);
+				}
+				else {
+					error("缓冲区参数必须是一个字符串,或指针",2)
+				}
+			}
+			else {
+				this.zmq_data = data;
+			} 
+			
+			if(size === null){
+				size = #(this.zmq_data)
+			}
+			this.zmq_data_hint = hint;
+			_dll.zmq_msg_init_data(this.zmq_msg,this.zmq_data,size,this.zmq_free_fn_c ,this.zmq_data_hint)
+		} 
+		..table.gc( this,"close" );
+	}; 
+	close = function(){
+		if( this.zmq_msg ){
+			_dll.zmq_msg_close(this.zmq_msg);
+			this.zmq_msg = null;
+		}
+	}
+	getData = function(){
+		return topointer( _dll.zmq_msg_data(this.zmq_msg) );
+	}
+	getSize = function(){
+		return _dll.zmq_msg_size(this.zmq_msg)
+	} 
+	getString = function(){
+		return ..raw.tostring( this.getData(),1,this.getSize())
+	} 
+	getMore = function(){
+		var ret = _dll.zmq_msg_get(this.zmq_msg,1/*_ZMQ_MORE*/);
+		if( ret != -1 ) return ret;
+	} 
+	getProperty = function(name){
+		var ret = _dll.zmq_msg_gets (this.zmq_msg,name);
+		if( ret  ) ..raw.str( topointer(ret) );
+	} 
+	copy = function(msg){
+		_dll.zmq_msg_copy(this.zmq_msg,msg.zmq_msg)
+		this.zmq_data = msg.zmq_data
+		this.zmq_data_hint = msg.zmq_data_hint
+		this.zmq_free_fn = msg.zmq_free_fn
+	} 
+	move = function(msg){
+		_dll.zmq_msg_move(this.zmq_msg,msg.zmq_msg)
+		this.zmq_data = msg.zmq_data
+		this.zmq_data_hint = msg.zmq_data_hint
+		this.zmq_free_fn = msg.zmq_free_fn
+	} 
+	send = function(socket,flags=0){  
+		var size = _dll.zmq_msg_send( this.zmq_msg,socket.handle,flags ); 
+		if( size >= 0 ) return size; 
+	}
+	recv = function(socket,flags=0){ 
+		var size = _dll.zmq_msg_recv( this.zmq_msg,socket.handle,flags ); 
+		if( size >= 0 ) {
+			return size; 
+		}
+		
+	}
+} 
+/*}}*/
+ 
+/*socket{{*/
+class socket{
+	ctor(handle){
+		this.handle = handle; 
+	}
+	close = function(){
+		if( this.handle ){
+			var ret = _dll.zmq_close( this.handle );
+			this.handle = null;
+		}
+	} 
+	bind = function(addr){
+		return _dll.zmq_bind( this.handle,addr ) == 0; 
+	} 
+	unbind = function(addr){
+		return _dll.zmq_unbind( this.handle,addr ) == 0; 
+	}
+	connect = function(addr){
+		return _dll.zmq_connect( this.handle,addr ) == 0; 
+	}
+	disconnect = function(addr){
+		return _dll.zmq_disconnect( this.handle,addr ) == 0; 
+	}
+	monitor = function(addr,event){
+		return _dll.zmq_socket_monitor( this.handle,addr,event ) == 0; 
+	}
+	sendMsg = function(v,flags=0){
+		var size;
+		if(!v[["zmq_msg"]] ){
+			var msg = ..zeromq.message(v); 
+			size = msg.send(this,flags);
+			msg.close(); 
+		}
+		else{ 
+			size = v.send(this,flags);
+		}
+		return size;
+	}
+	recvMsg = function(v,flags=0){
+		var size;
+		if(!v[["zmq_msg"]] ){
+			var msg = ..zeromq.message(v); 
+			var size = msg.recv(this,flags);
+			if( (size === null) or size < 0 ) return;
+			
+			if(! msg.getSize()) return "";
+			var str = msg.getString();
+			msg.close(); 
+			return str;
+		}
+		else{ 
+			var size = v.recv(this,flags);
+			if((size !== null) && (size >= 0) ) return size;
+		} 
+	} 
+	send = function(s,len,flags=0){
+		if( s[["_struct"]] ) {len = ..raw.sizeof(s);}
+		if(!len) len = #s;
+		var size = _dll.zmq_send(this.handle,s,len,flags);
+		if( size >= 0 ) return size;
+	}
+	recv = function(s,len,flags=0){
+		var t = type(s)
+		if( "pointer" == t ){
+			if(!len) error("请使用第二个参数指定指针指向内存长度",2)
+		}
+		elseif( "buffer" == t ){
+			if(!len) len = #s;
+		}
+		elseif( "null" == t ){
+			if(!len) return this.recvMsg( ,flags);  
+			s = ..raw.buffer(len);
+		}
+		elseif( s[["_struct"]] ) {
+			len = ..raw.sizeof(s);
+		}
+		else{
+			error("参数@1必须是指针对象",2)
+		} 
+		
+		var size = _dll.zmq_recv(this.handle,s,len,flags);
+		if( size >= 0 ) return size;
+	} 	
+	setRecvTimeout = function( v ){ 
+		return zmq_setsockopt( this.handle,27/*_ZMQ_RCVTIMEO*/,{int v=v},4) == 0;
+	}
+	setSendTimeout = function( v ){ 
+		return zmq_setsockopt( this.handle,28/*_ZMQ_SNDTIMEO*/,{int v=v},4 ) == 0;
+	}
+	setsockopt = function( opt,v ){ 
+		return zmq_setsockopt( this.handle,opt,v,..raw.sizeof(v) ) == 0;
+	}
+	getsockopt = function( opt,v){
+		var len = ..raw.sizeof(v)
+		var r,len = zmq_getsockopt( this.handle,opt,v,len );
+		if(r==0)
+			return v,len;
+	}
+}  
+
+namespace socket{
+	zmq_setsockopt = _dll.api("zmq_setsockopt","int(pointer s, int option, struct optval, int optvallen)"  ) 
+	zmq_getsockopt = _dll.api("zmq_getsockopt","int(pointer s, int option, struct &optval, int &optvallen)"  )
+	 
+}
+/*}}*/
+
+/*context{{*/
+var socket = socket; 
+class context {
+	ctor(io_threads=1,shareName){ 
+		if( shareName ){
+			shareName += "{BB61BDEC-97CF-43C0-93BB-96499D9D264F}"
+			this.handle = thread.shareHandle.create( shareName,zmq_ctx_new,io_threads ) 
+		}
+		else{
+			this.handle = zmq_ctx_new(io_threads);
+		}
+		..table.gc( this,"term" ); 
+	}
+	zmq_socket = function( t = 0/*_ZMQ_PAIR*/ ){
+		return socket( zmq_socket( this.handle,t ) );
+	}
+	zmq_socket_pub = function(){
+		return this.zmq_socket(1)
+	}
+	zmq_socket_sub = function(){
+		return this.zmq_socket(2)
+	}
+	zmq_socket_request = function(){
+		return this.zmq_socket(3)
+	}
+	zmq_socket_reply = function(){
+		return this.zmq_socket(4/*_ZMQ_REP*/)
+	}
+	zmq_socket_dealer = function(){
+		return this.zmq_socket(5)
+	}
+	zmq_socket_router = function(){
+		return this.zmq_socket(6)
+	}
+	zmq_socket_pull = function(){
+		return this.zmq_socket(7)
+	}
+	zmq_socket_push = function(){
+		return this.zmq_socket(8)
+	}
+	zmq_socket_xpub = function(){
+		return this.zmq_socket(9)
+	}
+	zmq_socket_xsub = function(){
+		return this.zmq_socket(10)
+	}
+	get = function(name){
+		return _dll.zmq_ctx_get (this.handle,name)
+	} 
+	set = function(name,value){
+		return _dll.zmq_ctx_set (this.handle,name,value)
+	} 
+	shutdown = function(){
+		return _dll.zmq_ctx_shutdown(this.handle)
+	}
+	term = function(){
+		if( this.handle ) {
+			var ret;
+			if( shareName ){ 
+				ret = ( thread.shareHandle.delete( shareName,zmq_ctx_term ) == 0 )
+			}
+			else{
+				ret = ( zmq_ctx_term( this.handle ) == 0 )  
+			}
+			this.handle = null;
+			return ret;
+		}
+	}
+}
+namespace context{
+	import thread.shareHandle; 
+	zmq_ctx_new = _dll.api("zmq_init","pointer(int threads)" ) 
+	zmq_ctx_term = _dll.api("zmq_ctx_term","int(pointer context)" )
+	zmq_socket = _dll.api("zmq_socket","pointer(pointer context,int type)"   )  
+}
+/*}}*/
+ 
+/*zmq_poll{{*/
+poll = function(timeout,items,event){
+	var pollitems = { struct items[] = {} };
+	for(i=1;#items;1){
+		..table.push(pollitems.items,{
+    		pointer socket = items[i].handle;  
+    		pointer fd; 
+    		word events = event : 1/*_ZMQ_POLLIN*/;
+    		word revents;
+		}  )
+	}
+	 
+	if( -1 != _dll.zmq_poll(pollitems,#items,timeout) ){
+		var ret = {};
+		for(i=1;#items;1){
+			..table.push(ret,pollitems.items[i].revents);
+		}
+		return ret;
+	}
+}
+
+pollin = function(timeout,items,...){
+	if( items[["handle"]]){ items = {items;...} }
+	return poll(timeout,items,1/*_ZMQ_POLLIN*/);
+}
+
+pollout = function(timeout,items,...){
+	if( items[["handle"]]){ items = {items;...} }
+	return poll(timeout,items,2/*_ZMQ_POLLOUT*/);	
+}
+/*}}*/
+
+/**intellisense() 
+zeromq = 消息支持库\n建议结合protobuf库使用
+zeromq._dll = libzmq.dll\n!dllModule.
+zeromq.pollin( = 阻塞直到至少发生一个接收事件
+zeromq.pollin(.(-1,socket,->->->) = 参数@1指定超时,以毫秒为单位,-1为一直等待,\n参数@2可以是任意个zmq_socket对象,也可以是包含多个对象的数组\n成功返回包含事件代码的数组
+zeromq.pollout( = 阻塞直到至少发生一个发送事件
+zeromq.pollout(.(-1,socket,->->->) = 参数@1指定超时,以毫秒为单位,-1为一直等待,\n参数@2可以是任意个zmq_socket对象,也可以是包含多个对象的数组\n成功返回包含事件代码的数组
+zeromq.version() = 返回主版本号,次版本号,修订版本号
+zeromq.lasterr() = 检测最后调用API发生的错误\n如果存在错误则返回两个值:\n错误信息,错误代码
+zeromq.context(__/*IO线程数*/) = 创建环境上下文\n参数可选,默认值为1\n可选使用参数@2指定多线程共享名称
+zeromq.context() = !zeromq_context.
+!zeromq_context.term() = 释放对象\n该函数在线程结束时会作为析构函数自动调用.
+!zeromq_context.zmq_socket(__/*协议类型*/) = 创建pair模式socket,可自行配对,\n任何一方都可以做为服务端
+!zeromq_context.zmq_socket_pub() = 创建socket,与pub模式配对\n任何一方都可以做为服务端\n!zmq_socket.
+!zeromq_context.zmq_socket_sub() = 创建socket,与sub模式配对\n任何一方都可以做为服务端\n!zmq_socket.
+!zeromq_context.zmq_socket_request() = 创建socket,与reply模式配对\n任何一方都可以做为服务端\n!zmq_socket.
+!zeromq_context.zmq_socket_reply() = 创建socket,与request模式配对\n任何一方都可以做为服务端\n!zmq_socket.
+!zeromq_context.zmq_socket_dealer() = 创建socket\n!zmq_socket.
+!zeromq_context.zmq_socket_router() = 创建socket\n!zmq_socket.
+!zeromq_context.zmq_socket_pull() = 创建socket,与push模式配对\n任何一方都可以做为服务端\n!zmq_socket.
+!zeromq_context.zmq_socket_push() = 创建socket,与pull模式配对\n任何一方都可以做为服务端\n!zmq_socket.
+!zeromq_context.zmq_socket_xpub() = 创建socket\n!zmq_socket.
+!zeromq_context.zmq_socket_xsub() = 创建socket\n!zmq_socket.  
+!zeromq_context.zmq_socket() = !zmq_socket.
+!zmq_socket.setsockopt(.(选项,结构体) = 值必须是一个结构体对象\n成功返回true
+!zmq_socket.getsockopt(.(选项,结构体) = 值必须是一个结构体对象\n成功返回更新的结构体对象.
+!zmq_socket.close() = 关闭socket 
+!zmq_socket.bind("tcp://*:26666__/*地址*/") = 绑定
+!zmq_socket.unbind("tcp://*:26666__/*地址*/") = 解除绑定
+!zmq_socket.connect("tcp://localhost:26666__/*地址*/") = 连接 
+!zmq_socket.disconnect"tcp://localhost:26666__/*地址*/") = 断开连接 
+!zmq_socket.sendMsg(.(消息对象,选项) = 发送消息\n成功返回长度,失败返回null\n参数一也可以是能转换为字符串的对象、或结构体、buffer指针等\n选项为可选参数可省略
+!zmq_socket.recvMsg(.(消息对象,选项) = 接收消息\n成功返回长度,失败或超时返回null\n如果参数一不是一个消息对象,则创建临时消息对象并尝试返回接收的字符串\n选项为_ZMQ_DONTWAIT时立即返回不阻塞,收不到返回null\n选项为可选参数可省略
+!zmq_socket.send(.(缓冲区,长度,选项) = 发送消息帧\参数一可以是字符串或指针.n选项为_ZMQ_DONTWAIT时立即返回不阻塞,收不到返回null\n选项为可选参数可省略
+!zmq_socket.recv(.(缓冲区,长度,选项) = 接收消息帧\n成功返回长度,失败或超时返回null\n参数一可选指定缓冲区指针.\n所有参数可选,如果仅指定长度则自动创建缓冲区
+!zmq_socket.setRecvTimeout(__) = 设置接收超时，单位毫秒
+!zmq_socket.setSendTimeout(__) = 设置发送超时，单位毫秒
+zeromq.message(.(缓冲区,缓冲区大小,析构函数,附加指针) = 创建消息对象,所有参数可选\n缓冲区如果是字符串或可转换为字符串的对象,则忽略后续所有参数,\n缓冲区如果为空,则可选使用第二个参数指定长度,其他参数忽略,\n缓冲区如果为pointer指针,则必须使用第二个参数指定长度,\n缓冲区如果是cdata对象,则忽略第二个参数\n缓冲区如果是结构体或数值,则调用raw.malloc转换为cdata对象\n如果指定析构函数,当不再需要消息缓冲区时回调该函数,\n缓冲区指针,附加指针参数将作为回调的实参.
+zeromq.message() = 创建消息对象,初始化默认缓冲区\n!zmq_message.
+!zmq_message.close() = 释放消息对象
+!zmq_message.getData() = 返回缓冲区指针
+!zmq_message.getSize() = 返回缓冲区长度 
+!zmq_message.getMore() = 是否有更多的消息帧
+!zmq_message.getProperty("__") = 获取消息属性,属性名可指定：Socket-Type，Identity，Resource
+!zmq_message.getString() = 以字符串形式返回缓冲区内容
+!zmq_message.copy(__/*消息对象*/) = 复制消息缓冲区
+!zmq_message.move(__/*消息对象*/) = 移动消息缓冲区
+!zmq_message.recv(.(zmq_socket对象,选项) = 发送消息\n成功返回长度,失败返回null
+!zmq_message.send(.(zmq_socket对象,选项)= 发送消息\n成功返回长度,失败返回null
+
+_ZMQ_DELIMITER=@0x1F/*_ZMQ_DELIMITER*/
+_ZMQ_VSM=@0x20/*_ZMQ_VSM*/
+_ZMQ_MSG_MORE=@1/*_ZMQ_MSG_MORE*/
+_ZMQ_MSG_SHARED=@0x80/*_ZMQ_MSG_SHARED*/
+_ZMQ_MSG_MASK=@0x81/*_ZMQ_MSG_MASK*/
+_ZMQ_PAIR=@0/*_ZMQ_PAIR*/
+_ZMQ_PUB=@1/*_ZMQ_PUB*/
+_ZMQ_SUB=@2/*_ZMQ_SUB*/
+_ZMQ_REQ=@3/*_ZMQ_REQ*/
+_ZMQ_REP=@4/*_ZMQ_REP*/
+_ZMQ_DEALER=@5/*_ZMQ_DEALER*/
+_ZMQ_ROUTER=@6/*_ZMQ_ROUTER*/
+_ZMQ_PULL=@7/*_ZMQ_PULL*/
+_ZMQ_PUSH=@8/*_ZMQ_PUSH*/
+_ZMQ_XPUB=@9/*_ZMQ_XPUB*/
+_ZMQ_XSUB=@0xA/*_ZMQ_XSUB*/
+_ZMQ_HWM=@1/*_ZMQ_HWM*/
+_ZMQ_SWAP=@3/*_ZMQ_SWAP*/
+_ZMQ_AFFINITY=@4/*_ZMQ_AFFINITY*/
+_ZMQ_IDENTITY=@5/*_ZMQ_IDENTITY*/
+_ZMQ_SUBSCRIBE=@6/*_ZMQ_SUBSCRIBE*/
+_ZMQ_UNSUBSCRIBE=@7/*_ZMQ_UNSUBSCRIBE*/
+_ZMQ_RATE=@8/*_ZMQ_RATE*/
+_ZMQ_RECOVERY_IVL=@9/*_ZMQ_RECOVERY_IVL*/
+_ZMQ_MCAST_LOOP=@0xA/*_ZMQ_MCAST_LOOP*/
+_ZMQ_SNDBUF=@0xB/*_ZMQ_SNDBUF*/
+_ZMQ_RCVBUF=@0xC/*_ZMQ_RCVBUF*/
+_ZMQ_RCVMORE=@0xD/*_ZMQ_RCVMORE*/
+_ZMQ_FD=@0xE/*_ZMQ_FD*/
+_ZMQ_EVENTS=@0xF/*_ZMQ_EVENTS*/
+_ZMQ_TYPE=@0x10/*_ZMQ_TYPE*/
+_ZMQ_LINGER=@0x11/*_ZMQ_LINGER*/
+_ZMQ_RECONNECT_IVL=@0x12/*_ZMQ_RECONNECT_IVL*/
+_ZMQ_BACKLOG=@0x13/*_ZMQ_BACKLOG*/
+_ZMQ_RECONNECT_IVL_MAX=@0x15/*_ZMQ_RECONNECT_IVL_MAX*/
+_ZMQ_NOBLOCK=@1/*_ZMQ_NOBLOCK*/
+_ZMQ_SNDMORE=@2/*_ZMQ_SNDMORE*/
+_ZMQ_POLLIN=@1/*_ZMQ_POLLIN*/
+_ZMQ_POLLOUT=@2/*_ZMQ_POLLOUT*/
+_ZMQ_POLLERR=@4/*_ZMQ_POLLERR*/
+_ZMQ_STREAMER=@1/*_ZMQ_STREAMER*/
+_ZMQ_FORWARDER=@2/*_ZMQ_FORWARDER*/
+_ZMQ_QUEUE=@3/*_ZMQ_QUEUE*/
+_ZMQ_POLLIN=@1/*_ZMQ_POLLIN*/
+_ZMQ_POLLOUT=@2/*_ZMQ_POLLOUT*/
+_ZMQ_POLLERR=@4/*_ZMQ_POLLERR*/
+_ZMQ_IO_THREADS=@0x1/*_ZMQ_IO_THREADS*/
+_ZMQ_MAX_SOCKETS=@0x2/*_ZMQ_MAX_SOCKETS*/
+_ZMQ_SOCKET_LIMIT=@0x3/*_ZMQ_SOCKET_LIMIT*/
+_ZMQ_THREAD_PRIORITY=@0x3/*_ZMQ_THREAD_PRIORITY*/
+_ZMQ_THREAD_SCHED_POLICY=@0x4/*_ZMQ_THREAD_SCHED_POLICY*/
+_ZMQ_EVENT_CONNECTED=@1/*_ZMQ_EVENT_CONNECTED*/
+_ZMQ_EVENT_CONNECT_DELAYED=@2/*_ZMQ_EVENT_CONNECT_DELAYED*/
+_ZMQ_EVENT_CONNECT_RETRIED=@4/*_ZMQ_EVENT_CONNECT_RETRIED*/
+_ZMQ_EVENT_LISTENING=@8/*_ZMQ_EVENT_LISTENING*/
+_ZMQ_EVENT_BIND_FAILED=@0x10/*_ZMQ_EVENT_BIND_FAILED*/
+_ZMQ_EVENT_ACCEPTED=@0x20/*_ZMQ_EVENT_ACCEPTED*/
+_ZMQ_EVENT_ACCEPT_FAILED=@0x40/*_ZMQ_EVENT_ACCEPT_FAILED*/
+_ZMQ_EVENT_CLOSED=@0x80/*_ZMQ_EVENT_CLOSED*/
+_ZMQ_EVENT_CLOSE_FAILED=@0x100/*_ZMQ_EVENT_CLOSE_FAILED*/
+_ZMQ_EVENT_DISCONNECTED=@0x200/*_ZMQ_EVENT_DISCONNECTED*/
+_ZMQ_EVENT_MONITOR_STOPPED=@0x400/*_ZMQ_EVENT_MONITOR_STOPPED*/
+_ZMQ_EVENT_ALL=@0xFFFF/*_ZMQ_EVENT_ALL*/
+_ZMQ_DONTWAIT=@1/*_ZMQ_DONTWAIT*/
+_ZMQ_SNDMORE=@2/*_ZMQ_SNDMORE*/
+end intellisense**/

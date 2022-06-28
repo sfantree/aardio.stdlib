@@ -1,0 +1,6 @@
+if( ___sqlite_dll__ ) error("不能导入不同版本的sqlite支持库
+sqlite.aes128/sqlite.aes256/sqlite 只要导入其中一个就可以",2);
+
+//sqlite v3.8.4.3 https://www.sqlite.org
+___sqlite_dll__ = raw.loadDll($"~/lib/sqlite/.res/sqlite3.dll","sqlite.dll","cdecl")
+import sqlite.base;

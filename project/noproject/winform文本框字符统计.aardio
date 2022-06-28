@@ -1,0 +1,43 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(parent=...; border="resizable";right=631;bottom=400;text="数字统计";frame=1;edge=1;cls="winform" )
+winform.add(
+edit={ ah=1;bottom=399;vscroll=1;aw=1;right=630;left=1;multiline=1;top=64;text="请输入数字...";z=1;border=1;frame=1;edge=1;cls="edit" };
+static8={ bottom=53;nWrap=1;left=425;top=38;transparent=1;right=524;z=11;text="";cls="static" };
+static9={ bottom=53;nWrap=1;left=531;top=38;transparent=1;right=630;z=12;text="";cls="static" };
+static2={ bottom=24;nWrap=1;left=318;top=9;transparent=1;right=417;z=5;text="";cls="static" };
+static4={ bottom=24;nWrap=1;left=531;top=9;transparent=1;right=630;z=7;text="";cls="static" };
+static0={ bottom=24;color=0;text="";left=105;top=9;transparent=1;right=204;z=3;nWrap=1;cls="static" };
+static1={ bottom=24;nWrap=1;left=212;top=9;transparent=1;right=310;z=4;text="";cls="static" };
+static7={ bottom=53;nWrap=1;left=318;top=38;transparent=1;right=417;z=10;text="";cls="static" };
+button={ bottom=59;color=0;text="统计";left=7;top=6;font=LOGFONT( h=-20 );z=2;right=86;cls="button" };
+static6={ bottom=53;nWrap=1;left=212;top=38;transparent=1;right=311;z=9;text="";cls="static" };
+static5={ bottom=53;nWrap=1;left=105;top=38;transparent=1;right=204;z=8;text="";cls="static" };
+static3={ bottom=24;nWrap=1;left=424;top=9;transparent=1;right=524;z=6;text="";cls="static" }
+)
+/*}}*/
+
+//设置文本框字符数上限
+winform.edit.limit = 0xFFFFFFFF;
+
+winform.button.oncommand = function(id,event){
+
+    var tcount = {};
+    string.replace(
+        winform.edit.text,"\d",
+        function(num){  
+            if( tcount[num]  )
+                tcount[num] = tcount[num] + 1;
+            else {
+                tcount[num] = 1;
+            }
+        }
+    )
+   
+    for(i=0;9;1){
+        winform["static"+i].text =  "数字“"+i+"”有"+(tcount[ i+'']:0)+"个"
+    }
+}
+
+winform.show()
+win.loopMessage();

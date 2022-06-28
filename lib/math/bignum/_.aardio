@@ -1,0 +1,225 @@
+﻿
+namespace math;
+
+class bignum{
+	ctor(num){
+		this.bigNumber = ..raw.buffer(_buffSize);
+		this@ = _meta;
+		
+		if( type(num) == type.string ){	
+			this.fromString(num);
+		}
+		elseif(num!==null){
+			if( num@ ==_meta  ){
+					..raw.copy(this.bigNumber,num.bigNumber);
+			}
+			else {
+				_dll.bignum_from_int(this.bigNumber,..math.size64(num) );
+			}
+		}
+		else {
+			_dll.bignum_init(this.bigNumber)
+		}
+	};
+}
+
+namespace bignum{
+	
+	_dll = ..raw.loadDll($"~\lib\math\bignum\.res\tiny-bignum-c.dll","tiny-bignum-c","cdecl");
+	
+	_buffSize = 128;
+
+	_meta = {
+		_get = {
+			random = function(len){
+				if( ( len===null ) || (len > _buffSize ) )len = _buffSize;
+				var str = ..string.random(len,"0123456789abcdef") 
+				_dll.bignum_from_string(owner,str,#str); 
+				return owner;
+			};
+			size64 = function(){
+				return ..math.size64(tostring(owner));
+			};
+			add = function(n){
+				var c = ..math.bignum();
+				_dll.bignum_add(owner,..math.bignum(n),c)
+				return c;
+			};
+			sub = function(n){
+				var c = ..math.bignum();
+				_dll.bignum_sub(owner,..math.bignum(n),c)
+				return c;
+			};
+			mul = function(n){
+				var c = ..math.bignum();
+				_dll.bignum_mul(owner,..math.bignum(n),c)
+				return c;
+			};
+			div = function(n){
+				var c = ..math.bignum();
+				_dll.bignum_div(owner,..math.bignum(n),c)
+				return c;
+			};
+			mod = function(n){
+				var c = ..math.bignum();
+				_dll.bignum_mod(owner,..math.bignum(n),c)
+				return c;
+			};
+			lshift = function(n){
+				var c = ..math.bignum();
+				_dll.bignum_lshift(owner,n,c)
+				return c;
+			};
+			rshift = function(n){
+				var c = ..math.bignum();
+				_dll.bignum_rshift(owner,n,c)
+				return c;
+			};
+			isZero = function(){
+				return !! _dll.bignum_is_zero(owner)
+			};
+			inc = function(n){
+				return !! _dll.bignum_inc(owner,n)
+			};
+			dec = function(n){
+				return !! _dll.bignum_dec(owner,n)
+			};
+			pow = function(n){
+				var c = ..math.bignum();
+				_dll.bignum_pow(owner,..math.bignum(n),c)
+				return c;
+			};
+			isqrt = function(n){
+				var c = ..math.bignum();
+				_dll.bignum_isqrt(owner,..math.bignum(n),c)
+				return c;
+			};
+			xor = function(n){
+				var c = ..math.bignum();
+				_dll.bignum_xor(owner,..math.bignum(n),c)
+				return c;
+			};
+			["and"] = function(n){
+				var c = ..math.bignum();
+				_dll.bignum_and(owner,..math.bignum(n),c)
+				return c;
+			};
+			["or"]  = function(n){
+				var c = ..math.bignum();
+				_dll.bignum_or(owner,..math.bignum(n),c)
+				return c;
+			};
+			fromString = function(num){
+				if(..string.startWith(num,"0x",true) ){
+					num = ..string.right(num,-3);
+				}
+				else {
+					var input = ..raw.buffer(num);
+					var output = ..raw.buffer(1024);
+					var size = _dll.bigNumConvert(input,output,10,16);
+					num = ..raw.tostring(output,1,size); 
+				}
+					
+				if(#num%8!=0) num = ..string.repeat(8 - #num%8,"0") ++ num;
+				_dll.bignum_from_string(owner.bigNumber,num,#num);
+				return owner;
+			}; 
+		};
+		_tostring = function(radix){
+			var size = (_arraySize: 32)*8;
+			if(radix && radix!=16){
+				var ptr = ..raw.realloc(size+2)
+				_dll.bignum_to_string(owner.bigNumber,ptr,size);
+				
+				var out = ..raw.buffer(1024);
+				var size = _dll.bigNumConvert(ptr,out,16,radix);
+				var s = ..raw.tostring(out,1,size);
+				
+				..raw.realloc(0,ptr);
+				return s;
+			}
+			
+			var ptr = ..raw.realloc(size+2,,"0x")
+			_dll.bignum_to_string(owner.bigNumber,topointer(ptr,2),size);
+			var s = ..raw.str(ptr); 
+			..raw.realloc(0,ptr);
+			return s;
+		};
+		_tonumber = lambda() _dll.bignum_to_int(owner);
+		_topointer = lambda() owner.bigNumber;
+		_eq = function(n){
+			return 0 == _dll.bignum_cmp( owner,..math.bignum(n))
+		};
+		_le = function(n){
+			return !(0 <  _dll.bignum_cmp( owner,..math.bignum(n)) );
+		};
+		_lt = function(n){
+			return 0 >  _dll.bignum_cmp( owner,..math.bignum(n));
+		};
+		_add = function(b){
+			return owner.add(b);
+		};
+		_sub = function(b){
+			return owner.sub(b);
+		};
+		_mod = function(b){
+			return owner.mod(b);
+		};
+		_div = function(b){
+			return owner.div(b);
+		};
+		_mul = function(b){
+			return owner.mul(b);
+		};
+		_lshift = function(b){
+			return owner.lshift(b);
+		};
+		_rshift = function(b){
+			return owner.rshift(b);
+		};
+		_concat = function(b){
+			return tostring(owner) ++ tostring(b);
+		};
+	}
+}
+
+/**intellisense()
+math.bignum = 大数对象\n大数对象可以使用tostring函数转换为普通字符串\n并可以在tostring的第二个参数中指定显示进制
+math.bignum(__) = 创建大数对象\n参数可以使用10进制或16进制的字符串指定数值,16进制必须有0x前缀,\n也可以是普通整数,或者math.size64函数创建的长整数,\n传入math.bignum对象则复制为新的大数对象
+math.bignum() = !stdmathbignum.
+end intellisense**/
+
+/**intellisense(!stdmathbignum)
+fromString(__) = 自16进制字符串获取数值更新并返回自身
+random(__) = 生成指定长度的随机数值更新并返回自身
+size64() = 返回size64对象
+add(__) = 加运算,\n参数可以是普通整数,也可以是大数对象\n返回新的大数对象
+sub(__) = 减运算,\n参数可以是普通整数,也可以是大数对象\n返回新的大数对象
+mul(__) = 乘运算,\n参数可以是普通整数,也可以是大数对象\n返回新的大数对象
+div(__) = 除运算,\n参数可以是普通整数,也可以是大数对象\n返回新的大数对象
+mod(__) = 模运算,\n参数可以是普通整数,也可以是大数对象\n返回新的大数对象
+inc(__) = 自增,\n参数可以是普通整数,也可以是大数对象\n返回新的大数对象
+dec(__) = 自减，\n参数可以是普通整数,也可以是大数对象\n返回新的大数对象
+pow(__) = 乘方，\n参数可以是普通整数,也可以是大数对象\n返回新的大数对象
+isqrt(__) = 整数平方根,\n参数可以是普通整数,也可以是大数对象\n返回新的大数对象
+lshift(__) = 位左移,\n参数是普通整数\n返回新的大数对象
+rshift(__) = 位右移,\n参数是普通整数\n返回新的大数对象
+xor(__) = 位异或,\n参数是普通整数\n返回新的大数对象
+and(__) = 位与,\n参数是普通整数\n返回新的大数对象
+or(__) = 位或,\n参数是普通整数\n返回新的大数对象
+isZero() = 数值是否为0
+add() = !stdmathbignum.
+sub() = !stdmathbignum.
+mul() = !stdmathbignum.
+div() = !stdmathbignum.
+mod() = !stdmathbignum.
+inc() = !stdmathbignum.
+dec() = !stdmathbignum.
+pow() = !stdmathbignum.
+isqrt() = !stdmathbignum.
+lshift() = !stdmathbignum.
+rshift() = !stdmathbignum.
+xor() = !stdmathbignum.
+and() = !stdmathbignum.
+or() = !stdmathbignum.
+end intellisense**/

@@ -1,0 +1,40 @@
+import console; 
+import process.v;
+
+console.open();
+
+//V语言不支持中文路径，所以工程目录路径不要包含任何中文
+string.save("/hello.v","
+struct Point {
+pub mut: //声明下面的字段公开、可变
+	x int
+	y int 
+} 
+
+[export: 'add'] //一定要用这句指定DLL导出函数名
+pub fn add(a int,b int,mut pt &Point) int {
+   pt.x = a+b
+   return a+b
+}" )
+
+/*
+V语言是翻译成C语言然后生成DLL，生成的DLL依赖 VC 运行库，
+试了换成调用TCC编译，10KB的DLL增大到 400KB，并且运行崩溃。
+*/
+process.v.shared("hello.v").waitOne();
+
+//V生成的DLL建议至少在 WIN10 上用，需要VC++2017运行库 
+import sys.vc14;
+sys.vc14.require(); //检测并自动安装 VC++ 运行库
+
+//导入DLL，注意要指定 cdecl 调用约定
+var dll = raw.loadDll("/hello.dll",,"cdecl")
+
+//调用 V 函数( V是翻译为C语言，所以参考C语言的规则)
+var n,pt = dll.add(12,3,{int x=1;int y =2});
+
+//输出结果
+console.log(n);
+console.dumpJson(pt);
+
+console.pause(true);

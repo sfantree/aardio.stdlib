@@ -1,0 +1,109 @@
+﻿//picture 图像
+import xcgui.shape.metaProperty;
+namespace xcgui.shape;
+
+
+class picture{
+
+	ctor(hParentPointer,tParam){ 
+		if(! (hParentPointer || tParam) ) return null;
+		if(type(tParam)!=type.table){
+			this.hPointer = topointer( hParentPointer);
+		}
+		else {
+			if( tParam.resource ) ..xcgui.res.load(tParam.resource);
+			if(tParam.layout){
+				var hEle = ..xcgui.loadLayout(tParam.layout,hParentPointer);
+				if( ::Xcgui.XC_IsHELE (hEle) ){ 
+					if( ::Xcgui.XEle_GetType(hEle) != 0x3F/*_XC_SHAPE_PICTURE*/) return null; 
+					::Xcgui.XShape_AdjustLayout(hEle);
+					this.hPointer = topointer(hEle);
+				}
+				else {
+					return null;
+				}
+			}
+			else {
+				this.hPointer = topointer( ::Xcgui.XShapePic_Create(tParam.left,tParam.top,tParam.right-tParam.left,tParam.bottom-tParam.top,hParentPointer) ); 	
+			}
+			
+			
+		}
+	};
+	
+	@_metaProperty;
+	
+}
+
+picture._metaProperty = metaProperty(
+	bkImage = {
+		_set = function(image){
+			owner.setImage(image);
+		}
+	}
+	setImage = function(image,repeat,left,top,right,bottom){
+		if( repeat === null ) repeat = owner.bkRepeat;
+		if( (bottom===null) && ( (repeat=="expand") || (repeat=="expandBorder") ) ) 
+			left,top,right,bottom = owner.bkLeft,owner.bkTop,owner.bkRight,owner.bkBottom;
+				
+		if(type(image) == type.string) image = ..xcgui.image(image,repeat,left,top,right,bottom);
+		return ::Xcgui.XShapePic_SetImage(owner.hPointer,image);
+	}
+	setLayoutHeight = function(v,t){
+		::Xcgui.XShapePic_SetLayoutHeight(owner,t,v);
+	};
+	setLayoutWidth = function(v,t){
+		::Xcgui.XShapePic_SetLayoutWidth(owner,t,v);	
+	};
+	getLayoutHeight = function(){
+		var v,t = {int value},{int value}
+		::Xcgui.XShapePic_GetLayoutHeight(owner,t,v);
+		return v.value,t.value;
+	};
+	getLayoutWidth = function(){
+		var v,t = {int value},{int value}
+		::Xcgui.XShapePic_GetLayoutWidth(owner,t,v);
+		return v.value,t.value;
+	};
+)
+
+..xcgui.ctrl.picture = ..xcgui.shape.picture;
+
+/**intellisense()
+xcgui.shape.picture(.(父窗口,参数表) = 创建一个基础元素
+xcgui.shape.picture() = !stdxcpicture.
+win.ui.ctrl.xcpicture() = !stdxcpicture.
+end intellisense**/
+
+/**intellisense(!stdxcpicture)
+setImage( = 设置图片\n注意相同路径的图像会自动缓存,不会重复创建相同图像\n所以不应在参数@2中应传入文件路径,而非文件数据
+setImage(.(图像) = 添加图片,参数为xcgui.image对象,也可以直接指定图片路径\n如果控件在设计器中指定了九宫格参数,则应用九宫格拉伸
+setImage(.(文件路径,绘制类型) = 添加图像,支持资源路径,绘制类型参数可选 - 默认值为true\n绘制类型为字符串值，参考xcgui.image.repeat
+setImage(.(文件路径,"expand",左,上,右,下) = 设置菜单背景图片,支持资源路径\n参数指定九宫格切图坐标,如果控件在设计器中指定了九宫格参数,这里不需要指定
+setImage(.(文件路径,是否位伸,左,上,宽,高) = 加载图片上指定的部分
+setLayoutHeight(.(宽度,选项) = 设置布局宽度
+setLayoutWidth(.(高度,选项) = 设置布局高度 
+getLayoutWidth() = 获取布局宽度,选项
+getLayoutHeight() = 获取布局高度,选项
+id = ID值
+uid = UID值
+topmost(true) = Z序置顶
+getWindow() = 返回父窗体\n!stdxcwnd
+getParent() = 获取父节点\n!stdxcele
+getParentHandle() = 获取父节点句柄
+getParentType() = 获取父节点类型
+getObjectType() = 获取节点类型
+remove() = 移除元素,但不销毁.
+getContentSize() = 返回客户区区块,::SIZE对象\n!size. 
+getRect = 返回控件区块,::RECT对象\n!rect. 
+setRect(.(rect,是否重绘) = 设置区块,参数@1为::RECT对象
+setPos(.(x坐标,y坐标,宽,高) = 调整控件位置或排序,所有参数可选\n同时指定x,y坐标则移动位置\n同时指定宽高则改变大小
+getPos() = 返回相对坐标,宽,高,返回4个值：x,y,cx,cy
+autoResize = 是否允许aardio窗口自动调整控件位置\n只有在窗口设计器中添加的控件,并是aardio窗口对象的成员时此属性才有效
+getWidth() = 获取宽度
+getHeight() = 获取高度
+getParentLayout() = 获取所在布局对象
+adjustLayout() = 调整布局
+redraw() = 重绘
+close() = 销毁控件
+end intellisense**/

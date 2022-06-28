@@ -1,0 +1,34 @@
+
+
+
+//截屏得到图像数据
+import com.picture;
+import gdip.bitmap;
+var picture = com.picture.snap();
+var bmp = gdip.bitmap(picture);
+var buf = bmp.saveToBuffer();
+var str = tostring(buf)
+
+// vm 编译器 调用c函数
+var code = /*
+    #include <stdio.h>
+    #include <stdlib.h>
+    #include <string.h>
+    int cmp (const char *str,char *buffer,int size)  
+    {   
+        return memcmp(str,buffer,size);
+    }
+*/
+
+import console;
+import tcc;  
+var vm = tcc();
+vm.compile(code);
+
+import console
+console.log(#buf,#str,type(buf),type(str) )
+
+var ret = vm.cmp(buf,str,#str);
+console.log( "C语言得到的内存数据是否相等", ret == 0, #str == #buf )
+
+console.pause();

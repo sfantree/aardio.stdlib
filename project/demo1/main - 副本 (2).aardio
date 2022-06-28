@@ -1,0 +1,28 @@
+import win.ui;
+//导入自定义的用户库
+/*DSG{{*/
+mainForm = win.form(text="haha";right=384;bottom=321;border="dialog frame";edge=1;frame=1;parent=...)
+mainForm.add(
+button={cls="button";text="寻找文本";left=102;top=221;right=222;bottom=249;z=5};
+edit={cls="edit";left=33;top=86;right=278;bottom=114;edge=1;multiline=1;z=2};
+edit2={cls="edit";left=31;top=160;right=280;bottom=185;edge=1;z=4};
+static={cls="static";text="输入的内容：";left=31;top=57;right=145;bottom=80;transparent=1;z=1};
+static2={cls="static";text="输入的内容中查找的文本：";left=28;top=131;right=186;bottom=154;transparent=1;z=3}
+)
+/*}}*/
+
+mainForm.edit.oncommand = function(id,event){
+	
+}
+
+mainForm.button.oncommand = function(id,event){
+	// string.indexOf(.("字符串","查找文本")
+	import string;
+	var src = mainForm.edit.text;
+	var pattern = mainForm.edit2.text;
+	var idx = string.indexOf(src, pattern);
+	win.msgbox(tostring(idx));
+}
+
+mainForm.show()
+win.loopMessage();

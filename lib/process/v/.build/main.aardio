@@ -1,0 +1,11 @@
+import ide;
+import fsys;
+
+var publisDir = ide.getPublisDir();
+if(!#publisDir)return; 
+
+var pubDir =  fsys.joinpath(publisDir,"\lib\process\v\.vlang" ); 
+if( ! io.exist(pubDir) ){
+	var srcDir = fsys.joinpath( rget(2,io.libpath("process.v")),"\.vlang\*" );
+	..fsys.copy( srcDir ,pubDir,0x10/*_FOF_NOCONFIRMATION*/  | 0x200/*_FOF_NOCONFIRMMKDIR*/); 
+}

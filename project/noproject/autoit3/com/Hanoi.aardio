@@ -1,0 +1,28 @@
+import console; 
+
+
+class Solution{
+    //  |   |   |
+     // 0   1   2
+	 Hanoi = function(number, source, transfer, destination){
+	 	// 递归终止条件
+	 	if(number == 1) {
+	 	    this.move(1, 0, 2)
+	 	} else {
+	 	    this.Hanoi(number-1, 0, 2, 1)
+	 	    this.move(number, 0, 2)
+	 	    this.Hanoi(number-1, 1, 0, 2)
+	 	}
+	 }
+	 move = function(n, source, destination){
+	 	var out = ..string.format("%d:%d -> %d", n, source, destination)
+	 	..console.log(out);
+	 }
+	 
+}
+
+var solution = Solution();
+solution.Hanoi(5, 0, 1, 2)
+
+
+console.pause(true);

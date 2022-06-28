@@ -1,0 +1,61 @@
+import console; 
+/*
+var num = console.getNumber( "请输入数值:" )
+
+console.log("您输入的是" ,num );
+*/
+
+import com;
+console.open();
+
+var WpsObject = com.CreateObject("KWPS.Application") 
+
+import time;
+import sys;
+import fsys;
+//com.DumpTypeInfo(WpsObject)
+
+try{
+	if(WpsObject) {
+        //com.DumpTypeInfo(WpsObject)
+        WpsObject.Visible = false;
+    	//WpsObject.Documents.Add();
+    	WpsObject.Documents.Open("H:\0314.wps");
+    	
+    	var tm = time.now();
+        tm.format = "%Y%m%d_%H%M%S";
+        var tmpFileBaseName = string.format("%s_%s", tostring(tm), string.random(8));
+    	
+    	//ActiveWorkbook.SaveAs( ..io.fullpath(path),format );
+    	// fsys.getTempDir()
+    	WpsObject.ActiveDocument.SaveAs2(fsys.getTempDir() + tmpFileBaseName + ".txt", 2)
+    	console.log(tmpFileBaseName); //+ ".docx", 16 /*wdFormatDocumentDefault*/)
+    	
+    	// https://docs.microsoft.com/en-us/office/vba/api/word.wdsaveformat
+    	//WpsObject.ActiveDocument.SaveAs2(tmpFileBaseName + ".txt", 2)
+    	
+    	WpsObject.ActiveDocument.SaveAs2(fsys.getTempDir() + tmpFileBaseName + ".docx", 16)
+    	console.log(tmpFileBaseName);
+    	
+    	WpsObject.ActiveDocument.Close();
+    	
+    	
+    	com.Release(WpsObject);
+    	WpsObject = nil;
+	}
+} catch(e) {
+    console.dump(e);
+    if(WpsObject) {
+        com.Release(WpsObject);
+        WpsObject = nil;
+    }
+}
+
+
+
+
+
+
+
+
+console.pause(true);

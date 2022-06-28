@@ -1,0 +1,136 @@
+//lightslider 幻灯片
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="jQuery lightslider 幻灯片插件 - 支持 Win7 以及 Win7 以后的系统";right=587;bottom=484;bgcolor=16777215)
+winform.add(
+button={cls="button";text="调用 JS 函数";left=284;top=418;right=451;bottom=463;db=1;dr=1;z=2};
+static={cls="static";text="Static";left=6;top=7;right=566;bottom=399;clip=1;db=1;dl=1;dr=1;dt=1;transparent=1;z=1}
+)
+/*}}*/
+
+import web.form;
+var wb = web.form(winform.static);
+
+import web.json;
+wb.external={
+	getData = function(){
+		var data = {
+    		{
+      			"id": 1,
+      			"text": "aardio",
+      			"selected": true
+    		},
+    		{
+      			"id": 2,
+      			"text": "Delphi"
+    		},
+    		{
+      			"id": 3,
+      			"text": "Python",
+      			"disabled": true
+    		}
+  		}
+  		
+		return web.json.stringifyArray(data); 
+	}
+	
+	onSelect2Change = function(value){
+		winform.edit.print("选择了",value);
+	}	
+}
+
+/*
+lightslider 支持 IE7+, 也就是支持 Win7 以及 Win7 以后的系统
+范例： http://sachinchoolur.github.io/lightslider/examples.html
+
+下面使用 CDN 服务器加载 JS 文件初始化可能有点慢，实际开发请先下载到本地。
+aardio 可直接支持加载资源目录（发布可嵌入 EXE）下的网页文件。
+*/
+
+wb.noScriptErr = true; //禁止 JavaScript 错误提示
+ 
+wb.html = /**
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <script src="http://lib.sinaapp.com/js/jquery/1.12.4/jquery-1.12.4.min.js"></script> 
+  <link type="text/css" rel="stylesheet" href="https://lib.baomitu.com/lightslider/1.1.6/css/lightslider.min.css" />
+  <script src="https://lib.baomitu.com/lightslider/1.1.6/js/lightslider.min.js"></script>
+  <style type="text/css">
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    ul {
+      list-style: none outside none;
+      padding-left: 0;
+      margin: 0;
+    }
+
+    .content-slider li {
+      background-color: #ed3020;
+      text-align: center;
+      color: #fff;
+    }
+  </style>
+</head>
+
+<body>
+  <div style="width: 100%;">
+    <div class="clearfix" style="max-width: 474px">
+      <ul id="imageGallery" style="width: 474px">
+        <li data-thumb="http://sachinchoolur.github.io/lightslider/img/thumb/cS-1.jpg"
+          data-src="http://sachinchoolur.github.io/lightslider/img/largeImage.jpg">
+          <img src="http://sachinchoolur.github.io/lightslider/img/cS-1.jpg" />
+        </li>
+        <li data-thumb="http://sachinchoolur.github.io/lightslider/img/thumb/cS-2.jpg"
+          data-src="http://sachinchoolur.github.io/lightslider/img/largeImage1.jpg">
+          <img src="http://sachinchoolur.github.io/lightslider/img/cS-2.jpg" />
+        </li>
+        <li data-thumb="http://sachinchoolur.github.io/lightslider/img/thumb/cS-3.jpg"
+          data-src="http://sachinchoolur.github.io/lightslider/img/largeImage2.jpg">
+          <img src="http://sachinchoolur.github.io/lightslider/img/cS-3.jpg" />
+        </li>
+        <li data-thumb="http://sachinchoolur.github.io/lightslider/img/thumb/cS-4.jpg"
+          data-src="http://sachinchoolur.github.io/lightslider/img/largeImage3.jpg">
+          <img src="http://sachinchoolur.github.io/lightslider/img/cS-4.jpg" />
+        </li>
+        <li data-thumb="http://sachinchoolur.github.io/lightslider/img/thumb/cS-5.jpg"
+          data-src="http://sachinchoolur.github.io/lightslider/img/largeImage4.jpg">
+          <img src="http://sachinchoolur.github.io/lightslider/img/cS-5.jpg" />
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    $(document).ready(function () {
+      window.imageSlider = $("#imageGallery").lightSlider({
+        gallery: true,
+        item: 1,
+        loop: true, 
+        thumbItem: 7,
+        thumbMargin: 0,
+        slideMargin: 0,
+        enableDrag: false,
+        currentPagerPosition: "left",
+        onSliderLoad: function (el) { }
+      });
+    });
+  </script>
+</body>
+</html>
+**/
+
+winform.button.oncommand = function(id,event){
+	wb.script.imageSlider.goToSlide(3)
+}
+
+winform.show();
+win.loopMessage();

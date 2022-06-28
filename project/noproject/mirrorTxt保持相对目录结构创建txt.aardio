@@ -1,0 +1,50 @@
+import console; 
+import fsys.dlg;
+import fsys.path;
+import fsys.dlg.dir;
+import win;
+import debug;
+//debug.debug();
+
+function mirrorTxt(srcPath, dstPath){
+	if not( fsys.isDir(srcPath) and  fsys.isDir(dstPath) ) {
+	    win.msgboxErr("dstPath和srcPath均为目录");
+	    return;
+	}
+	
+	var r = fsys.path.relative(dstPath, srcPath);
+	if(r) {
+	    win.msgboxErr("dstPath不能是srcPath的子目录");
+	    return;
+	}
+	
+	var targetParentDirName = fsys.getFileName(srcPath);
+	
+	// 需要语音识别的所有文件
+	var multimediaFiles = {};
+	fsys.enum( srcPath, {"*.mp4", "*.mp3", "*.flv"},
+			function(dir, filename, fullpath, findData){ 
+				if(filename){
+			    	table.push(multimediaFiles, fullpath);
+				}
+	    	},
+		true
+	);
+	//console.dump(multimediaFiles)
+	var targetPaths = {};
+	for(i=1;#multimediaFiles;1){
+		var relatePath = fsys.path.relative(multimediaFiles[i], srcPath, false);
+		var targetPath = fsys.joinpath(dstPath, targetParentDirName, relatePath + ".txt");
+		table.push(targetPaths, targetPath);
+	}
+	return multimediaFiles, targetPaths;
+}
+
+var multimediaFiles, targetPaths = mirrorTxt("E:\tmpVedio", "G:\")
+
+for(i=1;#targetPaths;1){
+	string.save(targetPaths[i], "", true)
+}
+
+console.log("您输入的是" ,num );
+console.pause(true);

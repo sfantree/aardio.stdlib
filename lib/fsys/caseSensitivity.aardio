@@ -1,0 +1,42 @@
+﻿//caseSensitivity 路径大小写
+import fsys.file;
+
+namespace fsys.caseSensitivity;
+
+get = function(path){ 
+ 	var file,err = ..fsys.file(path);
+ 	if(!file) return null,::GetLastError();
+ 		
+	var caseSensitive = {INT flags};
+	var status = ::Ntdll.NtQueryInformationFile(file, { addr Status; INT Information; } 
+		, caseSensitive,..raw.sizeof(caseSensitive),71/*FileCaseSensitiveInformation*/);
+	file.close();
+		
+	if( 0 != status ) {
+		return null,status >>> 0;
+	}
+	
+	return !!(caseSensitive.flags & 1/*_CaseSensitiveDirectory*/);
+}
+
+set = function(path,enabled){ 
+ 	var file,err = ..fsys.file(path,"r+");
+ 	if(!file) return null,::GetLastError();
+ 		
+	var caseSensitive = {INT flags= enabled ? 1 : 0 };
+	var status = ::Ntdll.NtSetInformationFile(file, { addr Status; INT Information; } 
+		, caseSensitive,..raw.sizeof(caseSensitive),71/*FileCaseSensitiveInformation*/);
+	file.close();
+		
+	if( 0 != status ) { 
+		return null,status >>> 0;
+	}
+	
+	return true;
+}
+
+/**intellisense()
+fsys.caseSensitivity = 用于获取或设置指定目录下路径是否分区大小写
+fsys.caseSensitivity.get(.(dirPath) = 指定目录下路径是否分区大小写,\n@dirPath 参数指定目录路径\n\n区分大小写返回 true，不区分返回 false，\n发生错误返回 null,错误代码\n错误代码参考 错误代码参考 https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-erref/596a1078-e883-4972-9bbc-49e60bebca55
+fsys.caseSensitivity.get(.(dirPath,enabled) = 设置指定目录下路径是否分区大小写,\n@dirPath 参数指定目录路径,@enabled 指定是否区分大小写\n\n成功返回 true,发生错误返回 null,错误代码。\n常见错误代码：\n0xC0000022 进程需要管理权限\n0xC000000D 参数错误\n0xC00000BB 不支持，需要安装 WSL（Windows Subsystem for Linux）
+end intellisense**/

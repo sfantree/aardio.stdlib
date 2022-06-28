@@ -1,0 +1,13 @@
+﻿import inet.http;
+namespace myTools{
+	    getHtml = function(url){
+   
+        //创建一个http对象
+        var http = ..inet.http(); //访问外部名字空间要加上两点
+        
+        //var关键字将对象定义为局部变量(禁止在函数外部使用以避免冲突)
+        var source = http.get(url); //下载网页
+   
+        return source; //返回网页源码
+    }
+}

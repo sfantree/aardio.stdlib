@@ -1,0 +1,20 @@
+//获取字段名 
+import console;
+import sqlite
+
+var db = sqlite(":memory:");
+db.exec( "CREATE TABLE film(title, length, year, starring);") 
+
+var cmd = db.prepare("SELECT * FROM [film] ") 
+var columns = cmd.getColumns();	
+
+//显示所有字段名
+console.dump(columns);
+
+//获取全部数据表
+var dataTable = cmd.getTable();
+
+//这样也可以取到所有字段名
+console.dump(dataTable.fields);
+
+console.pause();

@@ -1,0 +1,38 @@
+﻿//入门
+import console;
+import dotNet;
+ 
+//导入程序集与名字空间 https://docs.microsoft.com/zh-cn/dotnet/api/?view=netframework-2.0
+dotNet.import("System"); 
+
+//调用类的静态成员函数，当然也可以这样读写类的其他静态成员属性。
+var isValidHost = System.Uri.CheckHostName("www.aardio.com") 
+
+//用 System 名字空间下面的类构造对象实例，官方建议规范：对象实例建议首字符小写
+var uri = System.Uri("https://www.aardio.com/test?q=aardio")
+
+//读或写 .Net 对象的实例属性
+console.log( uri.Host )
+
+//调用 .Net 对象实例的成员函数
+console.log( uri.GetHashCode() )
+ 
+//.Net 对象还可以用 tostring 转换为字符串
+console.log( tostring(uri) ) //这里的 tostring可以省略。
+
+console.pause(); 
+
+/*
+Win7 自带 .Net 3.5.1，支持 lambda
+Win8 自带 .Net 3.5.1 + .Net 4.5
+Win10 自带 .Net 4.6
+Win10 1709 自带 .Net 4.7.1 ，支持 ValueTuple
+Win11 自带 .NET 4.8
+
+Net 虽然有很多版本，但核心运行时只有 CLR 2.0 与 CLR 4.0 的区别。
+如果使用了一些非常新的 C# 语法 —— 用 VS 编译成 DLL以后在 CLR 4.0 下运行时没有问题的。
+
+aardio 只是调用 CLR 运行时，可以自动兼容 CLR 2.0 / CLR 4.0 编写的程序集。
+aardio + .Net 开发有更好的兼容性，对 .Net 版本没有严格要求，可以重用大量的 .Net 组件，
+并且编写出体积小、无额外依赖(系统自带 CLR 运行时除外)的独立 EXE 文件（支持内存加载程序集）。
+*/

@@ -1,0 +1,176 @@
+﻿import fsys.path;
+import inet.installer;
+import win.path;
+import process;
+
+namespace process.rust;
+
+install = function(){
+	var rustupPath = ..win.path.search("rustup.exe")
+	var cargoPath = ..win.path.search("cargo.exe")
+	if(!(rustupPath&&cargoPath)){
+		if(!..inet.installer.asInvoker("Rust 语言编译器"
+			,"https://static.rust-lang.org/rustup/dist/i686-pc-windows-msvc/rustup-init.exe","-y")){
+			return;
+		}
+		
+		rustupPath = ..win.path.search("rustup.exe")
+		cargoPath = ..win.path.search("cargo.exe")
+	}
+	
+	return rustupPath,cargoPath; 
+}
+
+repair = function(){
+	var prcs,err = ..process("cmd.exe","rustup uninstall stable && rustup update nightly && rustup update stable");
+	if(!prcs){
+		return null,err;
+	}
+	
+	prcs.waitOne();
+	var ret = prcs.getExitCode() == 0;
+	prcs.free();
+	
+	return ret;	
+}
+
+workDir = ..io.fullpath("/");
+
+rustup = function(cmdline,...){
+	var rustupPath,cargoPath = install();
+	if(!rustupPath) return;
+		
+	if(...) cmdline = ..process.joinArguments(cmdline,...);
+	var prcs,err = ..process(  ,'rustup ' + cmdline,{ workDir = workDir; } ) 
+	if(!prcs){
+		return null,err;
+	}
+	
+	prcs.waitOne();
+	var ret = prcs.getExitCode() == 0;
+	prcs.free();
+	
+	return ret;
+}
+
+cargo = function(cmdline,...){
+	var rustupPath,cargoPath = install();
+	if(!cargoPath) return;
+	
+	if(...) cmdline = ..process.joinArguments(cmdline,...);
+	var prcs,err =  ..process(  ,'cargo ' + cmdline,{ workDir = workDir; } ) 
+	if(!prcs){
+		return null,err;
+	}
+	
+	prcs.waitOne();
+	var ret = prcs.getExitCode() == 0;
+	prcs.free();
+	
+	return ret;
+}
+
+build = function(){
+	if(!rustup("target add i686-pc-windows-msvc"))return;
+	return cargo("build --target=i686-pc-windows-msvc --release");
+}
+
+createDllProject = function(fileName){ 
+	fileName = ..fsys.path.validName(fileName);
+	if(!#fileName){
+		return null,"请指定合法的文件名"
+	}
+	
+	var path = ..io.joinpath(workDir,fileName);
+	
+	if(..io.exist(path)){
+		return null,"目录已存在"
+	}
+	
+	var code = '
+[package]\r\n
+name = "'+fileName+'"\r\n
+version = "0.1.0"\r\n
+authors = ["aardio"]\r\n
+\r\n
+[lib]\r\n
+name = "'+fileName+'" \r\n
+crate-type = ["cdylib"]\r\n
+'
+	..string.save(..io.joinpath(path,"Cargo.toml"),code)
+	
+	var code =/*
+[build]
+target = "i686-pc-windows-msvc"
+
+[target.i686-pc-windows-msvc]
+rustflags = ["-C","target-feature=+crt-static"]
+#linker = "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Tools\\MSVC\\14.24.28314\\bin\\Hostx64\\x86\\link.exe"
+*/
+	..string.save(..io.joinpath(path,".cargo/config.toml"),code)
+
+	var code =/***
+use std::ffi::CStr;
+use std::os::raw::c_char;
+
+#[repr(C)]
+pub struct CStruct{
+	i8 : i8,
+	i16 : i16,
+	i32 : i32,
+	i64 : i64,
+	u8 : u8,
+	u16 : u16,
+	u32 : u32,
+	u64 : u64,
+	f64 : f64,
+	arr : [i32;4]
+}
+
+#[no_mangle]
+pub extern fn hello_rust(ptr_utf8: *const c_char,ptr_buf: *mut c_char,info: &mut CStruct)-> i32{
+
+	//指针转为C字符串
+	let cstr_utf8 = unsafe { 
+		assert!(!ptr_utf8.is_null());
+		CStr::from_ptr(ptr_utf8) 
+	};
+	
+	//UTF8 验证转Rust字符串，aardio 默认编码为UTF-8
+	//也可以写为 let s_utf8 = cstr_utf8.to_str().unwrap();
+	//match 有点像 aardio 的 select 语句
+	let s_utf8 = match cstr_utf8.to_str() {
+		Ok(s) => s,
+		Err(_) => "",
+	};
+	
+	//感叹号表示这是一个宏
+	println!("Hello, {}!", s_utf8);
+	
+	//复制字符串到缓冲区，类似 aardio 的 raw.copy
+	unsafe{
+		std::ptr::copy(s_utf8.as_ptr(),ptr_buf as *mut u8, s_utf8.len() )
+	};
+	
+	//修改结构体，aardio 里的结构体都是传址
+	info.i8 = 8;
+	info.f64 = 321.321;
+	info.arr[3] = 19; // aardio 里下标自 1 开始，Rust 下标自 0 开始。
+		
+	return s_utf8.len() as i32;
+}
+***/
+	..string.save(..io.joinpath(path,"src/lib.rs"),code)	
+	
+	workDir = path;
+}
+
+/**intellisense(process.rust)
+workDir = 指定工作目录,默认为应用程序目录
+install() = 如果没有安装 Rust 则自动安装 Rust
+repair() = 修复安装
+rustup(.(->->->) = 执行 rustup 命令,\n可输入一个或多个命令行参数,\n只有一个参数时直接作为命令行参数,\n多个参数则包含空格的参数置入引号内部并作必要的转义处理
+cargo(.(->->->) = 执行 cargo 命令,\n可输入一个或多个命令行参数,\n只有一个参数时直接作为命令行参数,\n多个参数则包含空格的参数置入引号内部并作必要的转义处理
+build(.() = 编译 32 位 DLL,\nRust 生成的 DLL 不依赖外部运行时，可以内存加载，并支持 WIN7, WIN 10以上系统
+createDllProject(.(path) = 创建32位DLL范例工程,\n输入目录必须是不存在的目录,\n创建成功自动设置该目录为 process.rust.workDir
+end intellisense**/

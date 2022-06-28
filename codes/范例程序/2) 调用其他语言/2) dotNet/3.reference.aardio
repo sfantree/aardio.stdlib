@@ -1,0 +1,35 @@
+//引用内存 DLL
+import console;
+import dotNet;
+
+/*
+dotNet.loadFile() 函数虽然可以自内存加载单个 DLL 文件，
+但如果该内存 DLL 依赖其他需要一起分发的本地 DLL 文件，那就会导致加载失败。
+aardio 提供 dotNet.reference() 函数可以批量引用内存 DLL（或其他本地 DLL 文件），
+*/
+
+//引用一个或多个内存程序集
+dotNet.reference({
+	//键为正常加载程序集所需要的短名称，
+	//值为实际加载的程序集内存数据或加载路径（也可以是返回所需值的函数）。
+	"test.a.b.c" = $"\CSNET2ClassLibrary.dll";	 
+	"test.123" = "\CSNET2ClassLibrary.dll";	 
+}) 
+
+//后面就可以正常加载上面引用了的 DLL，就类似在应用程序目录下虚拟出了真实的 DLL 。
+//这个被加载的内存程序集同样支持 dotNet.reference() 函数引用的其他 DLL。
+var assembly = dotNet.load("test.a.b.c"); 
+
+//也可以在 dotNet.load() 函数的第 @2 个参数指定要调用 dotNet.reference 绑定的内存数据
+var assembly = dotNet.load("test.a.b.c",$"\CSNET2ClassLibrary.dll"); 
+
+//导入程序集中的名字空间或类，.Net 名字空间或类名首字符大写，aardio 类名首字符小写。
+assembly.import("CSNET2ClassLibrary");
+ 
+//用 CSNET2ClassLibrary 名字空间下面的类构造对象实例，对象实例建议首字符小写
+var simpleObject = CSNET2ClassLibrary.CSSimpleObject()  
+
+//通过类调用静态方法
+console.log( CSNET2ClassLibrary.CSSimpleObject.GetStringLength("HelloWorld")  ); 
+
+console.pause(); 

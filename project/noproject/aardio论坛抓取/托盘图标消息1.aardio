@@ -1,0 +1,55 @@
+import win.ui;
+import win.ui.menu;
+import com.picture;
+/*DSG{{*/
+var winform = win.form(parent=...; right=330;text="aardio Form";bottom=156 )
+winform.add(  )
+/*}}*/
+math.randomize();
+var tab={"随机内容1";"随机内容2";"随机内容3";"随机内容4";"随机内容5";}
+winform.popmenu = win.ui.popmenu(winform);//创建弹出菜单
+winform.popmenu.add();//分隔线
+winform.popmenu.add('&exit',function(id){ winform.close() })
+
+
+winform.wndproc = function(hwnd,message,wparam,lparam){
+
+    select(message) {//判断消息类型
+        case( 0x400+9981/*_WM_TRAYMESSAGE*/ ) { //托盘图标消息
+        
+            if( lparam = 0x205/*_WM_RBUTTONUP*/ ){
+                import mouse;
+                x,y = mouse.getPos();
+               
+                //弹出托盘菜单以前，一定要前置主窗口中，不然不点击菜单不会消失
+                win.setForeground(winform.hwnd)
+                winform.popmenu.popup( x,y,true )
+            }
+            if(lparam = 0x200/*_WM_MOUSEMOVE*/){
+                var i=math.random(1,5);
+                tray.tip=tab[ i ]   
+                //tray.tip="先显示气泡,再鼠标提示时,气泡老是频闪?"
+             }
+        }
+        case( 0x112/*_WM_SYSCOMMAND*/ ){ //系统命令消息
+            if( wparam == 0xF020/*_SC_MINIMIZE*/ ){ //用户点击了最小化按钮
+               
+                import win.util.tray;
+                tray = win.util.tray(winform) //创建托盘图标
+                tray.pop("我最小化并跑到托盘来了" )
+                winform.show(false); //隐藏窗口
+                return true;//阻击默认消息传递，取消最小化过程
+            }
+        }
+    }
+   
+    //无返回值则继续调用默认回调函数
+}//endproc
+
+import win.util.tray;
+tray = win.util.tray(winform,0) //创建托盘图标
+tray.message = 0x400+9981/*_WM_TRAYMESSAGE*/
+tray = win.util.tray(winform,130)
+tray.pop("欢迎使用托盘图标","aardio")            
+winform.show(true)  
+win.loopMessage();

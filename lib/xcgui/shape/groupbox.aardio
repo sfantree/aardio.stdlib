@@ -1,0 +1,117 @@
+﻿//groupbox 形状组框
+import xcgui.shape.metaProperty;
+namespace xcgui.shape;
+
+class groupbox{
+
+	ctor(hParentPointer,tParam){ 
+		if(! (hParentPointer || tParam) ) return null;
+		if(type(tParam)!=type.table){
+			this.hPointer = topointer( hParentPointer);
+		}
+		else {
+			if( tParam.resource ) ..xcgui.res.load(tParam.resource);
+			if(tParam.layout){
+				var hEle = ..xcgui.loadLayout(tParam.layout,hParentPointer);
+				if( ::Xcgui.XC_IsHELE (hEle) ){ 
+					if( ::Xcgui.XEle_GetType(hEle) != 0x43/*_XC_SHAPE_GROUPBOX*/ ) return null; 
+					::Xcgui.XShape_AdjustLayout(hEle);
+					this.hPointer = topointer(hEle);
+				}
+				else {
+					return null;
+				}
+			}
+			else {
+				this.hPointer = topointer( ::Xcgui.XShapeGroupBox_Create(tParam.left,tParam.top,tParam.right-tParam.left,tParam.bottom-tParam.top,tParam.text,hParentPointer) ); 	
+			}
+		}
+	};
+	
+	@_metaProperty;
+	
+}
+
+groupbox._metaProperty = metaProperty(
+	text = {
+		_set = function( v ){ 
+			::Xcgui.XShapeGroupBox_SetText(owner.hPointer,v)
+		}		
+	}
+	color = {
+		_set=function(v){
+			::Xcgui.XShapeGroupBox_SetTextColor(owner,v & 0xFFFFFF,v>> 24 & 0xFF);
+		}
+	};
+	setFont = function(font,size,style){ 
+		font = ..xcgui.font(font,size,style);
+		if(font) ::Xcgui.XShapeGroupBox_SetFontX(owner,font)
+	};
+	setBorderColor = function(color,alpha){
+		return ::Xcgui.XShapeGroupBox_SetBorderColor(owner.hPointer,color,alpha);
+	}
+	enableRoundAngle = function(bEnable){
+		return ::Xcgui.XShapeGroupBox_EnableRoundAngle(owner.hPointer,bEnable);
+	}
+	getRoundAngle = function(){
+		var x,y = {int value},{int value}
+		::Xcgui.XShapeGroupBox_GetRoundAngle(owner.hPointer,x,y);
+		return x.value,y.value;
+	}
+	setRoundAngle = function(cx,cy){
+		return ::Xcgui.XShapeGroupBox_SetRoundAngle(owner.hPointer,cx,cy);
+	}
+	setTextOffset = function(x,y){
+		return ::Xcgui.XShapeGroupBox_SetTextOffset(owner.hPointer,x,y);
+	}
+	getTextOffset = function(pOffsetX,pOffsetY){
+		var x,y = {int value},{int value}
+		::Xcgui.XShapeGroupBox_GetTextOffset(owner.hPointer,x,y);
+		return x.value,y.value;
+	}
+)
+
+..xcgui.ctrl.groupbox = ..xcgui.shape.groupbox;
+
+/**intellisense()
+xcgui.shape.groupbox(.(父窗口,参数表) = 创建一个基础元素
+xcgui.shape.groupbox() = !stdxcgroupbox.
+win.ui.ctrl.xcgroupbox() = !stdxcgroupbox.
+end intellisense**/
+
+/**intellisense(!stdxcgroupbox)
+text = 设置文本,只写属性
+color  = 设置文本颜色,只写属性
+setFont(.(字体名,字体大小,样式) = 创建字体
+setFont(.(字体名） = 设置字体
+setFont(.(name="字体"） = 设置字体\n参数为LOGFONT对象，或指定部分LOGFONT属性的表
+setFont(.(句柄） = 设置字体\n参数为字体句柄
+setBorderColor(.(color,alpha) = 设置边框颜色
+setFontX(__) = 设置字体
+setTextOffset(.(x,y) = 设置文本偏移量
+getTextOffset(.(pOffsetX,pOffsetY) = 获取文本偏移量
+setRoundAngle(.(cx,cy) = 设置圆角大小
+getRoundAngle(.(pWidth,pHeight) = 获取圆角大小,返回值分别为宽度,高度
+enableRoundAngle(true) = 启用圆角
+id = ID值
+uid = UID值
+topmost(true) = Z序置顶
+getWindow() = 返回父窗体\n!stdxcwnd
+getParent() = 获取父节点\n!stdxcele
+getParentHandle() = 获取父节点句柄
+getParentType() = 获取父节点类型
+getObjectType() = 获取节点类型
+remove() = 移除元素,但不销毁.
+getContentSize() = 返回客户区区块,::SIZE对象\n!size. 
+getRect = 返回控件区块,::RECT对象\n!rect. 
+setRect(.(rect,是否重绘) = 设置区块,参数@1为::RECT对象
+setPos(.(x坐标,y坐标,宽,高) = 调整控件位置或排序,所有参数可选\n同时指定x,y坐标则移动位置\n同时指定宽高则改变大小
+getPos() = 返回相对坐标,宽,高,返回4个值：x,y,cx,cy
+autoResize = 是否允许aardio窗口自动调整控件位置\n只有在窗口设计器中添加的控件,并是aardio窗口对象的成员时此属性才有效
+getWidth() = 获取宽度
+getHeight() = 获取高度
+getParentLayout() = 获取所在布局对象
+adjustLayout() = 调整布局
+redraw() = 重绘
+close() = 销毁控件
+end intellisense**/

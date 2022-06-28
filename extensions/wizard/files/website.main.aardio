@@ -1,0 +1,14 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <script type="text/javascript"></script>
+    <title>帮助页面</title>
+</head>
+<body style="white-space:pre;font-size:14px;word-wrap: break-word;word-break: normal;"><?
+    if(response) {
+    	response.jsonPrettyPrint = true; 
+    	response.write(request);
+    }
+?>

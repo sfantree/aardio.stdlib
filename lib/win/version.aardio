@@ -1,0 +1,177 @@
+//version 版本信息
+namespace win
+
+version = {  
+	INT osVersionInfoSize = 284; 
+	INT majorVersion; 
+	INT minorVersion; 
+	INT buildNumber; 
+	INT platformId; 
+	WORD csdVersion[128];
+	WORD servicePackMajor;
+	WORD servicePackMinor;
+	WORD suiteMask;
+	BYTE productType;
+	BYTE reserved;
+} 
+
+if( !_WINXP && ::Ntdll.RtlGetVersionW ) ::Ntdll.RtlGetVersionW(version);
+else ::Kernel32.GetVersionExW( version );
+
+namespace version{
+	if(csdVersion) csdVersion = ..string.str(csdVersion);
+	
+	name = 	"Windows";
+	isServer = productType != 1/*_VER_NT_WORKSTATION*/;
+
+	if( platformId == 2 ){ 
+        if( majorVersion = 5 ){
+        	select(minorVersion) {
+        		case 1 {
+        			isXp = true;
+        			name = "Windows XP";
+        		}
+        		case 2 {
+         			if( !isServer){
+           				isXp = true;
+        				name = "Windows XP";
+         			}
+         			else {
+        				name = "Windows Server 2003";
+        			} 
+        		} 
+        	}
+        } 
+        else if( majorVersion ==  6 ){
+        	isVistaLater = true; 
+        	select(minorVersion) {
+        		case 0 {
+        			if( !isServer){
+        				isVista = true;
+        				name = "Windows Vista";
+        			}
+        			else {
+        				name = "Windows Server 2008";
+        			} 
+        		}
+        		case 1 {
+        			isWin7Later = true;
+        			if( !isServer){
+        				isWin7 = true;
+        				name = "Windows 7";
+        			}
+        			else {
+        				name = "Windows Server 2008 R2";
+        			}
+        		}
+        		case 2 {
+        			isWin7Later = true;
+        			isWin8Later = true;
+        			if( !isServer){
+        				isWin8 = true;
+        				name = "Windows 8";
+        			}
+        			else {
+        				isWin2012 = true;
+        				name = "Windows Server 2012";
+        			} 
+        		}
+        		case 3 {
+        			isWin7Later = true;
+        			isWin8Later = true;
+        			if( !isServer){
+        				isWin8 = true;
+        				name = "Windows 8.1";
+        			}
+        			else {
+        				isWin2012 = true;
+        				name = "Windows Server 2012 R2";
+        			} 
+        		}
+        		case 4 {
+        			isWin7Later = true;
+        			isWin8Later = true;
+        			isWin10Later = true;
+        			name = "Windows 10";
+        		}
+        	} 
+        } 
+        else if( majorVersion ==  10 ){
+        	isVistaLater = true;
+        	isWin7Later = true;
+        	isWin8Later = true;
+        	isWin10Later = true;
+        	
+        	if(buildNumber>=21996){
+        		isWin11Later = true;
+        		
+        		if( !isServer ) name = "Windows 11"; 
+        		else name = "Windows Server 11"; 
+        	} 
+        	else {
+        		if( !isServer ) name = "Windows 10"; 
+        		else {
+        			if(buildNumber<17763) name = "Windows Server 2016";
+        			elseif(buildNumber<=14393) name = "Windows Server 2019";
+        			else name = "Windows Server 10";
+        		}
+        	}
+        }
+        else {
+        	isVistaLater = true;
+        	isWin7Later = true;
+        	isWin8Later = true;
+        	isWin10Later = true;
+        }
+	} 
+	
+	displayVersion = majorVersion +"." + minorVersion;
+	format = function(){
+		return ..string.format("%s%s (OS Build %s)"
+			, #csdVersion ? name + " " + csdVersion : name
+			, (..win.versionEx || !_WIN10_LATER)? " Version " + displayVersion : ""
+			, updateBuildRevision? buildNumber + "." + updateBuildRevision : buildNumber 
+			) 
+	}
+}
+
+/*
+详细说明请参考MSDN 
+https://docs.microsoft.com/zh-cn/windows/win32/api/winnt/ns-winnt-osversioninfoexW
+*/
+
+/**intellisense(!winVersion)
+format() = 格式化为文本格式的版本号
+displayVersion = 用于显示的版本号,\n默认显示为主版本号 + "." + 副版本号\n\n如果导入了 win.versionEx：\nWin 10,Win 11 显示为4字符发行时间,\n前2位数字为年份,春季加H1,秋季加H2
+majorVersion = 操作系统的主版本号\n注意 Windows 11 的主版本号仍然是 10
+minorVersion = 操作系统的副版本号
+buildNumber = 操作系统的构建版本号
+platformId = 平台ID
+csdVersion = 关于该操作系统的附加信息
+productType = 产品类型,多个选项按位和\n普通家用操作系统_VER_NT_WORKSTATION\n服务器操作系统_VER_NT_SERVER,_VER_NT_DOMAIN_CONTROLLER
+name = 操作系统产品名称,例如\n"Windows XP"\n"Windows 7"\n"Windows 2012 R2"
+isServer = 是否服务器版本系统
+isVistaLater = 当前系统是否 Vista 以及 Vista 以后的版本\n该值如果为false,即为 Win  xp, Win  2003操作系统
+isWin7Later = 当前系统是否 Win 7以及 Win 7以后的版本
+isWin8Later = 当前系统是否 Win 8以及 Win 8以后的版本
+isWin10Later = 当前系统是否 Win 10以及 Win 10以后的版本
+isWin11Later = 当前系统是否 Win  11以及 Win 11以后的版本\n注意 Windows 11 的主版本号仍然是 10
+isXp = 是否 Win XP
+isVista = 是否 Vista
+isWin7 = 是否 win7
+isWin8 = 是否 win8
+end intellisense**/
+
+/**intellisense()
+win.version = 系统版本信息\naardio 内建以下全局常量也可用于检测系统版本：\n_WINXP,_WIN7_LATER,_WIN10_LATER,_WINE,\n_WIN_VER_MAJOR,_WIN_VER_MINOR,_WIN_VER_BUILD 等\n!winVersion.
+_VER_NT_DOMAIN_CONTROLLER = @0x2/*_VER_NT_DOMAIN_CONTROLLER*/ 
+_VER_NT_SERVER = @0x3/*_VER_NT_SERVER*/
+_VER_NT_WORKSTATION = @1/*_VER_NT_WORKSTATION*/
+_VER_MINORVERSION=@0x1/*_VER_MINORVERSION*/
+_VER_MAJORVERSION=@0x2/*_VER_MAJORVERSION*/
+_VER_SERVICEPACKMAJOR=@0x20/*_VER_SERVICEPACKMAJOR*/
+_VER_GREATER_EQUAL=@0x3/*_VER_GREATER_EQUAL*/
+_VER_NT_WORKSTATION=@1/*_VER_NT_WORKSTATION*/
+_VER_PRODUCT_TYPE=@0x80/*_VER_PRODUCT_TYPE*/
+_VER_EQUAL=@0x1/*_VER_EQUAL*/
+end intellisense**/

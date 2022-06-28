@@ -1,0 +1,31 @@
+import win.ui;
+/*DSG{{*/
+winform = ..win.form(text="aardio form";right=599;bottom=399)
+winform.add(
+btnReset={cls="button";text="重置";left=389;top=351;right=521;bottom=379;z=3};
+btnSave={cls="button";text="保存";left=231;top=351;right=363;bottom=379;z=1};
+edit3={cls="edit";text="edit3";left=44;top=42;right=407;bottom=68;edge=1;multiline=1;z=2}
+)
+/*}}*/
+
+import fsys.config;
+config = fsys.config("/config/");
+
+//将窗口控件绑定到配置文件 config.mainForm
+winform.bindConfig( config.winform,{
+    edit = "text";
+} );
+
+//取消或重置为初始值
+winform.btnReset.oncommand = function(id,event){
+   
+    config.winform.load();
+}
+
+//也可以手动保存配置文件
+winform.btnSave.oncommand = function(id,event){
+    config.winform.save();
+}
+
+winform.show();
+win.loopMessage();

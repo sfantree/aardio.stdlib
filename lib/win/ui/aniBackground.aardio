@@ -1,0 +1,72 @@
+import gdip.bitmap;
+namespace win.ui;
+
+class aniBackground{
+
+	ctor(ctrl,transparentColor){
+		this.bmps = {};
+		var bmpIndex = 1;
+		if(transparentColor){ 
+			ctrl.transparent(,transparentColor) 
+		}
+		
+		..table.gc(this,"clear");
+	};
+	
+	add = function(path,delay){ 
+	    var bmp  = ..gdip.bitmap(path) ;
+	    if( !bmp) error("加载图片失败",2)
+	 
+		..table.push( this.bmps,{ bmp.copyHandle() ; delay });
+		bmp.dispose();
+		return this;
+	};
+	
+	next = function(){
+		bmpIndex = (bmpIndex+1) % #this.bmps;
+		var bmp = this.bmps[bmpIndex +1];
+		return bmp[1],bmp[2];
+	}; 
+	
+	clear = function(){
+		if(this.timerId && ::User32.IsWindow(ctrl.hwnd)){
+			ctrl.clearInterval(this.timerId);
+			this.timerId = null;
+		}
+		
+		if( this.bmps ) {
+			for(i=1;#this.bmps ){
+				::DeleteObject( this.bmps[i][1] ) 
+			} 
+			this.bmps = null;
+		}
+	}; 
+	
+	animate = function(){ 
+		
+		if(this.timerId){
+			ctrl.clearInterval(this.timerId)
+		}
+		
+		this.timerId = ctrl.setInterval( 
+ 			function(){  
+ 				var bmp,delay = this.next(); 
+				ctrl.setBitmap( bmp ,false/*禁止销毁位图*/) ;  
+	    		ctrl.redraw();
+	    		return delay;
+ 			},0
+ 		) 
+	}; 
+}
+
+/**intellisense()
+win.ui.aniBackground = 创建动画背景窗口,\n建议窗体属性中开启双缓冲优化、以避免闪烁,\n使用 win.ui.layered 也可以创建分层透明窗口
+win.ui.aniBackground(.(winform,transparentColor) = 创建动画背景窗口,\n@winform 参数指定目标窗口,\n可选用 @transparentColor 指定设为透明的颜色, 0xBBGGRR 格式,\n使用 win.ui.layered 可直接支持图像透明度
+win.ui.aniBackground() =  !winUiAniBackground.
+!winUiAniBackground.next() = 返回下一帧位图句柄,以及延时
+!winUiAniBackground.clear() = 释放所有加载的图像
+!winUiAniBackground.add(  = 添加动画帧
+!winUiAniBackground.add(.("图像",延时) = 图像格式支持 png,bmp,jpg,gif 等\n如果要指定透明颜色,应使用无损格式 png 或 bmp
+!winUiAniBackground.animate() = 播放动画
+end intellisense**/
+

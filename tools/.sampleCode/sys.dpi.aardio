@@ -1,0 +1,6 @@
+import console; 
+import sys.dpi;
+
+console.log("当前显示器缩放：" ,sys.dpi.scaling(/*150*/) );
+console.pause(true);
+

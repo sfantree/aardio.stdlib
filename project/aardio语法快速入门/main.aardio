@@ -1,0 +1,152 @@
+import console;
+
+
+
+var print = function(index, obj){
+	console.log(string.format("{%d}, %s", index, tostring(obj)));
+}
+
+// 运算符示范
+var demoOperation = function(){
+	    print(1, 5 / 2.0);
+        print(2, 5 + 2);
+        print(3, 5 * 2);
+        print(4, 5 - 2);
+        print(5, 5 << 2);
+        print(6, 5 >> 2);
+        print(7, 5 & 2); // 0x101 0x010
+        print(8, 5 | 2);
+        print(9, 5 ^ 2);
+        print(10, 5 == 2);
+        print(11, 5 != 2);
+
+        var a = 2;
+        var b = 2.0;
+        a += 2;
+        a = a + 2;
+        print(12, a);
+}
+
+var demoControlFlow = function(){
+	var score = 65;
+    if (score > 80) {
+        print(1, "A");
+    } else if (score > 60) {
+        print(2, "B");
+    } else {
+        print(3, "C");
+    }
+    
+    // switch 符合条件的 case 自动break
+    var grade = "B";
+    select (grade) {
+        case "A" {
+            print(4, "score > 80");
+        }
+        case "B"{
+            print(5, "(60, 80)");
+        }
+        else{
+            print(6, "0,60");
+        }
+    }
+    
+/*
+    for (int i = 0; i < 6; ++i) {
+        if (i == 1) {
+            continue;
+        }
+        if (i == 5) {
+            break;
+        }
+        if (i % 2 == 1) {
+            print(8, "i%2=1");
+        }
+        print(7, i);
+    }
+*/
+    
+    for(i=1;6;1){
+    	if (i == 1) {
+            continue;
+        }
+        if (i == 5) {
+            break;
+        }
+        if (i % 2 == 1) {
+            print(8, "i%2=1");
+        }
+        print(7, i);
+    }
+    
+	var str = "hello";
+	for(i=1;#str;1){
+		var c = str[i];
+	    print(9, string.pack(c));
+	}
+    
+    var target = 20;
+    var current = 0;
+    while (current < target) {
+        current += 5;
+        print(10, current);
+        if (current == 10) {
+            break;
+        }
+    }
+    
+}
+
+
+var demoString = function(){
+	var str = "hello nowcoder";
+    //print(1, str.indexOf('e'));
+    // 获取字符索引
+    print(1, string.indexOf(str, "e"));
+    // 返回指定索引处的字符
+    print(2, string.charAt(str, 6));
+    // 返回指定索引处的字符 ascii
+    print(3, string.charCodeAt(str, 1));
+    // 比较字符串 大小写敏感
+    print(4, string.collate(str, "hello mowcoder"));
+    print(5, string.collate(str, "hello powcoder"));
+    // 比较字符串 忽略大小写
+    print(6, string.cmp(str, "Hello Nowcoder"));
+    // 拼接字符串
+    print(7, string.concat(str, "!!"));
+    // 
+    //print(8, str.contains("hello"));
+    // 匹配字符串末尾 结束
+    print(9, string.endWith(str, "xowcoder"));
+    print(10, string.startWith(str, "hello"));
+    print(11, string.lastIndexOf(str, "o"));
+    print(12, string.upper(str));
+    
+    print(13, string.replace(str, "o", "a"));
+    print(14, string.replace(str, "o|l", "a"));
+    print(15, string.replace(str, "hello", "hi"));
+    
+    import string.builder;
+    // 构建字符串对象
+    var sb = string.builder();
+    sb.append( tostring(ture) );
+    sb.append( tostring(1) );
+    sb.append( tostring(2.2) );
+    print(16, tostring(sb));
+    print(17, "a" ++ "b" ++ tostring(12));
+}
+
+
+// main函数
+if (owner == null) {
+    //demoOperation();
+    //demoControlFlow();
+    //demoString();
+    var strList = {};
+    for(i=1;4;1){
+    	table.push(strList, tostring(i));
+    }
+    
+    
+	console.pause();
+}

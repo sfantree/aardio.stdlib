@@ -1,0 +1,128 @@
+﻿//code VSC编辑器
+import win.reg;
+import fsys;
+import fsys.lnk;
+import process.cache;	 
+import process; 
+
+namespace process;
+
+class code{
+	ctor(parameters, startInfo,...){
+		if(parameters===null) parameters = "";
+		if( ( type(parameters) === type.string ) && ..io.exist(parameters) )
+			parameters = ..io.fullpath(parameters);
+			
+   		if( type(startInfo) == type.string ){
+   			parameters = {parameters;startInfo;...};
+   			startInfo = null;
+   		}
+   		else {
+   			if(..io.exist(parameters) ){
+   				parameters = '"' + parameters + '"'
+   			}
+   		}
+   		
+   		
+   		var sa = ..table.assign(..process.STARTUPINFO(),startInfo);
+		if(!sa.workDir)  sa.workDir = ..fsys.getCurDir();
+   			
+		this = ..process(self.path,parameters, startInfo)
+	}; 
+}
+
+namespace code{
+    
+    getInstallPath = function(){
+        var codePath = ..io.appData("\Programs\Microsoft VS Code\Code.exe");
+		if(..io.exist(codePath)){ 
+			return codePath;
+		}
+		
+		var reg = ..win.regReader("HKEY_CLASSES_ROOT\*\shell\VisualCode\command");
+		if( reg ){
+			var v = reg.queryValue("");
+			reg.close();
+			
+			if( v ){
+				var path = ..string.match(v,`[^"']+`)
+				if( ..io.exist(path) ) return path;
+			}
+		}
+		
+		var reg = ..win.regReader("HKEY_CLASSES_ROOT\Applications\Code.exe\shell\open\command");
+		if( reg ){
+			var v = reg.queryValue("");
+			reg.close();
+			
+			if( v ){
+				var path = ..string.match(v,`[^"']+`)
+				if( ..io.exist(path) ) return path;
+			}
+		}
+		
+		var codePath = ..process.cache.find("Code","Visual Studio Code")
+    	if( codePath ){ 
+        	return codePath;
+    	} 
+    }
+    
+    path = ..io.exist( getInstallPath() );
+    
+    install = function(){
+        
+        path = ..io.exist( getInstallPath() );
+        if(path){
+        	return path;
+        }
+        
+        import inet.installer;
+		var installed = inet.installer.asInvoker("VS Code",function(){
+			
+			import process;
+			import process.admin;
+			import inet.http; 
+			
+			var http = inet.http();
+			
+			var os;
+			if( _WIN_64 ){
+				if(..process.admin.isRunAs()){
+					os = "win32-x64"
+				}
+				else {
+					os = "win32-x64-user"
+				} 
+			}
+			else {
+				if(..process.admin.isRunAs()){
+					os = "win32"
+				}
+				else {
+					os = "win32-user"
+				} 	
+			}
+			
+			var url = http.location("https://code.visualstudio.com/sha/download?build=stable&os="+os)
+			if(!url) return;
+			
+			var tUrl = inet.url.split(url);
+			tUrl.host = "vscode.cdn.azure.cn"; 
+			
+			return tostring(tUrl)
+		},"/SP-  /VERYSILENT /SUPPRESSMSGBOXES /NOCANCEL /NORESTART");
+		
+		if(installed){
+			path = ..io.exist( getInstallPath() );
+			return path;
+		}
+    }   
+}
+
+/**intellisense()
+process.code.path = VS Code安装路径
+process.code.install() = 已安装VS Code 则直接返回安装路径,\n如果未安装VS Code 则下载安装,\n安装完成返回安装路径
+process.code.getInstallPath() = 已安装VS Code 则返回安装路径
+process.code(.(文件,参数,->->->) = 启动VS Code
+process.code() = !process.
+end intellisense**/

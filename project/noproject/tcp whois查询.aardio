@@ -1,0 +1,18 @@
+import wsock.tcp.client;
+import console;
+
+var tcp = wsock.tcp.client()
+tcp.connect("whois.cnnic.net.cn",43);//连接whois CN服务器
+
+data = {
+    BYTE s[] = "google.cn" ++ '\r\n';
+}
+tcp.write( raw.buffer(data) );//结构体可以直接发送
+
+str = tcp.readAll();//接收数据
+str = string.fromto(str);
+tcp.close()
+
+io.open();//打开控制台
+io.print(str);
+console.pause();

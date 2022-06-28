@@ -1,0 +1,94 @@
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form( text="aardio Form";bottom=598;parent=...;right=992 )
+winform.add(
+popupFirstModalFormBtn={ bottom=92;text="弹出第一个模态窗口";left=47;top=42;z=1;right=182;cls="button" }
+)
+/*}}*/
+
+var firstModalFormSource=/***
+
+import win.ui;
+/*DSG{{*/
+var firstModalForm = ..win.form( bottom=493;parent=...;text="第一个模态窗口";right=791 )
+firstModalForm.add(
+popupSecondModalFormBtn={ bottom=93;right=182;left=47;top=43;z=1;text="弹出第二个模态窗口";cls="button" }
+)
+/*}}*/
+
+firstModalForm.onClose = function(hwnd,message,wParam,lParam){
+    firstModalForm.endModal();
+}
+
+firstModalForm.show()
+win.loopMessage();
+return firstModalForm;
+
+***/
+
+var secondModalFormSource=/***
+
+import win.ui;
+/*DSG{{*/
+var secondModalForm = ..win.form( bottom=391;parent=...;text="第二个模态窗口";right=582 )
+secondModalForm.add(
+popupThirdModalFormBtn={ bottom=93;right=182;left=47;top=43;z=1;text="弹出第三个模态窗口";cls="button" }
+)
+/*}}*/
+
+secondModalForm.onClose = function(hwnd,message,wParam,lParam){
+    secondModalForm.endModal();
+}
+
+secondModalForm.show()
+win.loopMessage();
+return secondModalForm;
+
+***/
+
+var thirdModalFormSource=/***
+
+import win.ui;
+/*DSG{{*/
+var thirdModalForm = ..win.form( bottom=312;parent=...;right=428;text="第三个模态窗口" )
+thirdModalForm.add(
+button={ bottom=93;text="弹出一个对话框";left=47;top=43;z=1;right=182;cls="button" }
+)
+/*}}*/
+
+thirdModalForm.button.oncommand = function(id,event){
+    thirdModalForm.msgbox("我是第三模态窗口弹出的对话框","标题")   
+}
+
+thirdModalForm.onClose = function(hwnd,message,wParam,lParam){
+    thirdModalForm.endModal();
+}
+
+thirdModalForm.show()
+win.loopMessage();
+return thirdModalForm;
+
+***/
+
+winform.popupFirstModalFormBtn.oncommand = function(id,event){
+    var firstModalForm=winform.loadForm(firstModalFormSource);
+   
+    firstModalForm.popupSecondModalFormBtn.oncommand = function(id,event){
+        var secondModalForm=firstModalForm.loadForm(secondModalFormSource);
+        
+        secondModalForm.popupThirdModalFormBtn.oncommand = function(id,event){
+            var thirdModalForm=secondModalForm.loadForm(thirdModalFormSource);
+            
+            thirdModalForm.button.oncommand = function(id,event){
+                thirdModalForm.msgbox("我是第三模态窗口弹出的对话框","标题")   
+            }
+            
+            thirdModalForm.doModal(secondModalForm.hwnd)   
+        }
+        secondModalForm.doModal(firstModalForm.hwnd)   
+    }
+    firstModalForm.doModal(winform.hwnd);   
+}
+
+winform.show()
+win.loopMessage();

@@ -1,0 +1,45 @@
+﻿import zlib.httpFile;
+import web.rest.jsonLiteClient;
+
+namespace web.npm;
+
+registry = "http://registry.npmmirror.com"
+download = function(package,version,savePath,parentForm){
+	if(!package) error("请指定包名",2);
+	if(!savePath){ savePath = "/download/npm/" }
+	if(version){
+		var extraDir =  ..io.joinpath(savePath,package+"-"+version,"package");
+		if(..io.exist(extraDir)){
+			return extraDir;
+		}
+	}
+	
+	var http = ..web.rest.jsonLiteClient();
+	var npmRegistry = http.api(registry,"GET")
+	var info = npmRegistry[package]();
+	if(!version){
+		version = (info["dist-tags"].latest);
+		var extraDir =  ..io.joinpath(savePath,package+"-"+version,"package");
+		if(..io.exist(extraDir)){
+			return extraDir;
+		}
+	}
+	var latest = info.versions[ version];
+	if(!latest) return null,"获取版本信息失败";
+	
+	var tagUrl = latest.dist.tarball; 
+	if(tagUrl){
+		var extraDir,err = ..zlib.httpFile.download(tagUrl,"正在下载NPM包:"+package
+			,savePath,,,parentForm : ..win.getActive());
+			
+		if(extraDir){ 
+			return ..io.exist( ..io.joinpath(extraDir,"package") );
+		}
+		
+		return null,err;
+	}
+}
+
+/**intellisense()
+web.npm.download(.(包名,版本号,存储路径,父窗口) = 下载 NPM 包,成功返回解压目录\n如果解压目录已经存在则不下载，直接返回该目录,\n失败返回null,错误信息
+end intellisense**/

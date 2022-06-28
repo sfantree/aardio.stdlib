@@ -1,0 +1,16 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="Web Form";right=759;bottom=469)
+winform.add()
+/*}}*/
+
+import web.form;
+var wb = web.form(winform)
+//设置为手机访问模式
+wb.userAgent = "Mozilla/5.0 (iPhone; U; CPU iPhone OS 4_3_3 like Mac OS X; en-us) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8J2 Safari/6533.18.5"
+wb.go("http://bbs.aardio.com/forum.php")
+
+winform.show(); //显示窗体
+
+//启动消息循环
+win.loopMessage();

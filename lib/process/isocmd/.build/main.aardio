@@ -1,0 +1,12 @@
+import ide;
+import fsys;
+
+var publisDir = ide.getPublisDir();
+if(!#publisDir)return; 
+
+var plinkPubDir =  fsys.joinpath(publisDir,"\lib\process\isocmd\" ); 
+if( ! io.exist(plinkPubDir) ){ 
+	..fsys.createDir(plinkPubDir);
+	var libPath,libDir = io.libpath("process.isocmd")
+	..fsys.copy( fsys.joinpath(libDir,"\.res") ,plinkPubDir,0x10/*_FOF_NOCONFIRMATION*/  | 0x200/*_FOF_NOCONFIRMMKDIR*/); 
+}

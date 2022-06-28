@@ -1,0 +1,70 @@
+﻿ //monitor 网卡流量
+import win.guid;
+namespace inet.monitor;
+
+class MIB_IF_ROW2{
+	LONG InterfaceLuid;
+	int InterfaceIndex;
+	struct InterfaceGuid = ..win.guid();
+	WORD Alias[257];
+	WORD Description[257];
+	int PhysicalAddressLength;
+	BYTE PhysicalAddress[32];
+	BYTE PermanentPhysicalAddress[32];
+	int Mtu;
+	int Type;
+	int TunnelType;
+	int MediaType;
+	int PhysicalMediumType;
+	int AccessType;
+	int DirectionType;
+	byte InterfaceAndOperStatusFlags;
+	int OperStatus;
+	int AdminStatus;
+	int MediaConnectState;
+	struct NetworkGuid = ..win.guid();
+	int ConnectionType;
+	LONG TransmitLinkSpeed;
+	LONG ReceiveLinkSpeed;
+	LONG InOctets;
+	LONG InUcastPkts;
+	LONG InNUcastPkts;
+	LONG InDiscards;
+	LONG InErrors;
+	LONG InUnknownProtos;
+	LONG InUcastOctets;
+	LONG InMulticastOctets;
+	LONG InBroadcastOctets;
+	LONG OutOctets;
+	LONG OutUcastPkts;
+	LONG OutNUcastPkts;
+	LONG OutDiscards;
+	LONG OutErrors;
+	LONG OutUcastOctets;
+	LONG OutMulticastOctets;
+	LONG OutBroadcastOctets;
+	LONG OutQLen;
+}
+
+var ipHlpApi = ..raw.loadDll("IpHlpApi")
+getInfo = function(){  
+	var ret,pMibIfTable2 = ipHlpApi.GetIfTable2({ptr p})
+	var mibIfTable2 = ..raw.convert( pMibIfTable2.p,{int NumEntries})
+		
+	mibIfTable2 = ..raw.convert(pMibIfTable2.p, {
+		int NumEntries;
+		struct table[]={  
+			length = mibIfTable2.NumEntries;
+			MIB_IF_ROW2()
+		};
+	})
+	
+	ipHlpApi.FreeMibTable(pMibIfTable2.p)
+	return mibIfTable2;
+}
+
+/**intellisense()
+inet.monitor = 用于获取网卡流量\n根据论坛用户土冒的原帖提供源码改进\nhttp://bbs.aardio.com/forum.php?mod=viewthread&tid=13751
+inet.monitor.getInfo() = 获取网卡流量信息\n返回格式请参考范例
+end intellisense**/
+

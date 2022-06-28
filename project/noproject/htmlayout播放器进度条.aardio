@@ -1,0 +1,132 @@
+
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="htmlayout播放器进度条";right=759;bottom=469)
+winform.add()
+/*}}*/
+
+import web.layout
+
+var wb = web.layout( winform )
+
+namespace web.layout.behavior.cur {  
+        var cur;
+        var setCurValue = function(value){
+              cur := wb.querySelector(".barbg > .cur").style
+             cur.width = tostring(value) ;                          
+        }
+        var curBtn;
+        var setCurBtnStatus = function(value){
+                curBtn := wb.querySelector(".barbg > .cur .btn");
+                wb.querySelector(".barbg > .cur .btn").active = value            
+        }        
+     onMouseDown = function( ltTarget,ltOwner,x,y,ltMouseParams ) {
+             if(ltTarget.class !== "player" ){
+                        setCurValue(x)
+                     setCurBtnStatus("true")
+             }
+    }  
+     onMouseMove  = function( ltTarget,ltOwner,x,y,ltMouseParams ) {
+             if( ltMouseParams.button_state == 1/*_HL_MAIN_MOUSE_BUTTON*/ ){
+                     if( curBtn ? curBtn.active == "true" ){
+                               setCurValue(x)                        
+                     }
+             }
+    }
+    onMouseUp = function(){
+                 setCurBtnStatus("false")                     
+    }        
+} 
+
+
+wb.html = /**
+<!doctype html>
+<html>
+<head>
+    <style type="text/css">
+    html,body{ height:100%; margin:0;background-color:transparent; } 
+    .player{
+            border:2px solid red;
+            width:493px;
+            padding:30px;
+            padding-left:0px;
+            padding-right:0px;
+            behavior:cur;
+    }
+    .player > .pbar{
+            position: relative;        
+    }
+    .player > .pbar > .barbg{
+            width:493px;
+    }
+    .player > .pbar > .barbg
+    ,.player > .pbar > .barbg > .rdy
+    ,.player > .pbar > .barbg > .cur{
+            height:10px;
+            border-radius:50px;
+    }
+        .player > .pbar > .barbg {
+            background-color:#535353;        
+        }
+        .player > .pbar > .barbg > .rdy{
+                background-color:#999999;
+        }        
+        .player > .pbar > .barbg > .cur{
+                background-color:#C70C0C;
+                position:absolute;
+                max-width:493px;
+                top:0px;
+                left:0px;
+                margin:0px;
+                padding:0px;
+        }
+        .player > .pbar > .barbg > .cur .btn{
+                position:absolute;
+                right:-7px;
+                top:-5px;
+                margin-left:-15;
+                width:20px;
+                height:20px;  
+                border-radius:50%;
+                background-color:white;
+        }
+        .player > .pbar > .barbg > .cur .abc{
+                width:10px;
+                height:10px;                
+                background-color:#B51F15;        
+                border-radius:50%;
+                right:5px;
+                top:5px;
+                position:absolute;
+        }
+}
+    </style>
+</head>
+<body>
+        <div class="player">
+                <!--整个进度条-->
+                <div class="pbar" data-action="noop">
+                        <!--进度条背景-->
+                        <div class="barbg">
+                                <!--缓冲进度-->
+                                <div class="rdy" style="width: 80%;"></div>
+                                <!--播放进度-->
+                                <div class="cur" style="width: 50%;">
+                                        <!--播放进度调节旋钮-->
+                                        <div class="btn">
+                                                <!--中间小圆点-->
+                                                <div class="abc"></div>
+                                                <!--loading旋钮，用于缓冲为0-->
+                                        </div>
+                                </div>
+                        </div>
+                </div>        
+        </div>
+</body>
+</html>
+**/
+
+
+winform.show() 
+win.loopMessage();
+

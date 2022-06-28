@@ -1,0 +1,24 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="关于软件";right=409;bottom=268)
+winform.add(
+richedit={cls="richedit";left=12;top=10;right=398;bottom=253;autohscroll=false;edge=1;multiline=1;z=1}
+)
+/*}}*/
+
+winform.richedit.text = `        Anki2easy是一款简化anki挖空制卡的工具，意在帮助大多数同学快速学会使用anki，抵制贩卖焦虑，割韭菜的知识付费。
+        如果Anki2easy给你带来了任何效益，也请你能以同样的正能量回报这个社会。欢迎在此网址分享和获取来自不同学科的自制卡片： https://ankiweb.net/shared/decks/chinese
+        当前版本：v1.1
+        Anki2easy使用AArdio开发，任何交流和想法欢迎知乎私信@popy32！
+
+`
+winform.richedit.setsel(27, 30);
+
+winform.richedit.setSelCharformat(
+    textColor = 16711680;// 设置cf2 字体颜色
+    yHeight = 200;//设置cf2 字体高度
+)  
+
+winform.show();
+win.loopMessage();
+return winform;

@@ -1,0 +1,116 @@
+//入门
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="layui框架入门";right=1151;bottom=745;parent=...;scroll=1)
+winform.add()
+/*}}*/
+
+//web.form 使用系统自带的 IE 内核,生成的EXE体积很小，
+//即使 WIN10 删除IE浏览器，IE内核浏览器控件仍作为操作系统组件被保留。
+//大家通常低估了IE控件的作用：IE11已普及，一般用不到最新前端技术的话IE控件是非常强大的。
+import web.form;
+//var wb = web.form.ie11( winform,5/*_UIFLAG_DIALOG*/);//低于IE11就自动安装IE11
+
+var wb = web.form( winform);//低于IE11就自动安装IE11
+
+
+import console;
+wb.external={
+	tab = {abc=1;b=2};
+	getAardioArray = function(){
+		return wb.jsArray({12;23;34}); 
+	}
+} 
+
+wb.html = /**
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" type="text/css" href="https://www.layuicdn.com/layui/css/layui.css" />
+  </head>
+
+  <body>
+    <script src="https://www.layuicdn.com/layui/layui.js"></script>
+    <!--您的Layui代码start-->
+    <script type="text/javascript">
+    layui.use(['laydate', 'laypage', 'layer', 'table', 'carousel', 'upload', 'element'], function() {
+      var laydate = layui.laydate //日期
+      ,laypage = layui.laypage //分页
+      ,layer = layui.layer //弹层
+      ,table = layui.table //表格
+      ,carousel = layui.carousel //轮播
+      ,upload = layui.upload //上传
+      ,element = layui.element; //元素操作 等等...
+
+      /*layer弹出一个示例*/
+      //layer.msg('Hello World');
+    });
+    </script>
+    
+    <!--
+        固定宽度 完整宽度
+    -->
+    
+    <div class="layui-container" style="height: 300px; background-color: #35BDD0;">
+        固定宽度 两侧留白
+        <div class="layui-row">
+    		<div class="layui-col-md9" style="height: 50px;background-color: #f6efe9;">
+      		    你的内容 9/12
+    		</div>
+    		<div class="layui-col-md3" style="height: 50px;background-color: #d2c2d1;">
+      		    你的内容 3/12
+      		</div>
+    	</div>
+        <div class="layui-row"></div>
+    </div>
+    
+    <div class="layui-fluid" style="height: 300px; background-color: #fffcaf;">
+        完整宽度
+    </div>
+    
+    
+  </body>
+
+</html>
+**/
+  
+var js = /**
+	console.log( "Hello,Aardio!" )
+	console.log( "Welcome to Aardio!",event.srcElement.id );
+	//枚举js数组
+	$enum(
+		[1,2,3],
+		function(v,i){
+			console.log(v,i)
+		}
+	)
+	//枚举js对象
+	$enum(
+		{a:123,b:456},
+		function(k,v){
+			console.log(k,v)
+		}
+	)
+	//枚举aardio数组
+	$enum(
+		external.getAardioArray(),
+		function(k,v){
+			console.log(k,v)
+		}
+	)
+	//枚举aardio对象
+	$enum(
+		external.tab,
+		function(k,v){
+			console.log(k,v)
+		}
+	)
+**/
+//wb.eventScript(js,"myId","onclick")
+
+winform.show(); 
+
+//进入消息循环
+win.loopMessage(); 

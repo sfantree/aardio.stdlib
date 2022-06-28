@@ -1,0 +1,51 @@
+﻿//编译java源码
+import console; 
+import java; 
+
+var javaCode = /****
+/*
+Java 中的包相当于 aardio 中的库,
+Java 中的 package 语句类似 aardio 中用 namespace 语句定义名字空间。
+
+而且 Java 与 aardio 一样,都要求包(或库)的名字空间与文件名保持一致。
+aardio 到 lib 目录下查找库,而 Java 则到 classpath 中去查找包。
+jre 文件相当于一个虚拟的包目录。默认的aardio将 "/java/" 目录以及其目录下的所有 jar 添加到类搜录路径中。
+
+例如对于aardio.sample.HelloworldApp 这个类,
+我们就需要把他编译到 "/java/aardio/sample/HelloworldApp.class" 这个位置。
+*/
+package aardio.sample; //定义java包   
+import java.io.*; //引入Java包   
+
+public class HelloworldApp{   
+	static native String aardio(String code); 
+	 
+	public static String main(String[] args) {   
+		System.out.println("Hello this is a simply test"); //输出字符串,字符串用引号括起来 
+		System.out.println( args[0]  );  
+		System.out.println( args[1]  ); 
+		return "aardio,你好,这是给你的返回值"; 
+	}  
+	public String name = "HelloworldApp2";
+	public static int static_num = 123;
+	public int test(int a) {   
+		return a + 123;
+	} 
+	public String test_aardio() {  
+		return aardio("import win;win.msgbox('我是Java,我正在执行aardio代码');return true;") ; 
+	}      
+}  
+****/
+string.save("\java\aardio\sample\HelloworldApp.java",javaCode )  
+
+//在调用其他函数以前可自定义 JDK 路径
+//java.path.setJdkHome("C:\Program Files (x86)\Java\jdk1.6.0_45") 
+
+//编译 Java 代码
+var prcs = java.compile("\java\aardio\sample\HelloworldApp.java")
+prcs.logResponse(); //这是一个管理进程，也就是 process.popen 对象
+prcs.close();
+
+console.log("高版本 JDK 中编译的 JAVA 程序不应在低版本的 JRE 中运行。")
+console.log("如果控制台没有显示错误,则编译成功") 
+console.pause()

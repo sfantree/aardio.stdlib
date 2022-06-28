@@ -1,0 +1,45 @@
+import console; 
+// qq群
+thread.invoke( 
+    function(){
+        while(1) {
+            thread.lock("moveState");
+            thread.set("moveState", true);
+            thread.unlock("moveState");
+            sleep(200);
+        }
+    },
+)
+
+thread.invoke( 
+    function(){
+        while(1) {
+            thread.lock("moveState");
+            thread.set("moveState", false);
+            thread.unlock("moveState");
+            sleep(200);
+        }
+    },
+)
+
+thread.invoke( 
+    function(){
+        import console; 
+        while(1) {
+            sleep(200);
+            thread.lock("moveState");
+            //var thread.set("moveState", true);
+            var flag = thread.get("moveState");
+            thread.unlock("moveState");
+            // 多线程调度 console.log(flag);
+            if(flag) {
+                sleep(800);
+            }
+        }
+    },
+)
+
+//var num = console.getNumber( "请输入数值:" )
+
+//console.log("您输入的是" ,num );
+console.pause(true);

@@ -1,0 +1,26 @@
+﻿namespace string;
+
+class srt{
+	ctor(str){
+		var subtitle = ..string.splitEx(str,"\r?\n\r?\n");
+		this = ..table.map(subtitle,function(v,k,result){
+			var lines = ..string.splitEx(v,"[\r\n]+",3); 
+			if(#lines!=3) return;
+			
+			var ticks = ..string.map(lines[2]);
+			if(#ticks!=8) return;
+	
+			return {
+				number = tonumber(lines[1]);
+				startTime = ((ticks[1]  * 60  + ticks[2]) * 60 + ticks[3] ) * 1000 + ticks[4];
+				endTime = ((ticks[5]  * 60  + ticks[6]) * 60 + ticks[7] ) * 1000 + ticks[8]; 
+				timeString = lines[2];
+				text = lines[3];
+			}
+		} );
+	};
+}
+
+/**intellisense()
+string.srt(__) = 解析SRT字幕,输入参数为字符串,返回数组
+end intellisense**/

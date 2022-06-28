@@ -1,0 +1,319 @@
+﻿//propertygrid 属性网格
+import xcgui.ctrl.metaProperty;
+namespace xcgui.ctrl;
+
+class propertygrid{
+
+	ctor(hParentPointer,tParam){ 
+		if(! (hParentPointer || tParam) ) return null;
+		if(type(tParam)!=type.table){
+			this.hPointer = topointer( hParentPointer);
+		}
+		else {
+			if( tParam.resource ) ..xcgui.res.load(tParam.resource);
+			if(tParam.layout){
+				var hEle = ..xcgui.loadLayout(tParam.layout,hParentPointer);
+				if( ::Xcgui.XC_IsHELE (hEle) ){ 
+					if( ::Xcgui.XEle_GetType(hEle) != 0x25/*_XC_PROPERTYGRID*/) return null; 
+					::Xcgui.XEle_AdjustLayoutObject(hEle);
+					this.hPointer = topointer(hEle);
+				}
+				else {
+					return null;
+				}
+			}
+			else {
+				this.hPointer = topointer( ::Xcgui.XPGrid_Create (tParam.left,tParam.top,tParam.right-tParam.left,tParam.bottom-tParam.top,hParentPointer) );	
+			}	
+		}
+	};
+	
+	@_metaProperty;
+} 
+	
+propertygrid._metaProperty = metaProperty(
+	addItem = function(pName,parentId,nType){
+		return ::Xcgui.XPGrid_AddItem(owner.hPointer,pName,nType,parentId);
+	}
+	addString = function(pName,pValue,parentId){
+		return ::Xcgui.XPGrid_AddItemString(owner.hPointer,pName,pValue,parentId);
+	}
+	addEdit = function(pName,parentId){
+		return ::Xcgui.XPGrid_AddItem(owner.hPointer,pName,1,parentId);
+	}
+	addColor = function(pName,parentId){
+		return ::Xcgui.XPGrid_AddItem(owner.hPointer,pName,2,parentId);
+	}
+	addFile = function(pName,parentId){
+		return ::Xcgui.XPGrid_AddItem(owner.hPointer,pName,3,parentId);
+	}
+	addSet = function(pName,parentId){
+		return ::Xcgui.XPGrid_AddItem(owner.hPointer,pName,4,parentId);
+	}
+	addComboBox= function(pName,parentId){
+		return ::Xcgui.XPGrid_AddItem(owner.hPointer,pName,5,parentId);
+	}
+	addGroup= function(pName,parentId){
+		return ::Xcgui.XPGrid_AddItem(owner.hPointer,pName,6,parentId);
+	}
+	clear = function(){
+		return ::Xcgui.XPGrid_DeleteAll(owner.hPointer);
+	}
+	getItem = function(nItemId){
+		return ..xcgui.ctrl.queryObject( ::Xcgui.XPGrid_GetItemHELE(owner.hPointer,nItemId) );
+	}
+	setWidth = function(nWidth){
+		return ::Xcgui.XPGrid_SetWidth(owner.hPointer,nWidth);
+	}
+	setItemValue = function(nItemId,pValue){
+		return ::Xcgui.XPGrid_SetItemValue(owner.hPointer,nItemId,pValue);
+	}
+	setItemInt = function(nItemId,nValue){
+		return ::Xcgui.XPGrid_SetItemValueInt(owner.hPointer,nItemId,nValue);
+	}
+	setItemData = function(nItemId,nUserData){
+		return ::Xcgui.XPGrid_SetItemData(owner.hPointer,nItemId,nUserData);
+	}
+	getItemData = function(nItemId){
+		return ::Xcgui.XPGrid_GetItemData(owner.hPointer,nItemId);
+	}
+	getItemValue = function(nItemId){
+		return ::Xcgui.XPGrid_GetItemValue(owner.hPointer,nItemId);
+	}
+	hitTest = function(x,y){
+		var expandButton = {bool value}
+		var item = ::Xcgui.XPGrid_HitTest(owner.hPointer,::POINT(x,y),expandButton);
+		return item,expandButton.value;
+	}
+	hitTestOffset = function(pPt,pbExpandButton){
+		var expandButton = {bool value}
+		var item = ::Xcgui.XPGrid_HitTestOffset(owner.hPointer,::POINT(x,y),expandButton);
+		return item,expandButton.value;
+	}
+	expandItem = function(nItemId,bExpand){
+		return ::Xcgui.XPGrid_ExpandItem(owner.hPointer,nItemId,bExpand);
+	}
+	selItemId ={
+		_get = function(){
+			return ::Xcgui.XPGrid_GetSelItem(owner.hPointer);
+		}
+		_set = function(v){
+			return ::Xcgui.XPGrid_SetSelItem(owner.hPointer,v);
+		}
+	}
+	setDrawItemBkFlags = function(nFlags){
+		return ::Xcgui.XPGrid_SetDrawItemBkFlags(owner.hPointer,nFlags);
+	}
+)
+
+/**intellisense()
+xcgui.ctrl.propertygrid(.(父窗口,参数表) = 创建一个属性网格
+xcgui.ctrl.propertygrid() = !stdxcpropertygrid.
+win.ui.ctrl.xcpropertygrid() = !stdxcpropertygrid.
+end intellisense**/
+
+/**intellisense(!stdxcpropertygrid)
+addItem(.(name,parentId,type) = 添加项,省略type添加文本项,省略parentId添加到根节点
+addString(.(name,value,parentId) = 添加字符串值,省略parentId添加到根节点
+addEdit(.(name,parentId) = 添加可编辑文本项,省略parentId添加到根节点
+addColor(.(name,parentId) = 添加颜色选择项,省略parentId添加到根节点 
+addFile(.(name,parentId) = 添加文件选择项,省略parentId添加到根节点 
+addSet(.(name,parentId) = 添加设置,省略parentId添加到根节点 
+addComboBox(.(name,parentId) = 添加下拉组合框,省略parentId添加到根节点 
+addGroup(.(name,parentId) = 添加分组,省略parentId添加到根节点 
+clear() = 清空
+getItem(__) = 获取项
+setWidth(__) = 设置宽度
+setItemValue(.(nItemId,pValue) = 设置字符串值
+setItemInt(.(nItemId,nValue) = 设置整型数值
+setItemData(.(nItemId,nUserData) = 设置附加数据
+getItemData(__) = 获取附加数据
+getItemValue(__) = 获取文本值
+hitTest(.(x,y) = 检查坐标点所在项
+hitTestOffset(.(x,y) = 检查坐标点所在项,自动添加滚动视图偏移量
+expandItem(.(itemId,bExpand) = 展开项
+selItemId = 当前选中项ID 
+setDrawItemBkFlags(__) = 设置背景绘制选项
+background = 获取控件的背景管理器\n!stdxcbkmanager.
+bkAddFill(.("状态",图像,颜色数值或RGB分量) = 设置控件填充颜色\n可用的背景状态请查看xcgui.state
+bkAddImage(.("状态",图像) = 设置窗口顶部图像\n图像可直接指定路径或资源路径,也可使用xcgui.image对象
+bkAddBorder(.("状态",线宽,透明度,RGB颜色) = 添加背景边框\n状态可以是字符串或数值,可用值参考xucgui.state
+id = ID值
+z = Z序
+topmost(true) = Z序置顶
+getWindow() = 返回父窗体\n!stdxcwnd
+hitEle(.(x,y) = 根据指定的坐标获取子节点\n!stdxcele
+getParent() = 获取父节点\n!stdxcele
+getParentHandle() = 获取父节点句柄
+getParentType() = 获取父节点类型
+getObjectType() = 获取节点类型
+addEle(__) = 添加子节点
+insertEle(.(child,index) = 在index指定的位置插入子节点child 
+remove() = 移除元素,但不销毁.
+disabled = 是否禁用
+hide = 是否隐藏;
+pointerEvents = 是否触发鼠标事件\n值设为false可实现鼠标穿透效果
+transparent = 是否支持背景透明\n透明PNG图像需要设置此属性为true
+alpha = 透明度
+color = 字体颜色
+border = 设置是否允许显示边框\n只写属性
+focusBorderColor = 焦点边框颜色
+enableDrawFocus = 是否允许绘制焦点
+focusBorder = 是否启用焦点
+scrollView = 是否允许显示滚动
+tabstop = 是否允许键盘切换焦点
+tooltip = 提示文本
+css("__") = 修改CSS样式名\n无参数时返回CSS样式名
+popupToolTip(.(x,y) = 在指定坐标弹出提示
+getFont() = 获取字体\n!stdxcfont.
+setFont(.(字体名,字体大小,样式) = 创建字体
+setFont(.(字体名） = 设置字体
+setFont(.(name="字体"） = 设置字体\n参数为LOGFONT对象，或指定部分LOGFONT属性的表
+setFont(.(句柄） = 设置字体\n参数为字体句柄
+getClientRect() = 返回客户区区块,::RECT对象\n!rect. 
+getRect = 返回控件区块,::RECT对象\n!rect. 
+setRect(.(rect,是否重绘) = 设置区块,参数@1为::RECT对象
+getLogicRect = 返回控件逻辑区块,::RECT对象\n!rect. 
+setLogicRect(.(rect,是否重绘) = 设置控件逻辑区块,参数@1为::RECT对象
+setPos(.(x坐标,y坐标,宽,高) = 调整控件位置或排序,所有参数可选\n同时指定x,y坐标则移动位置\n同时指定宽高则改变大小
+getPos() = 返回相对坐标,宽,高,返回4个值：x,y,cx,cy
+autoResize = 是否允许aardio窗口自动调整控件位置\n只有在窗口设计器中添加的控件,并是aardio窗口对象的成员时此属性才有效
+getWidth() = 获取宽度
+getHeight() = 获取高度
+layoutObject = 获取或绑定布局对象\n获取布局对象时如果布局对象不存在则自动创建\n!stdxclayoutObj.
+getParentLayoutObject() = 获取父布局对象
+adjustLayoutObject() = 调整布局对象
+adjustLayout() = 调整布局
+setLayoutHeight(.(宽度,选项) = 设置布局宽度
+setLayoutWidth(.(高度,选项) = 设置布局高度 
+cursor = 鼠标指针
+redraw() = 重绘
+redrawRect(__) = 重绘区块,参数为::RECT对象
+close() = 销毁控件
+post("click__",wParam,lParam) = 发送消息,不获取返回值\n参数@1可使用任何字符串自定义新的控件消息
+send("click__",wParam,lParam) = 发送消息,获取消息处理函数的返回值\n任何一个事件回调函数返回非null值都会结束当次事件并返回该值,\n参数@1可使用任何字符串自定义新的控件消息
+.onMessage= @.on("message",function(message,wParam,lParam){
+	if( message == "自定义消息" ) return __/*返回非null值结束本次回调*/;
+})
+.onChange = @.on("pgridChange",function(nItemId){
+	__
+})
+
+.onItemSet = @.on("pgridItemSet",function(nItemId){
+	__
+})
+
+.onItemSelect = @.on("pgridItemSelect",function(nItemId){
+	__
+})
+
+.onItemAdjustCoordinat= @.on("pgridItemAdjustCoordinat",function(pItem){
+	__
+})
+
+.onItemDestroy = @.on("pgridItemDestroy",function(nItemId){
+	__
+})
+
+.onPaint = @.on("paint",function(hDraw){
+	__
+})
+.onPaintEnd = @.on("paintEnd",function(hDraw){
+	__
+})
+.onPaintScrollView = @.on("paintScrollView",function(hDraw){
+
+})
+.onMove = @.on("move",function(nFlags,pt){
+	
+	__
+})
+.onEnter = @.on("enter",function(){
+
+})
+.onHover = @.on("hover",function(nFlags, pt){
+	
+	__
+})
+.onLeave = @.on("leave",function(hEleHover){
+
+})
+.onWheel = @.on("wheel",function(nFlags,pt){
+	
+	__
+})
+.onLbuttonDown = @.on("lbuttonDown",function(nFlags, pt){
+	
+	__
+})
+.onLbuttonUp = @.on("lbuttonUp",function(nFlags, pt){
+	
+	__
+})
+.onRbuttonDown = @.on("rbuttonDown",function(nFlags, pt){
+	
+	__
+})
+.onRbuttonUp = @.on("rbuttonUp",function(nFlags, pt){
+	
+	__
+})
+.onDblclick = @.on("dblclick",function(nFlags, pt){
+	
+	__
+})
+.onFocus = @.on("focus",function(){
+	__
+})
+.onKillFocus = @.on("killFocus",function(){
+	__
+})
+.onDestroy = @.on("destroy",function(){
+	__
+})
+.onSize = @.on("size",function(){
+	__
+})
+.onShow = @.on("show",function(shown){
+	__
+})
+.onSetFont = @.on("font",function(){
+	__
+})
+.onKeyDown = @.on("keyDown",function(wParam,lParam){
+	__
+})
+.onChar = @.on("char",function(wParam,lParam){
+	__
+})
+.onSetCapture = @.on("setCapture",function(){
+	__
+})
+.onKillCapture = @.on("killCapture",function(){
+	__
+})
+.onCursor = @.on("cursor",function(wParam,lParam){
+	__
+})
+.onDropfiles = @.on("dropfiles",function(wParam){
+	var files = ..win.getDropFile(wParam) __
+})
+.onMenuPopup = @.on("menuPopup",function(hMenu){
+	__
+})
+.onMenuPopupWnd = @.on("menuPopupWnd",function(hMenu,pInfo){
+	__
+})
+.onMenuSelect = @.on("menuSelect",function(id){
+	__
+})
+.onMenuDrawBackground = @.on("menuDrawBackground",function(hDraw,pInfo){
+	__
+})
+.onMenuDrawitem = @.on("menuDrawitem",function(hDraw,pInfo){
+	__
+})
+.onMenuExit = @.on("menuExit",function(){
+	__
+})
+end intellisense**/

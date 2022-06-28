@@ -1,0 +1,52 @@
+import win.ui;
+//导入自定义的用户库
+/*DSG{{*/
+mainForm = win.form(text="haha";right=378;bottom=270;border="dialog frame";edge=1;frame=1;parent=...)
+mainForm.add(
+button={cls="button";text="Button";left=22;top=197;right=167;bottom=241;z=2};
+edit={cls="edit";left=25;top=27;right=356;bottom=171;edge=1;multiline=1;z=1}
+)
+/*}}*/
+
+var httpPost = function(content){
+    //string.hex(.(字符串,前缀,忽略字符串)
+    
+    if(type(content) != "string") {
+        return "";
+    }
+    
+	import inet.http;
+	var http = inet.http();
+	var escapeContent = string.escape(content, true, true);
+	var postTemplate = `
+	{
+		"action": "addNote",
+		"version": 6,
+		"params": {
+			"note": {
+				"deckName": "\u9ed8\u8ba4",
+				"modelName": "\u586b\u7a7a\u9898",
+				"tags": [
+					""
+				],
+				"fields": {
+					"\u6587\u5b57": "%s"
+				}
+			}
+		}
+	}
+	`
+	var postData = string.format(postTemplate, escapeContent);
+	var html,err,errCode = http.post("http://eu.httpbin88.org/post"
+    	,postData );
+    http.close();
+    return html;
+}
+
+
+mainForm.button.oncommand = function(id,event){
+	httpPost("中国制造");
+}
+
+mainForm.show()
+win.loopMessage();

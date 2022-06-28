@@ -1,0 +1,28 @@
+//动态GIF
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="plus - GIF 动画";right=759;bottom=469;bgcolor=16777215)
+winform.add(
+plus={cls="plus";left=0;top=0;right=760;bottom=470;notify=1;repeat="scale";z=1}
+)
+/*}}*/
+
+/*
+引入 inet.http 以后，plus 控件就可以支持网络图像。
+plus 控件下载图像并未创建多线程，所以不适合用这种方法下载大图像。
+这里仅仅是方便演示，实际开发用本地图像加载会更快。
+*/
+import inet.http;
+winform.plus.background = "http://download.aardio.com/v10.files/demo/transparent.gif";
+
+/*
+winform.plus.onMouseHover = function(wParam,lParam){
+	winform.plus.background.stopAnimation(); //停止动画
+}
+
+winform.plus.onMouseLeave = function(wParam,lParam){
+	winform.plus.background.createAnimation(); //开始动画
+}
+*/
+winform.show() 
+win.loopMessage();

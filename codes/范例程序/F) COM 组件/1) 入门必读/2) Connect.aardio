@@ -1,0 +1,82 @@
+//响应事件
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="响应COM事件";right=759;bottom=469)
+winform.add(
+edit={cls="edit";left=9;top=13;right=749;bottom=457;db=1;dl=1;dr=1;dt=1;edge=1;multiline=1;z=1}
+)
+/*}}*/
+
+//创建 COM 对象,注意服务器系统没这个控件
+var wmPlayer = com.CreateObject("WMPlayer.OCX"); //注意 win.ui 自动导入了 com 库。
+
+//定义事件对象
+var ocxEvents1 = { 
+	StatusChange = function() { 
+		winform.edit.print("StatusChange",wmPlayer.Status)
+	};
+	MediaChange = function(item){
+		winform.edit.print("ocxEvents1.MediaChange",item.sourceURL)
+	}; 
+}
+
+//第一种最简单的写法：挂接默认的事件监听器
+com.Connect(wmPlayer, ocxEvents1);
+
+//下面是第二种复杂的写法：挂接指定接口的事件监听器
+var ocxEvents2 = {
+	MediaChange = function(item) { 
+		winform.edit.print("ocxEvents2.MediaChange",item.sourceURL)
+	}
+}
+var eventSink =  com.ImplInterface(ocxEvents2,"WMPlayer.OCX.7","_WMPOCXEvents")
+var cookie = com.AddConnection( wmPlayer,eventSink );//挂接事件监听器
+ 
+//释放前面挂接的事件监听器
+com.ReleaseConnection(wmPlayer,eventSink,cookie);
+
+//使用 COM 对象打开指定的音频
+wmPlayer.url = "http://download.aardio.com/v10.files/demo/mp3/lrc.mp3"
+
+/*
+请仔细阅读下面这段说明，
+实际上我们使用 COM 控件上基本遇不到下面的要讲的问题，
+甚至基本不用自己绑定事件监听器，但这背后的基本规则必须要有所了解。
+不然这个范例后面的几个范例你是看不懂的。
+
+注意绑定事件的 com.Connect() 或 com.AddConnection() 
+会将参数@1指定的 COM 对象,以及参数@2指定的事件表对象强绑定，
+这里如果不小心建立了循环引用，会导致2个对象都无法自动释放。
+注意：普通 aardio 表对象之间循环引用不会导致相同的问题。
+
+所以一般应当避免绑定自身作为事件监听器，例如：
+com.Connect(comObject, comObject)
+
+或者绑定引用了 com 对象的对象作为事件监听器，例如：
+com.Connect(eventTable.comObject, eventTable)
+试想一下： eventTable.comObject 必须保持 eventTable 不被释放，
+eventTable 是通过 COM 对象被引用，他并不清楚是谁在引用他。
+而 eventTable 必须保持 eventTable.comObject 不被释放，
+所以认证也不敢先释放。
+
+但我们可能希望通过同一个对象访问COM对象并指定事件回调函数，
+aardio 提供了 com.ConnectWeak() 以及 com.CreateEmbedEx() 可以实现这样的功能。
+aardio 可以利用元表轻松地将一个表代理到另一个表、或建立弱引用表解决这种问题。
+有兴趣可以看看这几个函数的源码（ 位于标准库：preload.com ）。
+
+实际上我们很少需要自己绑定事件并使用 com.Connect() 这些函数，
+因为一般只有嵌入窗口的COM控件才需要响应事件，而 aardio 中嵌入窗口控件的
+winform.createEmbed(),winform.createEmbedEx() 已经自动绑定事件监听器，
+这几个函数内部虽然是绑定自身为事件监听器并存在前述的循环引用，
+但是已经在宿主窗口销毁前自动解除事件监听并释放对象，所以可以正常释放。
+解决问题的方法有很多。
+*/
+
+/*
+为了简化，这里创建的 WMPlayer.OCX 没有嵌入到窗主窗口，
+但要注意如果要愉快的听歌，需要下面的 win.loopMessage()
+关闭窗口退出程序以后，COM 控件也会随之退出。
+*/
+
+winform.show();
+win.loopMessage();

@@ -1,0 +1,116 @@
+//glass 玻璃窗口
+//http://bbs.aardio.com/forum.php?mod=viewthread&tid=11460
+
+import gdip.graphics;
+import gdip.solidBrush;
+import gdip.path;
+import win.ui.minmax;
+import win.ui.resizeBorder;
+
+class win.ui.glass{
+	ctor( winform,bgcolor=0x11ffffff,roundRadius=8,shadowColor=0xffc9bc9c9,shadowLength=1) {
+		var x,y,cx,cy = winform.getPos();
+		var maxbox = !! ..win.getStyle(winform.hwnd,0x10000/*_WS_MAXIMIZEBOX*/);
+		var frmShadow = ..win.form(
+			text = winform.text;left=x;top=y;right=x+cx;bottom=y+cy;
+			border = "none";mode="popup";title=false;max=maxbox;
+		)
+		if( maxbox ){
+			..win.ui.resizeBorder(frmShadow);
+			..win.ui.minmax( frmShadow );
+		}
+		
+		this._form = frmShadow;
+		..win.setOwner( winform.hwnd, frmShadow.hwnd );
+		
+		
+		this.onDrawShadow = function(hdc,hMemDc,hMemBitmap,width,height){
+			var graphics = ..gdip.graphics(hMemDc);
+			graphics.smoothingMode = 4/*_GdipSmoothingModeAntiAlias*/;
+			var diameter = roundRadius*2;//圆角直径
+			
+			var bgRight = width - shadowLength-1;
+			var bgBottom = height - shadowLength-1;
+			var path = ..gdip.path();
+			
+			//绘制背景圆角矩形路径
+			path.addArc(bgRight-diameter,shadowLength,diameter,diameter,270,90);
+			path.addArc(bgRight-diameter,bgBottom-diameter,diameter,diameter,0,90);
+			path.addArc(shadowLength,bgBottom-diameter,diameter,diameter,90,90);
+			path.addArc(shadowLength,shadowLength,diameter,diameter,180,90);
+			path.closeFigure();
+			
+			//填充路径
+			var bgBrush = ..gdip.solidBrush(bgcolor);			
+			graphics.fillPath(bgBrush,path);
+			
+			//绘制阴影圆角矩形路径
+			path.addArc(width-diameter,0,diameter,diameter,270,90);
+			path.addArc(width-diameter,height-diameter,diameter,diameter,0,90);
+			path.addArc(0,height-diameter,diameter,diameter,90,90);
+			path.addArc(0,0,diameter,diameter,180,90);
+			path.closeFigure();
+			
+			var shadowBrush = ..gdip.solidBrush(shadowColor);
+			graphics.fillPath(shadowBrush,path);
+			
+			//删除所有GDI+对象
+			bgBrush.delete()
+			shadowBrush.delete();
+			path.delete();
+			graphics.delete();
+		}
+		
+		
+		this._onDrawShadow = function(){
+			..gdi.layeredBuffer( frmShadow.hwnd, 
+				function( hdc,hMemDc,hMemBitmap,width,height ){
+					this.onDrawShadow(hdc,hMemDc,hMemBitmap,width,height)
+					..gdi.updateLayeredWindow( frmShadow.hwnd,hMemDc,::SIZE(width,height) ,..gdi.blendFunction(255/*透明度*/)  );  
+				}
+			)
+		}
+		frmShadow._adjust = function( cx,cy,wParam ) {	 
+	 		winform.setRect( frmShadow.getRect(true) );
+	 		this._onDrawShadow(bgcolor,roundRadius,shadowColor,shadowLength);
+		};
+		
+		frmShadow.transparent(true);
+		winform.transparent( ,winform.bgcolor)
+		
+		frmShadow.wndproc = function(hwnd,message,wParam,lParam){
+			select(message) {
+				case 0x201/*_WM_LBUTTONDOWN 鼠标按下*/{
+					frmShadow.hitCaption()
+				}
+				case 0x204/*_WM_RBUTTONDOWN*/{    
+					::SendMessageInt( winform.hwnd,message,wParam,lParam);
+				}
+				case 0x3/*_WM_MOVE*/{
+					frmShadow.adjust();
+				}
+			} 
+		}
+		
+		winform.wndproc  = function(hwnd,message,wParam,lParam){
+			select(message) {
+				case 0x10/*_WM_CLOSE*/{
+					frmShadow.close();
+				}
+				case 0x18/*_WM_SHOWWINDOW*/ {
+					frmShadow.show(wParam);
+					frmShadow.adjust();
+				}
+			} 
+		}
+	};
+	
+}
+
+/**intellisense()
+win.ui.glass = 玻璃窗口
+win.ui.glass(.(窗口对象,背景色,圆角大小,阴影色,阴影大小) = 窗体如果指定WS_MAXIMIZEBOX样式则添加拖动调整大小边框\n除参数@1必须指定winfom对象以外,其他所有参数可选,\n参数默认值及具体用法请查看支持库源码
+win.ui.glass() = !win_ui_glass.
+!win_ui_glass._form = !winform.
+!win_ui_glass.onDrawShadow(hdc,hMemDc,hMemBitmap,width,height) = @.onDrawShadow = function(hdc,hMemDc,hMemBitmap,width,height){\n	var graphics = ..gdip.graphics(hMemDc);\n	graphics.smoothingMode = 4/*_GdipSmoothingModeAntiAlias*/;\n	__\n	graphics.delete();\n} 
+end intellisense**/

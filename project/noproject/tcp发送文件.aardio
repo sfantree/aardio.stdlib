@@ -1,0 +1,8 @@
+import wsock.tcp.client;
+
+var tcp = wsock.tcp.client()
+tcp.connect("127.0.0.1",7510)
+
+file = io.open("/tcp.txt","w+b");
+for( str in tcp.eachRead() )
+    file.write( str )

@@ -1,0 +1,4 @@
+import console; 
+import inet
+inet.clearCookie("aardio.com")
+console.pause(true);

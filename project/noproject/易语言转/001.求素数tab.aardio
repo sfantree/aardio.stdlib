@@ -1,0 +1,63 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=319;bottom=151)
+winform.add(
+button={cls="button";text="开始计算";left=40;top=112;right=128;bottom=136;z=8};
+edit2={cls="edit";text="50";left=8;top=8;right=96;bottom=32;edge=1;z=1};
+edit3={cls="edit";text="50";left=88;top=40;right=176;bottom=64;edge=1;z=5};
+edit4={cls="edit";text="50";left=88;top=80;right=176;bottom=104;edge=1;z=6};
+listview={cls="listview";left=200;top=8;right=304;bottom=136;edge=1;z=7};
+static={cls="static";text="以内的素数为：";left=112;top=8;right=208;bottom=32;center=1;transparent=1;z=2};
+static2={cls="static";text="最大素数：";left=8;top=40;right=104;bottom=64;center=1;transparent=1;z=3};
+static3={cls="static";text="素数个数：";left=8;top=72;right=104;bottom=104;center=1;transparent=1;z=4}
+)
+/*}}*/
+
+var isPrime = function(n){
+	if(n <= 1) {
+	    return false;
+	} elseif(n == 2 or n == 3){
+	    return true;
+	} else {
+	    var maxRange = math.floor(math.sqrt(n)) + 1;
+	    for(i=2;maxRange;1){
+	    	if(n % i == 0) {
+	    	    return false;
+	    	}
+	    }
+	    return true;
+	}
+}
+
+
+winform.button.oncommand = function(id,event){
+    winform.listview.clear(true);
+    winform.listview.insertColumn("列表", -1)
+	var maxRange = tonumber(winform.edit2.text);
+	var t = {}
+	for(i=2;maxRange;1){
+		if(isPrime(i)) {
+		    table.push(t, i);
+		    
+		    winform.listview.addItem(tostring(i));
+		}
+	}
+	//winform.listview.addItem();
+	winform.edit3.text = tostring(t[table.len(t)])
+	winform.edit4.text = tostring(table.len(t))
+}
+
+winform.edit2.oncommand = function(id,event){
+	
+}
+
+winform.edit4.oncommand = function(id,event){
+	
+}
+
+winform.edit3.oncommand = function(id,event){
+	
+}
+
+winform.show();
+win.loopMessage();

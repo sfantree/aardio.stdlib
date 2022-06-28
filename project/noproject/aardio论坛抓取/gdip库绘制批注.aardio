@@ -1,0 +1,55 @@
+import win.ui;
+import gdip;
+/*DSG{{*/
+mainForm = ..win.form( text="画画批注，不保证重绘！";bottom=361;parent=...;right=471 )
+mainForm.add(
+button={ bottom=189;right=461;left=384;top=149;z=1;text="gdi+画批注";cls="button" };
+static={ bottom=345;right=370;left=51;top=51;z=2;transparent=1;border=1;cls="static" };
+button2={ bottom=232;right=461;left=384;top=192;z=3;text="move";cls="button" }
+)
+/*}}*/
+
+mainForm.button2.oncommand = function(id,event){
+        //mainForm.msgbox( mainForm.button2.text );
+        mainForm.static.setPos(30,30);
+       
+}
+mainForm.button.oncommand = function(id,event){
+        //mainForm.msgbox( mainForm.button.text );
+        var graphics = gdip.graphics(mainForm.static);
+        graphics.smoothingMode = 4/*_GdipSmoothingModeAntiAlias*/ ;
+        var re,Pen = gdip.CreatePen1( 0xFFFF0000, 2, 2/*_GdipUnitPixel*/ );
+        var path=gdip.path(0/*_GdipFillModeAlternate*/);
+        gdip.AddPathArc(path,30,80,50,50,180,90);
+        gdip.AddPathArc(path,230,80,50,50,270,90);
+        gdip.AddPathArc(path,230,130,50,50,0,90);
+        gdip.AddPathLineI(path,230,180,140,180);
+        gdip.AddPathLineI(path,140,180,100,250);
+        gdip.AddPathLineI(path,100,250,110,180);
+        gdip.AddPathArc(path,30,130,50,50,90,90);
+        gdip.AddPathLineI(path,30,130,30,100)
+        graphics.drawPath( Pen, path);
+       
+        var re,Brush = gdip.CreateSolidFill(0xff0000ff);
+       
+        var family = gdip.family("宋体");
+        var strformat = gdip.stringformat ( );
+        strformat.align = 0/*_GdipStringAlignmentNear*/;
+        var curFont = family.createFont( 28,1/*_GdipFontStyleItalic*/, 2/*_GdipUnitPixel*/)
+
+        graphics.textRenderingHint = 3/*_GdipTextRenderingHintAntiAliasGridFit*/;
+        rclayout = gdip.RECTF();
+        rclayout.left = 40
+        rclayout.top = 100
+        rclayout.right = 240
+        rclayout.bottom = 150
+        graphics.drawString( "aardio真不错!"+'\n'+"欢迎大家来学习!"  , curFont, rclayout, strformat,Brush);
+        gdip.DeleteFont(curFont);
+        gdip.DeleteBrush(Brush);
+       
+        strformat.delete();
+        family.delete();
+}
+
+mainForm.show()
+win.loopMessage();

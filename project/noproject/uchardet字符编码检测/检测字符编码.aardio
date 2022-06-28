@@ -1,0 +1,101 @@
+/*
+edit: popy32
+contact: 740502708#qq.com
+*/
+
+import console;
+import win;
+
+var dll = raw.loadDll( "/libuchardet.dll" );
+
+/*
+uchardet_t uchardet_new(void)
+void uchardet_delete(uchardet_t ud)
+
+int uchardet_handle_data(uchardet_t ud, const char * data, size_t len)
+int retval = uchardet_handle_data(handle, buffer, len);
+
+void uchardet_data_end(uchardet_t ud)
+uchardet_data_end(handle);
+
+const char* uchardet_get_charset(uchardet_t ud)
+const char * charset = uchardet_get_charset(handle);
+
+uchardet_delete(handle);
+*/
+
+/*
+查看dll导出表：看头文件或dll review
+c api <-> aardio api
+*/
+var uchardet_new = dll.api( "uchardet_new","pointer(void)", "cdcel" );
+var uchardet_delete = dll.api( "uchardet_delete","void(pointer)", "cdcel" );
+var uchardet_handle_data = dll.api( "uchardet_handle_data","int(pointer, string, INT)", "cdcel" );
+var uchardet_get_charset = dll.api( "uchardet_get_charset", "string(pointer)", "cdcel" );
+var uchardet_data_end = dll.api( "uchardet_data_end","void(pointer)", "cdcel" );
+
+
+/*
+char buffer[BUFFER_SIZE];
+
+void detect(FILE * fp)
+{
+    uchardet_t handle = uchardet_new();
+
+    while (!feof(fp))
+    {
+        size_t len = fread(buffer, 1, BUFFER_SIZE, fp);
+        int retval = uchardet_handle_data(handle, buffer, len);
+        if (retval != 0)
+        {
+            fprintf(stderr, "Handle data error.\n");
+            exit(1);
+        }
+    }
+    uchardet_data_end(handle);
+
+    const char * charset = uchardet_get_charset(handle);
+    if (*charset)
+    	printf("%s\n", charset);
+	else
+		printf("unknown\n");
+	
+    uchardet_delete(handle);
+}
+*/
+
+/*
+再封装一层函数方便调用
+*/
+var getStringCodec = function(strBuffer){
+	if(type(strBuffer) != type(type.string)) {
+	    return nil;
+	}
+	var pHandle = uchardet_new();
+	var retval = uchardet_handle_data(pHandle, strBuffer, #strBuffer + 1);
+	uchardet_data_end(pHandle);
+	var codecType = uchardet_get_charset(pHandle); 
+	uchardet_delete(pHandle);
+	return codecType;
+}
+
+
+/*
+调用示例
+事实aardio支持utf8，默认做了编码处理
+但计算机底层的编解码原理，编解码逻辑一定要熟悉掌握。
+*/
+var strBuffer = "中华汉字，生动形象。传播文明，盖世无双。";
+var result = getStringCodec(strBuffer);
+console.log(result);
+
+var strBuffer2 = string.fromto(strBuffer,65001,0) ;
+result = getStringCodec(strBuffer2);
+console.log(result);
+
+var strBuffer3 = "物語を創りあげるのも自分なら、絵を描くのも自分。ただペン一本だけで、胸キュンの少女漫画も、アクションたっぷりの少年漫画も、どんな世界も生み出してしまう“漫画家”という仕事。浦沢直樹さんが、人気漫画の創作の秘密に迫るこの番組では、毎回、有名漫画家の驚くべき技と熱い思いが浮き彫りになります。";
+result = getStringCodec(string.fromto(strBuffer3,65001,932));
+
+console.log(result);
+
+console.pause(true);

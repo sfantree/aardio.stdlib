@@ -1,0 +1,10 @@
+import zlib.swf; 
+
+//打开swf文件
+var swfFile = zlib.swf( "\test.swf" )
+
+//压缩
+swfFile.compress()
+
+//解压缩
+swfFile.uncompress()

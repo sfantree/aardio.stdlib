@@ -1,0 +1,42 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add()
+/*}}*/
+import console;
+import win.reg;
+
+var reg;
+reg = win.regReaderWow64("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings") ;
+var ProxyEnable = reg.queryValue("ProxyEnable");
+var ProxyServer = reg.queryValue("ProxyServer");
+console.log(ProxyEnable, ProxyServer);
+reg.close();
+
+reg = win.regReaderWow64("HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Cryptography") ;
+var MachineGuid = reg.queryValue("MachineGuid");
+reg.close();
+console.log("MachineGuid", MachineGuid);
+
+reg = win.regReaderWow64("HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion") ;
+var ProductId = reg.queryValue("ProductId");
+reg.close();
+console.log("ProductId", ProductId);
+
+import win.image;
+
+var IconCount = win.image.extractIcon("D:\Program Files\MacroCreator\Resources.dll", 5);
+//console.log("IconCount", IconCount);
+
+import win.util.tray;
+trayIcon = { IconCount };
+tray = win.util.tray(winform.hwnd, trayIcon[1]) //创建托盘图标
+//tray.message = 0x400+9981/*_WM_TRAYMESSAGE*/
+//tray.tip = "" //设置鼠标提示 
+
+winform.onClose = function(hwnd,message,wParam,lParam){
+    tray = null;
+}
+
+winform.show();
+win.loopMessage();

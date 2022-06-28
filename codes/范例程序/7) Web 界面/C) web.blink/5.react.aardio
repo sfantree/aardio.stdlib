@@ -1,0 +1,85 @@
+//React hooks
+import win.ui;
+/*DSG{{*/
+mainForm = win.form(text="React hooks 简单例子";right=959;bottom=591;bgcolor=16777215)
+mainForm.add()
+/*}}*/
+
+import web.blink.form;
+var wb = web.blink.form(mainForm);
+
+wb.external = {
+	getData = function(){
+		import sys.device;
+		var devInfo = sys.device(,"PCI");
+		
+		var result = table.array()
+		for( index,classGuid,deviceDesc 
+			in devInfo.each(8/*_SPDRP_CLASSGUID*/,0/*_SPDRP_DEVICEDESC*/) ){
+			table.push(result,{classGuid:classGuid,deviceDesc:deviceDesc});
+		}
+		
+		return result;
+	};
+}
+
+wb.html = /**
+<!DOCTYPE html><html>
+<head>
+	<meta charset="utf-8" />
+	<title>React Hooks</title> 
+	<script src="https://lib.baomitu.com/react/17.0.2/umd/react.production.min.js"></script>
+	<script src="https://lib.baomitu.com/react-dom/17.0.2/umd/react-dom.production.min.js"></script>
+	<script src="https://lib.baomitu.com/moment.js/2.29.1/moment.min.js"></script>
+	<script src="https://lib.baomitu.com/antd/4.17.0-alpha.3/antd.min.js"></script>
+	<link rel="stylesheet" href="https://lib.baomitu.com/antd/4.17.0-alpha.3/antd.min.css"> 
+	<script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
+	<style type="text/css"> 
+	</style>
+</head>
+<body>  
+
+<script type="text/babel"> 
+	const { useState,useEffect,useCallback,useRef } =  React;
+	const { Button,Table,DatePicker,Alert,Tooltip  } = antd;
+
+	const App = () => { 
+			const [data,setData] = useState([]);
+		
+			return ( 
+				<div style={{ width: '100%', margin: '0 auto', padding:'10px' }}>	 
+				<Button onClick={ 
+					async ()=> {
+						var ds = external.getData();
+						setData(ds);
+					}
+				}>列出系统 PCI 硬件设备</Button>
+					
+				<br/><br/>
+				<Table size="middle"  dataSource={data} columns={[
+						{
+							title: 'GUID',
+							dataIndex: 'classGuid',
+							width: 300,
+							key: 'classGuid',
+						},
+						{
+							title: '硬件设备',
+							dataIndex: 'deviceDesc',
+							key: 'deviceDesc',
+						}
+				]} />
+				
+				</div> 
+			);
+	};
+		
+	ReactDOM.render(<App />, document.querySelector('#app')); 
+</script>
+
+<div id="app"></div>
+</body>
+**/ 
+
+mainForm.show();
+return win.loopMessage();

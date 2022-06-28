@@ -1,0 +1,22 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=431;bottom=271)
+winform.add(
+button={cls="button";text="Button";left=24;top=24;right=128;bottom=64;z=1}
+)
+/*}}*/
+
+import config;
+
+winform.button.oncommand = function(id,event){
+	
+	if(not config.logform.isRun) {
+    	win.loadForm("/dlg/logform.aardio");
+	} else {
+	    publish("show", true);
+	}
+}
+
+winform.show();
+win.loopMessage();
+return winform;

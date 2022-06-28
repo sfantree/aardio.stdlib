@@ -1,0 +1,158 @@
+import win.ui;
+import console;
+
+
+//导入自定义的用户库
+/*DSG{{*/
+mainForm = win.form(text="haha";right=527;bottom=541;border="dialog frame";edge=1;frame=1;parent=...)
+mainForm.add(
+button={cls="button";text="Button";left=22;top=197;right=167;bottom=241;z=2};
+button2={cls="button";text="Button";left=196;top=194;right=325;bottom=239;z=3};
+edit={cls="edit";left=25;top=27;right=356;bottom=171;edge=1;multiline=1;z=1};
+richedit={cls="richedit";text="RichEdit";left=21;top=275;right=466;bottom=509;edge=1;multiline=1;z=4}
+)
+/*}}*/
+
+var handleEveryWord = function(eachWord) {
+	if (type(eachWord) != "string") {
+	    return;
+	}
+	if (not eachWord) {
+	    return;
+	}
+	
+	var eachWordTrim = string.trim(eachWord);
+	
+	
+	
+	
+}
+
+var handleEveryWord_Test = function() {
+    import io;
+    
+    // var fd = io.open("words.txt", "r");
+    var fd = io.open("G:\chromedl\aardio\project\demo1\words.txt", "r");
+    if (not fd) {
+        mainForm.edit.text = "fd == nil";
+        return;
+    }
+    
+    var line = fd.read();//读取下一行
+	while( line ) {
+		
+    	console.log(line);
+    	
+    	
+    	line = fd.read();//读取下一行
+    }
+}
+
+
+
+
+
+
+mainForm.button.oncommand = function(id,event){
+    import com
+    var word = com.CreateObject("Word.Application");
+
+	if( ! word ) {
+	    mainForm.edit.text = "请先安装Word";
+	}
+	
+	
+	var doc = word.Documents.Open("C:\Users\lin\Desktop\SAN FRANCISCO.docx")
+	doc.ActiveDocument = true;
+	//word.Visible = true;
+	//var select1 = word.Selection.WholeStory.Words.Count;
+	//var select1 = word.Selection;
+	word.Selection.WholeStory();
+	
+	var data = word.Selection.Words.Count;
+	if(  data ) {
+	    console.dump(data);
+	    console.dump(type(data));
+	}
+	
+/*
+	var content = word.Selection.Text;
+	if(  content ) {
+	    console.dump(content);
+	    console.dump(type(content));
+	}
+*/
+	
+	if((data != nil) and (type(data) == "number")) {
+	    for(i = 1; data; 1) {
+	        var _ = doc.Words(i).Select();
+	        content = word.Selection.Text;
+	        if(  content ) {
+	    		console.dump(content);
+	    		//console.dump(type(content));
+			}
+	    }
+	}
+	
+	//doc.Save()
+	doc.Close() 
+    //word.Documents.Close(wc.wdDoNotSaveChanges) # 保存并关闭 word 文档
+    word.Quit() 
+}
+
+var getDefaultDeckName = function() {
+	import inet.http;
+	var http = inet.http();
+	http.setTimeouts(300, 300, 300);
+	
+	var postData = `
+	{
+        "action": "deckNames",
+        "version": 6
+    }
+	`
+	var apiUrl = "http://127.0.0.1:8765";
+	var html,err,errCode = http.post(apiUrl, postData);
+	//mainForm.edit.text =(html)
+	if(html) {
+		import inet.http;
+	    var responseJson, err = web.json.tryParse(html);
+	    if(not responseJson) {
+	        return nil;
+	    }
+	    var deckNames = responseJson[["result"]];
+	    if (deckNames) {
+	    	//var v1flag = false; //默认 卡组 "\u9ed8\u8ba4"
+	    	var v2flag = false; // 系统预置 ["\u7cfb\u7edf\u9884\u7f6e"], 
+	        for(k, v in deckNames) {
+	        	mainForm.edit.print(v)
+	        	if (v == "默认") {
+	                return "\u9ed8\u8ba4";
+	            }
+	            
+	            if (v == "系统预置") {
+	                v2flag = true;
+	            }
+	        }
+	        //if(v1flag) {
+	        //    return "\u9ed8\u8ba4";
+	        //}
+	        if(v2flag) {
+	            return "\u7cfb\u7edf\u9884\u7f6e";
+	        }
+	        //mainForm.edit.print(v)
+	        return deckNames[1];
+	    }
+	}
+	return nil
+}
+
+
+mainForm.button2.oncommand = function(id,event){
+	var name = getDefaultDeckName();
+	mainForm.edit.print("|||")
+	mainForm.edit.print(name)
+}
+
+mainForm.show()
+win.loopMessage();

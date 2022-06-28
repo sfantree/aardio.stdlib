@@ -1,0 +1,6 @@
+import win;
+import process.popen;
+
+var ipconfig = process.popen("ipconfig","/all");
+var str = ipconfig.read(-1);
+win.msgbox(str);

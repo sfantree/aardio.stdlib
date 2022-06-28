@@ -1,0 +1,47 @@
+import win.ui;
+/*DSG{{*/
+winform = ..win.form(text="绘图演示";right=599;bottom=399;bgcolor=16777215)
+winform.add(
+plus={cls="plus";left=8;top=9;right=590;bottom=393;bgcolor=15793151;notify=1;z=1}
+)
+/*}}*/
+
+// plus控件的浮动透明属性设为false，利用plus控件提供的背景优化，可以避免绘图的时候闪烁
+
+import gdip.pen;
+winform.plus.points ={}
+winform.plus.onDrawContent = function(graphics,rc){
+    var pen = winform.plus.pen;
+    if(pen){
+        
+        if( #winform.plus.points >=2 ) {
+            var pt,pt2;
+            for(i=1;#winform.plus.points-1;1){
+                var pt,pt2 = winform.plus.points[i],winform.plus.points[i+1]
+                 graphics.drawLine(pen,pt.x,pt.y,pt2.x,pt2.y)
+            }
+        }
+        
+        var pt = winform.plus.points[#winform.plus.points]
+        if( pt && winform.plus.x2 && winform.plus.y2 ){
+            graphics.drawLine(pen,pt.x,pt.y,winform.plus.x2,winform.plus.y2 )
+        }
+    }
+}
+
+winform.plus.onMouseClick = function(wParam,lParam){
+    if( !winform.plus.pen )
+        winform.plus.pen = gdip.pen(0xFFFFFF00,2);
+        
+    var x,y  = win.getMessagePos(lParam);
+    table.push(winform.plus.points,{x=x;y=y} );
+    winform.plus.redrawTransparent()
+}
+
+winform.plus.onMouseMove = function(wParam,lParam){
+    winform.plus.x2,winform.plus.y2 = win.getMessagePos(lParam);
+    winform.plus.redrawTransparent()
+}
+
+winform.show()
+win.loopMessage();

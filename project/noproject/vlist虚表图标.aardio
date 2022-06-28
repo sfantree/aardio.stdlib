@@ -1,0 +1,19 @@
+import win.ui;
+import win.ui.ctrl.vlist;
+/*DSG{{*/
+mainForm = ..win.form(text="vlist - Icon";right=607;bottom=367)
+mainForm.add(
+vlist={cls="vlist";left=48;top=40;right=552;bottom=328;edge=1;mode="icon";z=1}
+)
+/*}}*/
+
+import win.imageList;
+var imageList = win.imageList(32, 32);
+::ImageList_ReplaceIcon(imageList, -1, ::LoadIcon(, topointer(0x7F00/*_IDI_APPLICATION*/)));
+mainForm.vlist.setImageList(imageList, 0/*_LVSIL_NORMAL*/);
+
+var data = table.array(100000, 2, { iImage = 0; text = "1.exe" });
+mainForm.vlist.createTableAdapter(data);
+
+mainForm.show();
+win.loopMessage();

@@ -1,0 +1,22 @@
+import fsys.log;
+import console;
+
+
+
+// 耗时操作
+var testApiConnect = function() {
+    import inet.http;
+    var http = inet.http();
+    var ankiapi = http.get("http://127.0.0.1:8765/");
+    if (ankiapi) and (-1 != string.indexOf(ankiapi, "AnkiConnect")) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+
+
+console.dump(testApiConnect());
+
+console.pause()

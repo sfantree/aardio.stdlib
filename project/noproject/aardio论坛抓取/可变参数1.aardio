@@ -1,0 +1,10 @@
+import console; 
+
+// 可变参数
+var func = function( a,b, ... ){ //使用三个连续的圆点表示任意个数、任意类型的参数
+        var arg = { ... }
+        console.log( #arg + "个参数", arg[1],arg[2] )
+}
+
+func(1,2,99,888,777);
+console.pause(true);

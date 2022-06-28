@@ -1,0 +1,128 @@
+//0)基础
+/**
+aardio 以 // 开始行注释
+Python3 以 # 符号开始行注释。
+
+aardio 以 /* ...... */ 包含允许多行的大段注释，要求首尾标记星号数目匹配。可用于赋值语句将注释赋值为字符串。
+Python 以 """ ...... """ 包含允许多行的大段注释，Python 可以用函数对象的 __doc__ 属性获取函数开始被包含在3个引号内的注释。
+
+aardio 转义字符串可放在单引号里，原始字符串放在双引号或反引号里（字符串内可用两个引号表示原来的引号）
+而 Python 双引号、单引号内都是转义字符串，在双引号字符串前加 r 表示原始字符串。
+
+aardio 在引号内的字符串可以任意换行。
+Python 在引号内的字符串要在行尾添加续行符 / 才能换行。
+**/
+
+import console;
+import py3;
+
+//这是单行注释
+//aardio 使用 {} 包含语句块，下面是一段定义函数的示例代码：
+var func = function(a,b,...){ //... 表示不定个数参数
+	var c = "原始字符串"; //var 定义局部变量，否则默认为全局变量
+	
+	if(a){
+		console.log(a,b,...)
+	}
+}
+
+py3.exec(`
+# 这是单行注释
+# Python 使用缩进包含语句块,注意函数体这些语句块开始有一个冒号，下面是一段定义函数的示例代码：
+
+def func(x,y,*t): # *t 表示不定个数参数
+	global g = r"原始字符串" # global 定义全局变量，否则默认为局部变量
+	
+	print("python用相同的缩进区别不同的语句块");
+	print("不能在本行前再来一个缩进建立新的语句块,而在aardio中你可以随时自由建立新的独立的语句块。");
+	print("参数名前加一个*号表示不定个数匿名参数(实际上是一个tuple元组):",t)
+	return x + y; 
+	
+# 要注意同一语句块内代码缩进使用的空格、制表符、重复次数要完全一致。
+`)
+
+/*
+Python在参数名前加一个*号表示不定个数匿名参数。
+参数名前加两个星号表示以dict类型传递任意个有名字的参数。
+
+而在aardio中用 ... 表示不定个数的参数，跟普通变量用法一样，
+而使用表作为参数就是任意个有名字的参数了(可以省略表首尾的 { } )，例如
+*/
+console.dump(
+	a = 123;
+	b = "其实参数就是一个普通的表"
+)
+
+/*
+在 aardio 中调用 Python 函数，只有通过 invoke 方法才能传递匿名参数，
+invoke 的第一个参数必须是表（且没有指定元表，没有 pyObject 字段）才会支持命名参数。
+如果参数@1符合上述命名参数规则，则该表中的数组成员作为普通的匿名参数按索引顺序传给 Python 函数。
+如果参数不符合上述规则，则所有参数视为匿名参数传递（即等价于通过 call 方法调用）
+
+根据 aardio 的语法，如果参数@1是表，且首先写名值对成员，则可以省略外层的 {}
+那么可以模仿 Python 命名参数与匿名参数混写的语法，唯一与 Python 的区别是命名参数必须写在最前面。
+*/
+var requests = py3.import("requests");
+var session = requests.Session();
+var res = session.get.invoke(verify=false,"https://www.aardio.com");
+
+/*
+Python 与 aardio 的变量命名规则基本类似，
+例如标识符（变量或常量名等）首字符不能是数值，可以是下划线或字母。
+Python 与 aardio 一样同样是大小写敏感的语言， Name 与name 表示的不是同一个对象名字
+
+Python 中函数内部声明变量默认为局部变量,全局变量声明应显式加上global关键字。
+恰恰相反的是,aardio 中变量默认为全局变量并且无需声明可以直接使用,而局部变量需要用 var 语句显式声明。
+*/
+
+/*
+aardio 关键字首字符都是小写，例如 true,false,null。只有全局常量，外部 API,外部 COM 函数等会首字符大写。
+Python 有些关键字首字符大写，例如 True,False,None。
+*/
+
+/*
+aardio 空值为 null 。
+Python 空值为 None 。
+*/
+
+//aardio 可以以直接判断 null 值，例如
+if( 不存在的变量 === null ) { console.log("不存在: 不存在的变量") }
+
+/* 
+注 Python 中访问不存在的变量会抛出 NameError 异常，
+而访问对象不存在的属性会抛出 AttributeError,KeyError。
+
+Python中常见的一些异常：
+SyntaxError	语法错误
+RuntimeError 运行时错误
+NameError 尝试访问一个没有申明的变量
+ValueError	传给函数的参数类型不正确，比如给int()函数传入字符串形
+AttributeError	尝试访问未知的对象属性
+KeyError 请求一个不存在的字典关键字，可以看到python中字典的键(key)与对象的属性(attribute)是区别对待的,aardio是不区分的
+IndexError 索引超出序列范围
+ZeroDivisionError 除数为0
+IOError	输入输出错误（比如你要读的文件不存在）
+
+Python 中可以用 try语句捕获 NameError 异常,
+或者用 locals().has_key('变量名') globals().has_key('变量名') 判断。
+
+aardio 虽然有 try 语句，但很少需要使用，
+在 aardio 中一个函数失败惯例多会返回两个返回值，即 null,错误信息。
+只有特别严重、且一般在开发时可以避免的错误才会抛出异常。
+*/
+
+/*
+aardio 的代码文件是 UTF8 编码
+Python3 的代码文件也是 UTF8 编码
+
+aardio 字符串默认使用 UTF-8 编码,兼容二进制字符串,支持 UTF-16 编码的 Unicode 字符串, aardio 字符串拥有 UTF 自动标记功能.
+Python3 字符串为 Unicode 编码，而 aardio 与 Python 接口交互统一使用的是 UTF-8 编码。
+
+aardio 中的二进制字节数组为 buffer 类型。
+Python3 中的二进制字节数组为 bytes 类型。
+
+在Python2里的 bytes 实际就是 str，而 unicode是一个单独的类型。
+在python3中的字符串实际上就里python2里的unicode，而bytes反而变成了一个单独的类型。
+*/ 
+
+console.pause();

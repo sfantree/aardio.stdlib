@@ -1,0 +1,69 @@
+﻿class mmseg {
+	ctor() {
+		..table.gc(this, "destroy");
+	};
+
+	destroy = function() {
+		if (this.algor) {
+			dll.mmseg_algor_destroy(this.algor);
+			this.algor = null;
+		}
+	}
+
+	each = function(str) {
+		var token = {
+			ptr text;
+			int offset;
+			int length;
+			byte attr;
+		};
+		
+		var algor = dll.mmseg_algor_create(str, #str);
+		this.algor = algor;
+		
+		return function() {
+			dll.mmseg_next_token(algor,token);
+			if (token.length) return ..raw.tostring(token.text, 1, token.length),token.attr;
+			else this.destroy();
+		};
+	}
+}
+
+namespace mmseg{
+
+	dll = ..raw.loadDll($"~/lib/mmseg/.res/mmseg.dll","std-mmseg.dll","cdecl");
+	
+	loadChars = function(path){
+		return !!dll.mmseg_load_charsW(..io.fullpath(path));
+	}
+	
+	loadWords = function(path){
+		return !!dll.mmseg_load_wordsW(..io.fullpath(path));
+	}
+	
+	addWord = function(word,freq){
+		dll.mmseg_dic_add(word,..string.len(word),freq);
+	}
+	
+	each = function(str){
+		return ..mmseg().each(str);
+	}
+	
+	//如果不要这些默认词库,直接删除下面的文件不影响运行
+	loadChars("~/lib/mmseg/.res/data/chars.dic");
+	loadWords("~/lib/mmseg/.res/data/words/words.dic");
+	loadWords("~/lib/mmseg/.res/data/words/words-brand.dic");
+	loadWords("~/lib/mmseg/.res/data/words/words-t-base.dic");
+	loadWords("~/lib/mmseg/.res/data/words/words-taobao.dic");
+	loadWords("~/lib/mmseg/.res/data/words/words-sogou.dic");
+}
+
+/**intellisense()
+mmseg = MMSEG分词引擎
+mmseg.loadChars(__) = 加载字典文件,参数为路径
+mmseg.loadWords(__) = 加载词典文件,参数为路径\n注意词典文件不需要指定词长，一行一个词就可以，文件尾必须有换行，\n可选在词后面加一个空格以及一个标点指定attr值\n词的attr默认值是'@'#,字或标点attr为0
+mmseg.addWord(.(词,词频) = 添加到词库，\n注意仅单字词需要指定词频
+mmseg.eachWord(str) = @for word,attr in mmseg.each(__/*输入字符串*/){
+	
+}
+end intellisense**/

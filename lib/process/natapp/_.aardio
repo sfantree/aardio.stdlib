@@ -1,0 +1,68 @@
+﻿import process.popen;;
+import process.job.limitKill;
+import zlib.httpFile;
+import web.json;
+
+namespace process;
+
+class natapp{
+	ctor( authtoken,logger,logLevel ){{
+		var path = ..io.appData( "aardio/natapp/natapp.exe");
+		if(!..io.exist(path)){
+			var url;
+			if(_WINXP){
+				url = "https://cdn.natapp.cn/assets/downloads/clients/windowsxp/natapp_windows_xp_2_3_9.zip?version=20190730"
+			}
+			else {
+				if(..process().isWow64()){
+					url = "https://cdn.natapp.cn/assets/downloads/clients/2_3_9/natapp_windows_amd64_2_3_9.zip?version=20190730"
+				}
+				else {
+					url = "https://cdn.natapp.cn/assets/downloads/clients/2_3_9/natapp_windows_386_2_3_9.zip?version=20190730"
+				}
+			}
+			
+			if( !..zlib.httpFile.download(url,"正在下载 NATAPP",..io.appData("aardio/natapp/down"),..io.appData("aardio/natapp")) ){
+				return;
+			}	
+		}
+	
+		this = ..process.popen(path,{path,"-authtoken="+(authtoken:""),"-log=stdout","-loglevel="+(logLevel:"INFO")});
+		this.codepage = 65001;
+		this.writeClose()
+		this.assignToJobObject(..process.job.limitKill);
+		if(logLevel=="DEBUG"){
+			this.tunnelInfo = this.expect(`\[DEBG\] \[.+?\]\s+Read\s+message\s+(\{\"Type\"\:\"NewTunnel\"\N+\"LocalAddr\"\N+\})`); 
+			if(this.tunnelInfo){
+				this.tunnelInfo = ..web.json.tryParse(this.tunnelInfo);	
+				if(this.tunnelInfo){
+					this.tunnelInfo = this.tunnelInfo.Payload;
+					if(this.tunnelInfo)this.tunnelUrl = this.tunnelInfo.Url;
+				}
+			}
+		}
+		else {
+			this.tunnelUrl = this.expect("\[client\]\s*Tunnel\s*established\s*at\s*(http\S+)"); 
+		}
+		 
+		if(logger[["hwnd"]]){
+			this.logResponse(logger);
+		}
+		
+		return this;
+	}}; 
+}
+	
+/**intellisense()
+process.natapp = 用于创建 NATAPP 进程,\n可通过 URL 参数获取映射 URL
+process.natapp(.(authtoken,logger,logLevel) = 后台启动 NATAPP 进程,\n参数@1指定authtoken,可选用参数@2指定回显文本框控件,\nlogLevel默认为INFO，改为DEBUG可获取更多信息
+process.natapp() = !processNatapp.
+end intellisense**/
+
+/**intellisense(!processNatapp)
+tunnelUrl = 当前穿透网址
+waitOne() = 等待进程关闭,不阻塞UI消息循环,可选使用一个毫秒值参数设定超时\n超时或失败返回 null,\n进程已退出则返回值1为true,返回值2为标准输出,返回值3为错误输出,返回值4为退出代码
+close() = 释放对象
+ctrlEvent(0)=发送Ctrl+C(SIGINT信号)\n信号将传递到与目标进程控制台连接的所有非分离控制台进程\n64位目标进程会导致当前控制台暂时关闭
+process = !process.
+end intellisense**/

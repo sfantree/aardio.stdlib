@@ -1,0 +1,77 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="miniblink - 在网页中也玩GDI+自绘动画";right=848;bottom=585)
+winform.add()
+/*}}*/
+
+import web.blink.form;
+var mb = web.blink.form(winform)
+
+mb.html = /**
+<!doctype html>
+<html>
+<head>
+</head>
+<body>
+    <div id="header"></div>
+    <img id="test" width=501 height=500>
+    <br><a href="#">其实人家真的是一个网页</a>
+</body>
+</html>
+**/
+
+winform.show();
+mb.wait();
+
+mb.doScript( `
+loadObjectUrl = function(id,buffer,type) {
+    var img = document.getElementById(id);
+    var blob =  new Blob([buffer],{type:type});  
+    img.objectUrl =  URL.createObjectURL(blob);   
+  
+    img.onload = function(){
+        //objectUrl一定要在图像成功加载后释放
+        URL.revokeObjectURL(img.objectUrl);
+        img.objectUrl = null;
+    }
+   
+    img.src = img.objectUrl;
+    img.width = 500;//首次显示修改大小强制刷新
+};`)
+
+import gdip;
+var rotationAngle = 0;
+
+winform.setInterval( 10,
+    function(hwnd,msg,id,tick){
+        var img = mb.getEle("test");
+        if(img.objectUrl) return;//避免重复创建objectUrl造成内存泄漏,这种可能性小
+        
+        var width,height = 500,500;
+        var bmp = gdip.bitmap(width,height);
+        var graphics = bmp.getGraphics();
+        graphics.smoothingMode = 4/*_GdipSmoothingModeAntiAlias*/
+        
+        graphics.translate( width/2, height/2);
+        rotationAngle+=5;
+        graphics.rotate(rotationAngle);
+   
+        var brush = gdip.solidBrush(0xFF00FFFF);
+        var brush2 = gdip.solidBrush(0xFF0000FF);
+        graphics.fillPie(brush, -100, -100, 200, 200, 90, 180);
+        graphics.fillPie(brush2, -100, -100, 200, 200, 90, -180);
+        graphics.fillPie(brush, -51, 0, 100, 100, 90, -180);
+        graphics.fillPie(brush2, -49, -100, 100, 100, 90, 180);
+        graphics.fillEllipse(brush, -10, -60, 20, 20);
+        graphics.fillEllipse(brush2, -10, 40, 20, 20);
+        
+        //生成objectUrl，并让图像加载objectUrl
+        mb.script.loadObjectUrl ("test",bmp.saveToBuffer("*.png"),"image/png");
+        
+        brush.delete();
+        brush2.delete();
+        bmp.dispose();
+    }
+)
+
+win.loopMessage();

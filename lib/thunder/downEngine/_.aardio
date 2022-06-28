@@ -1,0 +1,310 @@
+/*
+~\lib\thunder\downEngine\.res\ 目录下为迅雷官网的试用SDK，
+实际开发产品时请到官方申请正式SDK,并替换 ~\lib\thunder\downEngine\.res\ 下的试用SDK即可。
+迅雷提供的SDK组件使用许可协议请参考迅雷SDK官网 http://open.xunlei.com/wiki/
+使用迅雷提供的组件其责任或后果概与本扩展库作者无关。
+
+本扩展库遵循aardio附带的扩展库开源许可：
+您可以您可以基于任何目的(包括商用、修改及重分发）免费使用本扩展库开源代码,
+您不可以篡改这些开源代码的原始信息，不可以声明您编写最初的版本。
+*/
+
+namespace thunder;
+
+class downEngine{
+	ctor(param){
+		var taskParam = DownTaskParam(); 
+		..table.mixin(taskParam,param);
+		if( !taskParam.savePath ) taskParam.savePath = "/";
+		taskParam.savePath = ..io.fullpath(taskParam.savePath );
+	 
+		for k,v in ..table.eachName(taskParam){ 
+			if( type(v) == type.string )
+				taskParam[k] = ..string.toUnicode(v); 
+		} 
+		this.handle = _xldll.XL_CreateTask(taskParam);
+		
+		if( !this.handle ) return null;
+		this.taskParam = taskParam;
+		
+		this.downTaskInfo = DownTaskInfo(); 
+	};
+	start = function(){
+		if(this.handle)	 return !!_xldll.XL_StartTask(this.handle);
+	};
+	stop = function(){
+		if(this.handle)	 return !!_xldll.XL_StopTask(this.handle);
+	};
+	forceStopTask = function(){
+		if(this.handle)	 return !!_xldll.XL_ForceStopTask(this.handle);
+	};
+	queryTaskInfo = function(){
+		if(this.handle)	 {
+			var taskInfo = DownTaskInfo();
+			if( !!_xldll.XL_QueryTaskInfoEx(this.handle,this.downTaskInfo) ){
+				for k,v in ..table.eachName(this.downTaskInfo){ 
+					if( type(v) == type.string )
+						this.downTaskInfo[k] = ..string.str( ..string.fromUnicode(v) ); 
+				} 
+				return this.downTaskInfo;
+			} 
+		} 
+	};
+	setFileIdAndSize = function(fileId,size){
+		if(this.handle)	 {
+			return !!_xldll.XL_SetFileIdAndSize(this.handle,fileId,..math.size64(size)) 
+		} 
+	};
+	delete = function(){
+		if(this.handle)	 {
+			_xldll.XL_StopTask(this.handle);
+			var r =  !!_xldll.XL_DeleteTask(this.handle);
+			this.handle = null;
+			return r;
+		}
+	} 
+	delTempFile = function(){
+		this.delete();
+		return delTempFile(this.taskParam);
+	}
+};
+
+namespace downEngine{
+
+	if( ..thread.get("thunder.downEngine.runing") )
+		error("迅雷接口组件不支持重复启动,请先退出原来的线程",2);
+		
+	..thread.set("thunder.downEngine.runing",true)
+	
+	_xldll = ..raw.loadDll("~\lib\thunder\downEngine\.res\xldl.dll",,"cdecl");  
+	_xldll.XL_Init();  
+	
+	..table.gc( self,function(){
+		_xldll.XL_UnInit(); 
+		..thread.set("thunder.downEngine.runing",null )
+	} );
+	
+	class DownTaskParam{ 
+    	int reserved;
+		WORD taskUrl[2084];
+		WORD refUrl[2084];
+		WORD cookies[4096]; //浏览器cookie
+		WORD filename[0x104/*_MAX_PATH*/];
+		WORD reserved0[0x104/*_MAX_PATH*/];
+		WORD savePath[0x104/*_MAX_PATH*/];
+		addr hReserved;
+		bool bReserved; 
+		WORD szReserved1[64];
+		WORD szReserved2[64];
+		bool isOnlyOriginal;
+		INT nReserved1 = 5;
+		bool disableAutoRename;//禁止智能命名
+		bool isResume = true;
+		INT reserved[2048]; 
+		_struct_aligned = 1;//字节对齐 
+	};
+
+	class DownTaskInfo
+	{ 
+		int	stat = 2/*_XL_TSC_PAUSE*/;
+		int failCode = 0/*_XL_TASK_ERROR_UNKNOWN*/;
+		WORD filename[0x104/*_MAX_PATH*/];
+		WORD reserved0[0x104/*_MAX_PATH*/];
+		LONG totalSize = ..math.size64(0);
+		LONG totalDownload = ..math.size64(0);
+		float percent;
+		int nReserved0;
+		int nSrcTotal; //总资源数
+		int nSrcUsing; //可用资源数
+		int nReserved1;
+		int nReserved2;
+		int nReserved3;
+		int nReserved4;
+		LONG reserved5 = ..math.size64(0);
+		LONG donationP2P = ..math.size64(0); //p2p贡献字节数
+		LONG reserved6 = ..math.size64(0);
+		LONG donationOrgin = ..math.size64(0); //原始资源共享字节数
+		LONG donationP2S = ..math.size64(0); //镜像资源共享字节数
+		LONG reserved7 = ..math.size64(0);
+		LONG reserved8 = ..math.size64(0);
+		int speed; //即时速度(字节/秒)
+		int speedP2S; //即时速度(字节/秒)
+		int speedP2P; //即时速度(字节/秒)
+		bool isOriginUsable; //原始资源是否有效
+		float fHashPercent; 
+		int isCreatingFile;
+		INT reserved[64];
+		_struct_aligned = 1;//字节对齐
+	}; 
+	
+	delTempFile = function(param){
+		var taskParam = DownTaskParam(); 
+		..table.mixin(taskParam,param);
+		for k,v in ..table.eachName(taskParam){ 
+			if( type(v) == type.string )
+				taskParam[k] = ..string.toUnicode(v); 
+		} 
+		return !!_xldll.XL_DelTempFile(taskParam);
+	}  
+	
+	setSpeedLimit = function(nKBps){ 
+		if( type(nKBps) != type.number ) error("参数必须是数值",2)
+		_xldll.XL_SetSpeedLimit(nKBps);
+	} 
+	
+	setUploadSpeedLimit = function(nTcpKBps,nOtherKBps){ 
+		if( type(nTcpKBps) != type.number ) error("参数必须是数值",2)
+		if( type(nOtherKBps) != type.number ) error("参数必须是数值",2)
+		_xldll.XL_SetUploadSpeedLimit(nTcpKBps,nOtherKBps);
+	}
+	 
+	setUserAgent = function(ua){ 
+		if( type(ua) != type.string ) error("参数必须是字符串",2)
+		if(ua) _xldll.XL_SetUserAgent(..string.toUnicode(ua) );
+	} 
+	
+	setProxy = function(url,user,pwd,domain){ 
+		if( stAType === null ){
+			if( user && pwd ) stAType = 1/*_XL_PROXY_AUTH_AUTO*/;
+		}
+		var isProxy,host,port,isIeProxy,stAType;
+		if( !url ){
+			isProxy = false;
+		}
+		elseif( url === "" ){
+			isIeProxy = true;
+			stPType = 0;
+			isProxy = true;
+		}
+		else{
+			var turl = ..inet.url.split(url);
+			if( !turl ) return null,"URL格式错误";
+			
+			isProxy = true;
+			host = turl.host;
+			port = turl.port;
+			if( ..string.cmp(turl.scheme,"HTTP" ) )
+				stPType = 1/*_XL_PROXY_TYPE_HTTP*/
+			elseif( ..string.cmp(turl.scheme,"SOCK" ) || ..string.cmp(turl.scheme,"SOCK5" ) )
+				stPType = 3/*_XL_PROXY_TYPE_SOCK5*/
+			else {
+				stPType = 0xFF/*_XL_PROXY_TYPE_UNKOWN*/;
+			}
+				 
+		}
+		
+		var proxyInfo = {
+			bool bIEProxy=isIeProxy;
+			bool bProxy=isProxy;
+			int	stPType=stPType;
+			int	stAType=stAType;
+			BYTE szHost[4096] = ..string.toUnicode(host);
+			INT32 nPort = port;
+			BYTE szUser[100] = ..string.toUnicode(user) ;
+			BYTE szPwd[100]= ..string.toUnicode(pwd);
+			BYTE szDomain[4096]= ..string.toUnicode(domain);
+		};
+		_xldll.XL_SetProxy(nKBps);
+	}
+	
+	parseThunderPrivateUrl = function(thunderUrl){ 
+		if( type(thunderUrl) != type.string ) error("参数必须是字符串",2)
+		var r,u = _xldll.XL_ParseThunderPrivateUrl(..string.toUnicode(thunderUrl),{BYTE normalUrlBuffer[4096]} ,4096);
+		if( r ){
+			return ..string.fromUnicode(u.normalUrlBuffer)
+		}
+	} 
+ 
+	getFileSizeWithUrl = function(url){ 
+		if( type(url) != type.string ) error("参数必须是字符串",2)
+		var r,size = _xldll.XL_GetFileSizeWithUrl(..string.toUnicode(url),{ LONG out = ..math.size64(0) } );
+		if( r ){
+			return size.out;
+		} 
+	}   
+} 
+
+/**intellisense() 
+thunder.downEngine = 迅雷云加速SDK试用版\n正式使用请到官网申请并替换.res目录下的DLL组件
+thunder.downEngine( 下载配置 ) = @.downEngine(\n	taskUrl = "任务URL";\n	refUrl = "引用页";\n	filename = "下载保存文件名";\n	savePath = "文件保存目录";	\n)
+thunder.downEngine() = !thunder_downEngin.
+end intellisense**/
+
+/**intellisense(!thunder_downEngin)
+start() = 开始任务
+stop() = 停止任务
+forceStopTask() = 强制停止任务
+queryTaskInfo() = 返回任务信息
+setFileIdAndSize(.(fileId,size) = 无文档
+delete() = 删除任务
+delTempFile() = 删除任务并删除文件
+queryTaskInfo() = 返回下载进度等信息\n!thunder_downInfo.
+end intellisense**/ 
+
+/**intellisense(!thunder_downInfo)
+stat =  _XL_TSC_ 前缀常量表示状态
+failCode = _XL_TASK_ERROR_常量表示错误代码
+filename = 文件名
+totalSize = 该任务总大小,math.size64对象\n!math_size64.
+totalDownload = 已下载大小,math.size64对象\n!math_size64.
+percent = 下载进度,小数
+nSrcTotal = 总资源数
+nSrcUsing = 可用资源数
+donationP2P = p2p贡献字节数,math.size64对象\n!math_size64.
+donationOrgin = 原始资源共享字节数,math.size64对象\n!math_size64.
+donationP2S = 镜像资源共享字节数,math.size64对象\n!math_size64.
+speed = 即时速度,字节/秒
+speedP2S = 即时速度,字节/秒
+speedP2P = 即时速度,字节/秒
+isOriginUsable = 原始资源是否有效 
+isCreatingFile = 是否正在创建文件
+reserved[64];
+end intellisense**/
+ 
+/**intellisense(thunder.downEngine)
+delTempFile( 下载参数 ) = @.delTempFile(\n	taskUrl = "任务URL";\n	refUrl = "引用页";\n	filename = "下载保存文件名";\n	savePath = "文件保存目录";	\n)
+setUserAgent(.("") = 自定义UserAgent
+setSpeedLimit(.(nKBps) = 限速,单位KBps
+setUploadSpeedLimit(.(nTcpKBps,nOtherKBps) = 上传限速,单位KBps
+setSpeedLimit(.(nKBps) = 限速,单位KBps
+setProxy(.("HTTP://代理IP:端口","用户名","密码","域") = 设置代理,\n网址为""使用IE代理,省略该参数或为null不使用代理\n其他参数可选
+parseThunderPrivateUrl(.("迅雷下载地址") = 转换为普通网址
+getFileSizeWithUrl(.("下载地址") = 返回下载文件大小\n注意普通HTML格式文件、或不支持获取下载信息的返回空值
+getFileSizeWithUrl() = !math_size64.
+end intellisense**/ 
+
+ /**intellisense()
+_XL_PROXY_TYPE_IE=@0/*_XL_PROXY_TYPE_IE*/
+_XL_PROXY_TYPE_HTTP=@1/*_XL_PROXY_TYPE_HTTP*/
+_XL_PROXY_TYPE_RESERVED=@2/*_XL_PROXY_TYPE_RESERVED*/
+_XL_PROXY_TYPE_SOCK5=@3/*_XL_PROXY_TYPE_SOCK5*/
+_XL_PROXY_TYPE_UNKOWN=@0xFF/*_XL_PROXY_TYPE_UNKOWN*/
+_XL_PROXY_AUTH_NONE=@0/*_XL_PROXY_AUTH_NONE*/
+_XL_PROXY_AUTH_AUTO=@1/*_XL_PROXY_AUTH_AUTO*/
+_XL_PROXY_AUTH_BASE64=@2/*_XL_PROXY_AUTH_BASE64*/
+_XL_PROXY_AUTH_NTLM=@3/*_XL_PROXY_AUTH_NTLM*/
+_XL_PROXY_AUTH_DEGEST=@4/*_XL_PROXY_AUTH_DEGEST*/
+_XL_PROXY_AUTH_UNKOWN=@5/*_XL_PROXY_AUTH_UNKOWN*/
+_XL_TSC_ERROR=@1/*_XL_TSC_ERROR*/
+_XL_TSC_PAUSE=@2/*_XL_TSC_PAUSE*/
+_XL_TSC_DOWNLOAD=@3/*_XL_TSC_DOWNLOAD*/
+_XL_TSC_COMPLETE=@4/*_XL_TSC_COMPLETE*/
+_XL_TSC_STARTPENDING=@5/*_XL_TSC_STARTPENDING*/
+_XL_TSC_STOPPENDING=@6/*_XL_TSC_STOPPENDING*/
+_XL_TASK_ERROR_UNKNOWN_XL_=@0/*_XL_TASK_ERROR_UNKNOWN*/
+_XL_TASK_ERROR_DISK_CREATE=@1/*_XL_TASK_ERROR_DISK_CREATE*/
+_XL_TASK_ERROR_DISK_WRITE=@2/*_XL_TASK_ERROR_DISK_WRITE*/
+_XL_TASK_ERROR_DISK_READ=@3/*_XL_TASK_ERROR_DISK_READ*/
+_XL_TASK_ERROR_DISK_RENAME=@4/*_XL_TASK_ERROR_DISK_RENAME*/
+_XL_TASK_ERROR_DISK_PIECEHASH=@5/*_XL_TASK_ERROR_DISK_PIECEHASH*/
+_XL_TASK_ERROR_DISK_FILEHASH=@6/*_XL_TASK_ERROR_DISK_FILEHASH*/
+_XL_TASK_ERROR_DISK_DELETE=@7/*_XL_TASK_ERROR_DISK_DELETE*/
+_XL_TASK_ERROR_DOWN_INVALID=@0x10/*_XL_TASK_ERROR_DOWN_INVALID*/
+_XL_TASK_ERROR_PROXY_AUTH_TYPE_UNKOWN=@0x20/*_XL_TASK_ERROR_PROXY_AUTH_TYPE_UNKOWN*/
+_XL_TASK_ERROR_PROXY_AUTH_TYPE_FAILED=@0x21/*_XL_TASK_ERROR_PROXY_AUTH_TYPE_FAILED*/
+_XL_TASK_ERROR_HTTPMGR_NOT_IP=@0x30/*_XL_TASK_ERROR_HTTPMGR_NOT_IP*/
+_XL_TASK_ERROR_TIMEOUT=@0x40/*_XL_TASK_ERROR_TIMEOUT*/
+_XL_TASK_ERROR_CANCEL=@0x41/*_XL_TASK_ERROR_CANCEL*/
+_XL_TASK_ERROR_TP_CRASHED=@0x42/*_XL_TASK_ERROR_TP_CRASHED*/
+_XL_TASK_ERROR_ID_INVALID=@0x43/*_XL_TASK_ERROR_ID_INVALID*/
+end intellisense**/

@@ -1,0 +1,11 @@
+//发送Ctrl+C
+import console
+import process.popen
+
+var prcs = process.popen("ping 127.0.0.1 -n 10 ")
+for( all,out,err in prcs.each() ){
+    console.log( out,err ); 
+    prcs.ctrlEvent(0);
+}
+
+console.pause();

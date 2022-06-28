@@ -1,0 +1,105 @@
+import win.ui;
+import win.ui.atom;
+import config;
+/*DSG{{*/
+var winform = win.form(text="aardio- 调试进程列表";right=759;bottom=469;exmode="none";max=false;mode="popup";parent=...)
+winform.add(
+button={cls="button";text="打开日志";left=8;top=232;right=120;bottom=264;z=5};
+button2={cls="button";text="关闭日志";left=152;top=232;right=264;bottom=264;z=6};
+button3={cls="button";text="打开设置";left=296;top=232;right=408;bottom=264;z=7};
+edit={cls="edit";text="Edit";left=8;top=8;right=752;bottom=56;edge=1;multiline=1;z=1};
+edit2={cls="edit";text="Edit";left=8;top=64;right=752;bottom=112;edge=1;multiline=1;z=2};
+edit3={cls="edit";text="Edit";left=8;top=120;right=752;bottom=168;edge=1;multiline=1;z=3};
+edit4={cls="edit";text="Edit";left=8;top=176;right=752;bottom=224;edge=1;multiline=1;z=4}
+)
+/*}}*/
+
+import thread.command;
+
+if(not config.logform.isRun) {
+    win.loadForm("/dlg/logform.aardio");
+}
+
+// 1.传递控件句柄
+thread.invoke( 
+	function(Hwnd){
+		import win;
+		import time;
+		var count = 0;
+		while(true){
+			win.setText(Hwnd, tostring(count));
+			win.delay(800);
+			count = count + 1;
+		}
+	}, winform.edit.hwnd
+)
+
+// 2.传递控件句柄 线程内实例化
+thread.invoke( 
+	function(Hwnd){
+		import win;
+		import win.ui.ctrl.edit;
+		var EditCtrl = win.ui.ctrl.edit();
+		EditCtrl.hwnd = Hwnd;
+		var count = 0;
+		while(true){
+			EditCtrl.text = tostring(count);
+			win.delay(800);
+			count = count + 1;
+			//publish("logd", tostring(count));
+		}
+	}, winform.edit2.hwnd
+)
+
+// 3. 使用消息
+thread.invoke( 
+	function(Hwnd){
+		import win;
+		var count = 0;
+		while(true){
+			::SendMessageByString(Hwnd, 0xC/*_WM_SETTEXT*/, 1, tostring(count)) ;
+			win.delay(800);
+			count = count + 1;
+			
+		}
+		
+	}, winform.edit3.hwnd
+)
+
+// 4.使用线程命令
+import thread.command;
+listener = thread.command();
+listener.refresh = function(Text){
+	 winform.edit4.text = Text;
+}
+
+thread.invoke( 
+	function(Hwnd){
+		import thread.command;
+		import win;
+		var count = 0;
+		while(true){
+			thread.command.refresh( tostring(count) );
+			win.delay(800);
+			count = count + 1;
+		}
+		
+	}, listener.hwnd
+)
+
+winform.button.oncommand = function(id,event){
+	publish("show", true);
+}
+
+winform.button2.oncommand = function(id,event){
+	publish("show", false);
+}
+
+winform.button3.oncommand = function(id,event){
+	var wf = winform.loadForm("/dlg/setting.aardio");
+	wf.doModal();
+}
+
+winform.show();
+
+win.loopMessage();

@@ -1,0 +1,33 @@
+import console; 
+console.open();
+
+/*
+    模拟工作函数 有输入输出 处理时间不确定
+*/
+
+function DoBusyWork(number){
+	import math;
+	// 模拟工作耗时
+	sleep(math.abs( 300 * math.sin(number * number) ))
+	
+	// 返回
+	return number * number;
+}
+
+
+starttm = time.tick();
+
+PreHandleList = {12, 34, 56, 78, 90};
+ResultList = {};
+
+for(i=1;#PreHandleList;1){
+	var r = DoBusyWork(PreHandleList[i])
+    table.push(ResultList, r);
+}
+
+endtm = time.tick();
+
+console.dump(ResultList, endtm - starttm );
+
+
+console.pause(true);

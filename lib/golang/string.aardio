@@ -1,0 +1,22 @@
+﻿namespace golang{
+    
+    class string{
+    	ctor( str ){
+        	this.p = str;
+        	this.n = #str;
+    	};
+    	ptr p;
+    	addr n;
+    	@_meta;
+    }
+    
+    string._meta = {
+        _tostring = function(){
+        	return ..raw.tostring(owner.p,1,owner.n);
+        } 
+    }
+}
+
+/**intellisense()
+golang.string(__) = 创建Go字符串，\n参数可指定 buffer、string、null 类型的值\n可作为结构体参数用于获取 Go 字符串的值,\n获取到 Go 字符串以后，考虑 Go 会随时释放字符串,\n应当尽快使用 tostring 转换此结构体为 aardio 字符串\n不要保存或继续使用 Go 字符串指针
+end intellisense**/

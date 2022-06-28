@@ -1,0 +1,40 @@
+import web.form;
+import web.form.util;
+/*DSG{{*/
+mainForm = ..win.form( bottom=400;parent=...;text="aardio Form";right=600;scroll=1 )
+mainForm.add(
+button={ bottom=353;right=575;left=522;top=304;z=1;text="button";cls="button" }
+)
+/*}}*/
+
+
+
+
+//创建web窗体
+wb = web.form( mainForm
+        ,//可输入_UIFLAG_ 前缀的常量自定义外观
+        ,//可输入_DLCTL_ 前缀的常量以控制下载行为
+        ,//"USER AGENT"
+        );
+
+//打开目标网站
+wb.noScriptErr=true;
+wb.go("http://www.dce.com.cn/PublicWeb/MainServlet?action=Pu00011_search")
+mainForm.show(); //显示窗体
+wb.wait("");//等待指定网址,可以使用模式匹配语法
+
+//开启跨域支持
+web.form.util.crossDomain();
+
+mainForm.button.oncommand = function(id,event){
+
+var SubmitEle = wb.getEle("Submit")  
+if(SubmitEle){
+  
+  SubmitEle.click();
+}       
+}
+
+//进入消息循环
+win.loopMessage();
+return mainForm,wb;

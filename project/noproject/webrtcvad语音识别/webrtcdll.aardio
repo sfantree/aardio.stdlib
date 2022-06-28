@@ -1,0 +1,84 @@
+import console; 
+
+var dll = raw.loadDll( "/WebRtcVad.dll" );
+
+/**
+WEBRTC_DECLARE(VadInst*) Vad_Create(void);
+WEBRTC_DECLARE(int) Vad_Init(VadInst* handle);
+WEBRTC_DECLARE(int) Vad_SetMode(VadInst* self, int mode);
+WEBRTC_DECLARE(int) Vad_ValidRateAndFrameLength(int rate, size_t frame_length);
+WEBRTC_DECLARE(int) Vad_Process(VadInst* handle, int fs, const int16_t* audio_frame, size_t frame_length);
+WEBRTC_DECLARE(void) Vad_Free(VadInst* handle);
+**/
+
+
+var WebRtcVad_Create = dll.api( "_Vad_Create@0","pointer(void)", "stdcall" ); 
+var WebRtcVad_Free = dll.api( "_Vad_Free@4","void(pointer)", "stdcall" ); 
+var WebRtcVad_Init = dll.api( "_Vad_Init@4", "int(pointer)", "stdcall" ); 
+var WebRtcVad_set_mode = dll.api( "_Vad_SetMode@8", "int(pointer, int)", "stdcall" ); 
+//var buffer = raw.buffer(512);
+
+
+var simple_vad_create = function(){
+	var inst = WebRtcVad_Create();
+	var res = WebRtcVad_Init(inst);
+	if (res != 0) {
+		//error("WebRtcVad_Init failed");
+	    return nil;
+	}
+	
+	res = WebRtcVad_set_mode(inst, WEBRTC_VAD_MODE);
+	if (res != 0) {
+	    //error("WebRtcVad_set_mode failed");
+	    WebRtcVad_Free(inst);
+        return nil;
+	}
+	return inst;
+}
+
+
+/*
+int process_vad(VadInst *inst, int16_t *data) {
+    int res = WebRtcVad_Process(inst, SAMPLE_RATE, data, FRAME_SIZE);
+    return res;
+}
+*/
+
+var process_vad = function(inst, data){
+	int res = WebRtcVad_Process(inst, SAMPLE_RATE, data, FRAME_SIZE);
+    return res;
+}
+
+/*
+void simple_vad_free(simple_vad *inst) {
+    WebRtcVad_Free(inst);
+}
+*/
+
+var simple_vad_free = function(inst){
+	WebRtcVad_Free(inst);
+}
+
+/*
+int check_end_file(FILE *fp) {
+    if (feof(fp)) {
+        return 0;
+    }
+    return ferror(fp);
+}
+*/
+
+// stream.aardio
+var check_end_file(fp) {
+    var curPos = fp.seek();
+    var endPos = fp.seek(fp.seek("end"));
+    fp.seek(curPos);
+    
+    return (curPos == endPos);
+}
+
+
+
+
+
+console.pause(true);

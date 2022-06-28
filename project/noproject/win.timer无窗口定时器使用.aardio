@@ -1,0 +1,10 @@
+import console; 
+import win.timer;
+var timer = win.timer(, 200);
+
+timer.onTimer = function(){ 
+	console.dump("timer.onTimer")
+}
+
+timer.enable();
+win.loopMessage();

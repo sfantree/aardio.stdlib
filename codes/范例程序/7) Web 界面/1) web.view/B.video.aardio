@@ -1,0 +1,83 @@
+//视频 / 全屏
+import web.view; 
+import wsock.tcp.asynHttpServer;
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="WebView2(web.view) 播放视频并支持全屏";right=1008;bottom=616)
+winform.add()
+/*}}*/
+
+var httpServer = wsock.tcp.asynHttpServer(); 
+httpServer.run( {
+	["/index.html"] = /**
+<html>
+<head>
+    <style type="text/css">
+        html,body { height: 100%; width: 100%; margin: 0;overflow: hidden; }
+    </style>
+    
+    <!--第一步：引入下面2个文件加载播放器 -->
+    <link href="https://lib.baomitu.com/video.js/7.15.0/video-js.min.css" rel="stylesheet">
+    <script src="https://lib.baomitu.com/video.js/7.15.0/video.min.js"></script>
+</head>
+<body>
+
+	<!-- 第二步：插入视频文件 -->
+    <video id="my-player" class="video-js" controls preload="auto" poster="https://vjs.zencdn.net/v/oceans.png"
+        style="width:100%;height:100%" data-setup='{}'>
+        <source src="http://download.aardio.com/demo/video.aardio" type=" video/mp4"> 
+        <track kind='captions' src="/sintel.vtt" label="English"  default >
+    </video>
+
+    <script>
+    
+		//第三步：修改播放器选项,这一步可以省略
+        videojs("my-player", {
+            controlBar: {
+                fullscreenToggle: true
+            }
+        });
+
+		//第四步：响应网页全屏请求
+        document.onfullscreenchange = function (event) {
+            aardio.fullscreen(!!document.fullscreenElement); //调用 aardio 窗口的全屏函数
+        }
+    
+    	/*
+    	注意原生 video 的全屏按钮只是网页内部最大化,不会触发 onfullscreenchange 事件。
+    	video.js 播放器的全屏按钮则是调用视频节点的 requestFullscreen() 函数实现了真正的全屏。
+    	*/
+    </script>
+</body></html>
+**/;
+	["/sintel.vtt"] = /**
+WEBVTT
+
+0
+00:00:11.400 --> 00:00:14.800
+What brings you to the land of the gatekeepers?
+
+1
+00:00:18.000 --> 00:00:20.500
+I'm searching for someone.
+
+2
+00:00:36.850 --> 00:00:39.750
+A dangerous quest for a lone hunter.
+
+3
+00:00:40.950 --> 00:00:44.870
+I've been alone for as long as I can remember.
+**/;
+}); 
+
+var wb = web.view( winform );
+wb.external = {
+	//浏览器仅仅是发出全屏指令,在这里用 aardio 控制全屏
+	fullscreen = lambda(fs) winform.fullscreen(fs) 
+}
+wb.go( httpServer.getUrl("index.html") );
+
+winform.show(); 
+
+win.loopMessage();

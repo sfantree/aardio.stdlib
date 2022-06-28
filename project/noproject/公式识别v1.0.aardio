@@ -1,0 +1,142 @@
+
+
+
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="bing公式识别";right=759;bottom=391)
+winform.add(
+button={cls="button";text="截屏";left=624;top=344;right=752;bottom=384;z=2};
+checkbox={cls="checkbox";text="公式复制到剪切板";left=24;top=352;right=152;bottom=368;z=3};
+checkbox2={cls="checkbox";text="浏览器打开公式";left=192;top=352;right=312;bottom=368;z=4};
+edit={cls="edit";left=8;top=8;right=752;bottom=336;autohscroll=false;edge=1;font=LOGFONT(h=-13);multiline=1;z=1}
+)
+/*}}*/
+
+import console;
+
+PrScrnDll = raw.loadDll("E:\gitclone\winOCR\res\PrScrn.dll");
+
+var capture = function(){
+    import win.clip;
+    import gdip.bitmap;
+    import crypt.bin;
+    var dll = PrScrnDll;
+    if(dll.PrScrn()) {
+        var hBmp = win.clip.readBitmap();
+        	var oBitmap = gdip.bitmap(hBmp);
+        	var buffer = oBitmap.saveToBuffer("*.png");
+        	var b64 = crypt.encodeBin(buffer);
+        	//winform.edit.print("data:image/png;base64," ++ b64);
+        	return b64;
+    } else {
+        return null;
+    }
+}
+
+bingMathOcr = function(b64){
+	//console.dump(b64);
+	if not(b64 and #b64 > 0) {
+	    return;
+	}
+	
+	import web.json;
+	import web.rest.jsonClient;
+	import string.template;
+	import inet.whttp;
+	import time;
+	import inet.url;
+	import process;
+	
+	var ts = tonumber(time());
+	var timeStampMs = (tostring(ts) ++ "000");
+	
+	//var inetWhttpObject = inet.whttp("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36");
+	
+	var client = web.rest.jsonClient();
+	
+	var url = "https://www.bing.com/cameraexp/api/v1/getlatex";
+	//url = "http://httpbin.org/anything";
+	
+    var templateCode = string.template();
+    templateCode.template = /**
+		{
+  		"data": "${IMGBASE64}",
+  		"inputForm": "Image",
+  		"clientInfo": {
+    		"app": "Math",
+    		"platform": "ios",
+    		"configuration": "Unknown",
+    		"version": "1.8.0",
+    		"mkt": "zh-cn"
+  		},
+  		"timestamp": "${TIMESTAMP}"
+		}
+	**/
+	 var payload = templateCode.format(
+        IMGBASE64 = b64;
+        TIMESTAMP = timeStampMs;
+     )
+     payload = web.json.parse(payload);
+     //console.dump(payload);
+     var response = client.post(url, payload);
+     var latex = response[["latex"]];
+     response = web.json.stringify(response,true,false);
+	 
+	 if(response and #response > 0) {
+	 	 winform.edit.text = "";
+	 	 winform.edit.print("返回JSON:");
+	     winform.edit.print(response);
+	 }
+	 
+	 
+	 if(latex and #latex > 0) {
+	 	winform.edit.print("");
+	 	winform.edit.print("Latex表达式:");
+	    winform.edit.print(latex);
+	    
+	    
+	    if(winform.checkbox.checked) {
+	        import win.clip;
+	        win.clip.write(latex);
+	    }
+	    
+	    if(winform.checkbox2.checked) {
+	        var url = "https://i.upmath.me/g/";
+	    	url = url ++ inet.url.encodeUri(latex);
+	    	process.execute(url);
+	    }
+	    
+	 }
+	 
+}
+
+// https://i.upmath.me/g/
+
+
+winform.button.oncommand = function(id,event){
+	//winform.show(0x6/*_SW_MINIMIZE*/);
+	winform.show(false);
+    win.delay(180);
+    
+	var b64 = capture();
+	bingMathOcr(b64);
+	
+	//winform.show(0x9/*_SW_RESTORE*/);
+	winform.show(true);
+    win.setForeground(winform.hwnd);
+}
+
+winform.edit.oncommand = function(id,event){
+	
+}
+
+winform.checkbox.oncommand = function(id,event){
+	
+}
+
+winform.checkbox2.oncommand = function(id,event){
+	
+}
+
+winform.show();
+win.loopMessage();

@@ -1,0 +1,56 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="嵌入autohotkey演示";right=599;bottom=399)
+winform.add(
+edit={cls="edit";left=17;top=18;right=565;bottom=374;edge=1;multiline=1;z=1}
+)
+/*}}*/
+
+import ahk; 
+
+//直接定义允许AHK调用的aardio函数（函数名以on开头）
+ahk.onTest = function(param){
+    winform.edit.print( "winform.onTest被ahk调用",param ) 
+}
+
+//运行ahk代码
+ahk.run( `
+#Persistent ;保持ahk线程不退出
+#NoTrayIcon ;不显示托盘图标
+#include <aardio>  ;启动ahk代码中必须加入这句才能与aardio交互
+
+global gVar := ""
+GetCursorPos(hwnd){   
+    
+    POINT_STRUCT = 
+    (
+        UInt x;
+        UInt y;
+    )
+    
+    point := Struct( POINT_STRUCT ) 
+    DllCall("user32.dll\GetCursorPos", "Ptr", point[])   
+    
+    ; 直接调用aardio函数，支持任意类型、不定个数的调用参数
+    aardio.onTest({ x : POINT.x, y : POINT.y })
+    
+    return { x : POINT.x, y : POINT.y }
+}`);
+
+//直接修改ahk全局变量的值
+ahk.setGlobal("gVar","测试一下")
+ 
+/*
+直接调用ahk里定义的全局函数，
+参数和返回值自动支持各种数据类型，就像调用普通aardio函数。
+是不是很神奇？！
+*/
+var point = ahk.GetCursorPos(ahk.external.hwnd);
+winform.edit.print("调用ahk函数的返回值：",point);
+
+// 当然上面的代码用aardio直接写会更简单，例如：
+var point = {int x;int y};
+::User32.GetCursorPos(point)
+
+winform.show() 
+win.loopMessage(); 

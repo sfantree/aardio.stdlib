@@ -1,0 +1,115 @@
+/*
+您可以基于aardio官方开源许可证自由使用本源码。
+本源码引用基于LGPL许可证开源的libvlc组件，可遵守LGPL许可条款自由使用该DLL组件。
+*/
+var dll = raw.loadDll("~\lib\libvlc\.res\libvlc.dll", ,"cdecl");
+
+class libvlc{
+	ctor( ... ){
+		if( !..io.exist("~\lib\libvlc\.res\plugins\") ){
+			error("请下载播放器插件并放置于以下目录：" + ..io.fullpath("~\lib\libvlc\.res\plugins\"),2);
+		}
+
+		argv = ...;
+		if( type(argv) != type.table ){
+			argv = {...};
+		}
+		
+		var handle =  topointer( dll.libvlc_new (#argv,#argv ? { string str[] = argv } ) : null );  
+		this.handle = handle; 
+	
+		..table.gc(this,"close")
+	};
+	loadMediaFile = function(path){
+		path = ..io.fullpath(path);
+		var handle = topointer(  dll.libvlc_media_new_path (this, path) );
+		return handle ? ..libvlc.media(this,handle);
+	};
+	loadMedia = function(url){
+		var handle = topointer(  dll.libvlc_media_new_location (this, url) );
+		return handle ? ..libvlc.media(this,handle); 
+	};
+	mediaPlayer = function(winform){
+		var mediaplayer;
+		try{
+			mediaplayer =  ..libvlc.mediaPlayer(this);
+			if(winform) mediaplayer.setWindow(winform);
+		} 
+		catch(e){
+			..io.stderr.write(e,'\r\n');
+		}
+		if(!mediaplayer) error('创建播放器出错!请检查解码器是否已复制到:"~\\lib\\libvlc\\.res\\plugins"目录',2)
+		return mediaplayer;
+	};
+	setUserAgent = function(name,http){
+		libvlc_set_user_agent(handle,name : "libvlc-aauto",http : ("libvlc/2.2 aauto/" + _AAUTO_VERSION) )
+	}; 
+	getVideoFilterList = function(){  
+		var dsp = {};
+		var plist = topointer( dll.libvlc_video_filter_list_get(handle) ); 
+		var p = plist;
+		while(p){
+			var info = ..raw.convert(p,{string name;string shortname;string longname;string help;pointer next})
+			p = info.next;
+			info.next = null;
+			..table.push(dsp,info);
+		}
+		dll.libvlc_module_description_list_release(plist);
+		return dsp;
+	};
+	getAudioFilterList = function(){  
+		var dsp = {};
+		var plist = topointer( dll.libvlc_audio_filter_list_get(handle) ); 
+		var p = plist;
+		while(p){
+			var info = ..raw.convert(p,{string name;string shortname;string longname;string help;pointer next})
+			p = info.next;
+			info.next = null;
+			..table.push(dsp,info);
+		}
+		dll.libvlc_module_description_list_release(plist);
+		return dsp;
+	};
+	close = function(){
+		if( handle ){ 
+			dll.libvlc_release (handle);  
+			handle = null;
+			this.handle = null;
+		}
+	}   
+	@{ 
+		_topointer = function(){
+			return this.handle;
+		}
+	}
+}
+ 
+
+libvlc._dll = dll;
+import libvlc.media;
+import libvlc.mediaPlayer;
+import libvlc.eventManager;
+namespace libvlc{ 
+ 	lasterr = function(){
+ 		var e = dll.libvlc_errmsg();
+ 		if(e) return  ..raw.tostring( topointer(e), );
+ 	}
+ 	clearerr = function(){
+ 		dll.libvlc_clearerr();
+ 	}  
+}
+
+/**intellisense()
+libvlc(.("参数列表") = @libvlc("-I","dummy","--ignore-config","--extraintf=logger","--verbose=2")
+libvlc() = !libvlc.
+!libvlc.setUserAgent(.(appName,httpName) = 设置UserAgent
+!libvlc.getVideoFilterList() = 可用视频滤镜列表
+!libvlc.getAudioFilterList() = 可用音频滤镜列表
+!libvlc.loadMediaFile(.("本体文件路径") = 打开本地文件创建媒体文件描述对象
+!libvlc.loadMedia(.("媒体文件地址") = 使用协议地址创建媒体文件描述对象
+!libvlc.loadMediaFile() = !libvlcmedia.
+!libvlc.loadMedia() = !libvlcmedia.
+!libvlc.mediaPlayer() = 创建播放器,可选指定一个窗口对象作为参数,\n!libvlcplayer.
+libvlc.lasterr() = 返回错误信息
+libvlc.clearerr() = 清除错误
+end intellisense**/ 

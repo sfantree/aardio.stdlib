@@ -1,0 +1,205 @@
+import win.ui;
+import win.ui.menu;
+import win.ui.statusbar;
+import win.reg;
+import port;    //串口通讯库
+/*DSG{{*/
+mainForm = win.form(text="UartTest";right=599;bottom=399)
+mainForm.add(
+bthOpen={cls="button";text="打开串口";left=13;top=206;right=150;bottom=253;dl=1;dt=1;z=13};
+btnClrCounter={cls="button";text="计数清零";left=13;top=322;right=150;bottom=369;dl=1;dt=1;z=16};
+btnClrRecv={cls="button";text="清空显示";left=255;top=159;right=322;bottom=183;dl=1;dt=1;z=18};
+btnSend={cls="button";text="发送数据";left=13;top=264;right=150;bottom=311;dl=1;dt=1;z=15};
+chkRecvHex={cls="checkbox";text="16进制接收";left=162;top=164;right=247;bottom=182;dl=1;dt=1;z=17};
+chkSendHex={cls="checkbox";text="16进制发送";left=162;top=8;right=247;bottom=26;dl=1;dt=1;z=19};
+combobox1={cls="combobox";left=68;top=27;right=139;bottom=53;dl=1;dt=1;edge=1;items={};mode="dropdownlist";z=4};
+combobox2={cls="combobox";left=68;top=61;right=139;bottom=87;dl=1;dt=1;edge=1;items={};mode="dropdownlist";z=6};
+combobox3={cls="combobox";left=68;top=95;right=139;bottom=121;dl=1;dt=1;edge=1;items={};mode="dropdownlist";z=8};
+combobox4={cls="combobox";left=68;top=128;right=139;bottom=154;dl=1;dt=1;edge=1;items={};mode="dropdownlist";z=10};
+combobox5={cls="combobox";left=68;top=162;right=139;bottom=188;dl=1;dt=1;edge=1;items={};mode="dropdownlist";z=12};
+groupbox1={cls="groupbox";text="初始化";left=13;top=7;right=150;bottom=197;dl=1;dt=1;edge=1;z=2};
+richedit1={cls="richedit";left=162;top=27;right=588;bottom=152;dl=1;dr=1;dt=1;edge=1;hscroll=1;multiline=1;vscroll=1;wrap=1;z=1};
+richedit2={cls="richedit";left=162;top=184;right=588;bottom=369;db=1;dl=1;dr=1;dt=1;edge=1;hscroll=1;multiline=1;vscroll=1;wrap=1;z=14};
+static1={cls="static";text="串口号";left=21;top=33;right=63;bottom=53;dl=1;dt=1;transparent=1;z=3};
+static2={cls="static";text="波特率";left=21;top=66;right=63;bottom=86;dl=1;dt=1;transparent=1;z=5};
+static3={cls="static";text="数据位";left=21;top=99;right=63;bottom=119;dl=1;dt=1;transparent=1;z=7};
+static4={cls="static";text="停止位";left=21;top=132;right=63;bottom=152;dl=1;dt=1;transparent=1;z=9};
+static5={cls="static";text="校验位";left=21;top=165;right=63;bottom=185;dl=1;dt=1;transparent=1;z=11}
+)
+/*}}*/
+var sp = port.SerialPort(); //创建一个串口对象(可以在这里指定串口参数，如果不指定则使用默认值)
+var flag = false;   //串口打开标志
+var nRead = 0;  //已读字节
+var nWrite = 0; //已写字节
+//串口号
+var reg = win.regReader("HKEY_LOCAL_MACHINE\HARDWARE\DEVICEMAP\SERIALCOMM\");   //获取当前计算机的串口列表
+if(reg)
+{
+    for(name,value,t in reg.eachValue()) 
+    {
+        mainForm.combobox1.add(value);
+    }
+    
+    if(mainForm.combobox1.count)
+        mainForm.combobox1.selIndex = 1;
+}
+//波特率
+mainForm.combobox2.add("300");
+mainForm.combobox2.add("600");
+mainForm.combobox2.add("1200");
+mainForm.combobox2.add("2400");
+mainForm.combobox2.add("4800");
+mainForm.combobox2.add("9600");
+mainForm.combobox2.add("14400");
+mainForm.combobox2.add("19200");
+mainForm.combobox2.add("38400");
+mainForm.combobox2.add("56000");
+mainForm.combobox2.add("57600");
+mainForm.combobox2.add("115200");
+mainForm.combobox2.selIndex = 6;
+//数据位
+mainForm.combobox3.add("4");
+mainForm.combobox3.add("5");
+mainForm.combobox3.add("6");
+mainForm.combobox3.add("7");
+mainForm.combobox3.add("8");
+mainForm.combobox3.selIndex = 5;
+//停止位
+mainForm.combobox4.add("1");
+mainForm.combobox4.add("1.5");
+mainForm.combobox4.add("2");
+mainForm.combobox4.selIndex = 1;
+//校验位
+mainForm.combobox5.add("None");
+mainForm.combobox5.add("Odd");
+mainForm.combobox5.add("Even");
+mainForm.combobox5.add("Mark");
+mainForm.combobox5.add("Space");
+mainForm.combobox5.selIndex = 1;
+//状态栏
+status = win.ui.statusbar(mainForm);
+status.addItem( "Status: Ports Closed",250);
+status.addItem( "RX:0",100);
+status.addItem( "TX:0",100);
+//打开或关闭串口
+mainForm.bthOpen.oncommand = function(id,event){
+    try
+    {
+        if(!flag)
+        {
+            //如果串口参数不需频繁改变，也可以在创建串口对象时指定。所有的参数都必须在打开串口前设置
+            sp.PortName = mainForm.combobox1.text;
+            sp.BaudRate = tonumber(mainForm.combobox2.text);
+            sp.DataBits = tonumber(mainForm.combobox3.text);
+            sp.StopBits = mainForm.combobox4.selIndex - 1;
+            sp.Parity = mainForm.combobox5.selIndex - 1;
+            sp.NotifyhWnd = mainForm.hwnd;  //设置接收串口消息的窗口句柄
+            
+            if( sp.Open()==0 )
+            {
+                flag = true;
+                mainForm.bthOpen.text = "关闭串口";
+                mainForm.statusbar.setText( "Status: " + mainForm.combobox1.text + " Opened,"
+                                                       + mainForm.combobox2.text + ","
+                                                       + mainForm.combobox5.text + ","
+                                                       + mainForm.combobox3.text + ","
+                                                       + mainForm.combobox4.text, 1 );
+            }
+        }
+        else
+        {
+            sp.Close();
+            flag = false;
+            mainForm.bthOpen.text = "打开串口";
+            mainForm.statusbar.setText( "Status: Port Closed", 1 );
+        }
+    }
+    catch(e)
+    {
+        mainForm.msgboxErr(e);
+    }
+}
+//发送数据
+mainForm.btnSend.oncommand = function(id,event){
+    if(mainForm.chkSendHex.checked)
+        sp.WriteHex(mainForm.richedit1.text);
+    else
+        sp.Write(mainForm.richedit1.text);
+}
+//发送、接收字节计数清零
+mainForm.btnClrCounter.oncommand = function(id,event){
+    nRead = 0;
+    nWrite = 0;
+    mainForm.statusbar.setText( "RX:" + nRead, 2 );
+    mainForm.statusbar.setText( "TX:" + nWrite, 3 );
+}
+//清空接收区显示
+mainForm.btnClrRecv.oncommand = function(id,event){
+    mainForm.richedit2.text = "";
+}
+//发送区右键菜单
+mainForm.richedit1.wndproc = function(hwnd,message,wParam,lParam){
+    if( message == 0x205/*_WM_RBUTTONUP*/ ){  
+        owner.popMenu();
+    }
+}
+//接收区右键菜单
+mainForm.richedit2.wndproc = function(hwnd,message,wParam,lParam){
+    if( message == 0x205/*_WM_RBUTTONUP*/ ){  
+        owner.popMenu();
+    }
+}
+//窗口消息循环，处理字符串的效率会比较低
+var HighByte = 0;   //声明一个变量缓存汉字的高位字节，避免1个汉字拆分成“两半”
+mainForm.wndproc = function(hwnd,message,wParam,lParam){
+    select( message ) 
+    {
+        case 0x8801/*_UWM_COMM_SENDEDBYTES*/
+        {
+            nWrite += wParam;   //wParam存放已发送的字节数，lParam存放要发送的字节数，if(wParam != lParam) ...
+            mainForm.statusbar.setText( "TX:" + nWrite, 3 );
+        }
+        case 0x8701/*_UWM_COMM_RXCHAR*/
+        {
+            if(mainForm.chkRecvHex.checked)  //16进制显示，不足2位在前面补0，并用空格隔开
+            {
+                mainForm.richedit2.appendText(..string.format("%02X ", lParam ));
+            }
+            else  //字符显示，分两种情况：1、汉字的显示   2、英文数字等字符的显示
+            {
+                if(HighByte)
+                {
+                    mainForm.richedit2.appendText( ..string.pack({HighByte;lParam}) );  //取出缓存的高位字节，组成一个完整的汉字
+                    HighByte = 0;
+                }
+                else
+                {
+                    if(lParam>127)  //如果大于127，认为收到了汉字的高位字节，先缓存起来
+                        HighByte = lParam;
+                        //这里可能要启动一个定时器，如果一定时间内收不到后续的低位字节，则直接显示高位字节
+                    else
+                        mainForm.richedit2.appendText( ..string.pack(lParam) ); //英文数字等字符的显示
+                }
+            }
+            
+            nRead++;
+            mainForm.statusbar.setText( "RX:" + nRead, 2 );
+        }
+        case 0x8901/*_UWM_COMM_FATALERR*/
+        {
+            mainForm.msgboxErr("后台线程已退出，必须关闭串口！");
+        }
+    }
+}
+mainForm.show() 
+return win.loopMessage(
+/**
+    function(msg)   //如果不指定sp.NotifyhWnd，消息将发到主线程
+    {
+        if( msg.message == 0x8701/*_UWM_COMM_RXCHAR*/ )
+            io.print( "串口接收到数据", msg.wParam, msg.lParam);
+    }
+**/
+);
+
+//分享一个多线程异步串口通讯库 1494734358447659.zip

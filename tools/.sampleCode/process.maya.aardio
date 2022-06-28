@@ -1,0 +1,27 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="Maya 界面语言切换工具";right=660;bottom=206;max=false)
+winform.add(
+button={cls="button";text="启动 Maya";left=302;top=91;right=509;bottom=128;z=3};
+cmbLang={cls="combobox";left=104;top=96;right=256;bottom=121;edge=1;items={"en_US";"zh_CN"};mode="dropdown";z=2};
+editMayaPath={cls="edit";left=106;top=49;right=608;bottom=78;edge=1;multiline=1;z=1};
+static={cls="static";text="Maya 路径：";left=26;top=50;right=100;bottom=74;align="right";transparent=1;z=4};
+static2={cls="static";text="选择语言：";left=25;top=95;right=100;bottom=119;align="right";transparent=1;z=5}
+)
+/*}}*/
+
+import process.maya;
+winform.button.oncommand = function(id,event){
+    
+/*
+    import process
+	process.kill("maya.exe")
+
+*/
+	process.maya(MAYA_UI_LANGUAGE = winform.cmbLang.selText) 
+}
+
+winform.editMayaPath.text = process.maya.path()
+
+winform.show();
+win.loopMessage();

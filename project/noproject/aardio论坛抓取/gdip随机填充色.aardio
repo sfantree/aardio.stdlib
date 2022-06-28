@@ -1,0 +1,69 @@
+import win.ui;
+import gdip;//导入GDI+库
+import math;
+/*DSG{{*/
+var winform = ..win.form( bottom=399;parent=...;right=599;text="aardio Form" )
+winform.add(
+button={ bottom=363;text="button";left=423;top=318;z=1;right=525;cls="button" };
+static={ bottom=251;color=0;right=520;left=82;top=205;font=LOGFONT( h=-16;weight=700 );z=2;text="请问怎么让“aardio”的填充色随机改变？谢谢！
+点击按钮，出现路径文字。";transparent=1;cls="static" }
+)
+/*}}*/
+
+math.randomize();
+winform.button.oncommand = function(id,event){
+        //图形对象graphics（可以看作是画板）
+        var Graphics = gdip.graphics(winform)
+       
+        //加上抗锯齿功能
+        Graphics.smoothingMode = 4/*_GdipSmoothingModeAntiAlias*/ ;
+       
+        //创建画笔,画笔pen只能画一个轮廓（画线）
+        var re,Pen = gdip.CreatePen1( 0xFF222222, 2,2/*_GdipUnitPixel*/ );
+       
+        //创建刷子,画刷可以对一个东西进行填充（刷子）。
+        //color = tonumber( math.random(0,255) );
+        //var re,Brush = gdip.CreateSolidFill(color);
+        var re,Brush = gdip.CreateSolidFill(math.random(0xFF000000,0xFFFFFFFF)); //请问这里怎么随机填充颜色？  
+         
+        //创建FontFamily
+        family = gdip.family( "Verdana"  );
+       
+        //创建stringFormat
+        strformat = gdip.stringformat ( );
+        //设置样式
+        strformat.align = 0/*_GdipStringAlignmentNear*/;  
+         
+        //设置文字区域
+        rclayout = ::RECT(60,60,500,150);
+       
+        //创建一个文字路径
+        path = gdip.path( 0/*_GdipFillModeAlternate*/ );
+
+        //添加文字到上面创建的路径中
+        path.addstringI( "aardio", family, 1/*_GdipFontStyleBold*/, 55, rclayout, strformat);
+       
+        /* ***********************************************
+         * GDI+中一般以I结尾的函数，参数使用int类型，而非I结尾的函数，参数使用float类型
+         * 这里的rclayout就是普通的int类型参数组成的RECT结构体
+         * ***********************************************
+        */
+       
+        //fillPath填充路径
+        Graphics.fillPath( Brush, path)
+         
+        //drawPath描边
+        Graphics.drawPath( Pen, path)
+         
+
+        //删除所有GDI+对象  
+        gdip.DeleteBrush(Brush);
+        gdip.DeletePen(Pen);
+         
+        strformat.delete();
+        family.delete();
+        path.delete();
+}
+
+winform.show()
+win.loopMessage();

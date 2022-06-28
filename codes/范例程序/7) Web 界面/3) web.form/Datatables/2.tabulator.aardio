@@ -1,0 +1,101 @@
+//Tabulator
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="tabulator - 表格组件（点击编辑，可排序，支持响应式数据）";right=759;bottom=383;bgcolor=16777215)
+winform.add(
+button={cls="button";text="修改网页响应式数据";left=556;top=322;right=736;bottom=368;db=1;dr=1;z=3};
+edit={cls="edit";left=16;top=324;right=534;bottom=370;autohscroll=false;db=1;dr=1;dt=1;edge=1;multiline=1;vscroll=1;z=2};
+static={cls="static";text="Static";left=6;top=7;right=743;bottom=316;clip=1;db=1;dl=1;dr=1;dt=1;transparent=1;z=1}
+)
+/*}}*/
+
+import web.form;
+var wb = web.form.ie11(winform.static);
+assert(wb,"仅支持 IE11")
+
+import web.json;
+wb.external = {
+	getReactiveData = function(event){
+		if( !owner.jsReactiveData ) {
+			var data = {
+ 				{id:1, name:"Oli Bob", age:"12", col:"red", dob:"",enabled:true},
+ 				{id:2, name:"Mary May", age:"1", col:"blue", dob:"14/05/1982",enabled:true},
+ 				{id:3, name:"Christine Lobowski", age:"42", col:"green", dob:"22/05/1982",enabled:true},
+ 				{id:4, name:"Brendon Philips", age:"125", col:"orange", dob:"01/08/1980",enabled:true},
+ 				{id:5, name:"Margret Marmajuke", age:"16", col:"yellow", dob:"31/01/1999",enabled:false},
+ 			};
+ 			
+ 			data  = web.json.stringifyArray(data);
+ 			owner.jsReactiveData  = wb.script.JSON.parse( data );
+ 		}
+ 		
+ 		return owner.jsReactiveData;
+	}
+	onRowClick = function(id,name){
+		winform.edit.print(id,name);
+	} 
+}
+
+winform.button.oncommand = function(id,event){
+	var jsData  = wb.external.getReactiveData();
+	
+	//修改 JS 数据，Tabulator 表格自动刷新。
+	jsData[1].age = jsData[1].age + 10;
+}
+
+/*
+文档： http://tabulator.info/docs/4.9/quickstart
+下面使用 CDN 服务器加载 JS 文件初始化可能有点慢，实际开发请先下载到本地。
+aardio 可直接支持加载资源目录（发布可嵌入 EXE）下的网页文件。
+*/
+ 
+wb.html = /**
+<!doctype html>
+<html><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" /> 
+  <script src="https://lib.baomitu.com/promise-polyfill/8.2.0/polyfill.min.js"></script>
+  <script src="https://unpkg.com/browse/whatwg-fetch@3.6.2/dist/fetch.umd.js"></script> 
+  <script src="https://lib.baomitu.com/tabulator/4.9.3/js/tabulator.min.js"></script> 
+  <link rel="stylesheet" href="https://lib.baomitu.com/tabulator/4.9.3/css/tabulator.min.css" />
+  <style type="text/css">
+    html, body { margin: 0;  }
+  </style>
+</head>
+<body>
+
+<div id="example-table"></div>
+<script>
+ 
+//在 ID 为 "example-table" 的 DOM 节点上创建 Tabulator 对象
+var table = new Tabulator("#example-table", {
+	reactiveData:true, //支持响应式数据
+	data: external.getReactiveData(), //调用 aardio 函数获取表格数据
+ 	height:305, //指定表格高度可启用虚拟 DOM，并显著提升性能
+ 	columns:[ //定义列
+	 	{title:"名字", field:"name", width:150, editor:"input" }, //editor 指定编辑功能
+	 	{title:"年龄", field:"age", hozAlign:"left", formatter:"progress", editor:"range", editorParams:{
+    		min:0,
+    		max:100,
+    		step:10,
+    		elementAttributes:{
+        		maxlength:"3", //编辑数值时最大允许最大3个字符
+    		}
+		}},
+	 	{title:"喜欢的颜色", field:"col"},
+	 	{title:"生日", field:"dob", sorter:"date", hozAlign:"center",editor:"input"},
+	 	{title:"启用", field:"enabled",editor:true, formatter:"tickCross"} 
+ 	],
+ 	layout:"fitColumns", //自动缩放列宽
+ 	rowClick:function(e, row){ //单击行
+ 		var data = row.getData();
+ 		external.onRowClick( data.id,data.name ); //调用 aardio 函数
+ 	},
+});
+</script>
+</body>
+</html>
+**/
+
+winform.show();
+win.loopMessage();

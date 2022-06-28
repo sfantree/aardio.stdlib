@@ -1,0 +1,23 @@
+//.. 扩展工具
+import web.browser;
+namespace web.util;
+
+ieBrowser = function( url ){ 
+	var browser = ..web.browser(
+		Menubar = false; 
+		AddressBar = true; 
+		ToolBar = true; 
+		Resizable = true; 
+		Visible = true;
+	)
+	browser.go(url)
+	
+	var hwnd = browser._form.hwnd;
+	if( hwnd ){ 
+		..win.setForeground(hwnd) 
+	}
+}
+
+/**intellisense(web.util)
+ieBrowser("http://www__") = 使用浏览器打开指定网页
+end intellisense**/

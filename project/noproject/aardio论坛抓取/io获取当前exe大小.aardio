@@ -1,0 +1,6 @@
+
+io.open();//打开控制台
+import fsys
+var str2=fsys.formatSize(#string.load(io._exepath))
+io.print("大小 ",str2)
+execute("pause")

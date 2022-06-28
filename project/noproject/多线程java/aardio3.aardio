@@ -1,0 +1,37 @@
+import console; 
+import thread;
+import thread.manage;
+import thread.works;
+Task = function(t){
+/*
+	thread.lock("临界区名称",function(){
+		import console;
+		console.log("haha", thread.getId());
+		sleep(5000)
+	})
+*/
+	import console;
+	sleep(800);
+	console.log("haha", t, thread.getId());
+}
+
+
+Main2 = function(){
+    pool = thread.works(2, Task);
+    for(i=1;10;1){
+    	pool.push(i)
+    }
+    pool.waitClose()
+}
+
+Main = function(){
+	var t1 = time.tick();
+	Main2();
+	var t2 = time.tick();
+	console.log(t2 - t1);
+}
+
+
+Main();
+
+console.pause(true);

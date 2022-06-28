@@ -1,0 +1,19 @@
+import web.form;
+/*DSG{{*/
+var winform = win.form(parent=...; bottom=451;scroll=1;text="aardio Form";right=681 )
+winform.add(  )
+/*}}*/
+
+var wb = web.form( winform )
+var html = /**
+<html>
+        <td><h5>2013-02-21</h5></td>
+</html>
+**/
+wb.write( html )
+winform.show();
+
+ele = wb.getElesByTag("h5")
+win.msgbox(ele(0).innerText,"aardio")
+
+win.loopMessage();

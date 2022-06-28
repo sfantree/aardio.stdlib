@@ -1,0 +1,84 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="Linux服务器 - SSH公钥快速安装工具";right=630;bottom=507)
+winform.add(
+btnLogin={cls="button";text="仅登录";left=370;top=405;right=526;bottom=458;font=LOGFONT(h=-13);z=12};
+btnSshKey={cls="button";text="添加到 SSH KEY 服务器";left=130;top=404;right=355;bottom=461;font=LOGFONT(h=-13);z=9};
+editIp={cls="edit";left=104;top=26;right=357;bottom=57;edge=1;font=LOGFONT(h=-13);multiline=1;z=1};
+editPort={cls="edit";text="22";left=104;top=70;right=357;bottom=101;edge=1;font=LOGFONT(h=-13);multiline=1;z=10};
+editPwd={cls="edit";left=104;top=157;right=357;bottom=188;edge=1;font=LOGFONT(h=-13);multiline=1;z=5};
+editSshKey={cls="edit";left=104;top=200;right=580;bottom=395;autohscroll=false;edge=1;font=LOGFONT(h=-13);multiline=1;vscroll=1;z=7};
+editUserName={cls="edit";text="root";left=104;top=113;right=357;bottom=144;edge=1;font=LOGFONT(h=-13);multiline=1;z=2};
+static={cls="static";text="服务器IP：";left=18;top=33;right=99;bottom=55;align="right";font=LOGFONT(h=-13);transparent=1;z=3};
+static2={cls="static";text="用户名：";left=18;top=118;right=99;bottom=140;align="right";font=LOGFONT(h=-13);transparent=1;z=4};
+static3={cls="static";text="登录密码：";left=18;top=161;right=99;bottom=183;align="right";font=LOGFONT(h=-13);transparent=1;z=6};
+static4={cls="static";text="SSH公钥：";left=18;top=203;right=99;bottom=225;align="right";font=LOGFONT(h=-13);transparent=1;z=8};
+static5={cls="static";text="端口：";left=18;top=76;right=99;bottom=98;align="right";font=LOGFONT(h=-13);transparent=1;z=11}
+)
+/*}}*/
+
+import process.putty
+winform.btnSshKey.oncommand = function(id,event){
+    var ip = winform.editIp.text;
+    if(!#ip){
+        return winform.editIp.showErrorTip(,"请输入IP");
+    }
+    
+    var user = winform.editUserName.text;
+    if(!#user){
+        return winform.editUserName.showErrorTip(,"请输入用户名");
+    }
+    
+    var pwd = winform.editPwd.text;
+    if(!#pwd){
+        return winform.editPwd.showErrorTip(,"请输入密码");
+    }
+    
+    var port = winform.editPort.text;
+    if(!#port){
+        return winform.editPort.showErrorTip(,"请输入密码");
+    }
+    
+    var pubKey = winform.editSshKey.text;
+    if(!#pubKey){
+        return winform.editSshKey.showErrorTip(,"请输入密码");
+    }
+    
+    var prcs = process.putty(ip,pwd,user,,port)
+    prcs.send("mkdir ~/.ssh;chmod 700 ~/.ssh;chmod 600 ~/.ssh/authorized_keys;echo '"+pubKey+"' > ~/.ssh/authorized_keys")	
+}
+
+var sshKeyPath = io.getSpecial(0x28/*_CSIDL_PROFILE*/,"/.ssh/id_rsa.pub") ;
+var keyData = string.load(sshKeyPath);
+winform.editSshKey.text = keyData : "";
+
+import fsys.config;
+config  = fsys.config( io.appData("/aardio/std/putty/ssh-key-tool") ); 
+winform.bindConfig( config.winform,{edit = "text";} );
+
+winform.btnLogin.oncommand = function(id,event){
+    var ip = winform.editIp.text;
+    if(!#ip){
+        return winform.editIp.showErrorTip(,"请输入IP");
+    }
+    
+    var user = winform.editUserName.text;
+    if(!#user){
+        return winform.editUserName.showErrorTip(,"请输入用户名");
+    }
+    
+    var pwd = winform.editPwd.text;
+    if(!#pwd){
+        return winform.editPwd.showErrorTip(,"请输入密码");
+    }
+    
+    var port = winform.editPort.text;
+    if(!#port){
+        return winform.editPort.showErrorTip(,"请输入密码");
+    } 
+    
+    var prcs = process.putty(ip,pwd,user,,port)	
+}
+
+winform.show();
+win.loopMessage();

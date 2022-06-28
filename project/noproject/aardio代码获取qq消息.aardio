@@ -1,0 +1,59 @@
+import win.ui;
+import com;
+import winex;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add(
+button={cls="button";text="取QQ信息";left=658;top=21;right=742;bottom=60;z=2};
+edit={cls="edit";text="edit";left=10;top=5;right=640;bottom=465;autohscroll=false;autovscroll=1;edge=1;multiline=1;z=1}
+)
+/*}}*/
+var oleacc = ..raw.loadDll("OLEACC.DLL"); 
+IID_IAccessible = '\xE0\x36\x87\x61\x3D\x3C\xCF\x11\x81\x0C\x00\xAA\x00\x38\x9B\x71';
+var findAccessibleChildren;
+findAccessibleChildren = function(accParent,name){
+    //这里用结构体数组也可以,直接分配内存代码更简单,因为aardio分配内存时已经初始化为VT_EMPTY,所以不需要 VariantInit
+    var output = raw.malloc( 16/*sizeof(Variant)*/ * accParent.accChildCount );
+ 
+    obtained = {int size};//用结构体给API提供int指针
+    var pAccParent = com.GetPointer(accParent); //aardio为了避免指针操作失误，不允许COM对象自动转换为指针，所以自己取一下
+    var hr,obtained = oleacc.AccessibleChildren(pAccParent, 0,accParent.accChildCount, output,obtained);
+    com.Release(pAccParent); 
+    if( hr < 0 ) return;//COM中小于0的都是错误码
+    for(i=0;obtained.size-1;1){
+        var p = raw.toPointer(output,16*i);
+        var t = raw.convert(p,{word value}).value;
+        if( t != 9/*_VT_DISPATCH*/ ) continue;
+        
+        //将数组中Variant结构体的指针转换为Variant对象,方便操作
+        var variant = com.Variant( p,true);
+        var accChild = com.QueryObject( variant.pdispVal ); //转换为COM对象(COM.IDispatch)
+        variant.clear();//释放Variant对象
+        
+        if( accChild.accName(0/*CHILDID_SELF*/) == name ){  
+            var v = accChild.accValue(0/*CHILDID_SELF*/);
+            if(#v) return v;
+        }
+        
+        var v = findAccessibleChildren(accChild,name);
+        if(#v) return v;
+    }
+}
+findAccessibleString = function(hwnd,name){
+    var pvObject = {ptr p}
+    if( 0 == oleacc.AccessibleObjectFromWindow(hwnd,0,IID_IAccessible,pvObject) ){ 
+        var accParent = com.QueryObject( pvObject.p ); //转换为COM对象(COM.IDispatch)
+        com.Release(pvObject.p);
+        
+        return findAccessibleChildren( com.QueryObject( pvObject.p ),name );
+    }   
+}
+winform.button.oncommand = function(id,event){  
+    for hwnd in winex.each( "TXGuiFoundation") { 
+        var qqMessage = findAccessibleString(hwnd,"消息");
+        if( #qqMessage ) winform.edit.log( qqMessage)
+    }
+    
+}
+winform.show() 
+win.loopMessage();

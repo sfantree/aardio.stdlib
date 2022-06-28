@@ -1,0 +1,57 @@
+import win.ui;
+import web.form
+import console
+import inet.whttp
+/*DSG{{*/
+mainForm = win.form(text="baobaozhaosheng";right=959;bottom=767)
+mainForm.add(
+button={cls="button";text="网页模拟板";left=616;top=24;right=792;bottom=64;z=2};
+button2={cls="button";text="post版本";left=616;top=80;right=792;bottom=120;z=3};
+custom={cls="custom";text="custom";left=16;top=24;right=600;bottom=752;z=1}
+)
+/*}}*/
+wb =web.form(mainForm.custom) ;
+wb.noScriptErr=true;
+wb.go("http://2018bm.wlxsyyey.com/h4gyjk5gfdf.php")
+mainForm.button.oncommand = function(id,event){
+        var html =wb.body.innerHTML;
+        var x =string.match(html,"id_card(\w+)") ;
+        var ele=wb.getEle("name"+x)//名字
+        ele.value="张平"
+        var ele=wb.getEle("id_card"+x)//身份证
+        ele.value="320800198811112718"
+        var ele=wb.getEle("home_addr"+x)//地址
+        ele.value="11"
+    var ele=wb.getEle("father"+x)//父亲
+        ele.value="张兵"
+     var ele=wb.getEle("father_workspace"+x)//工作地址
+        ele.value="江苏"
+         var ele=wb.getEle("father_phone"+x)//电话
+        ele.value="18936399860"
+        var ele=wb.getEle("mother"+x)//母亲
+        ele.value="张兵"
+     var ele=wb.getEle("mother_workspace"+x)//工作地址
+        ele.value="江苏"
+         var ele=wb.getEle("mother_phone"+x)//电话
+        ele.value="18936399860"
+        var ele=wb.getEle("ctrbtn")//
+        ele.click()       
+}
+mainForm.button2.oncommand = function(id,event){       
+        var whttp= inet.whttp();
+        var html =whttp.get("http://2018bm.wlxsyyey.com/h4gyjk5gfdf.php") ;
+        var y =string.match(html,"id_card(\w+)") ;        
+        var name = "张平";
+        var id_card="320821128811112718"
+        var sex ="m" ;//男性还是女性
+        var year ="2017" ;
+        var month="01"
+        var day="01"
+    postdata="name"+y+"="+name+"&sex"+y+"="+sex+"&id_card"+y+"="+id_card+"&year"+y+"="+year+"&month"+y+"="+month+"&day"+y+
+        "="+day+"&home_addr"+y+"=11&father"+y+"=%E5%BC%A0%E5%85%B5&father_workspace"+y+"=%E6%B1%9F%E8%8B%8F&father_phone"+y+"=13936390850&mother"+y+
+         "=%E5%BC%A0%E5%85%B5&mother_workspace"+y+"=%E6%B1%9F%E8%8B%8F&mother_phone"+y+"=13936390785"  
+    var html =whttp.post("http://2018bm.wlxsyyey.com/retinfo.php",postdata) ;
+        console.log(html)               
+}
+mainForm.show();
+return win.loopMessage();

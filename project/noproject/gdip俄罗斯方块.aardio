@@ -1,0 +1,438 @@
+import win.ui;
+import gdip;//导入GDI+库
+import win.graphics;
+//import string
+/*DSG{{*/
+var winform = win.form(parent=...; right=367;bgcolor=15780518;bottom=433;max=false;text="俄罗斯方块 1.0" )
+winform.add(
+pic2={ bottom=87;right=294;left=274;autosize=1;top=67;z=5;text="picturebox";image=$"\res\方块1.jpg";hide=1;cls="picturebox" };
+pic1={ bottom=87;right=269;left=249;autosize=1;top=67;z=4;text="picturebox";image=$"\res\方块1.jpg";hide=1;cls="picturebox" };
+static2={ bottom=130;right=354;left=243;top=17;transparent=1;text="";z=3;edge=1;cls="static" };
+static4={ bottom=214;align="center";right=354;left=243;top=189;center=1;z=9;text="";transparent=1;edge=1;cls="static" };
+static3={ bottom=176;align="center";right=354;left=243;top=151;center=1;z=8;text="";transparent=1;edge=1;cls="static" };
+static5={ bottom=250;right=354;left=243;top=225;center=1;transparent=1;z=10;text="";edge=1;cls="static" };
+button={ bottom=420;color=0;text="开始";left=267;top=372;font=LOGFONT( name='华文新魏';h=-21 );z=1;right=327;cls="button" };
+static={ bottom=417;notify=1;right=217;left=14;top=14;z=2;text="";nWrap=1;edge=1;cls="static" };
+pic3={ bottom=87;right=320;left=300;autosize=1;top=67;z=6;text="picturebox";image=$"\res\方块1.jpg";hide=1;cls="picturebox" };
+pic4={ bottom=87;right=345;left=325;autosize=1;top=67;z=7;text="picturebox";image=$"\res\方块1.jpg";hide=1;cls="picturebox" }
+)
+/*}}*/
+
+img = gdip.image($"\res\方块1.jpg" )
+//游戏画布
+显示画布 = win.graphics.canvas();
+显示画布.fromWindow(winform.static);
+//缓存画布，在缓存画布上作画，然后更新到显示画布上。
+缓存画布 = win.graphics.canvas();
+缓存画布.create();
+缓存画布.image = win.graphics.image(显示画布,201,401);
+
+g = gdip.graphics(缓存画布.handle);
+re,Brush = gdip.CreateSolidFill(0xFFFFFFFF);
+缓存画布.brush.color = 0xffffff
+缓存画布.fillRect(win.getClientRect(winform.static.hwnd));
+//刷新时重画
+winform.static.wndproc = function(hwnd,message,wParam,lParam){
+    select(message) {//判断消息类型
+        case 0xF/*_WM_PAINT*/{
+            显示画布.beginPaint();
+            缓存画布.bitBlt(显示画布, 0, 0, 201, 401);
+            显示画布.endPaint();
+        }
+    }
+    //无返回值则继续调用默认回调函数
+}
+
+方块数据 = {
+    //竖条
+    {1;0;0;0;1;0;0;0;1;0;0;0;1;0;0;0;1;1;1;1;0;0;0;0;0;0;0;0;0;0;0;0};
+    // 2 字形
+    {1;1;0;0;0;1;1;0;0;0;0;0;0;0;0;0;0;1;0;0;1;1;0;0;1;0;0;0;0;0;0;0};
+    //7 字形
+    {1;1;0;0;0;1;0;0;0;1;0;0;0;0;0;0;0;0;1;0;1;1;1;0;0;0;0;0;0;0;0;0;1;0;0;0;1;0;0;0;1;1;0;0;0;0;0;0;1;1;1;0;1;0;0;0;0;0;0;0;0;0;0;0};
+    //丁字形
+    {0;1;0;0;1;1;1;0;0;0;0;0;0;0;0;0;1;0;0;0;1;1;0;0;1;0;0;0;0;0;0;0;1;1;1;0;0;1;0;0;0;0;0;0;0;0;0;0;0;1;0;0;1;1;0;0;0;1;0;0;0;0;0;0};
+    //反 7 字形
+    {1;1;0;0;1;0;0;0;1;0;0;0;0;0;0;0;1;1;1;0;0;0;1;0;0;0;0;0;0;0;0;0;0;1;0;0;0;1;0;0;1;1;0;0;0;0;0;0;1;0;0;0;1;1;1;0;0;0;0;0;0;0;0;0};
+    //反 2 字形
+    {0;1;1;0;1;1;0;0;0;0;0;0;0;0;0;0;1;0;0;0;1;1;0;0;0;1;0;0;0;0;0;0};
+    //方块
+    {1;1;0;0;1;1;0;0;0;0;0;0;0;0;0;0}
+}
+
+winform.button.oncommand = function(id,event){
+    select(owner.text) {
+        case "开始" {
+            owner.text = "暂停"
+            暂停 = false
+            总分 = 0
+            关卡 = 1
+            设置关卡(关卡)
+            画下落块(偏移值,下落块左边,下落块顶边)
+            for(i=1;4;1){
+                winform["pic"+i].hide = false
+            }
+            画提示块(下一类型)
+            winform.static.redraw()
+            winform.settimer(tmid,下落速度)
+        }
+        case "继续" {
+            owner.text = "暂停"
+            暂停 = false
+            winform.settimer(tmid,下落速度)
+        }
+        case "暂停" {
+            owner.text = "继续"
+            暂停 = true
+            winform.settimer(tmid,-1)
+        }
+    }
+}
+
+tmid = winform.addtimer(
+    -1/*毫秒*/,
+    function(hwnd,msg,id,tick){//定时执行代码
+        下落()
+    }
+);
+
+math.randomize()
+初始化游戏区= function(积木层数){
+    //创建虚拟游戏区
+    游戏区 = {}
+    for(i=1;20;1){
+        table.push(游戏区,{0;0;0;0;0;0;0;0;0;0})
+    }
+    //在游戏区底部随机生成 N 层积木
+    for(i=20;20-积木层数+1;-1){
+        for(j=1;10;1){
+            游戏区[ i ][j] = math.random(0, 1)
+        }
+    }
+    游戏区画方块()
+}
+
+设置关卡 = function(关卡){
+    类型 = math.random(1, 7)
+    下一类型 = math.random(1, 7)
+    偏移值 = 1
+    下落块左边 = 4
+    下落块顶边 = 1
+    过关还差分数 ＝ (关卡-1) * 500 ＋ 500
+    下落速度 = 500 － (关卡-1) * 25
+    初始化游戏区( math.modf(关卡/2) )
+    更新信息()
+}
+
+更新信息 = function(){
+    winform.static3.text = string.format("第 %d 关",关卡 )
+    winform.static4.text = string.format("总分：%d",总分 )
+    winform.static5.text = string.format("过关还差 %d 分",过关还差分数 )   
+}
+
+消除整层 = function(){
+    var 消除整层 = 0
+    var 消除 = false;
+    var 分数 = 0;
+    for(i=1;20;1){
+        if( eval(string.join(游戏区[ i ],"+"))=10 ){
+            table.remove(游戏区,i)
+            table.insert(游戏区,{0;0;0;0;0;0;0;0;0;0})
+            消除整层++
+            消除 = true
+        }
+    }
+   
+    select(消除整层) {
+        case 0 {
+            return 消除;
+        }
+        case 1 {
+            分数 = 10
+        }
+        case 2 {
+            分数 = 40
+        }
+        case 3 {
+            分数 = 80
+        }
+        case 4 {
+            分数 = 160
+        }
+    }
+    总分 += 分数
+    过关还差分数 -= 分数
+    if(过关还差分数<=0){
+        //进入下一关卡
+        关卡++
+        if(关卡=15){
+            winform.msgbox("恭喜你全部通关！")
+            winform.settimer(tmid,-1)
+            return ;
+        }
+        设置关卡(关卡)
+    }
+    更新信息()
+    return 消除;
+}
+
+游戏区画方块 = function(){
+    g.fillRectangleI( Brush,0,0,200,400)
+    for(i=1;20;1){
+        for(j=1;10;1){
+            if(游戏区[ i ][j]=1){
+                g.drawImageRectI( img ,(j-1)*20,(i-1)*20,20, 20)  //指定输出大小
+            }
+        }
+    }
+    winform.static.redraw()
+}
+
+判断左移 = function(){
+    var 偏移量 = 偏移值;
+    for(i=1;4;1){
+        for(j=1;4;1){
+            if(方块数据[类型][偏移量]=1){
+                if((下落块左边+j-1)=1){
+                    return false;
+                }
+                if( 游戏区[下落块顶边+i-1][下落块左边+j-1-1]=1 ){
+                    return false;
+                }
+            }
+            偏移量++
+        }
+    }
+    return true;
+}
+
+左移 = function(){
+    if(判断左移()){
+        消除下落块(偏移值,下落块左边,下落块顶边)   
+        下落块左边--
+        画下落块(偏移值,下落块左边,下落块顶边)
+        winform.static.redraw()
+    }
+}
+
+判断右移 = function(){
+    var 偏移量 = 偏移值;
+    for(i=1;4;1){
+        for(j=1;4;1){
+            if( 方块数据[类型][偏移量]=1){
+                if((下落块左边+j-1)=10){//已经到最右边
+                    return false;
+                }
+                if( 游戏区[下落块顶边+i-1][下落块左边+j-1+1]=1 ){
+                    return false;
+                }
+            }
+            偏移量++
+        }
+    }
+    return true;
+}
+
+右移 = function(){
+    if(判断右移()){
+        消除下落块(偏移值,下落块左边,下落块顶边)
+        下落块左边++
+        画下落块(偏移值,下落块左边,下落块顶边)  
+        winform.static.redraw()
+    }   
+}
+
+判断下落 = function(左边,顶边){
+    var 偏移量 = 偏移值;
+    for(i=1;4;1){
+        for(j=1;4;1){
+            if( 方块数据[类型][偏移量]=1){
+                if((顶边+i-1)=20){//已经到最底下
+                    return false;
+                }
+                if( 游戏区[顶边+i-1+1][左边+j-1]=1 ){
+                    return false;
+                }               
+            }
+            偏移量++
+        }
+    }
+    return true;
+}
+
+下落 = function(){
+    if(判断下落(下落块左边,下落块顶边)){
+        消除下落块(偏移值,下落块左边,下落块顶边)
+        下落块顶边++
+        画下落块(偏移值,下落块左边,下落块顶边)  
+
+    }else {
+        填充下落块(偏移值,下落块左边,下落块顶边)
+        if(下落块顶边=1){
+            winform.settimer(tmid,-1)
+            暂停 = true
+            winform.msgbox("游戏结束了")
+            winform.static.redraw()
+            winform.button.text = "开始"
+            关卡 = 1
+            return ; //游戏结束
+        }
+        
+        if(消除整层()){
+            游戏区画方块()
+        }
+        //开始新下落块
+        下落块左边 = 4
+        下落块顶边 = 1
+        类型 = 下一类型
+        下一类型 = math.random(1, 7)
+        画提示块(下一类型)
+        偏移值 = 1
+        画下落块(偏移值,下落块左边,下落块顶边)
+    }   
+    winform.static.redraw()
+}
+
+判断翻转 = function(){
+    var 偏移量 = 偏移值;
+    偏移量 += 16
+    if(偏移量 >#方块数据[类型]){
+        偏移量 = 1
+    }
+    for(i=1;4;1){
+        for(j=1;4;1){
+            if(方块数据[类型][偏移量]>=1){
+                if((下落块顶边+i-1)>20 or (下落块左边+j-1)>10){
+                    return false;
+                }
+                if(游戏区[下落块顶边+i-1][下落块左边+j-1]=1 ){
+                    return false;
+                }
+            }
+            偏移量++
+        }
+    }
+    return true;
+}
+
+翻转 = function(){
+    if(判断翻转()){
+        消除下落块(偏移值,下落块左边,下落块顶边)
+        
+        偏移值 += 16
+        if(偏移值 >#方块数据[类型]){
+            偏移值 = 1
+        }
+        画下落块(偏移值,下落块左边,下落块顶边)
+    }
+    winform.static.redraw()
+}
+
+画下落块 = function(偏移量,左边,顶边){
+    var re,Pen = gdip.CreatePen1( 0xFFFF0000, 1, gdip.GpUnit.UnitPixel );
+    var 投影块顶边 = 顶边
+    while(判断下落(左边,投影块顶边) ) {
+        投影块顶边++
+    }
+   
+    for(i=1;4;1){
+        for(j=1;4;1){
+            if(方块数据[类型][偏移量]){
+                g.drawImageRectI(img, (j-1)*20+(左边-1)*20, (i-1)*20+(顶边-1)*20, 20, 20);
+                g.drawRectangleI(Pen, (j-1)*20+(左边-1)*20, (i-1)*20+(投影块顶边-1)*20, 20, 20);
+            }
+            偏移量++
+        }
+    }
+    winform.static.redraw()
+}
+
+消除下落块 = function(偏移量,左边,顶边){
+    var re,Pen = gdip.CreatePen1( 0xFFFFFFFF, 1, gdip.GpUnit.UnitPixel );
+    var 投影块顶边 = 顶边
+    while(判断下落(左边,投影块顶边) ) {
+        投影块顶边++
+    }
+   
+    for(i=1;4;1){
+        for(j=1;4;1){
+            if(方块数据[类型][偏移量]){
+                g.fillRectangleI( Brush, (j-1)*20+(左边-1)*20, (i-1)*20+(顶边-1)*20, 20, 20);
+                g.drawRectangleI(Pen, (j-1)*20+(左边-1)*20, (i-1)*20+(投影块顶边-1)*20, 20, 20);
+            }
+            偏移量++
+        }
+    }
+//  winform.static.redraw()
+}
+
+填充下落块 = function(偏移量,左边,顶边){
+    var re,Pen = gdip.CreatePen1( 0xFFFFFFFF, 1, gdip.GpUnit.UnitPixel );
+    for(i=1;4;1){
+        for(j=1;4;1){
+            if(方块数据[类型][偏移量]){
+                游戏区[顶边+i-1][左边+j-1] = 1
+                g.drawRectangleI(Pen, (j-1)*20+(左边-1)*20, (i-1)*20+(顶边-1)*20, 20, 20);
+            }
+            偏移量++
+        }
+    }
+}
+
+画提示块 = function(提示类型){
+    var 偏移量 = 1
+    var x,y = winform.static2.getPos();
+    var h = 1
+    for(i=1;4;1){
+        for(j=1;4;1){
+            if(方块数据[提示类型][偏移量]){
+                winform["pic"+h].left = (j-1)*20 +x +30
+                winform["pic"+h].top = (i-1)*20+y+20
+                h++
+            }
+            偏移量++
+        }
+    }
+}
+
+import key.hook
+//创制钩子
+hk = key.hook();
+//钩子回调函数
+hk.proc=function(msg,vkcode,scancode){
+    if(暂停){
+        return ;
+    }
+    select(msg) {
+        case 0x101/*_WM_KEYUP*/{
+            select(vkcode) {
+                case 37 {
+                    左移();
+                }
+                case 38 {
+                    翻转()
+                }
+                case 39 {
+                    右移()
+                }
+                case 40 { //快速下落
+                    var 顶边 = 下落块顶边
+                    var 高度 = 0
+                    while(判断下落(下落块左边,顶边)){
+                        高度++
+                        顶边++
+                    }
+                    if(高度){
+                        for(i=1;高度-1;1){
+                            下落()
+                        }   
+                    }
+                }
+            }
+        }
+    }
+}
+
+winform.show()
+win.loopMessage();
+return winform;

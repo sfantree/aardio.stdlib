@@ -1,0 +1,43 @@
+ 
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="工程向导 - winform";right=1031;bottom=712;bgcolor=16777215;border="dialog frame")
+winform.add()
+/*}}*/
+
+import web.form; 
+var wb = web.form( winform,5/*_UIFLAG_DIALOG*/|4/*_UIFLAG_NO3DBORDER*/ | 8/*_UIFLAG_SCROLL_NO*/,,,true);
+wb.html = /**
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8"> 
+</head>
+<body>
+调用系统自带的 Chrome 或 Edge 浏览器创建应用程序,兼容支持 Chrome 启动参数的浏览器。<br>
+不需要携带巨大的运行库，在网页Javascript中可以非常方便的本地系统函数，访问本地文件。<br>
+可以方便的一键生成体积较小的单个EXE文件，持 Chrome 浏览器的全部功能。<br><br>
+
+支持 CEF3 浏览器组件，不需要了 CEF3 复杂的接口就可以直接让网页与本地代码交互。<br>
+支持兼容 Chrome 启动参数的 Chromium  内核浏览器,兼容系统自带的 Edge(Chromium)。<br>
+如果没有找到可用的浏览器会下载安装 Edge(Chromium)<br><br>
+
+此示例演示了 Typescript + React Hooks + Ant Design 的用法。<br>
+1、请先安装 Node.js,VS Code,yarn 等前端开发环境。<br><br>
+
+2、然后在此工程内右键点「网页源码」目录，弹出菜单中点击：「用外部编辑器打开」<br>
+默认会在 VS Code 中打开，在 VS Code 中运行命令 yarn 安装依赖。<br><br>
+
+3、然后运行命令 yarn start 启动网页调试服务器即可（修改源码网页可实时刷新）。<br>
+发布 EXE 前在 VS Code 中运行 yarn build 命令即可，可生成独立的 EXE 文件。<br>
+</body>
+</html>
+**/
+
+winform.getTemplatePath = function(){
+	return io.fullpath("/template/web/chrome-app/") 
+}
+
+winform.show() 
+win.loopMessage();
+return winform;

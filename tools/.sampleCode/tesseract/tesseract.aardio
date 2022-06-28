@@ -1,0 +1,137 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="Tesseract OCR";right=759;bottom=311;border="dialog frame")
+winform.add(
+btnDown={cls="button";text="下载语言包";left=392;top=208;right=536;bottom=244;db=1;dr=1;z=4};
+button={cls="button";text="识别";left=568;top=208;right=712;bottom=244;db=1;dr=1;z=2};
+cbLang={cls="combobox";left=200;top=216;right=376;bottom=240;db=1;dr=1;edge=1;items={};mode="dropdown";vscroll=1;z=3};
+edit={cls="edit";left=352;top=8;right=720;bottom=184;db=1;dr=1;dt=1;edge=1;multiline=1;z=1};
+plus={cls="plus";left=24;top=16;right=272;bottom=176;db=1;dl=1;dr=1;dt=1;foreground="\test.jpg";x=0.5;y=0.5;z=6};
+progress={cls="progress";left=24;top=264;right=736;bottom=274;db=1;dl=1;dr=1;edge=1;hide=1;max=100;min=0;z=5};
+static={cls="static";text="选择样本语言包:";left=104;top=224;right=192;bottom=248;align="right";db=1;dr=1;transparent=1;z=7}
+)
+/*}}*/
+
+import tesseract;
+winform.button.oncommand = function(id,event){
+	var lang = table.find(tesseract.ocr.lang,winform.cbLang.selText);
+	
+	var ocr = tesseract.ocr(); 
+	if( 0 != ocr.init(lang) ){ //初始化样本语言包
+		winform.edit.text = "加载样本失败,建议点击下载按钮下载所需语言包";
+		return;
+	}
+	
+	//预设字符集可提升识别率，注意要一定在加载样本以后调用此函数
+	ocr.setVariable("tessedit_char_whitelist","0123456789")
+	
+	//识别图像
+	winform.edit.text = ocr.processPages("\test.jpg" )  
+	ocr.delete();
+}
+
+for name,value in table.eachName(tesseract.ocr.lang){
+	winform.cbLang.add(value);
+}
+winform.cbLang.selText = "English"
+
+winform.cbLang.oncommand = function(id,event){
+	if( event = 0x1/*_CBN_SELCHANGE*/ ){
+		var lang = table.find(tesseract.ocr.lang,winform.cbLang.selText);
+		var path = ..string.format("~\lib\tesseract\.res\tessdata\%s.traineddata",lang )
+		if( !..io.exist(path) ){
+			winform.btnDown.disabled = false
+			winform.btnDown.text = "下载"
+		}
+		else {
+			winform.btnDown.disabled = true;
+			winform.btnDown.text = "已下载"
+		}
+		
+	}
+}
+winform.cbLang.oncommand();
+
+import fsys.untar;
+winform.btnDown.oncommand = function(id,event){ 
+	winform.btnDown.disabled = true;
+	winform.cbLang.disabled = true;
+	
+	winform.progress.threadCallable();
+	winform.btnDown.threadCallable();
+	winform.cbLang.threadCallable();
+	winform.text = "Tesseract OCR - 正在连接语言包服务器"
+	
+	thread.invoke( 
+		function(winform,lang){
+			import inet.httpFile;
+			var url = string.format("https://nchc.dl.sourceforge.net/project/tesseract-ocr-alt/tesseract-ocr-3.02.%s.tar.gz",lang);
+			var remoteFile = inet.httpFile(url ,"~/download/tesseract-ocr-3.02/")
+			
+			remoteFile.onReceiveBegin = function(statusCode,contentLength,fileSize){
+				if( statusCode == 206/*断点续传*/ ){
+					winform.text = "Tesseract OCR - 正在断点续传语言包"
+				}
+				elseif(fileSize){
+					winform.text = "Tesseract OCR - 正在重新下载语言包"
+				}
+				
+				if( statusCode >=200 && statusCode < 400 ){
+					winform.progress.hide = false;
+					winform.progress.setRange( 1, (contentLength +fileSize)/1024);
+					winform.progress.pos = fileSize/1024;
+				}
+				else {
+					winform.progress.hide = true;
+					winform.btnDown.disabled = false;
+					winform.msgboxErr("下载语言包遇到错误,错误代码:" + statusCode,"Tesseract OCR")
+				}
+				
+			}
+			
+			remoteFile.onReceive = function(str,size,contentLength){
+				winform.progress.pos = winform.progress.pos + size/1024;
+			}
+			
+			//下载
+			var ok,err,fileSize = remoteFile.download() 
+			if(!ok) winform.msgboxErr( string.concat( "下载语言包遇到错误,:" + err),"Tesseract OCR")	
+			else {
+				
+				//解压缩 tar.gz文件
+				import fsys.untar;
+				var tpath = io.splitpath(remoteFile.path);
+				var expath = io.joinpath(tpath.dir,tpath.name);
+				
+				var tar = fsys.untar( remoteFile.path,expath );
+				for(fileName,writeSize,remainSize in tar.eachBlock() ){
+    				winform.text = string.format("Tesseract OCR - 正在解压：%s 字节数：%d",fileName,writeSize  ) 
+				} 
+				
+				//查找语言包所在目录
+				fsys.enum( expath, "*.traineddata",
+					function(dir,filename,fullpath,findData){ 
+						if(filename){ 
+				           	expath = io.splitpath(fullpath).dir
+				           	return false;
+						} 
+					}  
+				);
+				fsys.copy( io.joinpath(expath,"*.*"),"~\lib\tesseract\.res\tessdata\");
+				winform.text = "Tesseract OCR";
+				winform.btnDown.text = "已下载完成"
+			};
+			
+			winform.text = "Tesseract OCR";
+			winform.cbLang.disabled = false;
+			winform.progress.hide = true;
+		},winform, table.find(tesseract.ocr.lang,winform.cbLang.selText)
+	)
+
+}
+
+
+
+
+winform.show() 
+win.loopMessage();

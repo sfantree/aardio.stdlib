@@ -1,0 +1,306 @@
+//parse 语法分析
+import ide;
+import fsys;
+namespace protobuf;
+  
+class parser{ 
+	
+	ctor(){
+		this.subMessage = {}
+     	this.subEnum = {}
+     	this.name = "";	
+	}
+
+    parseFile = function (protofile,ns="",inProject ){
+        this.path = protofile;
+    	var str = ..string.load(protofile);
+        if(!str) error("打开 *.proto 文件失败:" + protofile,2);
+        
+        this.lex = ..protobuf.parser.lex(str); 
+        this.lex.protoPath = ..io.fullpath(protofile);
+     	this.lex.next();
+     	 
+     	this.nameSpace = ns;
+     	this.inProject = inProject;
+        this._parseMessage( this ); 
+        for(k,message in this.subMessage){
+            message.parseFullTypeName();
+        }
+        
+        this._createLib( inProject );
+    }
+    
+    parse = function (str,ns="",inProject=true){  
+     	this.lex = ..protobuf.parser.lex(str) 
+     	this.lex.next();
+     	 
+     	this.nameSpace = ns;
+     	this.inProject = inProject;
+        this._parseMessage( this ); 
+        for(k,message in this.subMessage){
+            message.parseFullTypeName();
+        }
+        
+        this._createLib( inProject );
+    }
+    
+    importFile = function(protofile,msgParent){
+    	var saveLex = this.lex;
+    	if(!saveLex.protoPath){
+    		error("只有自本地文件加载的 proto 文件才能使用 import 语句!",3)
+    	}
+    	
+    	protofile = ..fsys.path.full(protofile,..fsys.getParentDir(saveLex.protoPath));
+    	var str = ..string.load(protofile);
+        if(!str) error("导入 *.proto 文件失败:" + protofile,2)
+        
+    	this.lex = ..protobuf.parser.lex(str); 
+    	this.lex.protoPath = protofile;
+    	this.lex.next();
+    	
+    	this._parseMessage( msgParent ); 
+    	
+    	this.lex = saveLex;
+    }
+
+ 	_createLib = function(inProject){ 
+ 		var libDir = inProject ? ( ..ide.getProjectDir() : "\") : "\" 
+ 		libDir = ..fsys.joinpath( libDir,"lib\\");  
+ 		
+ 		for(k,message in this.subMessage){ 
+ 			var dir = ..io.fullpath( libDir ++ ..string.replace(message.nameSpace,"\.","\") )
+ 			..fsys.createDir(dir)
+ 			
+ 			var path = ..fsys.joinpath(dir,message.name + ".aardio")
+ 			
+ 			var code = message.serialize();
+ 			for(k,message in this.subMessage){
+ 				var ns =  ..protobuf.parser.message.combineNamespace(message.nameSpace,message.name );
+ 				
+ 				if( ..string.find(code,"@"".." + ns + '"') ){
+ 					code = "import " + ns + ';\r\n' + code;
+ 				}
+ 			}
+ 			
+ 			for(name,body in this.subEnum){
+ 				if( ..string.find(code,"@"".." + name + '"') ){
+ 					code = "import " + name + ';\r\n' + code;
+ 				}
+ 			}
+ 			
+ 			..string.save(path, (#message.nameSpace?("namespace "+message.nameSpace + ';\r\n'):"")
+ 				+ 'import protobuf.message;\r\nimport util.metaProperty;\r\n\r\n' + code )
+ 		} 
+ 		
+ 		var template = ..protobuf.parser.template;
+ 		for(name,body in this.subEnum){ 
+ 			 
+ 			var path = ..fsys.joinpath(libDir,name + ".aardio")
+ 			
+			var code = template.enum.format(
+				name = name;
+				body = body;
+			)
+			
+ 			..string.save(path, 'import protobuf.message;\r\nimport util.metaProperty;\r\n\r\n' + code )
+ 		} 
+ 		
+ 		..ide.refreshUserLib();
+ 	}
+ 	 
+    _parseMessage = function(  msgParent ) {
+    
+		var lex = this.lex;  
+ 
+        while ( lex.token ){
+            lex.checkKeyword()
+            if ( ..string.cmp( lex.data,'message') == 0 ) {
+            	lex.next();
+            	lex.checkKeyword()
+            	var nameMsg = lex.data;
+            	 
+            	var msg = ..protobuf.parser.message();
+            	msg.name = lex.data;
+            	msg.nameSpace = ..protobuf.parser.message.combineNamespace( msgParent.nameSpace,msgParent.name );
+            	msg.parent = msgParent; 
+            	 
+            	msgParent.subMessage[ msg.name ] = msg;
+             
+             	lex.next(); 
+             	
+            	//lex.next();//exit 'message name'
+            	var beginLine = lex.line;
+            	lex.checkNext('{'#) 
+            	 
+            	if(lex.token != '}'#){ 
+                	this._parseMessage(  msg );
+                } 
+                
+                if( lex.token != '}'# ){
+                	error("缺少'}' (行:" + lex.line + ") 匹配'}'(行:" +beginLine + ")",2)
+                } 
+                 
+                lex.next(); 
+            }
+            else if ( ..string.cmp( lex.data,'enum') == 0 )  {
+                lex.next();//exit 'enum'
+            	lex.checkKeyword()
+            	var nameEnum = lex.data;
+            	 
+            	lex.next();
+            	lex.check('{'#);
+            	  
+            	var body = lex.matchNext("%{}");
+            	body = ..string.replace(body,"    ",'\t');//规范缩进格式
+            	body = ..string.replace(body,'\t\t','\t');//移除多余缩进
+            	body = ..string.replace(body,'\t\\}','}');//移除多余缩进 
+            	msgParent.subEnum[nameEnum] = body;    
+            	
+            }
+            else if ( ..string.cmp( lex.data,'package') == 0 )  {  
+            
+            	lex.next();//exit 'package'
+            	lex.checkKeyword()
+            	
+            	if(  msgParent == this ){
+            		if(#msgParent.nameSpace){
+            			this.package = lex.data;  
+            		}
+            		else {
+            			this.nameSpace = lex.data;  
+            		}
+            		
+            	}
+            	else{
+            	    if( (#this.package) && ..string.startWith(lex.data,this.package ) ){
+            	    	msgParent.nameSpace = ..string.right(lex.data,-(#this.package+2)); 
+            	    }
+            	    else {
+            	    	msgParent.nameSpace = lex.data; 
+            	    }
+            	}
+            	lex.next();
+            	lex.checkNext(';'#);
+            	
+            }
+            else if ( ..string.cmp( lex.data,'service') == 0 )  {
+                lex.matchNext("%{}");
+            }
+            else if ( ..string.cmp( lex.data,'import') == 0 )  {
+                lex.next();
+                lex.checkString();
+                var path = lex.data;
+                this.importFile(path,msgParent);
+                lex.next();
+            }
+            else if ( ..string.cmp( lex.data,'syntax') == 0 )  {
+                lex.next();
+                lex.checkNext('='#);
+                lex.checkString();
+                var path = lex.data;
+                if(path=="proto3"){
+                	//简单兼容 proto3 语法
+                }
+                
+                lex.next();
+                lex.testNext(';'#);
+            }
+            else { 
+            
+                var field = ..protobuf.parser.field();
+                field.comment = lex.comment; 
+                
+                if( msgParent.fields ){
+                	..table.push(msgParent.fields,field);
+                }
+                 
+                if ( ..string.cmp( lex.data,'required') == 0 ) {
+                	field.required = true;
+                	lex.next()
+                }
+                elseif ( ..string.cmp( lex.data,'optional') == 0 ) {
+                	field.optional = true;
+                	lex.next()
+                } 
+                elseif ( ..string.cmp( lex.data,'singular') == 0 ) {
+                	field.optional = true;
+                	lex.next()
+                } 
+                elseif ( ..string.cmp( lex.data,'repeated') == 0 ) {
+                	field.repeated = true;
+                	lex.next()
+                }
+                elseif ( ..string.cmp( lex.data,'option') == 0 ) {
+                	field.option = true;
+                	lex.next()
+                	
+                	field.varName = lex.data;
+                	lex.next();
+                	
+                	lex.checkNext('='#);
+                	
+                	if( !msgParent.option ){
+                		msgParent.option = {}
+                	}
+                	msgParent.option[field.varName] = lex.data; 
+                	lex.next();
+                	lex.checkNext(';'#); 
+                	continue;
+                }
+                else {
+                	//proto3
+                	field.optional = true;
+                } 
+                
+                field.typeName = lex.data; 
+                lex.next();  
+                
+                field.varName = lex.data;
+                lex.next();
+                
+                lex.checkNext('='#);
+                lex.checkNumber();
+                field.fieldIndex = lex.data; 
+                lex.next(); 
+                
+                if( lex.testNext('['#) ){
+                	lex.checkKeyword()
+                	if ( ..string.cmp( lex.data,'default') != 0 ) {
+                		error("语法错误,需要关键字'defalut' 位于行:"++lex.line,2)
+                	}
+                	lex.next();
+                	
+                	lex.checkNext('='#);
+                	if(lex.testKeyword()){
+                	    //proto3 不支持默认值，所以不需要寻找在后面定义的类型
+                		lex.default = msgParent.findType( field.typeName, lex.data );
+                	} 
+                	else {
+                		lex.default = lex.data;
+                	}
+                	lex.next();
+                	
+                	lex.checkNext(']'#); 
+                }
+                 
+                lex.checkNext(';'#);
+                if(lex.token == '}'#){ 
+                	return;
+                } 
+            }
+        } 
+    }
+} 
+
+//类作为父名字空间时,import子库必须放在类定义之后
+import protobuf.parser.lex;
+import protobuf.parser.message;
+
+/**intellisense()
+protobuf = 序列化协议,\n支持 Protobuf2 语法，对 Protobuf3 做了基本的兼容，\n但不保证支持所有 Protobuf3 语法
+protobuf.parser() = Protobuf 结构定义文件 *.proto 解析器,\n支持 Protobuf2 语法，对 Protobuf3 做了基本的兼容，\n但不保证支持所有 Protobuf3 语法\n!protobuf_parser.
+!protobuf_parser.parseFile(__) = 编译proto文件
+!protobuf_parser.parseFile(__,"pb") = 编译proto文件\n第二个参数指定消息对象归属默认名字空间pb
+!protobuf_parser.parse(__) = 编译proto代码，支持 Protobuf2 语法，\n对 Protobuf3 做了基本的兼容，但不保证支持所有 Protobuf3 语法
+!protobuf_parser.parse(__,"pb") = 编译proto代码\n参数@2指定自定义的名字空间（替代 proto 顶层的 package 声明），\n支持 Protobuf2 语法，对 Protobuf3 做了基本的兼容，\n但不保证支持所有 Protobuf3 语法
+end intellisense**/

@@ -1,0 +1,7 @@
+import win.ui;
+
+
+var mainForm = win.loadForm("/dlg/mainForm.aardio");
+//mainForm.show();
+
+win.loopMessage();

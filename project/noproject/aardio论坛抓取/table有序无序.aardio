@@ -1,0 +1,22 @@
+import console; 
+
+//var tab = { a111="字符串"; b2=123; c="字符串2"; d=23; e=56; 78; 99; 123; 0 }
+
+var tab = { 78; 99; 123; 0 }
+
+console.log("for in 无序排列");
+for k,v in tab  { 
+    /*
+    k为键,v是匹配的值,
+    在这里键值并不会按上面创建表的键值顺序输出
+    */
+    console.log(k,v);
+};
+console.log("");
+console.log("for 有序排列");
+for(i=1;#tab;1){
+	console.log(i, tab[i]);
+}
+
+console.pause(true);
+

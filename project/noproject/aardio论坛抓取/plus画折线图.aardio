@@ -1,0 +1,46 @@
+import win.ui;
+/*DSG{{*/
+winform = ..win.form(text="aardio Form";right=599;bottom=399)
+winform.add(
+plus={cls="plus";left=8;top=9;right=590;bottom=393;notify=1;transparent=1;z=1}
+)
+/*}}*/
+
+import gdip.pen;
+var xx,yy,xx2,yy2
+var Items={}//记录坐标
+var Item={}
+winform.plus.onDrawContent = function(graphics,rc){
+    var pen = winform.plus.pen;
+    if(pen and table.count(Items)>=2){
+                for(i=1;table.count(Items)-1;1){
+                 graphics.drawLine(pen,Items[i]["x"],Items[i]["y"],Items[i+1]["x"],Items[i+1]["y"])
+        }
+    }
+}
+
+var click=1;
+winform.plus.onMouseClick = function(wParam,lParam){
+        winform.plus.pen = gdip.pen(0xFFFFFF00,2);
+        if(click==1){
+                xx,yy = win.getMessagePos(lParam);
+                Item={x=xx;y=yy};
+                table.push(Items,Item);
+                click=2;
+                
+        }else {
+                xx,yy = win.getMessagePos(lParam);
+                Item={x=xx;y=yy};
+                table.push(Items,Item);
+                winform.plus.redrawTransparent()
+        }
+        
+}
+
+
+
+winform.show()
+win.loopMessage();
+
+winform.show() 
+win.loopMessage(); 

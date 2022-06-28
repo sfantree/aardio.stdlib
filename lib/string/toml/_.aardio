@@ -1,0 +1,129 @@
+﻿import web.json;
+namespace string.toml;
+
+if(_WINXP) error("string.toml 不支持 Windows XP",2);
+var dll = ..raw.loadDll($"~\lib\string\toml\.res\target\i686-pc-windows-msvc\release\toml_rs.dll",,"cdecl")
+
+var removeNull;
+removeNull = function(t){
+    t@.keys = {};
+    
+    if(t@.length!==null){
+     	for(i=1;#t;1){
+    		if(t[i]===null){
+    			t@.length = i-1;
+    			for(i=i+1;#t;1) t[i] = null; 
+    			break;
+    		}
+    	}   	
+    } 
+    
+	for(k,v in t){
+		if(type(v)=="table"){
+			removeNull(v);
+		}
+	} 
+};
+	
+fromJson = function(json,pretty){
+    var obj = ..web.json.parse(json);
+    if(type(obj)=="table"){
+    	removeNull(obj);
+    	json = ..web.json.stringify(obj,false);
+    }
+    
+	var str;
+	var pResult,err = dll.json2tomlP(json,!!pretty,{int code})
+	
+	if(pResult){
+		str = ..raw.str(pResult);
+		dll.freeCString(pResult);
+	}
+
+	if(str && err.code == 0 ){
+		return str;
+	}
+			
+	return null,str,err.code;
+}
+
+toJson = function(toml,pretty){
+	var str;
+	var pResult,err = dll.toml2jsonP(toml,!!pretty,{int code})
+	if(pResult){
+		str = ..raw.str(pResult);
+		dll.freeCString(pResult);
+	}
+
+	if(str && err.code == 0 ){
+		return str;
+	}
+			
+	return null,str,err.code;
+}
+
+tryParse = function(s){ 
+	if( type(s) != "string" ){
+		if(type(s) != "buffer") return null ,"参数不是字符串";
+	}	
+	
+	if( s[1] == 0xEF  && s[2] == 0xBB && s[3] == 0xBF ){
+		s = ..string.right(s,-4);
+	}
+
+	var r,err,errCode = toJson(s);
+	if(r) return ..web.json.tryParse(r)
+	return null,err,errCode;
+}
+
+parse = function(s){
+	if( type(s) != "string" ){
+		if(type(s) != "buffer") return null ,"参数不是字符串";
+	}	
+	
+	if( s[1] == 0xEF  && s[2] == 0xBB && s[3] == 0xBF ){
+		s = ..string.right(s,-4);
+	}
+
+	var r,err,errCode = toJson(s);
+	if( ( r === null ) && err ) error(err,2);
+
+	var data,err = ..web.json.tryParse(r)
+	if( ( data === null ) && err ) error(err,2);
+	
+	return data;
+}
+
+stringify = function(tab,pretty) {
+	var json = ..web.json.stringify(tab,false) 
+	return fromJson(json,pretty);
+}
+
+stringifyArray = function(tab,pretty) { 
+	if( type(tab) == "table" ) {
+		if(!tab@){tab@={ _type = "array" }}
+		elseif(tab@._type===null) tab@._type= "array";
+		
+		if(removeNull) {..table.removeByValue(tab,null);}
+		return stringify(tab,pretty);
+	}
+}
+
+strip = function(v){
+	v = stringify(v);
+	if(v) return parse(v);
+}
+
+/**intellisense()
+string.toml = TOML 解析\n注意 TOML 不支持 null 值,转换时会自动清除 null 值
+end intellisense**/
+
+/**intellisense(string.toml)
+fromJson(.(json,pretty) = JSON 转为 TOML,\n参数与返回值都是字符串，参数 @pretty 指定是否格式化
+toJson(.(toml,pretty) = TOML 转为 JSON,\n参数与返回值都是字符串，参数 @pretty 指定是否格式化
+tryParse(.(toml) = 解析 TOML 字符串
+parse(.(toml) = 解析 TOML 字符串
+stringify(.(value,pretty) = 参数 @1 指定的值转换为 TOML 字符串
+stringifyArray(.(value,pretty) = 参数 @1 指定的值作为数组转换为 TOML 字符串
+strip(.(value) = 参数 @1 指定的值转换为 toml 再解析 TOML 并返回解析后的值
+end intellisense**/

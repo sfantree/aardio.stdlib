@@ -1,0 +1,20 @@
+import console;
+import java.yuiCompressor;
+
+console.showLoading(" 正在压缩");
+
+//可选自定义全局压缩选项
+java.yuiCompressor.disableOptimizations = false;
+java.yuiCompressor.verbose = true;
+
+var ok,err = java.yuiCompressor.compressJs("d:\test.js","d:\test-min.js" ) ;
+
+if( ok ){
+	console.log("成功")
+}
+else {
+	console.log("失败",err)
+}
+
+
+console.pause()

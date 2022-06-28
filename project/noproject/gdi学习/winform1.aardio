@@ -1,0 +1,127 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=479;bottom=359)
+winform.add(
+button={cls="button";text="Button";left=176;top=232;right=288;bottom=272;z=1}
+)
+/*}}*/
+
+/***
+参考视频
+https://www.bilibili.com/video/BV1x7411i7x2
+
+gdi和gdi+的区别
+
+1.GDI是硬件加速的，而GDI+不是的
+2.GDI是有状态的，而GDI+是无状态的.
+3.GDI绘图要使用设备环境和句柄；而GDI+全部交由Graphics类管理4.GDI绘图时可以使用SelectObject频繁切换图形对象，而GDI+的图形对象是独立的.
+5.GDI中存在一个”当前位置”（全局区），目的是提高绘图性能；而GDI+取消了它，以避免绘图时不确定这个“当前位置”而带来非预期的错误。
+6.GDI总是将画笔和画刷绑定在一起，即使不需要填充一个区域也必须指定一个画刷；而GDI+则可以使用不同的函数分开使用画笔和画刷。
+7.GDI不支持透明图层，而GDI+支持
+8.GDI是gdi32.dll这个库，GDI+是gdiplus.dl这个库
+
+gdi概念
+
+GDI（Graphics Device Interface）图形设备接口GDI是一个抽象的接口，是一个关于图形显示的函数库.
+通过这个接口可以实现对图形的颜色，线条的粗细等属性的控制.它是我们的程序与计算机硬件之间的一个桥梁.
+我们通过调用GDI函数来控制硬件显示的效果，这就是设备无关性，也就是我们不需要知道在显示器显示某个颜色需要调用哪个底层的驱动函数方法
+Windows是不允许直接访问显示器硬件的，而必须通过和特定窗口关联的设备环境进行通讯的
+所以，所有的GDI函数都必须带有设备环境这个参数，否则这些函数就不知道对哪个设备进行绘制工作
+
+设备环境DC的概念
+DC（Device Context）又称设备上下文，设备描述表。它是一个关于如何绘制图形的方法的集合，它既可以绘制各种图形，也可以确定在应用窗口中绘制图形的方式，就是绘图模式和映射模式。
+我们在绘图之前，必须获取绘图窗口区域的一个设备环境DC，接下来就可以调用GDI函数来进行各种图形绘制令在Win32编程中，设备环境是用HDC来标识.
+H是Handle，句柄的意思
+
+通过GetDC函数来获得相应窗口的HDC GetDC函数适合在窗口现有图形的基础上进行绘制。
+
+***/
+import win;
+import gdi;
+
+
+winform.button.oncommand = function(id,event){
+    for(i=1;20;1){
+    	for(j=1;20;1){
+    		var pix = gdi.getPixel(i + 15, j + 5, win.getDesktop())
+    	    gdi.setPixel(i, j, pix, winform.hwnd);
+    	}
+    }
+}
+
+import console;
+import gdip;
+gdiRectangle = ::Gdi32.api("Rectangle","ptr(PTR hdc,int left, int top, int right, int bottom)");
+winform.wndproc = function(hwnd,message,wParam,lParam){
+	select( message ) { 
+		case 0x205/*_WM_RBUTTONUP*/{
+			//鼠标右键弹起,下面获取坐标
+			var x,y = win.getMessagePos(lParam);
+			
+		}
+		case 0xF/*_WM_PAINT*/{
+			
+			// Win32 SDK基础（12）—— WM_PAINT消息的处理
+			// https://blog.csdn.net/hyman_c/article/details/70156461
+			
+			//console.log("_WM_PAINT");
+			//var ps = ::PAINTSTRUCT();
+			gdi.paintBuffer( winform.hwnd,
+			    function( hdc,hMemDc,hMemBitmap,width,height,rcPaint,fErase,paintStruct ){
+			        //::MoveToEx = g.api("MoveToEx","bool(ptr hdc,int x,int y,struct& lpPoint)");
+                    //::LineTo = g.api("LineTo","bool(ptr hdc,int x,int y)");
+			        // 
+			        //::BitBlt(hdc, 0, 0, width, height, hMemDc, 0, 0, 0xCC0020/*_SRCCOPY*/);
+			        //::MoveToEx(hdc, 10, 10, rcPaint);
+			        //::LineTo(hdc, 20, 10);
+			        //
+			        
+/**
+			        //1.
+			        var graphics = gdip.graphics(hMemDc); 
+			        var pen = gdip.pen( 0xFFFF0000, 1, 2/*_GdipUnitPixel*/ );
+			        graphics.drawRectangle( pen, 30, 30, 100, 100);
+			        pen.delete()
+			        graphics.delete()
+**/     
+
+
+
+/*
+                    // 1. 第二种方式 画五角星
+                    var pt = ::POINT();
+                    // 起点
+			        ::MoveToEx(hMemDc, 68, 128, pt);
+			        // 终点
+			        ::LineTo(hMemDc, 183, 128);
+			        //gdi.lineTo(hMemDc, 183, 128);
+			        //gdi.drawLine
+			        ::LineTo(hMemDc, 80, 200);
+			        ::LineTo(hMemDc, 105, 67);
+			        ::LineTo(hMemDc, 146, 200);
+			        ::LineTo(hMemDc, 68, 128);
+*/
+
+/*
+			        gdiRectangle(hMemDc, 10, 10, 100, 100);
+*/
+
+                    // https://www.bilibili.com/video/BV1x7411i7x2?p=5
+                    gdi.selectPen(
+                    	function(hdc,pen){
+                    		gdi.drawLine(hdc, 100,100,200,100)
+                    	},hMemDc, 15, 0, 3/*_PS_DASHDOT*/)
+                    			        
+			    } 
+			)
+			return 1;
+		}
+		else{
+			
+		}
+	}
+	//无返回值则继续调用默认回调函数
+}
+
+winform.show();
+win.loopMessage();

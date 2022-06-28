@@ -1,0 +1,15 @@
+import win;
+import console;
+
+compare = function(num){
+    if( num >= 10){
+        return "您的数大于等于10"
+    }else {
+        return "您的数小于10"
+    }
+   
+}
+
+var ret  = win.invoke(compare,123)
+console.log(ret)
+console.pause();

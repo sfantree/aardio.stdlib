@@ -1,0 +1,11 @@
+import ide;
+import fsys;
+
+var publisDir = ide.getPublisDir();
+if(!#publisDir) return; 
+
+var libvlcPubDir =  fsys.joinpath(publisDir,"\lib\libvlc\.res\plugins" ); 
+if( ! io.exist(libvlcPubDir) ){ 
+	var libPath,libDir = io.libpath("libvlc")
+	..fsys.copy( fsys.joinpath(libDir,"\.res\*.*") ,fsys.joinpath(publisDir,"\lib\libvlc\.res\" ),0x10/*_FOF_NOCONFIRMATION*/  | 0x200/*_FOF_NOCONFIRMMKDIR*/); 
+}

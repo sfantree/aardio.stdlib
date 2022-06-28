@@ -1,0 +1,18 @@
+﻿?>
+@echo off 
+for  %%i in (<?=owner.text?>) do @echo %%i 
+
+rem ?>后忽略空白与换行，可改为 ?>& 强制换行
+echo <?= time() ?>&
+echo <?= owner.exepath ?>&
+
+echo 批处理工作目录："%cd%"
+
+echo 此批处理接收到的第一个参数："%1"
+echo 此批处理接收到的第二个参数："%2"
+
+rem 批处理延时
+ping 127.0.0.1 -n 2 >nul
+
+@rem 下面自定义批处理进程退出代码
+exit /B 123

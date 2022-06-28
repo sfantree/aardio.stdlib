@@ -1,0 +1,102 @@
+//layeredWindow 分层透明窗口
+if( _STUDIO_INVOKED && _STUDIO_INVOKED != "process" ){ 
+	error("web.kit不能在IDE嵌入线程模式下启动!",2)
+}
+
+import web.kit;
+import web.kit.layeredRender;
+namespace web.kit;
+var wke = _dll;
+
+class layeredWindow{
+	ctor( winform ){
+		if( ! (winform[["hwnd"]] &&  winform.isForm) ) error("参数@1必须是win.form创建的窗体对象",2);
+		
+		if( winform.className == "static" ){
+			winform.modifyStyle(,0x100/*_SS_NOTIFY*/ | 0x2000000/*_WS_CLIPCHILDREN*/); 
+		} 
+		else{
+			if( winform.isForm &&  (! ..table.next( winform._ctrlHwnd) ) 
+				&& ( ! ..win.getStyle(winform.hwnd,0x40000000/*_WS_CHILD*/) ) ){
+				::CreateWindowEx(0x20/*_WS_EX_TRANSPARENT*/,"static",""
+					,0x44000000/*_WS_CHILD | _WS_CLIPSIBLINGS*/ ,-2,-2,1,1,winform.hwnd,winform._getFreeCommandId(), _HINSTANSE ); 
+			}
+			winform.modifyStyle(,0x2000000/*_WS_CLIPCHILDREN*/)
+		};
+		
+		if( winform.isDialogMessage ){
+			if( winform.isDialogMessage!= ..win.isDialogMessage ){
+				error("在创建webkit窗体以前,禁止重写默认 isDialogMessage() 函数 ",2)
+			}
+			else{
+				winform.isDialogMessage = function(hwnd,msg) {
+					return false; 
+				}
+			}
+		};
+		
+		this = ..web.kit.view();
+		this._form = winform;
+		
+		if( winform.dpiScaleX && winform.dpiScaleX !== 1 ){
+			this.zoomFactor = winform.dpiScaleX;
+		}
+		winform.afterDpiChanged = function(scaleX){
+			this.zoomFactor = scaleX;	
+		}
+		
+		this.transparent = true;
+		wke.wkeSetHostWindow(this.hWebView,winform.hwnd);
+		var gdiRender = ..web.kit.layeredRender(this,winform.hwnd);
+		winform.transparent(true)
+		
+		var rect = winform.getClientRect();
+		this.resize(rect.width(),rect.height());
+		gdiRender.resize(rect.width(),rect.height());
+		
+		var isIconic = ..win.isIconic;
+		winform.wndproc = function(hwnd,message,wParam,lParam){
+			if( message == 0x2/*_WM_DESTROY*/){
+				this.destroy();
+				gdiRender.delete();
+				return;
+			}
+			if( this.hWebView ){
+				if( message == 0x5/*_WM_SIZE*/){
+					gdiRender.resize( ::LOWORD(lParam), ::HIWORD(lParam))
+				}
+				
+				var handled,retCode = WebViewWndProc(this.hWebView,hwnd,message,wParam,lParam,0);
+				if(handled) return retCode;
+			}
+		}
+		
+		winform.setInterval( 
+			5,function(hwnd){
+				if( this.isDirty() && ( !isIconic(hwnd) ) ){
+					gdiRender.draw(winform.hwnd);
+				}
+			} 
+		)
+	};
+	getForm = function(top){
+		if( top === null ) top = true;
+		return  ..win.form.getForm( this._form.hwnd );
+		if( !top && ..win.isChild(form.hwnd,hwnd) ){
+			return form.getCtrl( hwnd );
+		}
+		return form;
+	}; 
+} 
+
+var wkex = ..raw.loadDll(_dllPathX,,"cdecl");
+namespace layeredWindow{
+	WebViewWndProc = wkex.api("WebViewWndProc","bool(addr hView,addr hwnd,INT message,ADDR wParam,addr lParam,int &retCode)" ); 
+}
+
+/**intellisense()
+web.kit.layeredWindow = webkit分层窗体
+web.kit.layeredWindow(.(winform) = 参数为窗口对象
+web.kit.layeredWindow() = !web_kit_view.
+end intellisense**/
+

@@ -1,0 +1,29 @@
+//单线程异步服务器
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add()
+/*}}*/
+
+/*
+单线程异步服务器用于界面线程，
+不需要创建多线程，可以在保持界面消息循环的同时响应 HTTP 请求。
+并且基于 wsock.tcp.asynHttpServer 的 web.socket.server 可在同一端口启动 WebSocket 服务。
+*/
+import wsock.tcp.asynHttpServer;
+var httpServer = wsock.tcp.asynHttpServer();
+
+//这里可以指定 IP 和端口，不指定则自动分配空闲端口 
+httpServer.start("127.0.0.1");
+
+//可以支持 aardio 服务端 HTML 模板语法
+var url = httpServer.getUrl("/.www/main.aardio"); //参数支持 aardio 工程嵌入资源目录路径
+
+import web.form;
+var wb = web.form(winform);
+
+//用浏览器组件打开网页试试
+wb.go(url);
+
+winform.show();
+win.loopMessage();

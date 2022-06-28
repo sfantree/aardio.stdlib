@@ -1,0 +1,46 @@
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form(text="Web Kit";right=848;bottom=585)
+winform.add()
+/*}}*/
+
+import web.kit.form;
+wbKitView = web.kit.form(winform)
+
+//网页标题改变时触发此事件
+wbKitView.onTitleChanged = function(title){
+    owner.getForm().text = title;
+}
+
+//网址改变时触发此事件
+wbKitView.onURLChanged = function(url){
+    //if(#url) owner.getForm().text = url;
+}
+
+//打开链接时触发
+wbKitView.onNavigation = function(url,navigationType){
+    if( navigationType == 0/*_WKE_NAVIGATION_TYPE_LINKCLICK*/ ){
+        //navigationType可以判断打开链接类型
+    }
+    return true;//允许打开此链接
+}
+
+//文档加载完成时触发
+wbKitView.onDocumentReady = function(url,mainFrameJSState,frameJSState){
+    if( mainFrameJSState == frameJSState ){
+        //判断是否主框架
+    }
+}
+
+wbKitView.go("http://www.so.com")
+winform.show();
+
+wbKitView.wait();
+wbKitView.querySelector("#input").value = "aardio webkit";
+wbKitView.querySelector("#search-button").click();
+
+wbKitView.wait();
+wbKitView.doScript("alert('欢迎使用搜索引擎');");
+winform.text = wbKitView.eval("document").location.href
+
+win.loopMessage();

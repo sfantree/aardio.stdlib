@@ -1,0 +1,98 @@
+
+// 设置listview的字体颜色
+
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form( bottom=399;parent=...;text="aardio Form";right=599 )
+winform.add(
+listview={ bgcolor=16777215;bottom=328;right=568;left=32;cls="listview";top=16;z=1;edge=1;fullRow=1 };
+testButton={ bottom=376;right=376;left=224;top=344;z=2;text="添加删除项测试";cls="button" }
+)
+/*}}*/
+
+/*listviewColorize{{*/
+import util;
+
+listviewColorize = (function () {
+    var NMLVCUSTOMDRAW = class {
+        struct nmcd = {
+            struct hdr = ..win.ui.NMHDR();
+            INT dwDrawStage;
+            pointer hdc;
+            struct rc = ::RECT();
+            int dwItemSpec;
+            INT uItemState;
+            int lItemlParam;
+        };
+        INT clrText;
+        INT clrTextBk;
+        int iSubItem;
+        INT dwItemType;
+        INT clrFace;
+        int iIconEffect;
+        int iIconPhase;
+        int iPartId;
+        int iStateId;
+        struct rcText = ::RECT();
+        INT uAlign;
+    }
+   
+    return function (listview) {
+        listview._colors = ..table.array(listview.count, 0);
+        
+        listview.onnotify = function (id,code,ptr) {
+            if (code === 0xFFFFFFF4/*_NM_CUSTOMDRAW*/) {
+                var nmlvcd = NMLVCUSTOMDRAW();
+                raw.convert(ptr, nmlvcd);
+               
+                select (nmlvcd.nmcd.dwDrawStage) {
+                    case 0x1/*_CDDS_PREPAINT*/
+                        return 0x20/*_CDRF_NOTIFYITEMDRAW*/
+                    case 0x10001/*_CDDS_ITEMPREPAINT*/ {
+                        raw.mixin(ptr, nmlvcd, { clrText = owner._colors[nmlvcd.nmcd.dwItemSpec + 1] });
+                        return 0/*_CDRF_DODEFAULT*/;
+                    }
+                }
+            }
+        }
+        
+        listview.setItemColor = function (item, col) {
+            owner._colors[item] = col;
+        }
+        
+        listview.addItem = ..util.connect(listview, listview.addItem,
+            function (text, ind, ...) {
+                if (ind)
+                    ..table.insert(owner._colors, 0, ind);
+                else
+                    ..table.push(owner._colors, 0);
+            }
+        );
+        
+        listview.delItem = ..util.connect(listview, listview.delItem,
+            function (item) {
+                ..table.remove(owner._colors, item);
+            }
+        );
+    }
+})();
+/*}}*/
+
+listviewColorize(winform.listview);
+
+winform.listview.insertColumn("时间", 150);
+winform.listview.insertColumn("事件", 300);
+
+winform.listview.addItem({ tostring(time()); "工作正常" });
+var item = winform.listview.addItem({ tostring(time()); "发生错误" });
+winform.listview.addItem({ tostring(time()); "工作正常" });
+winform.listview.setItemColor(item, 0x0000FF);
+
+winform.testButton.oncommand = function(id,event){
+    winform.listview.delItem(item);
+    item = winform.listview.addItem({ tostring(time()); "发生错误" });
+    winform.listview.setItemColor(item, 0x0000FF);
+}
+
+winform.show();
+win.loopMessage();

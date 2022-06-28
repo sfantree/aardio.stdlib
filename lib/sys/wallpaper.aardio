@@ -1,0 +1,45 @@
+﻿//wallpaper 壁纸
+import win.reg;
+
+namespace sys.wallpaper;
+
+getHistory = function(){
+	var reg = ..win.reg("HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Wallpapers");
+	if(!reg) return {};
+	
+	var history = {};
+	for(name,value,t in reg.eachValue()) {
+		var idx = ..string.match(name,"BackgroundHistoryPath(\d+)");
+		if(idx && t == 1/*_REG_SZ*/){
+			..table.push(history,{value,tonumber(idx) })
+		}
+	}
+	reg.close();
+	
+	if(!#history){
+		return { getCurrent() }
+	}
+	
+	..table.sort(history,lambda(v) owner[2]<v[2] );
+	return ..table.map(history,lambda(v)v[1])
+}
+
+getCurrent = function(){
+	var len = 0x208/*_MAX_PATH_U16*/;
+	var buf = ..raw.buffer(len);
+	
+	//与 HKEY_CURRENT_USER\Control Panel\Desktop  WallPaper 的值相同
+	if ::User32.SystemParametersInfo(0x73/*_SPI_GETDESKWALLPAPER*/,len/2,buf,0) {
+		return ..string.fromUnicode(buf,,-1); 
+	} 	
+}
+
+setCurrent = function(jpgPath){
+    return !!::User32.SystemParametersInfoW(0x14/*_SPI_SETDESKWALLPAPER*/,0, ..io.fullpath(jpgPath), 1 | 2 /*_SPIF_UPDATEINIFILE | _SPIF_SENDWININICHANGE*/);
+}
+
+/**intellisense(sys.wallpaper)
+getHistory() = 返回最近使用的壁纸路径数组,\n数组中第一个路径为当前正在使用的壁纸
+getCurrent() = 返回当前正在使用的壁纸路径
+setCurrent(__) = 修改壁纸,\n参数请指定 *.jpg 格式的路像路径,\npng 格式请先用 gdip.bitmap 转存为 jpg 格式
+end intellisense**/

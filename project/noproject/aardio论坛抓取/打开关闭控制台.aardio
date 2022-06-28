@@ -1,0 +1,26 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=215;bottom=207)
+winform.add(
+button={cls="button";text="打开控制台";left=48;top=40;right=168;bottom=72;z=1};
+button2={cls="button";text="关闭控制台";left=48;top=80;right=168;bottom=112;z=2};
+button3={cls="button";text="输出控制台";left=48;top=120;right=168;bottom=152;z=3}
+)
+/*}}*/
+
+import console;
+
+winform.button.oncommand = function(id,event){
+	console.open();
+}
+
+winform.button2.oncommand = function(id,event){
+	console.close();
+}
+
+winform.button3.oncommand = function(id,event){
+	console.print("haha");
+}
+
+winform.show();
+win.loopMessage();

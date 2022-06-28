@@ -1,0 +1,20 @@
+import console; 
+
+class haha {
+	ctor(){
+	    ..console.log("ctor");
+	    
+	    ..table.gc(this, "free");
+	};
+	free = {
+	    ..console.log("free");
+	}
+}
+
+{
+	console.open();
+    var a = haha();
+}
+
+
+console.pause(true);

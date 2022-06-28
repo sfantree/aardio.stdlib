@@ -1,0 +1,38 @@
+import win.ui;
+import inet.whttp
+import process
+
+/*DSG{{*/
+var winform = win.form(parent=...; text="aardio Form";right=638;bottom=336 )
+winform.add(
+button={ bottom=210;right=548;left=112;top=119;font=LOGFONT( name="SimSun";h=-12 );z=1;text="xx软件";cls="button" };
+static={ transparent=1;bottom=338;right=624;left=515;top=319;font=LOGFONT( name="SimSun";h=-12 );z=2;text="当前版本";cls="static" }
+)
+/*}}*/
+
+var softver=99
+winform.static.text=winform.static.text+tostring(softver)
+//你需要严重注意代码缩进,规范代码
+getnetver=function(){
+    var netload=inet.whttp()      
+    var netver=netload.get("http://bbs.loyi01.com/ver.txt")         
+    netvertab=string.split(netver,",")//单个字符不用<>即可,一个字符串组合再用<>   
+    win.msgbox(netvertab[1],"最新版本")
+    win.msgbox(netvertab[2],"下载地址")
+    netver=tonumber(netvertab[1])   
+    if(netver>softver){
+        var upselect=win.msgboxTest("当前有新的版本,是否要去下载?","软件有更新")
+        if(upselect){
+            //如果打开更新页面,2秒后退出本程序
+            process.execute(netvertab[2])           
+            win.delay(2000)         
+            winform.close()         
+        }   
+    }      
+}
+
+getnetver()
+
+winform.show()
+win.loopMessage();
+return winform;

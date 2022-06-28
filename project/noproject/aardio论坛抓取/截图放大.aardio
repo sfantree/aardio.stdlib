@@ -1,0 +1,82 @@
+import win.ui;
+/*DSG{{*/
+mainForm = win.form(text="aardio form";right=623;bottom=391)
+mainForm.add(
+edit={cls="edit";left=40;top=128;right=112;bottom=152;align="center";readonly=1;z=5};
+pic_snap={cls="plus";left=272;top=8;right=608;bottom=312;foreRepeat="stretch";z=3};
+plus_pick={cls="plus";left=40;top=72;right=72;bottom=104;bgcolor=16777215;border={width=1};foreRepeat="center";foreground="~\res\pick.png";notify=1;x=16;z=1};
+plus_zoom={cls="plus";left=96;top=72;right=128;bottom=104;bgcolor=16777215;foreRepeat="center";foreground="~\res\zoom.png";hide=1;notify=1;z=2};
+trackbar={cls="trackbar";left=280;top=336;right=608;bottom=366;max=16;min=1;z=4};
+txt_zoom={cls="static";text="放大倍数: 1 倍";left=288;top=368;right=600;bottom=384;align="center";transparent=1;z=6}
+)
+/*}}*/
+
+import gdi;
+import mouse;
+import com.picture;
+
+
+
+import win.cur;
+//var hCursor = win.cur.loadfile("\res\pick.ico");
+mainForm.plus_pick.onMouseDown = function(wParam,lParam){
+    win.cur.beginCur();
+   
+    mainForm.plus_pick.capture = true;
+}
+
+mainForm.plus_pick.onMouseClick = function(wParam,lParam){
+    mainForm.plus_pick.capture = false;
+    win.cur.endCur();
+}
+
+var zoom_value=1;
+
+mainForm.trackbar.onnotify = function(id,code,ptr){  
+    if(code=0xFFFFFFF4){   
+       mainForm.txt_zoom.text="放大倍数: "++mainForm.trackbar.pos++" 倍";
+       zoom_value = mainForm.trackbar.pos;
+    }   
+}
+
+var picw = mainForm.pic_snap.width;
+var pich = mainForm.pic_snap.height;
+var ww,wh = win.getScreen();
+var tmId = mainForm.setInterval(
+    80,
+    function(hwnd,msg,id,tick){
+        if(win.cur.beginning){
+            var x,y=mouse.getPos();
+            px=gdi.getPixel(x,y);
+            mainForm.edit.text = px;
+            mainForm.edit.bgcolor=px;
+            var w = tonumber(picw/zoom_value);
+            var h = tonumber(pich/zoom_value);
+            var x1= tonumber(x-w/2);
+            var y1= tonumber(y-w/2);
+            if(x1<0) x1=0;
+            if(y1<0) y1=0;
+            if(x1>ww-w) x1=ww-w;
+            if(y1>wh-h) y1=wh-h;
+            
+            //console.log(w,h);
+            //var pic = com.picture.snap(null,x1,y1,w,h);
+            var pic = com.picture.snapClient(null,x1,y1,w,h);
+            //pic.Save("1.jpg")
+            //pic = gdip.bitmap(pic)
+            //mainForm.pic_snap.setBackground(pic,,true);
+            mainForm.pic_snap.setForeground(pic,,true);
+            //mainForm.pic_snap.redraw()
+            com.Release(pic);
+        }
+    }
+)
+
+
+
+
+
+mainForm.enableDpiScaling();
+mainForm.show();
+
+return win.loopMessage();

@@ -1,0 +1,91 @@
+//树形文件视图
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="树形文件视图";right=961;bottom=539;bgcolor=16777215)
+winform.add(
+cbDrivers={cls="combobox";left=24;top=12;right=236;bottom=36;dl=1;dt=1;edge=1;items={};mode="dropdown";z=3};
+editStatus={cls="plus";left=266;top=509;right=939;bottom=535;align="right";border={bottom=1;color=-6908266};db=1;dl=1;dr=1;editable=1;font=LOGFONT(h=-13);textPadding={top=6;bottom=2};z=4};
+static={cls="static";left=253;top=15;right=937;bottom=493;bgcolor=16777215;db=1;dl=1;dr=1;dt=1;z=2};
+treeview={cls="treeview";left=24;top=40;right=236;bottom=494;asel=false;bgcolor=16777215;db=1;dl=1;dt=1;edge=1;z=1}
+)
+/*}}*/
+
+import win.ui.explorer;
+var explorer = win.ui.explorer( winform.treeview );//自动检测顶部的 combobox 并转换为驱动器下拉列表
+
+import web.form;
+var wb = web.form( winform.static );
+
+wb.shellFolderSelectionChanged = function(filePath) { 
+    winform.editStatus.text = filePath;
+}
+
+explorer.onClick = function(filePath,hItem ){
+    if( fsys.isDir( filePath ) ) {
+    	 wb.goDirectory( filePath ); 
+    	 /*
+    	 wb.wait();
+    	 winform.editStatus.text = wb.document.currentViewMode
+    	 
+    	 打开目录以后, wb.document 会变为 IShellFolderViewDual 接口对象 
+    	 https://docs.microsoft.com/en-us/windows/win32/api/shldisp/nn-shldisp-ishellfolderviewdual2
+    	 */
+    	 
+    }
+    else  winform.editStatus.text = filePath;  
+}
+
+import process;
+import win.ui.menu;
+import fsys.remove;
+explorer.onRightClick = function(filePath,hItem,x,y){
+    var hItem,tvht = winform.treeview.hitTest(x,y,true);
+    var menu = win.ui.popmenu(winform)
+    menu.add("浏览...",
+        function(){
+            process.exploreSelect(filePath); 
+        }
+    )
+    
+    menu.add("删除",
+        function(){
+             if(winform.msgboxTest(`确认要删除 "` + filePath + `" 吗？ 删除后不能恢复！`)){ 
+            	if( fsys.remove(filePath) ){ 
+            		winform.treeview.delItem(hItem);
+            	}
+            }
+        }
+    ) 
+    
+    menu.add("刷新",
+        function(){
+            explorer.reloadFile(filePath,hItem);
+        }
+    )
+    menu.popup(x,y,true);   
+}
+
+import win.util.changeNotification;
+var chgDir = win.util.changeNotification(winform);
+chgDir.updateExplorer = function(){
+	//当前目录下文件已变更，刷新节点
+	explorer.reloadFile( chgDir.currentDir,chgDir.currentItem );
+}
+
+chgDir.onMakeDir = chgDir.updateExplorer;
+chgDir.onCreate = chgDir.updateExplorer
+chgDir.onRenameItem = chgDir.updateExplorer
+chgDir.onRenameFolder = chgDir.updateExplorer
+chgDir.onDelete = chgDir.updateExplorer
+chgDir.onRemoveDir = chgDir.updateExplorer
+
+explorer.onSelChanged = function(filePath,hItem){
+	chgDir.currentDir = filePath;
+	chgDir.currentItem = hItem;
+	
+	//监视目录下文件变更
+	chgDir.clear().watch(filePath,false).register();
+}
+
+winform.show(); 
+win.loopMessage();

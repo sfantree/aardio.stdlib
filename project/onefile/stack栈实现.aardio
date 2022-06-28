@@ -1,0 +1,64 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="sunny网络中间件";right=759;bottom=469;exmode="none";mode="popup")
+winform.add(
+button={cls="button";text="GC";left=648;top=408;right=752;bottom=448;z=2};
+edit={cls="edit";left=8;top=8;right=752;bottom=400;autohscroll=false;edge=1;multiline=1;z=1}
+)
+/*}}*/
+import win;
+import console;
+
+class stack {
+	ctor(){
+	    this.d = ..table.array();
+	};
+	
+	getSize = function(){
+		return #(this.d);
+	};
+	
+	isEmpty = function(){
+		return #(this.d) == 0;
+	};
+	
+	peek = function(){
+		if(this.isEmpty()) {
+		    return null;
+		} else {
+		    return this.d[#(this.d)];
+		}
+	}
+	
+	push = function(e){
+		..table.push(this.d, e);
+	}
+	
+	pop = function(){
+		if(this.isEmpty()) {
+		    return null;
+		} else {
+		    var e = this.peek();
+		    ..table.pop(this.d);
+		    return e;
+		}
+	}
+}
+
+if(owner == null) {
+    var s = stack();
+	for(i=1;10;1){
+		s.push(i);
+		console.dump(s.d);
+	}
+	
+	console.dump(s.d);
+	console.dump(s.getSize());
+	
+	for(i=1;10;1){
+		var e = s.pop();
+		console.dump(e, s.getSize());
+	}
+}
+
+win.loopMessage();

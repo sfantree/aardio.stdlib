@@ -1,0 +1,20 @@
+import win.ui;
+import win.ui.ctrl.pick;
+/*DSG{{*/
+var winform = win.form(text="取色器 - 作为自定义控件类创建控件窗口";right=863;bottom=577)
+winform.add(
+colorPick={cls="pick";text="custom";left=169;top=75;right=849;bottom=545;z=2};
+plus={cls="plus";left=26;top=14;right=358;bottom=55;z=1}
+)
+/*}}*/
+
+//颜色改变时触发此事件
+winform.colorPick.onColorChange = function(clr){
+    winform.plus.background = clr;
+}
+
+//可选指定初始颜色
+winform.colorPick.setColor(0xFF808000);
+
+winform.show()
+win.loopMessage();

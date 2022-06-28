@@ -1,0 +1,157 @@
+namespace realid.iohelper {
+    //创建byte[]数组
+    createBuffer = function(bufLength) {
+        return ..raw.buffer(bufLength);
+    };
+    //复制数组
+    copyBuffer = function(sourceBuffers, startIndex, copyLength) {
+        var destinationBuffer = createBuffer(copyLength);
+        var index = 1;
+        var endIndex = startIndex + copyLength - 1;
+        for (i = startIndex; endIndex; 1) {
+            
+            destinationBuffer[index] = sourceBuffers[i];
+            index++;
+        }
+
+        return destinationBuffer;
+    };
+    //指针数pointData据转byte[]
+    point2Hex = function(pointData, startPosition, endPosition) {
+        var data = ..raw.tostring(pointData, startPosition, endPosition);
+        var dataHex = ..string.hex(data, "");
+        return dataHex;
+    };
+    //指针数pointData据转hex字符串
+    point2Buffer = function(pointData, length) {
+        var buffers = ..raw.buffer(length);
+            ..raw.copy(buffers, pointData, length);
+        return buffers;
+    };
+    //翻转数组
+    reverse = function(buffers) {
+        var array = createBuffer(#buffers);
+        var index = 1;
+        for (i = #buffers; 1; - 1) {
+            array[index] = buffers[i];
+            index++;
+        }
+        return array;
+    };
+    //单byte转bitarray
+    byte2BitArray = function(byteData) {
+        var bitSet = {};
+        for (i = 0; 7; 1) {
+                ..table.push(bitSet, ((byteData >> i) & 0x1));
+        }
+
+        return bitSet;
+    };
+    //byte[]转bitarray
+    buffer2BitArray = function(buffers, isLittleEndian = true) {
+        var bitSet = {};
+        if (isLittleEndian) {
+            for (j = #buffers; 1; - 1) {
+                var byteData = buffers[j];
+                for (i = 0; 7; 1) {
+                     ..table.push(bitSet, ((byteData >> i) & 0x1));
+                }
+            }
+
+        } else {
+           for (j =1; #buffers; 1) {
+                var byteData = buffers[j];
+                for (i =7; 1;-1) {
+                        ..table.push(bitSet, ((byteData >> i) & 0x1));
+                }
+            }
+        }
+        return bitSet;
+    };
+    //buffer转hex
+    buffer2Hex = function(buffers) {
+        var hex = "";
+        import console;
+        for (i = 1;# buffers; 1) {
+            var byteHex1 = ..tostring(buffers[i], 16); //类型 0xa1 ox0;
+            var byteHex2 = "00"; //转为 a100
+            if (byteHex1 != "0x0") {
+                byteHex2 = ..string.trimleft(byteHex1, "0x"); //转为 a100
+                if (#byteHex2 == 1) {
+                    byteHex2 = ..string.concat("0", byteHex2);
+                }
+            };
+            hex = ..string.concat(hex, byteHex2);
+        }
+        return ..string.upper(hex);
+    };
+    //hex转buffers
+    hex2Buffer = function(hex) {
+        hex = ..string.replace(hex, "@-", "");
+        hex = ..string.replace(hex, "@0x", "");
+        hex = ..string.replace(hex, "@0X", "");
+        hex = ..string.replace(hex, "@ ", "");
+        hex = ..string.replace(hex, "@
+", "");
+        hex = ..string.replace(hex, "@
+", "");
+        hex = ..string.replace(hex, "@,", "");
+        
+        var dataLength = #hex;
+        var bts = createBuffer(dataLength / 2);
+        var index = 1;
+        for (i = 1; dataLength; 2) {
+            var strHex = ..string.slice(hex, i, i + 1);
+            bts[index] = ..tonumber(strHex, 16);
+            index++;
+        }
+        return bts;
+
+    }
+    //从字节数据指定位置读取一个无符号16位整数
+    getInt = function(buffers, isLittleEndian = true) {
+        var hex = "";
+        if (isLittleEndian) {
+            var newBuffers = reverse(buffers);
+            hex = buffer2Hex(newBuffers);
+
+        } else {
+            hex = buffer2Hex(buffers);
+        }
+        return ..tonumber(hex, 16);
+    };
+    getNow = function() {
+        var tm = ..time();
+        //改变格式化模式串
+        tm.format = "%Y-%m-%d %H:%M:%S";
+
+        //从时间值创建字符串
+        var str = ..tostring(tm);
+        return str;
+    };
+    getNowZH = function() {
+        var tm = ..time();
+        //改变格式化模式串
+        tm.format = "%Y年%m月%d日 %H点%M分%S秒";
+
+        //从时间值创建字符串
+        var str = ..tostring(tm);
+        return str;
+    }
+
+}
+// http://runxinzhi.com/yushuo-p-14649150.html
+/**intellisense(realid.iothelper)
+createBuffer(bufLength) = 创建byte[]数组
+point2Buffer(pointData,length) = 指针数pointData据转byte[]
+copyBuffer(sourceBuffers,startIndex,endIndex) = 复制数组
+reverse(buffers) =翻转数组
+byte2BitArray(byte) =单个byte转bitArray
+buffer2BitArray(buffers, isLittleEndian = true)=byte[]数组转bitarray
+point2Hex(pointData,startPosition,copyLength) = 指针数pointData据转hex字符串
+buffer2Hex(buffers) =将byte[]数组转为HEX字符串
+hex2Buffer(hexString) =将HEX字符串转为byte[]数组
+getInt(buffers,isLittleEndian=true) =从字节数据指定位置读取一个无符号16位整数
+getNow() = 获取当前时间2021-04-10 13:32:20
+getNowZH() = 获取中文格式2021年4月10号 13点32分20秒
+end intellisense**/

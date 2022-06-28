@@ -1,0 +1,64 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add(
+custom={cls="custom";text="自定义控件";left=16;top=24;right=736;bottom=448;z=1}
+)
+/*}}*/
+
+import web.form;
+var wb = web.form(winform.custom);
+
+wb.html = /**
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=gbk" />
+<script language="javascript" type="text/javascript">
+function doit(){
+        var t1 = document.getElementById("fromtext").value
+        var t2 = replaceURLWithHTMLLinks(t1);
+        document.getElementById("totext").value = t2;
+}
+
+function replaceURLWithHTMLLinks(text) {
+  var exp = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
+  
+  // any text to use as anchor text?
+  var anchor = document.getElementById("anchortexttxt").value;
+  if (anchor == "") {
+     return text.replace(exp,"<a href='$1'>$1</a>");
+     }
+  else {
+    return text.replace(exp,"<a href='$1'>" + anchor + "</a>");
+   }
+  }
+  
+function clearall(){
+   document.getElementById("fromtext").value="";
+   document.getElementById("totext").value="";
+}  
+</script>         
+
+</head>
+
+<body style="background:#D4D0C8;">
+<h2>文本:</h2>
+                <textarea id="fromtext" name="fromtext" cols=50 rows=5></textarea><input type="button" onclick="doit()" value="转换">
+       
+               
+                <!--<p>Replace URLs with this string (leave blank to use the URL as the linked text):-->
+                <textarea cols=10 rows=1 id="anchortexttxt" style="display:none"></textarea>
+                        <h2>结果:</h2>
+<textarea id="totext" name="totext" cols=50 rows=5></textarea><input type="button" onclick="clearall()" value="清空">
+
+</body>
+</html>
+**/
+
+winform.custom.oncommand = function(id,event){
+	
+}
+
+winform.show();
+win.loopMessage();

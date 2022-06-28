@@ -1,0 +1,31 @@
+//Flash 动画
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="Flash 动画";right=1008;bottom=616)
+winform.add()
+/*}}*/
+ 
+import web.npPlugin.flash;
+import web.blink.form;
+var mb = web.blink.form( winform  );
+
+mb.html = /**
+<embed quality=high bgcolor=#FFFFFF width="550"
+    height="400" id="flash" type="application/x-shockwave-flash">
+</embed>
+<script>
+loadSwf = function(url){
+	document.getElementById("flash").LoadMovie(0,url)
+}
+</script>
+**/
+
+mb.wait();
+mb.script.loadSwf("https://update.aardio.com/v10.files/demo/transparent.swf")
+/*
+原来加载 Flash 插件后可以使用 html5media 虚拟支持 HTML5 视频，
+现在试了一下已经不支持了，但是 web.kit 可以支持 html5media，参考 web.kit 范例。
+*/
+
+winform.show() 
+win.loopMessage();

@@ -1,0 +1,12 @@
+import console
+import odisasm;
+
+//反汇编
+var asm = odisasm.dasm('\x81\x05\xE0\x5A\x47\x00\x01\x00\x00\x00' )
+console.log( asm )
+
+//汇编 
+var bin = odisasm.asm("push ebp");
+console.log( string.hex(bin) )
+
+console.pause()

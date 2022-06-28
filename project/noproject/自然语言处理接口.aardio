@@ -1,0 +1,56 @@
+
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="百度自然语言调用接口";right=727;bottom=687;parent=...)
+winform.add(
+button={cls="button";text="情感分析";left=312;top=616;right=512;bottom=656;db=1;dr=1;z=4};
+edit1={cls="edit";text="aardio太难用了";left=8;top=8;right=720;bottom=192;dl=1;dr=1;edge=1;multiline=1;z=1};
+edit2={cls="edit";left=8;top=200;right=720;bottom=592;ah=1;db=1;dl=1;dr=1;edge=1;multiline=1;z=2};
+splitter1={cls="splitter";left=8;top=192;right=720;bottom=197;dl=1;dr=1;horz=1;z=3}
+)
+/*}}*/
+
+winform.button.oncommand = function(id,event){
+    winform.button.disabledText = "正在识别中"
+   
+    thread.invoke(
+        function(winform){
+            
+            import baidu.client;
+            var http =  baidu.client.json();
+            http.charset = "gb2312";
+            
+            /*
+            http.setAuth( 这里写一个可以获取access_token的网址 )
+            http.setAuth( "你自己的API Key","你自己的Secret Key" )
+            */
+            http.setAuth("9YZlZvUmPnOamSUjuESlLHHs","q8GvNlwG87sgp91MfinAKTWpaiVTF2Dx")
+               
+            //自然语言处理接口
+            var rpc1 = http.api("https://aip.baidubce.com/rpc/2.0/nlp/v1/");
+            var rpc2 = http.api("https://aip.baidubce.com/rpc/2.0/nlp/v2/");
+            
+            var result = rpc1.sentiment_classify(
+                text = winform.edit1.text;
+            )
+            
+            var str = web.json.stringify(result,true)
+            str = string.replace(str,"\w+",{
+                positive_prob = "正面情绪";
+                negative_prob = "负面情绪";
+                confidence = "分类置信度";
+                sentiment = "情感分类(0:负向，1:中性，2:正向)"
+            })
+           
+            winform.edit2.text = str;
+            winform.button.disabledText = null;
+        },winform
+    )
+}
+
+winform.splitter1.split( winform.edit1,winform.edit2 )
+winform.splitter1.ltMin = 20;
+winform.splitter1.rbMin = 30;
+
+winform.show()
+win.loopMessage();

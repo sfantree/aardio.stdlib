@@ -1,0 +1,46 @@
+
+
+//简易放大镜
+
+import win.ui;
+/*DSG{{*/
+var winform = win.form( text="简易放大镜";bgcolor=65280;bottom=302;max=false;right=266;border="dialog frame";parent=...)
+winform.add(
+picturebox={ dr=1;dl=1;bottom=248;right=259;left=8;dt=1;top=8;border=1;transparent=1;db=1;cp=1;z=2;cls="picturebox" };
+chkTopMost={ bgcolor=65280;bottom=281;color=0;right=216;left=112;top=264;z=3;text="保持窗口在前";cls="checkbox" };
+button1={ bgcolor=16777215;bottom=284;color=0;text="启动放大镜";left=8;top=261;z=1;right=100;transparent=1;cls="button" }
+)
+/*}}*/
+
+//置顶窗口
+winform.chkTopMost.oncommand = function(id,event){
+    win.setTopmost(winform.hwnd,winform.chkTopMost.checked)   
+}
+
+winform.button1.oncommand = function(id,event){
+
+    winform.setInterval( 5/*毫秒*/, //定时执行代码
+        function(hwnd,msg){
+        
+                var x,y = win.getMessagePos();//得到当前鼠标坐标
+                var x1=x-20;
+                var x2=x+20;
+                var y1=y-20;
+                var y2=y+20;
+               
+                var _,_,nWidth,nHeight = winform.picturebox.getPos()
+                nSrcWidth=(x2-x1)
+                nSrcHeight=(y2-y1)
+               
+                var hdc = ::GetDC(winform.picturebox.hwnd)
+                var srchdc = ::GetDC(0)
+                ::StretchBlt(hdc,0,0,nWidth,nHeight,srchdc,x1,y1,nSrcWidth,nSrcHeight,0xCC0020/*_SRCCOPY*/)
+        
+                ::ReleaseDC(winform.picturebox.hwnd,hdc)
+                ::ReleaseDC(0,srchdc)
+        }
+    );   
+}
+
+winform.show(true)
+win.loopMessage();  

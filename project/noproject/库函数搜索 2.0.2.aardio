@@ -1,0 +1,289 @@
+//库函数搜索 2.0.2
+
+// https://blog.csdn.net/sdlgq/article/details/119952750
+
+import fonts.fontAwesome;
+import win.ui;
+import win.ui.atom;
+import ide;
+/*DSG{{*/
+mainForm = win.form(text="aardio - 库函数关键词搜索 v2.0 光庆·程序·在线 chengxu.online";right=1056;bottom=784;bgcolor=16777215;exmode="none";mode="popup";parent=hwndStatusBar)
+mainForm.add(
+btnRefresh={cls="plus";text='\uF021 更新';left=686;top=735;right=805;bottom=776;bgcolor=32768;db=1;dl=1;font=LOGFONT(h=-16;name='FontAwesome');notify=1;z=2};
+btnSearch={cls="plus";text='\uF002 搜索';left=550;top=735;right=673;bottom=776;bgcolor=-37376;db=1;dl=1;font=LOGFONT(h=-16;name='FontAwesome');notify=1;z=4};
+checkbox={cls="checkbox";text="搜函数名、常量名";left=245;top=700;right=403;bottom=722;bgcolor=16777215;checked=1;db=1;dl=1;font=LOGFONT(h=-16);z=6};
+checkbox2={cls="checkbox";text="搜函数描述、常量值";left=408;top=700;right=584;bottom=722;bgcolor=16777215;checked=1;db=1;dl=1;font=LOGFONT(h=-16);z=7};
+checkbox3={cls="checkbox";text="搜函数对象名";left=590;top=700;right=715;bottom=722;bgcolor=16777215;db=1;dl=1;font=LOGFONT(h=-16);z=11};
+checkbox4={cls="checkbox";text="搜文件名";left=717;top=700;right=815;bottom=722;bgcolor=16777215;db=1;dl=1;font=LOGFONT(h=-16);z=12};
+checkbox5={cls="checkbox";text="查函数";left=10;top=700;right=90;bottom=722;bgcolor=16777215;checked=1;color=255;db=1;dl=1;font=LOGFONT(h=-16);z=13};
+checkbox6={cls="checkbox";text="查常量";left=89;top=700;right=169;bottom=722;bgcolor=16777215;checked=1;color=8388736;db=1;dl=1;font=LOGFONT(h=-16);z=14};
+edit={cls="richedit";left=9;top=8;right=1048;bottom=669;bgcolor=0;color=15793151;db=1;dl=1;dr=1;dt=1;edge=1;font=LOGFONT(h=-16);multiline=1;readonly=1;vscroll=1;z=3};
+editWord={cls="edit";left=9;top=742;right=484;bottom=772;autohscroll=false;autovscroll=false;clipch=1;db=1;dl=1;edge=1;font=LOGFONT(h=-16);tabstop=1;z=1};
+plus2={cls="plus";left=814;top=736;right=1053;bottom=771;db=1;dl=1;foreRepeat="stretch";notify=1;z=8};
+radiobutton={cls="radiobutton";text="与";left=490;top=736;right=537;bottom=757;bgcolor=16777215;checked=1;db=1;dl=1;font=LOGFONT(h=-16);z=9};
+radiobutton2={cls="radiobutton";text="或";left=490;top=756;right=537;bottom=777;bgcolor=16777215;db=1;dl=1;font=LOGFONT(h=-16);z=10};
+static={cls="static";left=12;top=675;right=454;bottom=700;db=1;dl=1;font=LOGFONT(h=-16);transparent=1;z=5}
+)
+/*}}*/
+ 
+var skin = {
+	background={
+		active=0xFFA6B7FE;
+		default=0xFF006EFF;
+		hover=0x9E006EFF
+	}
+}
+ 
+mainForm.btnSearch.skin(skin)
+mainForm.btnRefresh.skin(skin)
+ 
+import process.mutex;
+var mutex = process.mutex("godking-libfuncs-search")
+if( mutex.conflict ){ 
+	win.msgbox("已经运行")
+return;}
+ 
+mainForm.show() 
+mainForm.edit.wrap=true
+mainForm.editWord.setCueBannerText("多个关键词用分号、逗号、空格分隔。以@开头视为一个关键词。")
+ 
+log = function(...){
+	mainForm.edit.log(...,'\r\n')
+}
+ 
+//创建数据库
+import access
+var db = access("/funcs.mdb")
+if( not db.existsTable("funcs") ){  
+	db.exec("CREATE TABLE [funcs]([fullpath] char(255),[type] char(255),[section] char(255),[key] char(255),[value] text);")
+	if( not db.existsTable("funcs") ){
+		..win.msgbox("创建表失败！")
+	}
+}  	
+db.close()
+ 
+//创建函数共享表
+import thread.table
+var funcs=thread.table("funcs")
+ 
+//定义函数分析线程
+var getfuncs = function(fullpath){
+	if !#fullpath return ; 
+	if thread.get("stop") return; // 停止
+	//创建共享表
+	import thread.table
+	var funcs = thread.table("funcs")
+	//分析数据
+	import ide.doc
+	var f = ide.doc(fullpath)
+	//添加函数
+	var sections = table.keys(f.sections)
+	for(i=1;#sections;1){
+		var keys = ..table.keys(f["sections"][sections[i]])
+		for(j=1;#keys;1){
+			if thread.get("stop") return;
+			funcs.push({fullpath=fullpath,type="section",section=sections[i],key=keys[j],value=f["sections"][sections[i]][keys[j]]})
+		}
+	}	
+	//添加常量
+	var keys = ..table.keys(f["define"])
+	for(j=1;#keys;1){
+		if thread.get("stop") return;
+		funcs.push({fullpath=fullpath,type="define",section="",key=keys[j],value=f["define"][keys[j]]})
+	}
+}
+ 
+//定义函数保存线程
+var savefuncs = function(){
+	import access
+	import thread.table
+	var db = access("/funcs.mdb")
+	var funcs = thread.table("funcs")
+	var savecount = 0;
+	db.beginTrans()
+	while !thread.get("stop") {
+		var func = 	funcs.pop()
+		if func{
+			db.exec("INSERT INTO funcs([fullpath],[type],[section],[key],[value]) VALUES(@fullpath,@type,@section,@key,@value)",{
+				fullpath=func["fullpath"],
+				type=func["type"],
+				section=func["section"],
+				key=func["key"],
+				value=func["value"]
+			})
+			savecount++;
+			thread.set("savecount",savecount)
+			thread.set("restcount",funcs.count())
+		}
+	}
+	db.commitTrans()
+	db.close()
+}
+ 
+mainForm.btnRefresh.oncommand = function( id,event ){
+	//判断更新还是停止
+	if mainForm.btnRefresh.text='\uF021 更新'{
+		if ..win.msgbox("确定要更新吗？","提示",1/*_MB_OKCANCEL*/,mainForm.hwnd)!=1{
+			return ; 
+		}
+		thread.set("stop", false)
+		mainForm.btnRefresh.text='\uF021 停止'
+	}else{
+		thread.set("stop", true)
+		mainForm.btnRefresh.text='\uF021 更新'
+		return ; 
+	}
+	
+	//清空数据库
+	db = access("/funcs.mdb")
+	db.exec("DELETE FROM funcs")
+	db.close()
+	
+	//创建线程管理器
+	import thread.manage
+	var ts =  thread.manage(30)
+	
+	//搜索库文件
+	import fsys
+	var files = {"global"}
+	fsys.enum("~/lib/", "*.aardio",
+		function(dir,filename,fullpath,findData){ 
+			if(filename){ 
+				..table.push(files,fullpath)
+			}
+		} 
+		,
+	);		
+	log("发现"++#files++"个文件！")
+	
+	//启动函数保存线程待命
+	thread.create(savefuncs)
+	
+	//启动线程管理器，进行函数分析
+	var count = 0
+	var tick = time.tick()
+	for(i=1;#files;1){
+		ts.createLite(getfuncs,files[i])
+		count++;
+		log("正在分析："++(..math.round(count*100/#files,1))+"% >> "++..math.floor((time.tick()-tick)/1000)++"s >>"++files[i]) 
+		mainForm.static.text = "已保存数量："++tostring(thread.get("savecount"):0)++"  剩余数量："++tostring(thread.get("restcount"):0)
+		if thread.get("stop") {
+			ts.quitMessage()
+			return false; 
+		}
+	}
+	
+	//检测剩余保存数量
+	ts.waitClose()
+	while(thread.get("restcount")>0){
+			mainForm.static.text="已保存数量："++thread.get("savecount"):0++"  剩余数量："++thread.get("restcount"):0
+			win.delay()
+	}
+	
+	//结束搜索
+	thread.set("stop", true)
+	mainForm.btnRefresh.text='\uF021 更新'
+	log("更新完毕，耗时："+..math.floor((time.tick()-tick)/1000)+"秒！")
+}
+ 
+mainForm.btnSearch.oncommand = function(id,event){
+	
+	//关键信息提示
+	mainForm.edit.text=""
+	if !#mainForm.editWord.text {
+		log("请填写函数关键词！")
+		return ; 
+	}
+	if !(mainForm.checkbox.checked:mainForm.checkbox2.checked:mainForm.checkbox3.checked:mainForm.checkbox4.checked) {
+		log("请先选择搜索项！")
+		return ; 
+	}
+	if !(mainForm.checkbox5.checked:mainForm.checkbox6.checked) {
+		log("请先选择搜索范围！")
+		return ; 
+	}
+ 
+	//处理关键词
+	var t = mainForm.editWord.text
+	if t[[1]]="@" {
+		t = {..string.right(t,-2)}
+	}else{
+		t = ..string.replace(t,"@；",";")
+		t = ..string.replace(t,"@，",";")
+		t = ..string.replace(t,"@,",";")
+		t = ..string.replace(t,"@ ",";")
+		t =	..string.split(t,";")
+	}
+	
+	//根据关键词，定义查询条件模板
+	var Tsql = " ("
+	for(i=1;#t;1){
+		Tsql += " [Tsql] like '%" + t[i] + "%'"
+		if i<#t{
+			if mainForm.radiobutton.checked {
+				Tsql += " and"
+			}else {
+				Tsql += " or"
+			}
+		}
+	}
+	Tsql += ")"
+	
+	//根据模板，定义四个查询类型语句
+	var fsql = ..string.replace(Tsql,"@[Tsql]","[key]")
+	var csql = ..string.replace(Tsql,"@[Tsql]","[value]")
+	var osql = ..string.replace(Tsql,"@[Tsql]","[section]")
+	var psql = ..string.replace(Tsql,"@[Tsql]","[fullpath]")
+	
+	//定义最终查询语句
+	var sql = "SELECT * FROM [funcs] where"
+	if !mainForm.checkbox5.checked {	sql += " [type]='define' and"	}
+	if !mainForm.checkbox6.checked {	sql += " [type]='section' and"	}
+	sql += "(1<>1"
+	if mainForm.checkbox.checked {		sql += " or" + fsql	}
+	if mainForm.checkbox2.checked {		sql += " or" + csql	}
+	if mainForm.checkbox3.checked {		sql += " or" + osql	}
+	if mainForm.checkbox4.checked {		sql += " or" + psql	}
+	sql += ")"
+	
+	//开始查询
+	var db = access("/funcs.mdb")
+	var data = db.getTable(sql)
+	db.close()
+	
+	//显示数据
+	var t = ""
+	for(i=1;#data>100?100:#data;1){
+		if data[i]["type"]="define"{
+			t += i + "  " + data[i]["key"] +" = " + data[i]["value"] + '\r\n\r\n';
+		} else {
+			t += i++":  " +data[i]["key"] + '\r\n'
+			t += data[i]["fullpath"]+ '\r\n'
+			t += data[i]["value"] + '\r\n\r\n'
+		}
+	}
+	if #t{
+		log(t)
+		log("查询完毕!")
+		if #data>100 log('查询结果：'++#data++'条，数据太多，参考意义不大，只显示前100条。\n为更好的实现搜索效果，建议您使用多关键词，提高查询精确度。')
+	}else{log("查无记录！")}
+}
+ 
+mainForm.onClose = function(hwnd,message,wParam,lParam){
+    thread.set("stop", true)
+}
+ 
+import inet.http
+mainForm.plus2.foreground = "http://chengxu.online/images/banner.gif"
+ 
+mainForm.plus2.oncommand = function(id,event){
+	import process
+	process.explore("http://chengxu.online")
+}
+ 
+mainForm.editWord.onOk = function(){ 
+    mainForm.btnSearch.oncommand()
+    return true; 	
+} 
+ 
+win.loopMessage();

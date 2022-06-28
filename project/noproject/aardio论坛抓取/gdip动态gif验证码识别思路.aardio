@@ -1,0 +1,116 @@
+/*
+对于动态图片，当然首先要提取出静态图像。aardio的gdip源码中有四个函数：
+ImageGetFrameDimensionsCount = Gdiplus.api("GdipImageGetFrameDimensionsCount","int(POINTER Image,int& count)")
+ImageGetFrameDimensionsList = Gdiplus.api("GdipImageGetFrameDimensionsList","int(POINTER Image,struct& dimensionIDs,int count)")
+ImageGetFrameCount = Gdiplus.api("GdipImageGetFrameCount","int(POINTER Image,struct& dimensionID,int& count)")
+ImageSelectActiveFrame = Gdiplus.api("GdipImageSelectActiveFrame","int(POINTER Image,struct& dimensionID,int frameIndex)")
+*/
+    
+ for(filename=1;4;1){
+        io.print("开始处理"++filename++"个图片")
+        bmp=gdip.bitmap(""++filename++".bmp")
+        bmp=binarization(bmp,,true)//二值化
+        //初始化统计数组
+        stas={};
+        for(j=0;bmp.width-1;1){
+                stas[j]=0;
+        }
+        //生成直方图
+        for(i=0;bmp.height-1;1){
+                for(j=0;bmp.width-1;1){
+                        if(bmp.getPixel(j,i)==-16777216){
+                                stas[j]+=1;
+                        }
+                }
+        }
+        //找出最大值
+        max=0
+        for(j=0;bmp.width-1;1){
+                if(stas[j]>max){
+                        max=stas[j]
+                }
+        }
+        //分割个数
+        splitNum=4;
+        superGroup={};//超级大组，用来装大组。
+        for(charSize=6;15;1){//字符宽度
+                //用一条y轴线从0扫到max
+                for(y=0;max;1){
+                        g={};//将数据存入数组后用于分出相似组
+                        for(j=0;bmp.width-1;1){
+                                if(stas[j]<=y){
+                                        table.push(g,j);
+                                }
+                        }
+                        //先把数组排序
+                        table.sort(g);
+                        bigGroup={};//大组，用来装小分组
+                        for(i=1;#g;1){
+                                group={}//小分组
+                                for(e=i+1;#g;1){
+                                        if(g[e]-g[e-1]>charSize){
+                                                i=e-1;
+                                                table.push(group,g[i]);
+                                                break;
+                                        }
+                                        else {
+                                                table.push(group,g[e-1]);
+                                        }
+                                        if(e==#g){
+                                                isStop=true;
+                                        }
+                                }
+                                table.push(bigGroup,group)//把小分组装进大分组里面
+                                if(isStop){
+                                        break ;
+                                }
+                        }
+                        isStop=false
+                        //io.print("第"++y++"行",#bigGroup-1,"组")
+                        table.push(superGroup,bigGroup);
+                        if(#bigGroup<=1){
+                                break ;//当小组数等于1说明图片已经分不开，不用继续再上移y轴扫描
+                        }
+                }
+        }
+        isFounded=false;//判断是否已经找到
+        //找出分成splitNum组的大组
+        for(s=1;#superGroup;1){
+                if(splitNum==#superGroup[s]-1){//刚好
+                        //找出大组的分割点坐标
+                        avers={};//保存各组平均值的数组
+                        for(b=1;#superGroup[s];1){
+                                total=0;//每个分组的总值,用于计算每个分组的平均值
+                                for(l=1;#superGroup[s][b];1){
+                                        total+=superGroup[s][b][l];
+                                }
+                                aver=math.round(total/#superGroup[s][b]);
+                                table.push(avers,aver)
+                        }
+                        for(a=1;#avers;1){
+                                io.print("分割点"++a++"为:"++avers[a])
+                        }
+                        isFounded=true
+                        break ;//找到一个分组后先，以后再区分这些分组
+                }
+                elseif(splitNum>#superGroup[s]-1){//分组太少
+                       
+                }
+                elseif(splitNum<#superGroup[s]-1){//分组太多
+               
+                }
+        }
+        if(!isFounded){
+                io.print("抱歉，实在是找不到合适的切割点了")
+                continue ;
+        }
+        //把avers数组的最后一个数设置为bmp的宽
+        avers[#avers]=bmp.width-1;
+        newbmp=gdip.bitmap(avers[filename+1]-avers[filename]+1,bmp.height)
+        for(i=0;bmp.height-1;1){
+                for(j=avers[filename];avers[filename+1];1){
+                        newbmp.setPixel(j-avers[filename],i,bmp.getPixel(j,i))
+                }       
+        }
+        newbmp.save(""++filename++"-1.bmp")
+}

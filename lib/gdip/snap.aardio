@@ -1,0 +1,99 @@
+﻿//snap 截屏
+import win;
+import gdi;
+import gdip.bitmap;
+
+namespace gdip;
+
+class snap{
+	ctor(hwnd,x=0,y=0,w,h,clientOnly){
+		var hSrc = ..win.getDesktop();
+		if( hwnd===null ) hwnd =  hSrc; 
+		if( hSrc!==hwnd ){
+			..win.showForeground(hwnd);	
+			..win.delay(10);
+		}
+		
+		var hdc = ::GetWindowDC(hSrc);
+		var rc;
+		
+		if(clientOnly){ 
+			rc = ..win.getClientRect(hwnd); 
+			..win.toScreenRect(hwnd,rc);
+		}
+		else{
+			rc = ..win.getRect(hwnd,true);
+		}
+		if(!w) w = rc.right - rc.left - x;
+		if(!h) h = rc.bottom - rc.top - y;
+		x = rc.left + x;
+		y = rc.top + y;
+		
+		var hBmp = ..gdi.doubleBuffer( hdc,w,h,
+			function( hdc,hMemDc,hMemBitmap ){ 
+					::BitBlt(hMemDc,0,0,w,h, hdc, x, y,0xCC0020/*_SRCCOPY*/ | 0x40000000/*_CAPTUREBLT*/)
+					picture = ..gdip.bitmap(hMemBitmap);
+			}
+		)
+		::ReleaseDC(hSrc, hdc);
+			
+		return picture;
+	}; 
+}
+
+namespace snap{
+    
+	client = function(hwnd,x,y,w,h){
+		return ..gdip.snap(hwnd,x,y,w,h,true);
+	}  
+	
+	printClient = function(hwnd,x,y,w,h){
+		return print(hwnd,x,y,w,h,true);
+	}
+	
+	print = function(hwnd,x=0,y=0,w,h,clientOnly) {
+		
+		if( hwnd===null ) hwnd =  ..win.getDesktop();
+		if( ..win.isIconic(hwnd)  || ( !..win.isVisible(hwnd) ) ) 
+			..win.show(hwnd, 0x4/*_SW_SHOWNOACTIVATE*/);
+	
+		var picture; 
+		..gdi.windowBuffer( hwnd,
+			function( hdc,hMemDc,hMemBitmap,width,height ){
+				::PrintWindow( hwnd,hMemDc,0)
+				
+				if( x : y : w : h : clientOnly ){  
+					if( clientOnly ){ 
+						var left,top,width,height = ..win.getClientPos(hwnd);
+						x = x + left;
+						y = y + top; 
+					} 
+					width = w:( width - x)
+					height = h:( height - y)  
+						
+					..gdi.doubleBuffer( hMemDc,width,height,
+						function( hdc,hMemDc,hMemBitmap ){
+							::BitBlt( hMemDc , 0, 0,width,height, hdc, x, y,0xCC0020/*_SRCCOPY*/ | 0x40000000/*_CAPTUREBLT*/) 
+								picture = ..gdip.bitmap(hMemBitmap);
+						}
+					)  
+				}  
+				else {
+					picture = ..gdip.bitmap(hMemBitmap);
+				} 
+			} 
+		) 
+		return picture; 
+	} 
+}
+
+/**intellisense(gdip) 
+snap(.(窗口句柄,左坐标,顶坐标,宽,高) = 自屏幕抓取窗口图象并返回 gdip.bitmap 对象,\n截图结果会包含透明部分的背景图像，\n所有参数都是可选参数
+snap.client(.(窗口句柄,左坐标,顶坐标,宽,高) = 自屏幕抓取窗口客户区图像并返回 gdip.bitmap 对象,\n截图结果会包含透明部分的背景图像，\n所有参数都是可选参数
+snap.print(.(窗口句柄,左坐标,顶坐标,宽,高) = 后台抓取窗口图象并返回 gdip.bitmap 对象\n所有参数都是可选参数
+snap.printClient(.(窗口句柄,左坐标,顶坐标,宽,高) = 后台抓取窗口客户区图像并返回 gdip.bitmap 对象 \n所有参数都是可选参数
+snap() = !gdipbitmap.
+snap.client() = !gdipbitmap.
+snap.print() = !gdipbitmap.
+snap.printClient() = !gdipbitmap.
+end intellisense**/

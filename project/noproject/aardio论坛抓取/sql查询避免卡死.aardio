@@ -1,0 +1,73 @@
+import win.ui;
+import sqlServer;
+/*DSG{{*/
+var winform = win.form(text="辅助查询";right=759;bottom=502;bgcolor=16777215)
+winform.add(
+bt_cx={cls="button";text="查询";left=655;top=448;right=735;bottom=477;db=1;dr=1;z=1};
+static={cls="static";left=11;top=9;right=732;bottom=438;bgcolor=16777215;db=1;dl=1;dr=1;dt=1;edge=1;fullRow=1;gridLines=1;z=2}
+)
+/*}}*/
+
+import win.ui.statusbar;
+win.ui.statusbar(winform).addItem("操作", 50);
+winform.statusbar.addItem(" ", 200);
+winform.statusbar.addItem(" ", 200);
+
+import reportX
+rep = reportX(winform.static);
+rpo1 = rep._object;
+
+rpo1.ColCount = 8;
+rpo1.RowCount = 6;
+rpo1.FontSize = 5;
+rpo1.SetFontSize = 16;
+rpo1.PoleHeight = 16;
+rpo1.PoleWidth = 30;
+rpo1.GridLine = true;
+rpo1.CellSeparatorColor = gdi.RGB(0, 0, 0);
+rpo1.AlternatingColor = gdi.RGB(250, 255, 245);
+rpo1.PoleColor = gdi.RGB(240, 240, 240);
+
+var msg = ::MSG();
+show = function(hs) {
+    rpo1.InvalidatePaint();
+    rpo1.RowCount = hs;
+    for(i = 1; rpo1.RowCount; 1) {
+        if(i % 500 == 0) {//每500条刷新一次界面,可以自己修改
+            winform.statusbar.setText("正在处理第" + tostring(i) + "条记录", 3);
+            rpo1.ValidatePaint();
+            rpo1.InvalidatePaint();
+        }
+        rpo1.SetRowHeight(i, 24);
+        for(c = 1; 8; 1) {
+            rpo1.SetCellHAlignment(c, i, 0);
+            rpo1.SetCellVAlignment(c, i, 1);
+            rpo1.SetCellMultiLine(c, i, true);
+            rpo1.SetCellReadOnly(c, i, true);
+            rpo1.SetCellFontSize(c, i, 8);
+            rpo1.SetCellFontColor(c, i, 0);
+            rpo1.SetCellValue(c, i, tostring(i) + "行-" + tostring(c) + "列");
+        }
+        win.peekPumpInputMessage(msg)
+    }
+    winform.statusbar.setText(tostring(hs) + "条记录已经处理完毕", 3);
+    rpo1.ValidatePaint();
+
+}
+
+
+winform.bt_cx.oncommand = function(id, event) {
+    var rt = 30000;
+    winform.statusbar.setText("查询结果：共有" + tostring(rt) + "条记录。", 2);
+    show(rt)   //没结束前一点就一卡死
+    /*   求教，好象没运行
+        thread.invoke(
+                function(rt){
+                        show(rt)
+                }
+        )*/
+
+}
+
+winform.show()
+win.loopMessage();

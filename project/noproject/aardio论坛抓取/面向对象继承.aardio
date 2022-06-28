@@ -1,0 +1,73 @@
+import console; 
+
+ //定义类
+var Student = class {
+  
+   //构造函数可以省略
+ 	ctor( name, score ){
+ 		//构造函数代码
+ 		self.name = name
+        self.score = score
+ 	}
+ 
+ 	//类属性 = "属性值";
+ 	
+ 	print_score = function(){
+ 		import console;
+ 		self.name = name
+        self.score = score
+        console.log(self.name, self.score);
+ 	}
+ 	
+}
+{
+    var stu1 = Student('Bart Simpson', 59);
+    //stu1.print_score();
+}
+
+class Animal{
+    
+    ctor( name, id ){
+ 		//构造函数代码
+ 		self.name = name;
+        self.id = id;
+ 	}
+ 	eat = function(){
+ 		import console;
+ 		console.log(self.name + "正在吃");
+ 	}
+ 	sleep_ = function(){
+ 		import console;
+ 		console.log(self.name + "正在睡");
+ 	}
+ 	introduction = function(){
+ 		import console;
+ 		console.log("大家好！我是" + self.id + "号" + self.name + ".");
+ 	} 
+ 	
+ 	name = "";
+    id = 0;
+}
+
+class Penguin {
+	ctor( name, id ){
+	    this = ..Animal(name, id);
+	};
+	eat = function(){
+ 		import console;
+ 		console.log(this.name + "企鹅正在吃");
+ 	}
+}
+
+{
+	var animal = Animal("alice", 10086);
+	animal.eat();
+	animal.sleep_();
+	animal.introduction();
+	
+	var penguin = Penguin("bob", 10010);
+	penguin.eat();
+	penguin.sleep_();
+	penguin.introduction();
+}
+console.pause(true);

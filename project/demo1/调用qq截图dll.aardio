@@ -1,0 +1,76 @@
+import win.ui;
+//导入自定义的用户库
+/*DSG{{*/
+mainForm = win.form(text="haha";right=384;bottom=321;border="dialog frame";edge=1;frame=1;parent=...)
+mainForm.add(
+button={cls="button";text="Button";left=181;top=194;right=311;bottom=236;z=2};
+button2={cls="button";text="Button";left=32;top=198;right=154;bottom=237;z=1};
+button3={cls="button";text="Button";left=30;top=255;right=153;bottom=293;z=3};
+button4={cls="button";text="Button";left=188;top=255;right=311;bottom=293;z=4};
+picturebox={cls="picturebox";left=21;top=11;right=365;bottom=177;border=1;notify=1;z=5}
+)
+/*}}*/
+
+mainForm = nil;
+
+// import win.ui;
+/*DSG{{*/
+mainForm = win.form(text="haha";right=384;bottom=321;border="dialog frame";edge=1;frame=1;parent=...)
+mainForm.add(
+button={cls="button";text="截图1";left=181;top=194;right=311;bottom=236;z=2};
+button2={cls="button";text="截图2";left=32;top=198;right=154;bottom=237;z=1};
+button3={cls="button";text="截图3";left=35;top=256;right=158;bottom=294;z=3};
+button4={cls="button";text="读取剪切板图片";left=188;top=255;right=311;bottom=293;z=4};
+picturebox={cls="plus";left=21;top=11;right=365;bottom=177;border=1;notify=1;z=1}
+// picturebox={cls="plus";left=21;top=16;right=617;bottom=360;db=1;dl=1;dr=1;dt=1;edge=1;repeat="scale";transparent=1;z=1}
+
+
+)
+/*}}*/
+
+var dll1 = raw.loadDll("\res\TXGYMailCamera.dll",,"cdecl");
+//var dll = ..raw.loadDll("\res\TXGYMailCamera.dll","TXGYMailCamera.dll")
+g_PrScrn1 = dll1.api("CameraWindow","int(int a)")
+
+var dll2 = raw.loadDll("\res\PrScrn.dll",,"cdecl");
+g_PrScrn2 = dll2.api("PrScrn","int(int a)")
+
+var dll3 = raw.loadDll("\res\CameraDll.dll",,"cdecl");
+g_PrScrn3 = dll3.api("CameraSubArea","int(int a)")
+
+mainForm.button.oncommand = function(id,event){
+    //mainForm.msgbox( mainForm.button.text );
+    g_PrScrn1(0);
+}
+
+mainForm.button2.oncommand = function(id,event){
+    //mainForm.msgbox( mainForm.button.text );
+    g_PrScrn2(0);
+}
+
+mainForm.button3.oncommand = function(id,event){
+    //mainForm.msgbox( mainForm.button.text );
+    g_PrScrn3(0);
+}
+
+mainForm.button4.oncommand = function(id,event){
+    //mainForm.msgbox( mainForm.button.text );
+    //g_PrScrn3(0);
+    /*
+    import gdip;
+    var bitmapFd = win.clip.readBitmap();
+    mainForm.picturebox.setBitmap(bitmapFd);
+    var img = gdip.image ( bitmapFd );
+    var graphics = gdip.graphics(  mainForm.picturebox );
+    gdip.DrawImage( graphics, img, 0, 0 );
+    */
+    import win.clip
+    import gdip
+    var hBmp = win.clip.readBitmap();
+	mainForm.picturebox.background = gdip.bitmap(hBmp);
+    
+}
+
+
+mainForm.show()
+win.loopMessage();

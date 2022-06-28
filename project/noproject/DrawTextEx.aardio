@@ -1,0 +1,55 @@
+import win.ui;
+/*DSG{{*/
+mainForm = ..win.form( parent=...;bottom=615;max=false;text="testidview";border="thin";right=590 )
+mainForm.add(
+picMain={ bottom=275;color=16777215;right=364;border=1;autosize=1;top=65;font=LOGFONT( name='宋体';h=-29 );transparent=1;left=36;z=1;cls="picturebox" };
+btnCreate={ bottom=507;text="重读";left=403;right=502;top=467;tabstop=1;z=2;cls="button" }
+)
+/*}}*/
+
+/*
+API声明方法
+https://bbs.aardio.com/forum.php/forum.php?mod=viewthread&tid=11235
+*/
+
+//结构体定义不要放到函数里面重复定义
+class DRAWTEXTPARAMS {
+    INT cbSize = 20; //必须指定此字段的值
+    int iTabLength;
+    int iLeftMargin;
+    int iRightMargin;
+    INT uiLengthDrawn;
+}
+DrawTextEx = ::User32.api("DrawTextExA"
+    ,"int(pointer hdc,string lpStr,int nCount,struct& lpRect,int wFormat,struct& lpDrawTextParams)");
+
+//非必要作为全局变量的前面加上 var 声明为局部变量
+var readi = function(){
+
+    var rect1 = ::RECT(38,60);
+    rect1.bottom = rect1.top + 30;
+    rect1.right = rect1.left + 340;
+
+    var hdc = ::GetDC(mainForm.picMain.hwnd);
+    ::SetBkMode(hdc, 0x1/*_TRANSPARENT*/);
+    ::SetTextColor(hdc, gdi.RGB( 0, 0, 0));
+   
+    var font = ::LOGFONT( name="宋体";point=12 )
+    ::SelectObject(hdc, font.createIndirect() );
+     
+    var dr = DRAWTEXTPARAMS(); //引用结构体参数不需要到返回值里取
+    var hi = DrawTextEx(hdc,"aaaaaaaaaaaaaaaaaaaa66666666677",-1,rect1,0x0|0x10|0x2000,dr);
+   
+    font.deleteIndirect();
+    mainForm.picMain.update();   
+   
+    ::ReleaseDC( mainForm.picMain.hwnd, hdc );       
+}
+
+mainForm.btnCreate.oncommand = function(id,event){
+    readi();       
+}
+
+
+mainForm.show()
+win.loopMessage();

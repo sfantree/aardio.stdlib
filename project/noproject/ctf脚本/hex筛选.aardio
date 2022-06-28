@@ -1,0 +1,51 @@
+
+import console; 
+var s = "63 1A 74 B9 66 85 73 86 68 AA 6F 4B 77 B0 7B 21 61 14 65 53 36 A5 65 54 33 34 66 78 61 25 34 DD 38 EF 66 AB 35 10 32 95 38 1F 62 82 31 BA 37 45 34 7C 32 54 64 7E 37 3A 32 E4 65 F1 36 FA 66 F5 34 1E 31 07 32 1D 39 54 38 F1 33 32 38 E9 30 6C 7D";
+//s1 = string.replace( s, " ", "");
+l = string.split(s, " ");
+
+//console.dump( l );
+var s1 = "";
+for(i=1;#l;1){
+	if( i % 2 == 1 ) {
+	    var n = tonumber(l[i], 16);
+	    s = s + ( string.pack(n) );
+	}
+
+}
+
+/*
+a="631A74B96685738668AA6F4B77B07B216114655336A5655433346578612534DD38EF66AB35103195381F628237BA6545347C3254647E373A64E465F136FA66F5341E3107321D665438F1333239E9616C7D"
+
+flag=""
+for i in range(0,len(a),4):
+    hexStr=a[i:i+2]
+    flag+=chr(int("0x"+hexStr,16))
+print(flag)
+————————————————
+版权声明：本文为CSDN博主「bfengj」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/rfrder/article/details/115369600
+
+取 1 5 9... 
+
+*/
+
+var a="631A74B96685738668AA6F4B77B07B216114655336A5655433346578612534DD38EF66AB35103195381F628237BA6545347C3254647E373A64E465F136FA66F5341E3107321D665438F1333239E9616C7D"
+var flag = "";
+for(i=1; string.len(a); 4){
+	var hexStr = string.slice( a, i, i + 1 );
+	//console.dump( i );
+	// chr <-> string.pack int <-> tonumber
+	
+	//console.log( string.pack( tonumber(hexStr, 16))[1] );
+    //flag = flag + string.pack( (tonumber(hexStr, 16)[1] );
+    // 坑
+    var ascii, _ = tonumber(hexStr, 16);
+    flag = flag + string.pack( ascii ); 
+}
+console.dump( "flag", flag );
+
+
+
+
+console.pause(true);

@@ -1,0 +1,31 @@
+import console;
+import tcc; 
+vm = tcc();
+
+var errorMsg;
+vm.onError = function(msg){
+	errorMsg = msg;
+	console.log( msg )
+}
+
+vm.addLib( 
+	"user32",
+	"kernel32",
+	"gdi32"
+) 
+
+//编译C源码，生成DLL
+vm.define("NDEBUG","1").addFile("/bn.c").output( "/tiny-bignum-c.dll", "" ) 
+
+if( errorMsg ){
+	console.log("编译出错,请升级您的TCC扩展库到0.9.26.02 以上版本")
+}
+else {
+	console.log("已生成 tiny-bignum-c.dll")
+}
+
+vm.close();
+console.pause();
+
+// https://github.com/kokke/tiny-bignum-c
+// 注意导出函数要加上 __declspec(dllexport) 

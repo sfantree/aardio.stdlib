@@ -1,0 +1,24 @@
+import dotNet;
+import console;
+
+//启动CLR运行时
+var clr,err = dotNet.clr( "v2.0" );
+if( !clr ){
+        console.log("当前系统未安装.Net Framework 2.0", err )
+        return;
+}
+
+//创建应用程序域
+var appDomain = clr.createAppDomain();
+
+//创建正则表达式对象
+var regex = appDomain.invokeMember("System","System.Text.RegularExpressions.Regex",null,512/*BindingFlags.CreateInstance*/,null
+        ,"^-?\d+(\.\d{2})?$" );
+
+var testString = {"-42"; "19.99";"0.001"; "100 USD"};
+for(k,str in testString){
+        console.log( str, regex.IsMatch(str) )
+}
+
+//卸载应用程序域
+appDomain.unload();

@@ -1,0 +1,91 @@
+﻿import gdip.bitmap;
+import zbar.iconv;
+
+namespace zbar{
+
+	class scanner{
+		ctor(){
+			this.imageScanner = _dll.CreateImageScanner(); 
+			..table.gc(this,"delete");
+		};
+		config = function(cfgstr){
+			_dll.ScannerConfig(this.imageScanner,cfgstr : "" );
+		};
+		scanBitmap = function(bmp,callback){
+			if(!..gdip.bitmap.is(bmp)){
+				bmp = ..gdip.bitmap(bmp);
+			}
+			var bmpData = bmp.lockMemory(,0x22009/*_PixelFormat32bppRGB*/,1/*_GdipImageLockModeRead*/)
+			var ret = this.scan(bmpData.Scan0,bmp.width,bmp.height,callback,"RGB4");
+			bmp.unlockMemory(bmpData);
+			return ret;
+		};
+		scanSoImage = function(img,callback){ 
+			img.grayScale();
+			return this.scan(img.getData(),img.getWidth(),img.getHeight(),callback,"GREY");
+		};
+		scan = function(raw,width,height,callback,format,pixcelBytes){
+			if(!format){ format = "GREY";}
+			
+			var length;
+			if(type.isString(raw)){
+				length = #raw;
+			}
+			elseif(pixcelBytes){
+				length = width * height * pixcelBytes;
+			} 
+			else { 
+				pixcelBytes = ({
+					GREY = 1;
+					Y800 = 1;
+					RGBP = 2;
+					RGBO = 2;
+					RGBR = 2;
+					RGBQ = 2;
+					RGB3 = 3;
+					BGR3 = 3;
+					RGB4 = 4;
+					BGR4 = 4;
+				})[format];
+				
+				if(!pixcelBytes){
+					error("参数错误",2)
+				}
+				length = width * height * pixcelBytes;
+			}  
+
+			callback = ..raw.tocdecl(callback,"void(string type,string data)");  
+			return _dll.Scan(this.imageScanner,raw,width,height,format,length,callback);
+		};
+		delete = function(){
+			if(this.imageScanner){
+				_dll.DeleteImageScanner(this.imageScanner);
+					this.imageScanner = null;
+			}
+		};
+	}
+	
+	namespace scanner{ 
+		
+		_libzbarPath = ..io.appData("aardio\std\zbar\libzbar-0.dll",$"~\lib\zbar\.res\libzbar-0.dll");
+		_libzbar = ..raw.loadDll(_libzbarPath); 
+		
+		_dll = ..raw.loadDll($"~\lib\zbar\.res\scan_image.dll","scan_image.dll","cdecl");
+	}
+}
+
+
+/**intellisense()
+zbar = 条码、二维码识别
+zbar.scanner = 条码、二维码识别
+zbar.scanner() = 创建图像识别器\n!zbarscanner.
+!zbarscanner.config('qrcode->enable') = 配置识别器支持二维码识别\n格式请参考[zbar文档](http://zbar.sourceforge.net/api/zbar_8h.html#a7497342fe8597396be713b13cce219b)
+!zbarscanner.config('ean13->enable') = 配置识别器支持EAN13条码识别\n格式请参考[zbar文档](http://zbar.sourceforge.net/api/zbar_8h.html#a7497342fe8597396be713b13cce219b)
+!zbarscanner.config('ean8->enable') = 配置识别器支持EAN8条码识别\n格式请参考[zbar文档](http://zbar.sourceforge.net/api/zbar_8h.html#a7497342fe8597396be713b13cce219b)
+!zbarscanner.config('enable') = 配置识别器支持所有编码识别\n格式请参考[zbar文档](http://zbar.sourceforge.net/api/zbar_8h.html#a7497342fe8597396be713b13cce219b)
+!zbarscanner.config('disable') = 配置识别器禁用所有编码识别\n格式请参考[zbar文档](http://zbar.sourceforge.net/api/zbar_8h.html#a7497342fe8597396be713b13cce219b)
+!zbarscanner.scan(图像数据,宽度,高度,回调函数) = @.scan(__/*图像数据*/,width,height,function(typeName,data){\n	\n})
+!zbarscanner.scanSoImage(soImage对象,回调函数) = @.scanSoImage(__/*soImage对象*/,function(typeName,data){\n	\n})
+!zbarscanner.scanBitmap(位图对象,回调函数) = @.scanBitmap(__/*gdip.bitmap位图对象,\n也可传入GDI位图句柄或者com.picture对象*/,function(typeName,data){\n	\n})
+!zbarscanner.delete() = 释放对象,该函数在内存回收时会自动被调用
+end intellisense**/

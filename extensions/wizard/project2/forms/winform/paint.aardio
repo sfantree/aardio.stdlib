@@ -1,0 +1,21 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="范例工程";right=703;bottom=511;bgcolor=16777215;exmode="none")
+winform.add(
+lbDescription={cls="static";left=59;top=12;right=649;bottom=63;dt=1;notify=1;transparent=1;z=2};
+plus={cls="plus";left=0;top=62;right=704;bottom=492;background="\forms\winform\images\paint.png";db=1;dl=1;dr=1;dt=1;repeat="scale";z=1}
+)
+/*}}*/
+
+winform.getTemplatePath = function(){
+	return io.fullpath("/template/paint/") 
+}
+
+winform.lbDescription.text = /*
+窗口边框设为 none 可创建无边框窗口。
+使用 win.ui.simpleWindow( winform ) 可以快速为无边框窗口添加新的标题栏、边框、阴影。
+*/
+
+winform.show() 
+win.loopMessage();
+return winform;

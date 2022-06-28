@@ -1,0 +1,21 @@
+
+import win.ui;
+import win.ui.ctrl.scintilla;
+/*DSG{{*/
+var winform = ..win.form( text="测试 scintilla 函数指针";bottom=391;right=518;border="resizable" )
+winform.add(
+button={ bottom=376;text="撤消";left=312;top=337;z=2;right=471;cls="button" };
+scintilla={ dr=1;dl=1;bottom=324;right=504;left=16;dt=1;top=16;z=1;db=1;transparent=1;edge=1;cls="scintilla" }
+)
+/*}}*/
+
+var  pSciFnDirect  =  ::User32.SendMessageP(winform.scintilla.hwnd,2184/*_SCI_GETDIRECTFUNCTION*/,0,0) ;
+var  pThisSciWndData = ::User32.SendMessageP(winform.scintilla.hwnd,2185/*_SCI_GETDIRECTPOINTER*/,0,0 ) ;
+var callScintillaDirect = raw.main.api(pSciFnDirect,"int(int message,int wParam,int lParam)" , "cdecl",pThisSciWndData )
+
+winform.button.oncommand = function(id,event){
+    callScintillaDirect (2176/*_SCI_UNDO*/,0,0);  
+}
+
+winform.show();
+win.loopMessage();

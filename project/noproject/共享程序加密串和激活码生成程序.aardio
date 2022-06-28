@@ -1,0 +1,143 @@
+
+//共享程序加密串和激活码生成程序
+import fsys;
+import fsys.ini;
+import sys.volume;
+import string.xxtea;
+import win.inputBox;
+import string.base64;
+import win.ui;
+/*DSG{{*/
+var winform = win.form(parent=...; top=0;bottom=432;text="激活码生成器";left=0;right=538 )
+winform.add(
+button2={ bottom=358;color=0;text="激化码生成";left=307;top=323;font=LOGFONT( name='宋体';h=-16 );z=7;right=403;cls="button" };
+groupbox1={ bottom=284;color=0;right=529;left=5;top=7;font=LOGFONT( name='宋体';h=-19 );z=1;text="加密字符串选项";edge=1;cls="groupbox" };
+edit4={ bottom=338;color=0;text="";left=104;top=310;font=LOGFONT( name='宋体';h=-16 );z=16;right=297;edge=1;cls="edit" };
+button1={ bottom=59;color=0;text="加密串生成";left=306;top=24;font=LOGFONT( name='宋体';h=-16 );z=10;right=402;cls="button" };
+button3={ bottom=59;color=0;text="加密串保存";left=419;top=24;font=LOGFONT( name='宋体';h=-16 );z=13;right=515;cls="button" };
+static5={ bottom=339;color=0;text="注册用户名：";left=16;top=316;font=LOGFONT( name='宋体';h=-16 );z=15;right=114;transparent=1;cls="static" };
+static1={ bottom=372;color=0;text="用户特征码：";left=18;top=349;font=LOGFONT( name='宋体';h=-16 );z=3;right=116;transparent=1;cls="static" };
+static2={ bottom=413;color=0;text="激活码：";left=20;top=390;font=LOGFONT( name='宋体';h=-16 );z=5;right=104;transparent=1;cls="static" };
+static4={ bottom=60;color=0;text="当前使用加密串选择";left=20;top=34;font=LOGFONT( name='宋体';h=-16 );z=14;right=291;transparent=1;cls="static" };
+edit3={ bottom=279;color=0;right=524;left=111;multiline=1;top=239;font=LOGFONT( name='宋体';h=-16 );z=9;text="";edge=1;cls="edit" };
+static3={ bottom=277;color=0;text="加密字符串";left=17;top=254;font=LOGFONT( name='宋体';h=-16 );z=8;right=103;transparent=1;cls="static" };
+groupbox2={ bottom=426;color=0;right=529;left=5;top=291;font=LOGFONT( name='宋体';h=-19 );z=2;text="激活码选项";edge=1;cls="groupbox" };
+button={ bottom=358;color=0;text="激活码保存";left=420;top=323;font=LOGFONT( name='宋体';h=-16 );z=12;right=516;cls="button" };
+edit1={ bottom=372;color=0;text="";left=104;top=344;font=LOGFONT( name='宋体';h=-16 );z=4;right=297;edge=1;cls="edit" };
+listview1={ bgcolor=16777215;bottom=235;color=0;text="listview1";left=12;top=64;font=LOGFONT( name='宋体';h=-16 );msel=false;z=11;right=521;fullRow=1;edge=1;cls="listview" };
+edit2={ bottom=418;color=0;right=520;left=104;multiline=1;top=377;font=LOGFONT( name='宋体';h=-16 );z=6;text="";readonly=1;edge=1;cls="edit" }
+)
+/*}}*/
+
+inifilename = "\jhmscq.ini"
+JhmIni = fsys.ini( inifilename );
+winform.listview1.insertColumn("加密程序列表" ,200,1,0x0/*_LVCFMT_LEFT*/);
+winform.listview1.insertColumn("加密字符串列表" ,320,2,0x0/*_LVCFMT_LEFT*/);
+
+//客户激活码保存保存按钮
+winform.button.oncommand = function(id,event){
+    if(winform.edit2.text = ""){ return ;    }
+    listview2 = tonumber(JhmIni.read("列表总数","激活码总数","0"),10);
+    listview2 ++ ;
+    nIndex = winform.listview1.selIndex ;
+    winform.listview1.getItemText(nIndex ,1,100)
+    JhmIni.write("激活码"+tonumber(listview2,10),"程序名",winform.listview1.getItemText(nIndex ,1,100));
+    JhmIni.write("激活码"+tonumber(listview2,10),"注册用户名",winform.edit4.text);
+    JhmIni.write("激活码"+tonumber(listview2,10),"用户特征码",winform.edit1.text);
+    JhmIni.write("激活码"+tonumber(listview2,10),"激活码",winform.edit2.text);
+    JhmIni.write("列表总数","激活码总数",tostring(listview2));
+    win.msgbox("用户激活码保存成功。","aardio");
+}
+
+//生成共享程序用加密串并保存到ini文件
+winform.button3.oncommand = function(id,event){
+    inputbox = win.inputBox(winform.hwnd)
+    inputbox.text = "程序加密字符串保存窗口"
+    inputbox.info.text = "请在下面输入加密串要用的程序名字"
+    inputbox.input.text = "在这里输入您的名字"
+    name = inputbox.doModal();
+    if(name != "在这里输入您的名字"){
+        listview1 = tonumber(JhmIni.read("列表总数","程序加密串总数","0"),10);
+        listview1 ++;
+        JhmIni.write("程序加密串"+tonumber(listview1,10),"程序名",name);
+        JhmIni.write("程序加密串"+tonumber(listview1,10),"加密串",winform.edit3.text);
+        JhmIni.write("列表总数","程序加密串总数",tostring(listview1));
+        JhmIni.write("列表总数","程序加密串默认",tostring(nIndex));
+        xccsh();
+        win.msgbox("程序加密字符串保存成功。","aardio");
+    }else
+        win.msgbox("你取消了加密串的保存");
+}
+
+winform.button1.oncommand = function(id,event){
+    //产生随机加密串
+    math.randomize();
+    str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    winform.edit3.text = string.random(64,str);//取64位随机字符串
+}
+
+//客户激化码生成
+winform.button2.oncommand = function(id,event){
+    try{
+        nIndex = winform.listview1.selIndex ;
+        jmstring = winform.listview1.getItemText(nIndex ,2,100); //原加密串
+        //1、特征码还原
+        fwqyhtzmstab = string.split(winform.edit1.text,'-');
+        fwqyhtzms = string.xxtea.decrypt(string.base64.decode(fwqyhtzmstab[1] + fwqyhtzmstab[2]) ,jmstring);
+        //io.print(fwqyhtzms);
+        //2、将加密字符串分解2段后重新组合 得到变形的激活码加密串
+        fwqyhtzmn = (tonumber(fwqyhtzms,16)) % 64;
+        jmstring1 = string.slice(jmstring,fwqyhtzmn) + string.slice(jmstring,1,fwqyhtzmn - 1);
+        //3、激活码第1段
+        fwqyhjhm1 = string.base64.encode(string.xxtea.encrypt(string.reverse(fwqyhtzms),jmstring1));
+        //4、激活码第2段
+        fwqyhjhm2 ="";
+        fwqyhtzmn1 = (tonumber(fwqyhtzms,16)) % 7;//此处的7可以在7~31之间的奇数质数中变化
+        for(i=1;#fwqyhtzms;1){
+            //变形特征码第i位=原特征码的第i位+变形加密串的第[(fwqyhtzmn + i * (fwqyhtzmn1+1))%64 + 1]位 的数值字符
+            fwqyhjhm2 = fwqyhjhm2 ++ string.pack((fwqyhtzms + jmstring1[(fwqyhtzmn + i * (fwqyhtzmn1+1))%64 + 1]));
+        }
+        fwqyhjhm2 =string.base64.encode(string.xxtea.encrypt(fwqyhjhm2,jmstring1));
+        winform.edit2.text = string.slice(fwqyhjhm1,1,#fwqyhjhm1 /2) + "-" + string.slice(fwqyhjhm1,(#fwqyhjhm1 /2)+1) + "-" + string.slice(fwqyhjhm2,1,#fwqyhjhm2 /2) + "-" + string.slice(fwqyhjhm2,(#fwqyhjhm2 /2)+1);
+    }
+    catch(e){
+        win.msgbox("激活码计算错误，请检查用户特征码和加密串是否正确","aardio");
+    }
+}
+
+winform.wndproc = function(hwnd,message,wparam,lparam){
+    select(message) {//判断消息类型
+        case 0x10/*_WM_CLOSE窗口关闭消息*/{
+            
+        }
+        case 0x205/*_WM_RBUTTONUP 鼠标右键弹起，弹出菜单*/begin
+            //var x,y = ::LOWORD(lparam), ::HIWORD(lparam)
+            //winform.popmenu.popup();//弹出菜单
+        end
+        else{
+            
+        }
+    }
+    //无返回值则继续调用默认回调函数
+}
+
+//共享程序加密串列表刷新显示函数
+xccsh = function(){
+    listnum1 = tonumber(JhmIni.read("列表总数","程序加密串总数","0"),10);//程序加密串总数
+    if(listnum1 = 0){ return ;    }
+    winform.listview1.clear();
+    for(i=1;listnum1;1){
+        nIndex = winform.listview1.addItem(JhmIni.read("程序加密串"+tonumber(i,10),"程序名"));
+        winform.listview1.setItemText(JhmIni.read("程序加密串"+tonumber(i,10),"加密串"),nIndex,2);
+    }
+    winform.listview1.setFocus();
+    listnum1 = tonumber(JhmIni.read("列表总数","程序加密串默认","0"),10);
+    winform.listview1.setSelected(listnum1);
+    winform.listview1.selIndex = listnum1;
+}
+
+xccsh();
+
+winform.show()
+win.loopMessage();
+return winform;

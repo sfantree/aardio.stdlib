@@ -1,0 +1,13 @@
+
+
+namespace win.ui.ctrl.mCtrl{
+    _dll = ..raw.loadDll($"~\lib\win\ui\ctrl\mCtrl\.res\mCtrl.dll")
+}
+
+import win.ui.ctrl.mCtrl.grid;
+
+/*
+这是一个开源控件库，里面提供的控件非常多，
+这里只封装了 grid 供大家参考，有兴趣的可以自行封装其他控件。
+https://github.com/mity/mctrl
+*/

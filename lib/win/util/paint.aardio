@@ -1,0 +1,171 @@
+﻿//paint 简单画板
+namespace win.util;
+
+class paint{
+	ctor( plusCtrl ){
+		plusCtrl.foreRepeat = "point";
+		plusCtrl.enableDpiScaling(false);
+		
+		//鼠标按下，开始记录鼠标画出来的坐标点到this.drawData
+		plusCtrl.onMouseDown = function(wParam,lParam){
+			if( this.onStartDrawing ) this.onStartDrawing();
+    		var x,y = ..win.getMessagePos(lParam);
+    		this.drawData ={ ::POINTF(x,y) } 
+		}
+		
+		//鼠标拖曳,记录鼠标移动轨迹
+		plusCtrl.onMouseDrag = function(wParam,lParam){
+    		var x,y = ..win.getMessagePos(lParam);
+    		
+    		//查询是否要记录绘图经过的所有坐标
+    		if( multipoint[this.drawMode] ) ..table.push( this.drawData,::POINTF(x,y) );
+			else this.drawData[2] = ::POINTF(x,y);
+    		
+    		plusCtrl.redrawTransparent()
+		}
+		
+		//用this.foreground创建一个图像，用于保存绘图结果
+		plusCtrl.foreground = ..gdip.bitmap(plusCtrl.width,plusCtrl.height);
+		
+		//用户鼠标放开时,取到鼠标经过的轨迹然后画到this.foreground上保存下来
+		plusCtrl.onMouseUp = function(wParam,lParam){
+    		var drawMode = this.drawMode; 
+    		
+    		//橡皮擦在屏幕上要画背景色才能盖住之前画的，但在原图上要擦成透明色,
+    		if(drawMode == "eraser") drawMode = "eraserImage"; 
+    		if(!drawMode) return;
+    		
+    		if(#this.drawData>1){
+    			var method =  drawMethod[drawMode]; 
+    			if(method){
+    				this.undoBitmap = plusCtrl.foreground.copy();
+    				
+    				var g = plusCtrl.foreground.getGraphics();
+    				g.smoothingMode = 4/*_GdipSmoothingModeAntiAlias*/;
+					g.compositingQuality = 2/*_GdipCompositingQualityHighQuality*/; 
+					g.textRenderingHint =  3/*_GdipTextRenderingHintAntiAliasGridFit*/;
+					g.interpolationMode = 7/*_InterpolationModeHighQualityBicubic*/;
+					g.pixelOffsetMode = 2/*_PixelOffsetModeHighQuality*/
+    				method(g,this.drawData,this.drawColor,this.drawWidth);
+    			}
+    			
+				this.drawData = null;
+				plusCtrl.redrawTransparent();
+				if( this.onEndDrawing ) this.onEndDrawing(true);
+			}
+			else {
+				if( this.onEndDrawing ) this.onEndDrawing(false);
+			}
+		}
+		
+		//撤消
+		this.undo = function(){
+			if(this.undoBitmap){
+				var bmp = plusCtrl.foreground;
+				plusCtrl.foreground = this.undoBitmap;
+				this.undoBitmap = bmp;
+			}
+		}
+    	
+    	/*
+    	如果用户正在拖曳鼠标绘图,先临时画到控件窗口上，
+    	窗口往屏幕上绘图就像放视频是一帧一帧的画,每次画完了都不会保存，用户看到的只是控件当前输出的图像，
+    	例如画矩形，用户拖动鼠标每次都是画新的矩形，除非用户放开鼠标才会将矩形保存到this.foreground
+    	*/
+		plusCtrl.onDrawForegroundEnd = function(graphics,rc){
+    		if(!this.drawData && this.drawMode){
+    			return;
+    		}
+    		
+    		var argb = this.drawColor;
+    		if(this.drawMode == "eraser") argb = plusCtrl.backgroundColor; //橡皮擦在屏幕上要画背景色才能盖住之前画的
+
+    		var method = this.drawMode ? drawMethod[this.drawMode]; 
+    		if(method) method(graphics,this.drawData,argb,this.drawWidth); 
+		}
+		
+		//用户调整窗口大小时，调整前景图大小
+		plusCtrl.preadjust = function( cx,cy,wParam ) {
+			var bmp = ..gdip.bitmap(plusCtrl.width,plusCtrl.height); 
+			bmp.getGraphics().drawImagePoint(plusCtrl.foreground,::RECT(0,0,cx,cy) );
+			plusCtrl.setForeground(bmp,,false);
+		};
+	}; 
+}
+
+namespace paint{
+    
+    //使用表查询哪些绘图工具需要记录鼠标移动的全部坐标点，可以节省掉不必要的判断语句
+	multipoint ={
+		eraser = true;
+		pen = true;
+		radiant = true;
+	}
+    
+    //绘图函数表,绘图时可以直接查表得到绘图函数,可以节省掉不必要的判断语句
+ 	drawMethod = {
+    	eraser = function(graphics,data,color,width){
+        	var pen = ..gdip.pen(color,width);
+			if(#data>1)graphics.drawCurve2(pen,0.5,data); 
+			pen.delete();
+		};
+		eraserImage = function(graphics,data,color,width){
+        	graphics.compositingMode = 1/*_CompositingModeSourceCopy*/;
+        	var pen = ..gdip.pen(0x00000000,width);
+			if(#data>1)graphics.drawCurve2(pen,0.5,data); 
+			pen.delete();
+			graphics.compositingMode = 0/*_CompositingModeSourceOver*/ ;
+		};
+		pen = function(graphics,data,color,width){
+			var pen = ..gdip.pen(color,width);
+			if(#data>1)graphics.drawCurve2(pen,0.2,data); 
+			pen.delete()
+		};
+		line = function(graphics,data,color,width){
+			var pen = ..gdip.pen(color,width);
+			for(i=2;#data;1) graphics.drawLine(pen,data[i-1].x,data[i-1].y,data[i].x,data[i].y); 	
+			pen.delete()
+		};	
+		radiant = function(graphics,data,color,width){
+			var pen = ..gdip.pen(color,width);
+			for(i=2;#data;1) graphics.drawLine(pen,data[1].x,data[1].y,data[i].x,data[i].y); 
+			pen.delete()
+		};
+		rect = function(graphics,data,color,width){
+			if(#data==2){
+				var brush = ..gdip.solidBrush(color);
+				var x1,x2,y1,y2 = data[1].x,data[2].x,data[1].y,data[2].y;
+				if(x1>x2) x1,x2  = x2,x1;
+				if(y1>y2) y1,y2  = y2,y1;
+		  		graphics.fillRectangle(brush,::RECT(x1,y1,x2,y2).xywh() );
+				brush.delete()	
+			} 
+		};
+		ellipse = function(graphics,data,color,width){
+			if(#data==2){
+				var brush = ..gdip.solidBrush(color);
+		  		graphics.fillEllipse(brush,data[1].x,data[1].y,data[2].x-data[1].x,data[2].y-data[1].y);
+				brush.delete()	
+			} 
+		};  
+	}
+}
+
+/**intellisense()
+win.util.paint = 简单画板
+win.util.paint(__) = 创建简单画板,参数必须指定一个plus控件\nplus控件的背景色建议设置为白色
+win.util.paint() = !winutilpaint.
+end intellisense**/
+
+/**intellisense(!winutilpaint)
+drawColor = 画笔颜色,使用橡皮擦时必须改为背景色
+drawWidth = 画笔宽度
+drawMode = 设置绘画工具
+undo() = 撤消
+onStartDrawing = @.onStartDrawing = function(){
+	__/*开始画图触发*/
+}
+onEndDrawing = @.onEndDrawing = function(){
+	__/*开始画图触发*/
+}
+end intellisense**/

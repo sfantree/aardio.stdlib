@@ -1,0 +1,15 @@
+import web.rest.jsonCaiYun;
+
+var http = web.rest.jsonCaiYun("3975l6lr5pcbvidl6jl2")
+
+caiyun = http.api();
+var result = caiyun.translator(
+	source = {"彩云小译は最高の翻訳サービスです"};
+	trans_type = "auto2zh";
+	request_id = "demo";
+	detect = true;
+)
+
+import console;
+console.dumpJson(result);
+console.pause();

@@ -1,0 +1,25 @@
+import console; 
+
+
+function http_request(){
+	import web.rest.client;
+	var url = "http://httpbin.org";
+	
+	var web_restClient = web.rest.client();
+	
+	web_restClient.set
+	
+	var web_rest_api = web_restClient.api(url);
+	
+	var r = web_rest_api.head();
+	return web_restClient.lastResponse();
+}
+
+
+
+
+
+var num = http_request();
+
+console.dump(num );
+console.pause(true);

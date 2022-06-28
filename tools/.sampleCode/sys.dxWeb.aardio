@@ -1,0 +1,3 @@
+//RUNAS//
+import sys.dxWeb;
+sys.dxWeb.setup();

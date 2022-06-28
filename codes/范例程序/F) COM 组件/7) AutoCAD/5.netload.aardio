@@ -1,0 +1,68 @@
+//.Net 接口
+import console;
+console.showLoading("正在编译 .Net DLL");
+
+import dotNet; 
+import com.cad;
+
+//创建 AutoCAD 对象
+var cad = com.cad();
+cad.Visible = true; 
+ 
+//创建 C# 语言编译器
+var compiler = dotNet.createCompiler("C#");
+compiler.Reference("System.dll");
+compiler.Reference("System.Windows.Forms.dll");
+compiler.Reference(cad.Path,"AcCui.dll");
+compiler.Reference(cad.Path,"AcDbMgd.dll");
+compiler.Reference(cad.Path,"AcMgd.dll");
+compiler.Reference(cad.Path,"AcCustomize.dll");
+compiler.Reference(cad.Path,"AcCoreMgd.dll");
+
+compiler.Source = /****** 
+using System;
+using System.Collections.Generic;
+using System.Text;
+using Autodesk.AutoCAD.ApplicationServices;
+using Autodesk.AutoCAD.DatabaseServices;
+using Autodesk.AutoCAD.Runtime;
+using Autodesk.AutoCAD.Windows; 
+using Autodesk.AutoCAD.EditorInput; 
+
+public class TestCAD
+{
+         [LispFunction("aardioTestNetApi")]
+         public static ResultBuffer TestNetApi(ResultBuffer lspArgs)
+         {
+             ResultBuffer lspRet = new ResultBuffer();
+             if (lspArgs == null) return null;
+             
+             TypedValue[] args = lspArgs.AsArray();
+             try
+             {
+                 if (args.Length == 2)
+                 {
+                     string a = args[0].Value as string;
+                     string b = args[1].Value as string; 
+                     
+                     lspRet.Add(new TypedValue((int)LispDataType.Text, a + b));
+                 }
+             }
+             catch (Autodesk.AutoCAD.Runtime.Exception)
+             {
+                 return null;
+             }
+              return lspRet; 
+         }
+       
+}
+
+******/
+ 
+var assembly = compiler.Compile("/aardioTestNetApi.dll"); //编译并返回程序集  
+console.log(compiler.getLastError()); //查看编译器错误信息
+
+cad.NetLoad("/aardioTestNetApi.dll");
+cad.SendCommand(`(aardioTestNetApi "abc" "def")`);
+
+console.pause();

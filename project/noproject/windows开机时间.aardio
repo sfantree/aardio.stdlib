@@ -1,0 +1,16 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="简码编程 www.jianma123.com";right=316;bottom=199)
+winform.add(
+button={cls="button";text="开机到现在间隔时间";left=53;top=134;right=257;bottom=178;z=1};
+edit={cls="edit";left=20;top=22;right=296;bottom=118;edge=1;multiline=1;z=2}
+)
+/*}}*/
+
+winform.button.oncommand = function(id,event){
+    winform.edit.log( ::Kernel32.GetTickCount()++"毫秒",'\r\n' )//方法1
+    winform.edit.log( time.tick()++"毫秒",'\r\n' )//方法2
+}
+
+winform.show() 
+win.loopMessage();

@@ -1,0 +1,117 @@
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form( bottom=433;parent=...;right=519;text="aardio Form" )
+winform.add(
+edit4={ text="edit4";bottom=161;right=265;left=143;multiline=1;top=133;z=10;edge=1;cls="edit" };
+edit5={ text="edit5";bottom=198;right=266;left=144;multiline=1;top=170;z=11;edge=1;cls="edit" };
+edit={ right=263;bottom=57;text="edit";left=144;multiline=1;top=29;z=1;edge=1;cls="edit" };
+static={ bottom=58;right=118;left=57;text="股票代码：";top=36;transparent=1;z=4;cls="static" };
+static2={ bottom=94;right=112;left=66;text="买一价：";top=69;transparent=1;z=5;cls="static" };
+static5={ bottom=196;right=114;left=68;text="卖一量：";top=171;transparent=1;z=8;cls="static" };
+static3={ bottom=128;right=114;left=68;text="买一量：";top=103;transparent=1;z=6;cls="static" };
+edit3={ text="edit3";bottom=127;right=265;left=143;multiline=1;top=99;z=9;edge=1;cls="edit" };
+button={ bottom=368;right=440;left=359;top=336;z=2;text="读取数据";cls="button" };
+static4={ bottom=161;right=113;left=67;text="卖一价：";top=136;transparent=1;z=7;cls="static" };
+edit2={ text="edit2";bottom=91;right=265;left=143;multiline=1;top=63;z=3;edge=1;cls="edit" }
+)
+/*}}*/
+
+winform.button.wndproc = function(hwnd,message,wParam,lParam){
+       
+        //无返回值则继续调用默认回调函数
+}
+
+
+
+
+var rt
+dataindex = {
+    byte code[10];
+    int daylinenum;
+    WORD recordindex[25];
+}
+rtdata = {
+    byte code[10];
+    BYTE name[50];
+    INT datatime;
+    int unknown1;
+    float refclose;
+    float open;
+    float high;
+    float low;
+    float new;
+    float volume;
+    float amount;
+    float lotnow;
+    float buy1;
+    float buy2;
+    float buy3;
+    float buy4;
+    float buy5;
+    float buy1v;
+    float buy2v;
+    float buy3v;
+    float buy4v;
+    float buy5v;
+    float sell1;
+    float sell2;
+    float sell3;
+    float sell4;
+    float sell5;
+    float sell1v;
+    float sell2v;
+    float sell3v;
+    float sell4v;
+    float sell5v;
+
+}
+var codeoffset  //代码index偏移量
+var i
+
+setcode = function(code){
+    for(i=1;stknum;1){
+        rt.seek("set",0x18 + (i - 1) * 0x40+14)
+        if(rt.read({byte code[10]}).code == code){
+        i=(i-270)/5*320+17254
+            codeoffset = i
+            break   
+        }
+        
+    }
+    rt.seek("set",codeoffset)
+   
+}
+winform.button.oncommand = function(id,event){
+   rt =io.open("E:\程序\大智慧\dzh2\data\sh\STKINFO70.DAT", "rb");//数据文件路径
+   stknum = rt.read({INT stknum}).stknum
+   /* 查找指定证券代码 */
+
+dd={600001;600002;600004;600005;600006;600007;600186;600188}//**************************************************本地定义的数据
+
+for(i=1;8;1){
+       
+setcode(dd[i])  //但******************************************************
+data = rt.read(rtdata)
+
+winform.edit.text=data.code
+{
+       
+setcode(dd[i])  
+data = rt.read(rtdata)
+
+winform.edit.text=data.code
+winform.edit2.text=data.buy1
+winform.edit3.text=data.buy1v
+winform.edit4.text=data.sell1
+
+winform.edit5.text=data.sell1v
+
+
+}
+
+}
+
+}
+
+winform.show()
+win.loopMessage();

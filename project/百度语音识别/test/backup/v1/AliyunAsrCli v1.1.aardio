@@ -1,0 +1,465 @@
+/**
+
+2021年9月21日22:33:39
+v1.0 命令行版本
+- 修改为阿里云接口 todo:阿里云accesstoken获取
+4bc9e14fe9824717a31fff7e17e7efa0
+
+v1.1
+避免保存到同一个路径
+
+**/
+
+import console;
+import fsys;
+import fsys.path;
+import web.rest.jsonLiteClient;
+import process;
+import time;
+import crypt.bin;
+import web.json;
+import inet.url;
+import fsys.dlg.dir;
+
+// 全局设置
+g_config = {};
+g_config.vaddemo_path = io.fullpath("/vad-demo.exe");
+g_config.ffmpeg_path = io.fullpath("/ffmpeg.exe");
+
+/*
+
+// MULTI = 1 2 3 webrtc vad可以设置分别为以10ms 20ms 30ms作为包
+#define MULTI 1
+
+// VAD 模式 Aggressiveness mode (0, 1, 2, or 3). 数值越大，判断越是粗略，连着的静音或者响声增多
+#define WEBRTC_VAD_MODE 3
+
+// 有声音的音频段，xxx 毫秒后，认为该音频段结束，不能为0
+#define FILE_CUT_SILENCE_AFTER_ACTIVE_MS 500
+
+// 静音的音频段，切分xxx毫秒给之后有声音的音频段
+#define FILE_CUT_SILENCE_BEFORE_ACTIVE_MS 300
+
+// 最小的音频切分长度，即每个切分后音频文件不少于这个时长，最后一个除外
+#define FILE_CUT_MIN_MS  (10 * 1000)
+
+// 最大的音频切分长度，即每个切分后音频文件不多于这个时长
+#define FILE_CUT_MAX_MS  (60 * 1000)
+
+/** 上述示例中音频文件尽可能依次满足如下条件
+1. 最短10s，最长 60s。 
+2. 每个音频文件的最后的静音500ms， 
+2. 每个音频文件的开始的静300ms。
+ */
+
+g_config.cutOption = "1,3,500,300,10000,60000,16000,100";
+g_config.ak = "kVcnfD9iW2XVZSMaLMrtLYIz";
+g_config.sk = "O9o1O213UgG5LFn0bDGNtoRN3VWl2du6";
+
+
+cutVadSegment = function(original){
+    // 坑 vadBin 切割配置 cutOption 中使用 C语言源码结构体成员类型 无符号整数uint导致溢出 切换为64位
+	var vadBin = g_config.vaddemo_path;
+	if(not io.exist(vadBin)) {
+	    error("vadbin 不存在！");
+	    return;
+	}
+	
+	var filename = original;
+	//var filename_ansi = string.fromto( filename );
+	
+	var output_filename_prefix = "16k_1.pcm";
+	//var output_filename_prefix_ansi = string.fromto( output_filename_prefix );
+	
+	
+	var tm = time.now();
+	tm.format = "%Y%m%d%H%M%S";
+	var nowtime = tostring(tm);
+	
+	var vadOutputDir = fsys.joinpath(fsys.getTempDir(), nowtime);
+	
+	if(not io.exist(vadOutputDir)) {
+	    fsys.createDir(vadOutputDir, true)
+	}
+	var output_dir = vadOutputDir;
+	//var output_dir_ansi = string.fromto( output_dir );
+	
+	var cutOption = g_config.cutOption;
+	var cut_settings = cutOption;
+	//var cut_settings_ansi = string.fromto( cut_settings );
+	
+	//var parameterString2 = string.format(' "%s" "%s" "%s" "%s"', filename_ansi, output_filename_prefix_ansi, output_dir_ansi, cut_settings_ansi);
+	
+	// 坑 传递中文字符串 直接传递 无需转gbk
+	var parameterString2 = string.format(' "%s" "%s" "%s" "%s"', filename, output_filename_prefix, output_dir, cut_settings);
+    //console.log("parameterString2", parameterString2);
+    //fsys.log.print(tostring(time.now()), "mainForm.cutVadSegment:", "(vadBin, parameterString2)", vadBin, parameterString2);
+    
+    var pid2 = process.executeWait(vadBin, parameterString2);
+    //var pid2 = process.executeWait(vadBin);
+    
+    //fsys.log.print(tostring(time.now()), "mainForm.cutVadSegment:", "pid2", tostring(pid2));
+    
+    if(not pid2) {
+	    //error("FFmpeg error");
+	    error("FFmpeg error");
+	    return null;
+	}
+	return vadOutputDir;
+}
+
+
+function getTokenFromFile(){
+	if( not io.exist("/token.txt") ) {
+	    return "";
+	}
+	var tokenString = string.load("/token.txt");
+	return tokenString;
+}
+
+function baiduASR(voiceFilePath) {
+	var tokenString = g_config.tokenString;
+	
+	if(not tokenString) {
+	     error("tokenString null" );
+	}
+	
+	
+	
+	
+	if(not io.exist(voiceFilePath)) {
+    	console.pause(true);
+	}
+	
+	var voiceFileExt = fsys.getExtensionName(voiceFilePath);
+	//console.dump(voiceFileExt);
+	var voiceFileLength = #(string.load(voiceFilePath));
+	//console.dump(voiceFileLength);
+	var voiceFileBase64 = crypt.bin.encodeBase64( string.load(voiceFilePath) ) 
+	//console.dump(voiceFileBase64);
+	
+	/*
+	https://github.com/Baidu-AIP/speech-demo/blob/master/rest-api-asr/python/asr_json.py
+	params = {'dev_pid': DEV_PID,
+             	#"lm_id" : LM_ID,    #测试自训练平台开启此项
+              	'format': FORMAT,
+              	'rate': RATE,
+              	'token': tokenString,
+              	'cuid': CUID,
+              	'channel': 1,
+              	'speech': speech,
+              	'len': length
+              	}
+	*/
+	var restClient = web.rest.jsonLiteClient(); 
+	
+	var CUID = '123456PYTHON'
+	var RATE = 16000
+	var DEV_PID = 1537 // 1537 表示识别普通话，使用输入法模型。根据文档填写PID，选择语言及识别模型
+	var ASR_URL = 'http://vop.baidu.com/server_api'
+	var SCOPE = 'audio_voice_assistant_get' 
+	var TOKEN_URL = 'http://openapi.baidu.com/oauth/2.0/token'
+	var postTable = {
+		dev_pid = DEV_PID;
+		format = voiceFileExt;
+		rate = RATE;
+		token = tokenString;
+		cuid = CUID;
+		channel = 1;
+		speech = voiceFileBase64;
+		len = voiceFileLength;
+	}
+	var postJsonString = web.json.stringify(postTable)
+	
+	// 坑 try 语句块中 不要 return 
+	var returnValue = null;
+	try{
+		var jsonData = restClient.post(ASR_URL, postJsonString) 
+		console.dump(jsonData)
+		returnValue = jsonData[["result"]][[1]];
+	}
+	catch(e){
+		returnValue = null;
+	}
+	return returnValue;
+}
+
+
+function any2Pcm(original){
+    // 坑 复制注意空白字符
+	var FFmpegBin = g_config.ffmpeg_path;
+	if(not io.exist(FFmpegBin)) {
+		error("not io.exist(FFmpegBin)");
+        return null;
+    }
+	
+	//fsys.log.print(tostring(time.now()), "mainForm.any2Pcm:", FFmpegBin)
+	var InputFileName = original;
+	if(not io.exist(InputFileName)) {
+		error("not io.exist(InputFileName)");
+        return nil;
+    }
+    
+    var tm = time.now();
+	tm.format = "%Y%m%d%H%M%S";
+	var nowtime = tostring(tm);
+	
+	var vadOutputDir = fsys.joinpath(fsys.getTempDir(), nowtime);
+	
+	if(not io.exist(vadOutputDir)) {
+	    fsys.createDir(vadOutputDir, true)
+	}
+    
+    var OutputFileName = string.format("%s.pcm", fsys.joinpath(vadOutputDir, fsys.getFileName(InputFileName)));
+    //console.log(OutputFileName)
+    //fsys.log.print(tostring(time.now()), "mainForm.any2Pcm:", "OutputFileName", OutputFileName);
+	var parameterString = string.format(' -threads 2 -y -i "%s" -vn -acodec pcm_s16le -f s16le -ac 1 -ar 16000 "%s" ', InputFileName, OutputFileName)
+	//fsys.log.print(tostring(time.now()), "mainForm.any2Pcm:", FFmpegBin, parameterString);
+
+	var pid, err = process.executeWait(FFmpegBin, parameterString);
+	//FFmpegBin = "C:\Windows\System32\cmd.exe"
+	//var pid, err = process.executeWait(FFmpegBin);
+	
+	//fsys.log.print(tostring(time.now()), "mainForm.any2Pcm:", "pid", tostring(pid));
+
+	if(not pid) {
+	    error("FFmpeg error");
+	    //fsys.log.print(tostring(time.now()), "mainForm.any2Pcm:", "err", tostring(err));
+	    return "";
+	} else {
+	    return OutputFileName;
+	}
+}
+
+
+function getTokenFromNet(){
+	var API_KEY = g_config.ak;//'kVcnfD9iW2XVZSMaLMrtLYIz'
+	var SECRET_KEY = g_config.sk;//'O9o1O213UgG5LFn0bDGNtoRN3VWl2du6'
+	var CUID = '123456PYTHON'
+	var RATE = 16000
+	var DEV_PID = 1537 // 1537 表示识别普通话，使用输入法模型。根据文档填写PID，选择语言及识别模型
+	var ASR_URL = 'http://vop.baidu.com/server_api'
+	var SCOPE = 'audio_voice_assistant_get' 
+	var TOKEN_URL = 'http://openapi.baidu.com/oauth/2.0/token'
+	
+	var http = web.rest.jsonLiteClient(); 
+	var baidu_auth = http.api("http://openapi.baidu.com/oauth/2.0/token");
+	
+	var jsonData = baidu_auth.post(
+		grant_type = "client_credentials";
+		client_id = API_KEY;
+		client_secret = SECRET_KEY;
+	)
+	//console.log( jsonData[["access_token"]] );
+	var tokenString = jsonData[["access_token"]];
+	string.save("/token.txt", tokenString);
+	
+	if(#tokenString == 0) {
+	    console.log("网络获取token失败");
+	    error("网络获取token失败") 
+	    return "";
+	}
+	return tokenString;
+}
+
+function getToken(){
+	var tokenString = "";
+	tokenString = getTokenFromFile();
+	if(#tokenString == 0) {
+	    tokenString = getTokenFromNet();
+	}
+	g_config.tokenString = tokenString;
+}
+
+function getTargetPath(){
+	console.log( "请输入原目录:" )
+	
+	var srcPath = fsys.dlg.dir(,,'请选择原目录')
+	if(not srcPath){
+		error("原目录为空")
+	}
+	console.log( srcPath )
+	
+	//var dstPath = console.getText( "请输入目标目录:" )
+	
+	console.log( "请输入目标目录:" )
+	
+	var dstPath = fsys.dlg.dir(,,'请选择目标目录')
+	if(not dstPath){
+		error("目标目录为空")
+	}
+	console.log( dstPath )
+	
+	
+	if not( fsys.isDir(srcPath) and  fsys.isDir(dstPath) ) {
+		error("dstPath和srcPath内容必须目录") 
+	    console.log("dstPath和srcPath内容必须目录");
+	    return;
+	}
+	
+	var r = fsys.path.relative(dstPath, srcPath);
+	if(r) {
+	    console.log("dstPath不能是srcPath的子目录");
+	    return;
+	}
+	//g_config.srcPath = srcPath;
+	//g_config.dstPath = dstPath;
+	
+	var targetParentDirName = fsys.getFileName(srcPath);
+	
+	// 需要语音识别的所有文件
+	var multimediaFiles = {};
+	//fsys.enum( srcPath, {"*.mp4"; "*.mp3"; "*.flv"; "*.mkv"; "*.wmv"; "*.mov"; "*.f4v"},
+	fsys.enum( srcPath, {"*.mp3";},
+			function(dir, filename, fullpath, findData){ 
+				if(filename){
+			    	table.push(multimediaFiles, fullpath);
+				}
+	    	},
+		true
+	);
+	//console.dump(multimediaFiles);
+	var targetPaths = {};
+	for(i=1;#multimediaFiles;1){
+		var relatePath = fsys.path.relative(multimediaFiles[i], srcPath, false);
+		var targetPath = fsys.joinpath(dstPath, targetParentDirName, relatePath + ".txt");
+		table.push(targetPaths, targetPath);
+	}
+	return multimediaFiles, targetPaths;
+	
+}
+
+
+function AliyunASR(pcmfile){
+	
+	var http = inet.http();
+    var data = string.load(pcmfile);
+    
+    //console.dump(#data)
+    
+	//var asrurl = "http://httpbin.org/post";
+	var asrurl = "https://nls-gateway.cn-shanghai.aliyuncs.com/stream/v1/asr";
+	
+	var urlparam = {
+		["appkey"] = "QQvw67EAH2p6ENsa";
+		//["enable_voice_detection"] = true;
+		["enable_punctuation_prediction"] = true;
+	};
+	
+	var posturl = inet.url.appendExtraInfo(asrurl, inet.url.stringifyParameters(urlparam));
+	
+	var returnValue = null;
+	try{
+		var jsonData = http.post( posturl 
+			, data //上传数据包 
+			,  { 
+		   		["Content-Type"] = "application/octet-stream";
+	       		["X-NLS-Token"] =  "4bc9e14fe9824717a31fff7e17e7efa0";
+	       		["Host"] = "nls-gateway.cn-shanghai.aliyuncs.com";
+	       		//["Content-Length"] = 89;
+	       		//["URL_AS"] = inet.url.appendExtraInfo(asrurl, ..inet.url.stringifyParameters(urlparam));
+	   		}//要添加的HTTP头
+		);
+		//console.dump(jsonData)
+		var t = web.json.parse(jsonData)
+		returnValue = t[["result"]];
+		
+/*
+		if( true ) {
+		    console.log("404返回错误");
+		    console.dump(t);
+		}
+*/
+		
+	}
+	catch(e){
+		returnValue = null;
+	}
+	return returnValue;
+}
+
+
+function getTextFromMp3(Mp3Path, TxtPath){
+	var OutputFileName = any2Pcm(Mp3Path);
+	// 避免保存到同一个路径
+	sleep(1500);
+	var vadOutputDir = cutVadSegment(OutputFileName);
+	
+	var pcmFilenames = {};
+	fsys.enum( vadOutputDir, "*.pcm",
+		function(dir,filename,fullpath,findData){ 
+			if(filename){
+				 table.push(pcmFilenames, fullpath);
+	           	//winform.edit.printf('%s\n', filename)
+	        }
+		},
+		false
+	);
+	
+	table.sort(pcmFilenames, function(filename){
+		    if not(owner and filename) {
+		        return true;
+		    }
+			var a = string.match(owner,"16k_1.pcm_(\d+)-\d+_\a.pcm");
+		    var b = string.match(filename,"16k_1.pcm_(\d+)-\d+_\a.pcm");
+		    if(a and b) {
+		        return tonumber(a,10) < tonumber(b,10);
+		    } else {
+		        return true;
+		    }
+	});
+	
+	
+	
+	var OutputResultTxt = TxtPath;
+	if(not io.exist(OutputResultTxt)) {
+	    string.save(OutputResultTxt, "");
+	}
+	
+	for(i=1; #pcmFilenames;1){
+		
+		
+		var detectResult = AliyunASR(pcmFilenames[i]);
+		//var detectResult = "haha"
+		//console.dump(detectResult);
+		if(#detectResult) {
+			string.save(OutputResultTxt, tostring(i) + '\r\n', true);
+		    string.save(OutputResultTxt, detectResult + '\r\n', true);
+		}
+	}
+	
+}
+
+
+function _Main(){
+	// 遍历 源目录 下的所有媒体文件 包括子目录
+	// 语音识别保存的txt文件
+	getToken();
+	var multimediaFiles, targetPaths = getTargetPath();
+	console.log("共处理" + tostring(#multimediaFiles) + "个文件");
+	for( i = 1; #multimediaFiles ; 1){
+		console.log("正在处理" + multimediaFiles[i]);
+		getTextFromMp3(multimediaFiles[i], targetPaths[i]);
+	}
+}
+
+function Test_Main(){
+	//getTargetPath();
+	getToken();
+	//console.log(g_config.tokenString);
+	
+	//var s = any2Pcm("E:\BaiduNetdiskDownload\2017小仓《倒追聊程》\10.邀约给预期【会员免费+VX：DS857333】.mp4");
+	//console.log(s);
+	//cutVadSegment(io.fullpath("/pcm1.pcm"));
+	
+	//var detectResult = AliyunASR("C:\Users\lin\AppData\Local\Temp\20210921113645\16k_1.pcm_57260-68619_A.pcm");
+	//console.dump(detectResult);
+	
+	//getTextFromMp3("E:\tmpVedio\央视专访罗翔：从刑法学教授到短视频博主 - 1.央视专访罗翔：从刑法学教授到短视频博主(Av669513912,P1).mp3", "E:\OCR\10000.60000.txt")
+	
+}
+
+_Main();
+
+console.pause(true);
+

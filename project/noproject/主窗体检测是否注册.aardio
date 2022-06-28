@@ -1,0 +1,8 @@
+/* 注册验证 */
+regForm,regFlag = winform.loadForm("\res\reg.aau");
+if( !regFlag ){
+	regResult = regForm.doModal( winform.hwnd );
+	//console.log( regResult );
+	//console.pause();
+	if( regResult ){ regForm.close(); }else { win.quitMessage(); return; }
+}

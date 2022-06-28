@@ -1,0 +1,331 @@
+﻿import inet.url; 
+import sys.networkIsolation;
+import web.json;
+import util.registry;
+import util.metaProperty;
+import win.reg;
+
+namespace web;
+
+class sysView{
+	ctor( winform,userDataDir,debug ){ 
+		if( ! _WIN10_LATER) return;
+		if( ! ..sys.networkIsolation.getAppContainerByName("Microsoft.Win32WebViewHost_cw5n1h2txyewy") ){
+			return null;
+		}
+		
+		if(!userDataDir){
+			userDataDir = ..io.appData("/aardio/webview1/ud/" + ..io._exefile);
+		}
+		this.userDataDir = ..io.fullpath(userDataDir);
+		
+		this._form = winform;
+		winform.onEraseBkgnd  = function(){
+    		return 0;
+		}
+
+		this.browser = _dll.webview_createW(this.userDataDir,!!debug, {addr hwnd = winform.hwnd}); 
+		winform._onDestroy = function(){
+			if(this.browser){
+				_dll.webview_destroy(this.browser);	
+				this.browser = null;
+			}
+		}
+		
+		winform.adjust = function( cx,cy,wParam ) {	 
+			_dll.webview_set_size(this.browser);
+		}; 
+		
+		var rc = winform.getClientRect()
+		_dll.webview_set_size(this.browser);  
+		
+		this._jsCallback = {};
+		this.export = function(name,callback){
+			if(!this.browser) return;
+			
+			if(type(name)==="table"){
+				for k,v in ..table.eachName(name){ 
+					if(type(v)==="function"){
+						this.export(k,v);
+					}
+				}
+				
+				return;
+			}
+			
+			if(type(name)!=="string") error("参数@1必须是字符串",2);
+			if((type(callback)!=="function")&&(type(callback)!=="class") ) error("参数@2必须是函数",2);
+			
+			this._jsCallback[name] = ..raw.tocdecl(function(seq,req,arg){
+				var ok,ret;
+				
+				if(req){
+					req = ..web.json.parse(req);
+					ok,ret = call(callback,this,..table.unpackArgs(req))	
+				}
+				else {
+					ok,ret = call(callback,this)		
+				}
+				
+				if(!ok){
+					if(ret) errput(ret);
+					_dll.webview_eval(this.browser,"window._rpc[" + seq + "].reject(" + ..web.json.stringify(ret) + "); window._rpc[" +  seq + "] = undefined");
+					return;
+				}
+				
+				if(ret!==null){
+					_dll.webview_eval(this.browser,"window._rpc[" + seq + "].resolve(" + ..web.json.stringify(ret) + "); window._rpc[" +  seq + "] = undefined");
+				}
+			}
+			,"void(string seq,string req,ptr arg)")
+			
+			_dll.webview_bind(this.browser,name,this._jsCallback[name],null); 
+			
+		};
+		 
+		this.preloadScript = function(js){
+			if(!this.browser) return; 
+			_dll.webview_init(this.browser,"(function(){"+js+"})()")
+		};
+		
+		this._jsEvalCallback = ..util.registry();
+		this.export(
+			$aardioEvalCallback = function(result,err,callbackId){
+				var cb = this._jsEvalCallback.unReg(callbackId);
+				if(cb)cb(result,err);
+			};
+			$aardioDocumentLoad = function(url){
+				this._jsEvalCallback.clear();
+				this.$location = url;
+				if(this.onDocumentInit)this.onDocumentInit(url);
+			};
+		);
+		 
+		this.preloadScript("
+		window.external.eval = (code,callbackId) => {var r,e;try { r = eval(code); } catch (e) {e = e.message;} window.$aardioEvalCallback(r,e,callbackId)};
+		window.external.waitEle = function(selector, timeout, frequency){return new Promise((resolve, reject) => {var b = Date.now();(function retry() {let el = document.querySelector(selector);if (el != null) { resolve(el);}else {setTimeout(function () {let ms;if (timeout && (ms = Date.now() - b) > timeout) { reject('Promise timed out after ' + ms + ' ms');  }else{  retry();} }, frequency || 200);}})();})};
+		if(top==self)$aardioDocumentLoad(location.href); 
+		");
+	};
+	adjust = function(){
+		if(!this.browser) return;
+		_dll.webview_set_size(this.browser);
+	}; 
+	go = function(url,devPort,timeout){ 
+		if(!this.browser) return; 
+		if( ..string.startWith(url,"file:") ){
+			error("禁止打开本机地址",2);// WebView1 不支持
+		}
+		
+		if(_STUDIO_INVOKED && devPort){
+			global.import("web.view.dev");
+			..web.view.dev(this,url,devPort,timeout);
+			return;
+		}
+		
+		if(..string.match(url,"https?\://<localhost>|<127.0.0.1>") ){ 
+			var ct = ..sys.networkIsolation.getAppContainerByName("Microsoft.Win32WebViewHost_cw5n1h2txyewy");
+			if( (!ct) || (!ct.loopback) ){ 
+				this.export("____exemptionUwp_aardio____",function(enabled){
+					if(!enabled){
+						this._form.close();
+						return;
+					}
+					
+					..sys.networkIsolation.exemptAs("Microsoft.Win32WebViewHost_cw5n1h2txyewy",false)
+					
+					ct = ..sys.networkIsolation.getAppContainerByName("Microsoft.Win32WebViewHost_cw5n1h2txyewy");
+					if(ct &&  ct.loopback) _dll.webview_navigate(this.browser, url);
+				})
+				_dll.webview_navigateToString(owner.browser, networkIsolationHtml);
+				return;
+			} 
+		}
+		
+		this.$location = url;
+		_dll.webview_navigate(this.browser, url);
+		..win.delay(500);
+	};
+	doScript = function(js,callback){
+		if(!this.browser) return; 
+		
+		if(type(callback)=="function"){
+			var id = this._jsEvalCallback.reg(callback);
+			js = ..web.json.stringify(js); 
+			_dll.webview_eval(this.browser,"external.eval("+js+","+id+")") 
+			return;
+		}
+		
+		_dll.webview_eval(this.browser,"(function(){"+js+'\n})()')
+	};
+	eval = function(js,...){
+		if(!this.browser) return;  
+		if(...) js = ..string.format(js,...);
+		
+		var done;
+		var result;
+		var err;
+		
+		var callback = function(r,e){ 
+			result = r;
+			err = e;
+			done = true;
+		}
+			
+		this.doScript(js,callback) 
+		..win.wait(lambda() done,winform.hwnd,,5);
+		
+		if(err){
+			error(err,2)	
+		}
+		return result;
+	};
+	xcall = function(method,...){
+		var jsThis = ..string.match(method,"(.+)\.[^.]+$") : "null";
+		var js  = method + ".apply(" + jsThis + "," + ..web.json.stringifyArray({...}) + ")";
+		return this.eval(js);
+	};
+	invoke = function(method,...){
+		var jsThis = ..string.match(method,"(.+)\.[^.]+$") : "null";
+		var js  = method + ".apply(" + jsThis + "," + ..web.json.stringifyArray({...}) + ")";
+		_dll.webview_eval(this.browser,js)
+	};
+	waitEle = function(selector,callback,timeout){
+    	if(!this.browser) return; 
+    	
+    	if(type.isString(callback)){
+    		_dll.webview_eval(this.browser,"external.waitEle('"+selector+"',"+(timeout:0)+").then( (el)=>{ ((function(){"+callback+'\n}).bind(el))() } )') 
+    	}
+    	elseif(callback){
+    		var callbackId = this._jsEvalCallback.reg(callback); 
+    		_dll.webview_eval(this.browser,"external.waitEle('"+selector+"',"+(timeout:0)+").then( ()=>{ window.$aardioEvalCallback('"+selector+"',null,"+callbackId+")} ).catch( (e)=>{ window.$aardioEvalCallback(null,e,"+callbackId+")} )") 
+		}
+		else {
+			var resultOk,resultErr;
+			this.waitEle(selector,function(ok,err){
+				resultOk,resultErr = ok,err;
+			},timeout)
+			
+			return ..win.wait(function(){
+				return resultOk,resultErr;
+			},this._form.hwnd,,timeout); 
+		} 
+	};
+	wait = function(p,timeout){ 
+    	return this._form.wait(function(){
+    		var url = this.$location; 
+			if( url ? ..string.find( url,p) ) return true; 
+    	},timeout);
+ 	};
+	@_metaProperty
+}
+
+namespace sysView{
+    
+	_metaProperty = ..util.metaProperty(
+	
+		html = {
+			_set = function( html ){ 
+				_dll.webview_navigateToString(owner.browser, html);
+				..win.delay(500);
+			} 	
+		}; 
+		location  = {
+			_set = function( url ){ 
+				owner.go(url);
+			} 
+			_get = function(){
+				return owner[["$location"]];
+			}	
+		}; 
+		defaultBackgroundColor = {
+			_set = function( c ){ 
+				owner[["(defaultBackgroundColor)"]] = c;
+				_dll.webview_setDefaultBackgroundColor(owner.browser, c>> 16 & 0xFF, c>> 8  & 0xFF,c  & 0xFF,c>> 24 & 0xFF)
+			}
+			_get = function(){
+				return owner[["(defaultBackgroundColor)"]] : 0xFFFFFFFF;
+			}	
+		}; 
+	)
+	
+	exemptAs = function(){ 
+		
+		if(_WIN10_LATER){ 
+			var ct = ..sys.networkIsolation.getAppContainerByName("Microsoft.Win32WebViewHost_cw5n1h2txyewy");
+			if(ct && !ct.loopback){ 
+				..sys.networkIsolation.exemptAs("Microsoft.Win32WebViewHost_cw5n1h2txyewy",false)
+				ct = ..sys.networkIsolation.getAppContainerByName("Microsoft.Win32WebViewHost_cw5n1h2txyewy");
+				return ct &&  ct.loopback;
+			}  
+		}
+		
+		return true;
+	}
+	
+	if(!_WIN10_LATER) return; 
+	_dll = ..raw.loadDll( $"~/lib/web/sysView/.res/build/webview.dll",,"cdecl"); 
+	
+	networkIsolationHtml = `
+	<!doctype html>
+	<html>
+	<head>
+    	<meta charset="utf-8">
+    	<style type="text/css">
+    	html,body{ height:100%; margin:30px; }  
+		h5{margin-bottom:0;padding-bottom:5px}
+    	</style>
+    	<script type="text/javascript"></script>
+	</head>
+	<body>
+	<h3>您的系统已阻止 WebView 控件访问本机页面！</h3>
+	<p>
+	「<a onclick="javascript:____exemptionUwp_aardio____(true)" href="javascript:void(0)">点这里授权 WebView 控件显示页面</a>」<br><br>
+	「<a onclick="javascript:____exemptionUwp_aardio____(false)" href="javascript:void(0)">点这里关闭窗口</a>」
+	</p>
+	</body>
+	</html>
+	`	
+}
+
+/**details(简介)
+web.sysView 使用 WIN10/11 自带的 WebView1，体积非常小（打包仅增加几十KB）。
+WebView1 支持 Win10 1803 以上系统（支持Win11），好处是系统自带不用额外安装。
+WebView1 控件的窗口类名是 IE的类名，但实际上并不使用 IE内核，而是基于比较新的 Edge 或 Chromium 内核。
+缺点首次运行可能会有一个点击启用访问本机页面权限的提示（需要请求管理权限）
+如果软件本身有管理权限，可调用 web.sysView.exemptAs() 静默启用该权限。
+
+改用更强大的 WebView2 (也就是 aardio 标准库 web.view) 可支持 Win7,Win8,Win10,Win11……
+end details**/
+
+/**intellisense()
+web.sysView = 调用 Win10/11系统自带的 WebView1 创建浏览器控件\n\n网页引入 eruda.js 可支持控制台,注意只要调用 wsock.tcp.asynHttpServer 或 wsock.tcp.simpleHttpServer 打开网页才能支持 eruda.js\n\n标准库提供的 web.view 可支持 WIN7 且功能更强大
+web.sysView(.(winform,debug) = 创建 Edge 浏览器控件，\nwinform指定嵌入窗口，debug指定是否支持调试，\n目前debug参数实现不起作用\nWebView1 仅支持 Win10 1803 以上系统,\n在不支持的系统上创建 WebView1 会返回 null
+web.sysView() = !stdWebSysView.
+web.sysView.exemptAs() = 授权 WebView 访问本机页面,\n如果程序或安装程序有管理权限，可直接调用此函数
+end intellisense**/
+
+/****intellisense(!stdWebSysView)
+go( = 仅支持HTTP服务器地址，\n可使用wsock.tcp.simpleHttpServer.startUrl函数访问工程内网页\n\n首次运行可能会显示点击授权访问本地网页的链接
+go(.(url,devPort,devTimeout) = @url 参数仅支持HTTP服务器地址，\n可选使用@devPort参数指定前端项目开发环境调试端口，\n可选用@devTimeout参数指定检测调试端口超时\n@devPort,@devTimeout参数仅在开发环境中有效
+preloadScript(js) = 添加网页默认加载的 JS 脚本,不会覆盖之前添加的脚本，\n在网页初始化时执行，保证在 window.onload 事件前执行
+doScript(.(js) = 执行JS代码，\n不指定回调函数时，JS代码放入匿名函数体内执行
+doScript(.(js,callback) = @.doScript(js,function(result){\n	__/*执行JS代码成功在当前界面线程异步回调此函数，\n@result参数为JS代码的返回值*/\n} )
+eval(.(js,->->->) = 运算JS代码并返回值，\n等待返回值过程中会继续处理界面消息,\n如果指定多个参数，则首先调用 string.format 格式化所有参数
+xcall(.("object.func",->->->) = 调用JS函数并返回值，\n等待返回值过程中会继续处理界面消息,\n参数@!指定要调用的函数名或返回函数的表达式,\n函数名最后一个点号前的对象作为调用JS函数的this参数,\n可指定一个或多个参数,参数使用JSON转换为JS值
+invoke(.("object.func",->->->) = 调用JS函数但不会等待返回值，\n参数@!指定要调用的函数名或返回函数的表达式,\n函数名最后一个点号前的对象作为调用JS函数的this参数,\n可指定一个或多个参数,参数使用JSON转换为JS值
+waitEle( = 等待网页创建指定节点
+waitEle(.(selector) = 等待网页创建指定节点\n@selector 参数指定CSS选择器,\n省略参数@2时同步等待节点出现
+waitEle(.(selector,callback,timeout) = 异步等待网页创建指定节点\n@selector 参数指定CSS选择器,\n参数@2指定 aardio 回调函数,\n找到节点回调参数@1为选择器，\n失败回调参数@2为错误信息,回调参数@1为null,\n可选用参数@3指定超时，单位毫秒
+waitEle(.(selector,js,timeout) = 异步等待网页创建指定节点\n@selector 参数指定CSS选择器,\n找到节点执行参数@2指定的 Javascript 代码,\n执行JS代码时自动绑定this对象为找到的节点,\n可选用参数@3指定超时，单位毫秒
+html = @.html = /**\n<!doctype html>\n<html>\n<head>\n    <meta charset="utf-8">\n    <style type="text/css">\n    html,body{ height:100%; margin:0; } __\n    </style>\n    <script type="text/javascript"></script>\n</head>\n<body>\n    <div id="header"></div>\n    <div id="container"> \n        <div class="lside"> </div> \n        <div class="rside"> </div>  \n    </div>\n</body>\n</html>\n**/
+export(.(JS变量名,回调函数) = 导出aardio函数为JS全局变量,\n参数也可以使用一个表包含多个需要绑定到JS的变量名值对,值必须是函数。\nJS脚本中调用这里绑定的本地函数返回值为 Promise 对象
+adjust() = 调整页面大小到适合窗口
+_form = 创建浏览器控件传入的窗口对象\n!static.
+defaultBackgroundColor =  网页默认背景色, GDI+ 兼容的 ARGB 格式数值\n不支持透明度,改用 web.view 可支持透明
+wait("") = 等待参数指定的网址打开，\n参数支持模式匹配语法，\n在指定的网页创建 document 对象后返回，\n窗口关闭也会返回
+onDocumentInit(url) = @.onDocumentInit = function(url){
+	__/*打开网页并创建 document 对象后触发此事件,\nurl为当前网址*/
+}
+location = 当前网址
+end intellisense****/

@@ -1,0 +1,94 @@
+import web.rest.jsonLiteClient;
+
+namespace dnspod{ 
+
+	class client{
+		ctor( userAgent ){
+			this.restClient = ..web.rest.jsonLiteClient( userAgent );
+			
+			this.lang = "cn"; 
+			this.restClient.beforeStringifyRequestParameters = function(params){ 
+				return  ..table.mixin( {
+					login_email = this.userEmail;
+					login_password = this.userPassword; 
+					login_token = this.userToken;
+					user_id = this.userId;
+					format = "json";
+					lang = this.lang;
+					error_on_empty = this.errorOnEmpty ? "yes" : "no"; 
+				},params ); 
+			} 
+			
+			this.info = this.restClient.declareApi("https://dnsapi.cn/Info.{method}");
+			this.user = this.restClient.declareApi("https://dnsapi.cn/User.{method}");
+			this.userpasswd = this.restClient.declareApi("https://dnsapi.cn/Userpasswd.{method}");
+			this.useremail = this.restClient.declareApi("https://dnsapi.cn/Useremail.{method}"); 
+			this.telephoneverify = this.restClient.declareApi("https://dnsapi.cn/Telephoneverify.{method}"); 
+			this.record = this.restClient.declareApi("https://dnsapi.cn/Record.{method}");   
+			this.domain = this.restClient.declareApi("https://dnsapi.cn/Domain.{method}");   
+			this.domaingroup = this.restClient.declareApi("https://dnsapi.cn/Domaingroup.{method}");  
+			this.monitor = this.restClient.declareApi("https://dnsapi.cn/Monitor.{method}");  
+			this.lastResponse = this.restClient.lastResponse;
+		}; 
+	}
+}
+
+/**intellisense()
+dnspod.client = DNSPOD API客户端
+dnspod.client("DDNS Client/1->0->0") = 创建DNSPOD客户端
+dnspod.client() = !stddnspoddclient.
+!stddnspoddclient.restClient = !web_restClient.
+!stddnspoddclient.lastResponse() = 获取最后一次服务器返回的原始数据,\n如果控制台已打开或在开发环境中导入console库则在控制台输出数据\n下载文件时该值为空
+!stddnspoddclient.userEmail = 登录邮箱
+!stddnspoddclient.userPassword = 登录密码
+!stddnspoddclient.userToken = 登录令牌\nhttps://support.dnspod.cn/Kb/showarticle/tsid/227/
+!stddnspoddclient.userId = 代理ID
+!stddnspoddclient.errorOnEmpty = 没有数据是否返回错误
+!stddnspoddclient.domain = 域名操作接口
+!stddnspoddclient.record = 域名记录操作接口
+!stddnspoddclient.domaingroup = 域名分组操作接口
+!stddnspoddclient.monitor = D监控操作接口
+!stddnspoddclient.info = 信息接口
+!stddnspoddclient.user = 用户账户接口
+!stddnspoddclient.userpasswd = 用户密码接口
+!stddnspoddclient.useremail = 用户邮箱接口
+!stddnspoddclient.telephoneverify = 手机验证接口
+!stddnspoddclient.info.Version() = 返回版本\n!stddnspodinfoversion.
+!stddnspoddclient.user.Detail() = 返回用户信息\n!stddnspoduserdetail.
+!stddnspoddclient.user.Log() = 返回用户日志\n!stddnspoduserlog.
+!stddnspoddclient.user.Modify = @.modify(\n	real_name = "真实姓名";\n	nick = "用户称呼";\n	telephone = "用户手机号码";\n	im = "用户qq";\n)
+!stddnspoddclient.userpasswd.Modify = @.modify(\n	old_password = "旧密码";\n	new_password = "新密码";)
+!stddnspoddclient.useremail.Modify = @.modify(\n	old_email = "旧邮箱";\n	new_email = "新邮箱";\n	password = "当前密码";)
+!stddnspoddclient.telephoneverify.code = @code(\n	telephone = "用户手机号码";)
+!stddnspoduserlog.status = 状态\n!stddnspodstatus.
+!stddnspoduserlog.log = 日志,数组值
+!stddnspoduserdetail.status = 状态\n!stddnspodstatus.
+!stddnspoduserdetail.info.user = 用户信息\n!stddnspoduserinfo.
+!stddnspoduserinfo.real_name = 用户名称, 企业用户对应为公司名称
+!stddnspoduserinfo.user_type = 账号类型\n"personal" 个人用户\n"enterprise" 企业用户
+!stddnspoduserinfo.telephone = 电话号码
+!stddnspoduserinfo.nick = 用户昵称
+!stddnspoduserinfo.id = 用户 ID, 即为 user_id
+!stddnspoduserinfo.email = 用户账号, 邮箱格式
+!stddnspoduserinfo.status = 账号状态\n"enabled" 正常\n"disabled" 被封禁
+!stddnspoduserinfo.email_verified = 邮箱是否通过验证\n"yes" 通过\n"no" 未通过
+!stddnspoduserinfo.telephone_verified = 手机是否通过验证\n"yes" 通过\n"no" 未通过
+!stddnspoduserinfo.telephone_verified = 手机是否通过验证\n"yes" 通过\n"no" 未通过
+!stddnspoduserinfo.weixin_binded = 是否绑定微信\n"yes" 已绑定\n"no" 未绑定
+!stddnspoduserinfo.agent_pending = 是否正在申请成为代理
+!stddnspoduserinfo.balance = 账号余额
+!stddnspoduserinfo.smsbalance = 剩余短信条数
+!stddnspoduserinfo.user_grade = 账号等级
+!stddnspodinfoversion.status = 状态\n!stddnspodstatus.
+!stddnspodstatus.code = 1为成功
+!stddnspodstatus.message = 消息
+!stddnspodstatus.created_at = 创建时间
+!stddnspoddclient.domain.List = @.List(\n	type = "all";\n	offset = 0;\n	group_id = 分组ID;\n	keyword = 搜索关键字;\n)
+!stddnspoddclient.domain.List() = !stddnspoddomainlist.
+!stddnspoddomainlist.status = 状态\n!stddnspodstatus.
+!stddnspoddomainlist.info = 域名统计信息
+!stddnspoddomainlist.domains = 域名列表,数组
+!stddnspoddclient.record.Ddns = @.Ddns(\n	domain_id = "域名ID";\n	record_id  = "记录ID"; \n	record_line = "默认")
+!stddnspoddclient.record.Info =  @.Info(\n	domain_id = "域名ID";\n	record_id  = "记录ID" ) 
+!stddnspoddclient.record.List = @.List(\n	domain_id = "域名ID";\n	offset = 0\n)
+end intellisense**/

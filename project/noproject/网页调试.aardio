@@ -1,0 +1,21 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add(
+combobox={cls="combobox";left=88;top=32;right=184;bottom=56;edge=1;font=LOGFONT(h=-16;name='宋体');items={};mode="dropdown";z=2};
+combobox2={cls="combobox";left=296;top=32;right=392;bottom=56;edge=1;items={};mode="dropdown";z=4};
+edit={cls="edit";left=504;top=32;right=736;bottom=56;edge=1;z=6};
+edit2={cls="edit";left=88;top=80;right=736;bottom=152;edge=1;font=LOGFONT(h=-16;name='宋体');multiline=1;vscroll=1;z=8};
+static={cls="static";text="请求类型";left=16;top=32;right=88;bottom=56;center=1;font=LOGFONT(h=-16;name='宋体');transparent=1;z=1};
+static2={cls="static";text="访问类型";left=224;top=32;right=296;bottom=56;center=1;font=LOGFONT(h=-16;name='宋体');transparent=1;z=3};
+static3={cls="static";text="代理地址";left=432;top=32;right=504;bottom=56;center=1;font=LOGFONT(h=-16;name='宋体');transparent=1;z=5};
+static4={cls="static";text="请求地址";left=16;top=80;right=88;bottom=104;center=1;font=LOGFONT(h=-16;name='宋体');transparent=1;z=7}
+)
+/*}}*/
+
+winform.combobox.oncommand = function(id,event){
+	
+}
+
+winform.show();
+win.loopMessage();

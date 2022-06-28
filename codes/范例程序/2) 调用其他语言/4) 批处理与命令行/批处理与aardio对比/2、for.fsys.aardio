@@ -1,0 +1,33 @@
+//for:遍历文件
+import console;
+import process.batch;
+
+//批处理 for 遍历一个目录下的所有文件
+var bat = process.batch(`
+@for /r "./" %%I in (*) do @echo %%I
+`)
+
+for( all,out,err in bat.each() ){
+    console.log(all)
+}
+
+console.more(1);
+
+/*
+aardio 遍历一个目录上的所有文件
+*/
+import fsys;
+fsys.enum( "/", "*.*",
+	function(dir,filename,fullpath,findData){ 
+		if(filename){ 
+           	console.log("发现文件："+filename,"完整路径："+fullpath)
+		}
+		else{
+			console.log( "发现目录：" + dir )
+		}
+	} 
+	,/*如果此参数为false则忽略子目录*/
+);
+
+
+console.pause()

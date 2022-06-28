@@ -1,0 +1,333 @@
+assert( type(libvlc) == type.class,"请直接导入libvlc" )
+var dll = libvlc._dll;
+
+import thread.command;
+import util.metaProperty;
+namespace libvlc;
+
+class mediaPlayer{
+	ctor(engine,handle){
+		this.handle = handle : topointer( dll.libvlc_media_player_new (engine) );
+		this.engine = engine; 
+		
+		handle = this.handle;
+		..table.gc(this,"release")
+	};  
+	getEventManager = function(){
+		if( this.eventManager ) return;
+		var managerHandler = topointer( dll.libvlc_media_player_event_manager(handle) );
+		this.eventManager = ..libvlc.eventManager(this,managerHandler); 
+		return this.eventManager;
+	};
+	setWindow = function(hwnd){
+		if( hwnd[["className"]] == "static" && hwnd.modifyStyle ){
+			hwnd.modifyStyle(,0x100/*_SS_NOTIFY*/); 
+		};
+		dll.libvlc_media_player_set_hwnd(this.handle,hwnd[["hwnd"]] : hwnd)  
+	};
+	play = function(){
+		return dll.libvlc_media_player_play (this.handle));  
+	};
+	stop = function(){
+		return dll.libvlc_media_player_stop (this.handle));  
+	};
+	pause = function(){
+		return dll.libvlc_media_player_set_pause (this.handle,1));  
+	};
+	resume = function(){
+		return dll.libvlc_media_player_set_pause (this.handle,0));  
+	};
+	resume = function(){
+		return dll.libvlc_media_player_set_pause (this.handle,0));  
+	};
+	release = function(){
+		if( handle ){  
+			dll.libvlc_media_player_release(handle);  
+			handle = null;
+			this.handle = null;
+		}
+	}
+	@_metaProperty;
+}
+
+namespace mediaPlayer{
+	//http://www.videolan.org/developers/vlc/doc/doxygen/html/group__libvlc__media__player.html  
+	libvlc_media_player_get_length = dll.api("libvlc_media_player_get_length","LONG(POINTER mp)" );
+	libvlc_media_player_get_time = dll.api("libvlc_media_player_get_time","LONG(POINTER mp)" );
+	libvlc_media_player_set_time = dll.api("libvlc_media_player_set_time","void(POINTER mp,LONG time)" );
+	libvlc_video_set_adjust_int = dll.api("libvlc_media_player_set_time","void(POINTER mp,INT option,int value)" );
+	libvlc_video_get_adjust_int = dll.api("libvlc_media_player_set_time","int(POINTER mpINT option)" );
+	libvlc_video_set_adjust_float = dll.api("libvlc_media_player_set_time","void(POINTER mp,INT option,float value)" );
+	libvlc_video_get_adjust_float = dll.api("libvlc_media_player_set_time","float(POINTER mpINT option)" );
+	 
+	_metaProperty = ..util.metaProperty(
+		_type = "livlc.mediaPlayer";
+		_topointer = function(){
+			return owner.handle;
+		}
+		getMedia = function(){  
+			var mediaHandle = dll.libvlc_media_player_get_mediaP (owner.handle, media)
+			if( mediaHandle ){ 
+				return ..libvlc.media(owner.engine,mediaHandle);
+			}
+		};
+		setMedia = function(media){  
+			dll.libvlc_media_player_set_media (owner.handle, media)
+		}; 
+		loadMediaFile = function(path){
+			path = ..io.fullpath(path);
+			var mediaHandle = dll.libvlc_media_new_pathP (owner.engine, path);
+			if( mediaHandle ){
+				dll.libvlc_media_player_set_media (owner.handle, mediaHandle)
+				dll.libvlc_media_release(mediaHandle); 
+				return true;
+			}
+		};
+		loadMedia = function(url){
+			var mediaHandle = topointer(  dll.libvlc_media_new_location (owner.engine, url) );
+			if( mediaHandle ){
+				dll.libvlc_media_player_set_media (owner.handle, mediaHandle)
+				dll.libvlc_media_release(mediaHandle);
+				return true;
+			} 
+		};   
+		takeSnapshot = function(path,width,height,num){
+			var resume;
+			if( owner.isPlaying() ){ owner.pause();resume = true;}
+			path = ..io.fullpath(path);
+			var ret = ( 0 == dll.libvlc_video_take_snapshot(owner.handle,num:0,..io.fullpath(path),width:0,height:0) );
+			if(resume) owner.play();
+			return ret;
+		}; 
+		width = {
+			_get = function(){  
+				return dll.libvlc_video_get_width(owner.handle);  ;
+			} 	
+		}; 
+		height = {
+			_get = function(){  
+				return dll.libvlc_video_get_height(owner.handle);  ;
+			} 	
+		}; 
+		length = {
+			_get = function(){  
+				return tonumber( libvlc_media_player_get_length(owner.handle) ) ;
+			} 	
+		}; 
+		time = {
+			_get = function(){  
+				return tonumber( libvlc_media_player_get_time(owner.handle) );
+			} 	
+			_set = function(value){  
+				return libvlc_media_player_set_time(owner.handle,value);  ;
+			}
+		}; 
+		position = {
+			_get = function(){  
+				return dll.libvlc_media_player_get_position(owner.handle);  ;
+			} 
+			_set = function(value){  
+				return dll.libvlc_media_player_set_position(owner.handle,value);  ;
+			}	
+		};  
+		getAudioTrackDescription = function(){  
+			var tracks = {};
+			var pnext = topointer( dll.libvlc_audio_get_track_description(owner.handle) ); 
+			while(pnext){
+				var des = ..raw.convert(pnext,{
+					int id;
+					string name;
+					pointer next;
+				} );
+				..table.push(tracks,des);
+				pnext = des.next; 
+			} 
+			return tracks;  
+		}
+		getAudioTrackCount = function(){  
+			return tonumber( dll.libvlc_audio_get_track_count(owner.handle) );
+		}  
+		audioTrack = {
+			_get = function(){  
+				return tonumber( dll.libvlc_audio_get_track(owner.handle) );
+			} 	
+			_set = function(value){  
+				return dll.libvlc_audio_set_track(owner.handle,value);  ;
+			}
+		};
+		audioChannel = {
+			_get = function(){  
+				return tonumber( dll.libvlc_audio_get_channel(owner.handle) );
+			} 	
+			_set = function(value){  
+				return dll.libvlc_audio_set_channel(owner.handle,value);  ;
+			}
+		};
+		audioDelay = {
+			_get = function(){  
+				return tonumber( dll.libvlc_audio_get_delay(owner.handle) );
+			} 	
+			_set = function(value){  
+				return dll.libvlc_audio_set_delay(owner.handle,value);  ;
+			}
+		};
+		volume = {
+			_get = function(){  
+				return tonumber( dll.libvlc_audio_get_volume(owner.handle) );
+			} 	
+			_set = function(value){  
+				return dll.libvlc_audio_set_volume(owner.handle,value);  ;
+			}
+		};
+		mute = {
+			_get = function(){  
+				return tonumber( dll.libvlc_audio_get_mute(owner.handle) );
+			} 	
+			_set = function(value){  
+				return dll.libvlc_audio_set_mute(owner.handle,!!value);  ;
+			}
+		}; 
+		isOpening = function(){ return owner.state == 1/*_libvlc_Opening*/; };
+		isBuffering = function(){ return owner.state == 2/*_libvlc_Buffering*/; };
+		isPlaying = function(){ return owner.state == 3/*_libvlc_Playing*/; };
+		isPaused = function(){ return owner.state == 4/*_libvlc_Paused*/; };
+		isStopped = function(){ return owner.state == 5/*_libvlc_Stopped*/; };
+		isEnded = function(){ return owner.state == 6/*_libvlc_Ended*/; };
+		isError = function(){ return owner.state == 7/*_libvlc_Error*/; };
+		state = {
+			_get = function(){  
+				return dll.libvlc_media_player_get_state(owner.handle);  ;
+			} 	
+		}; 
+		setKeyInput= function(on){  
+			return dll.libvlc_video_set_key_input(owner.handle,!!on); 
+		};
+		setMouseInput = function(on){  
+			return dll.libvlc_video_set_mouse_input (owner.handle,!!on); 
+		};
+		scale = {
+			_get = function(){  
+				return dll.libvlc_video_get_scale(owner.handle);  ;
+			}
+			_set = function(value){  
+				return dll.libvlc_video_set_scale(owner.handle,value : 0);  ;
+			}
+		};
+		spu = {
+			_get = function(){  
+				return dll.libvlc_video_get_spu(owner.handle);  ;
+			}
+			_set = function(value){  
+				return dll.libvlc_video_set_spu(owner.handle,value);  ;
+			}
+		};
+		spuCount = {
+			_get = function(){  
+				return dll.libvlc_video_get_spu_count(owner.handle);  ;
+			}
+		};
+		spuLoad = function(path){ 
+			path = ..io.fullpath(path)
+			return !!dll.libvlc_video_set_subtitle_file(owner.handle,path )
+		};
+		spuDelay = function(delay){  
+			return !!dll.libvlc_video_set_spu_delay(owner.handle,..math.size64(delay) )
+		};
+		spuDescription = { 
+			_get = function(){  
+				var dsp = {};
+				var p = topointer( dll.libvlc_video_get_spu_description(owner.handle) ); 
+				while(p){
+					var info = ..raw.convert(p,{int id;string name;pointer next})
+					..table.push(dsp,{ info.id;info.name} );
+					p = info.next;
+				}
+				return dsp;
+			}
+		}; 
+		getVideoAdjustFloat = function(opt){
+			return libvlc_video_get_adjust_float(owner.handle,opt)
+		}
+		getVideoAdjustInt = function(opt){
+			return libvlc_video_get_adjust_int(owner.handle,opt)
+		}
+		setVideoAdjustFloat = function(opt,v){
+			return libvlc_video_set_adjust_float(owner.handle,opt,v)
+		}
+		setVideoAdjustInt = function(opt,v){
+			return libvlc_video_set_adjust_float(owner.handle,opt,v)
+		}
+	)
+}   
+
+/**intellisense(!libvlcplayer)
+release() = 关闭播放器
+play() = 播放
+stop() = 停止
+pause() = 暂停
+resume() = 继续 
+width = 视频宽度
+height = 视频高度
+fullscreen = 是否全屏
+volume = 音量,0到100范围的整数值\n0为静音
+audioChannel = 声道
+audioTrack = 音轨
+getAudioTrackCount() = 获取音轨总数
+getAudioTrackDescription() = 获取音轨描述
+audioDelay = 音频延迟时间，单位毫秒
+mute = 是否静音
+time = 当前播放位置,单位毫秒
+length = 视频总时长,单位毫秒
+setWindow(.(winform) = 指定输出视频的窗口对象
+isOpening() = 视频是否已打开
+isBuffering() = 视频是否正在缓冲
+isPlaying() = 视频是否正在播放
+isPaused() = 视频是否已暂停
+isStopped() = 视频是否已停止
+isEnded() = 视频是否已结束
+isError() = 视频是否遇到错误
+spu = 当前字幕索引
+spuDelay = 字幕延迟时间,单位毫秒
+spuDescription = 返回字幕描述数组 
+takeSnapshot(.("图像文件路径",宽度,高度) = 截图\n宽度高度参数可省略
+spuLoad(.("字幕路径") = 加载字幕
+spuDescription = 获取数组包含所有字幕条目描述
+loadMediaFile(.("本体文件路径") = 打开本地文件创建媒体文件描述对象
+loadMedia(.("媒体文件地址") = 使用协议地址创建媒体文件描述对象
+loadMediaFile() = !libvlcmedia.
+loadMedia() = !libvlcmedia.
+getMedia() = 返回媒体文件描述对象\n!libvlcmedia.
+setMedia(.(媒体文件描述对象) = 修改媒体文件描述对象
+getEventManager() = 获取事件管理器\n!vlcEventManager.
+getVideoAdjustFloat(_libvlc_adjust__) = 获取视频调整设置
+getVideoAdjustInt(_libvlc_adjust__) = 获取视频调整设置
+setVideoAdjustFloat(_libvlc_adjust__,) = 修改视频调整设置
+setVideoAdjustInt(_libvlc_adjust__,)= 修改视频调整设置
+end intellisense**/
+
+/**intellisense()
+_libvlc_NothingSpecial=@0/*_libvlc_NothingSpecial*/
+_libvlc_Opening=@1/*_libvlc_Opening*/
+_libvlc_Buffering=@2/*_libvlc_Buffering*/
+_libvlc_Playing=@3/*_libvlc_Playing*/
+_libvlc_Paused=@4/*_libvlc_Paused*/
+_libvlc_Stopped=@5/*_libvlc_Stopped*/
+_libvlc_Ended=@6/*_libvlc_Ended*/
+_libvlc_Error=@7/*_libvlc_Error*/
+_libvlc_position_disable=@-1/*_libvlc_position_disable*/
+_libvlc_position_center=@0/*_libvlc_position_center*/
+_libvlc_position_left=@1/*_libvlc_position_left*/
+_libvlc_position_right=@2/*_libvlc_position_right*/
+_libvlc_position_top=@3/*_libvlc_position_top*/
+_libvlc_position_top_left=@4/*_libvlc_position_top_left*/
+_libvlc_position_top_right=@5/*_libvlc_position_top_right*/
+_libvlc_position_bottom=@6/*_libvlc_position_bottom*/
+_libvlc_position_bottom_left=@7/*_libvlc_position_bottom_left*/
+_libvlc_position_bottom_right=@8/*_libvlc_position_bottom_right*/
+_libvlc_adjust_Enable=@0/*_libvlc_adjust_Enable*/
+_libvlc_adjust_Contrast=@1/*_libvlc_adjust_Contrast*/
+_libvlc_adjust_Brightness=@2/*_libvlc_adjust_Brightness*/
+_libvlc_adjust_Hue=@3/*_libvlc_adjust_Hue*/
+_libvlc_adjust_Saturation=@4/*_libvlc_adjust_Saturation*/
+_libvlc_adjust_Gamma=@5/*_libvlc_adjust_Gamma*/
+end intellisense**/

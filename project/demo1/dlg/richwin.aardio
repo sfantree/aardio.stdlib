@@ -1,0 +1,17 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=299;bottom=299;border="none";exmode="none";max=false;min=false;mode="popup";title=false)
+winform.add(
+richedit={cls="richedit";left=4;top=4;right=298;bottom=298;autohscroll=false;multiline=1;z=1}
+)
+/*}}*/
+
+import fsys.log;
+
+//  调整为左上角
+var screenX,screenY = win.getScreen();
+win.setPos(winform.hwnd, screenX - 100 - winform.width, screenY - 100 - winform.height, winform.width, winform.height);
+
+winform.show();
+win.loopMessage();
+return winform;

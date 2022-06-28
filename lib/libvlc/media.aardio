@@ -1,0 +1,110 @@
+assert(type(libvlc) == type.class,"请直接导入libvlc" )
+var dll = libvlc._dll;
+
+import util.metaProperty;
+namespace libvlc;
+
+class media{
+	ctor( engine,handle ){
+		if(!handle) return;
+		this.handle = handle; 
+		this.engine = engine;
+		..table.gc(this,"release")
+	};
+	getEventManager = function(){
+		if( this.eventManager ) return;
+		var managerHandler = topointer( dll.libvlc_media_event_manager(this.handle) );
+		this.eventManager = ..libvlc.eventManager(this,managerHandler); 
+		return this.eventManager;
+	}; 
+	player = function(){
+		var playerHandle = topointer( dll.libvlc_media_player_new_from_media(handle) );
+		if(playerHandle) return ..libvlc.mediaPlayer(this.engine,playerHandle)
+	};
+	release = function(){
+		if( handle ){  
+			dll.libvlc_media_release(handle);  
+			handle = null;
+			this.handle = null;
+		}
+	}
+	@_metaProperty;
+}
+
+namespace mediaPlayer{
+	libvlc_media_get_duration = dll.api("libvlc_media_player_get_length","LONG(POINTER mp)" ); 
+	
+	_metaProperty = ..util.metaProperty(
+		_type = "livlc.media";
+		_topointer = function(){
+			return owner.handle;
+		}  
+		getMeta = function(meta){
+			var m = dll.libvlc_media_get_meta(owner.handle,meta);
+			if(m) return ..raw.str( topointer(m) );
+		}; 
+		setMeta = function(meta,value){
+			return dll.libvlc_media_set_meta(owner.handle,meta,value);
+		};
+		saveMeta = function(){
+			return dll.libvlc_media_save_meta(owner.handle);
+		};
+		parse = function(){
+			dll.libvlc_media_parse(owner.handle);
+		};
+		addOption = function(opt){
+			return dll.libvlc_media_add_option(owner.handle,opt);
+		};
+		duration = {
+			_get = function(){  
+				return tonumber( libvlc_media_get_duration(owner.handle) ) ;
+			} 	
+		};  
+		mrl = {
+			_get = function(){  
+				var mrl = dll.libvlc_media_get_mrl(owner.handle);
+				if(mrl)return raw.str( topointer(mrl) ) ;
+			} 	
+		}; 
+	)
+} 
+
+/**intellisense(!libvlcmedia)
+getEventManager() = 获取事件管理器\n!vlcEventManager.
+player() = 创建播放器\n!libvlcplayer.
+duration = 返回持续时间,单位毫秒
+mrl = 资源地址
+release() = 释放对象引用
+getMeta(_libvlc_meta__) = 获取视频元数据\n如果元数据尚未准备好则解析并触发MediaMetaChanged消息
+setMeta(_libvlc_meta__ , ) = 修改元数据\n注意修改后需要调用 saveMeta 函数保存
+saveMeta() = 保存修改后的元数据
+parse() = 解析媒体文件、元数据等,\n默认是异步解析，调用此函数则同步解析
+end intellisense**/
+
+ /**intellisense()
+_libvlc_meta_Title=@0/*_libvlc_meta_Title*/
+_libvlc_meta_Artist=@1/*_libvlc_meta_Artist*/
+_libvlc_meta_Genre=@2/*_libvlc_meta_Genre*/
+_libvlc_meta_Copyright=@3/*_libvlc_meta_Copyright*/
+_libvlc_meta_Album=@4/*_libvlc_meta_Album*/
+_libvlc_meta_TrackNumber=@5/*_libvlc_meta_TrackNumber*/
+_libvlc_meta_Description=@6/*_libvlc_meta_Description*/
+_libvlc_meta_Rating=@7/*_libvlc_meta_Rating*/
+_libvlc_meta_Date=@8/*_libvlc_meta_Date*/
+_libvlc_meta_Setting=@9/*_libvlc_meta_Setting*/
+_libvlc_meta_URL=@0xA/*_libvlc_meta_URL*/
+_libvlc_meta_Language=@0xB/*_libvlc_meta_Language*/
+_libvlc_meta_NowPlaying=@0xC/*_libvlc_meta_NowPlaying*/
+_libvlc_meta_Publisher=@0xD/*_libvlc_meta_Publisher*/
+_libvlc_meta_EncodedBy=@0xE/*_libvlc_meta_EncodedBy*/
+_libvlc_meta_ArtworkURL=@0xF/*_libvlc_meta_ArtworkURL*/
+_libvlc_meta_TrackID=@0x10/*_libvlc_meta_TrackID*/
+_libvlc_meta_TrackTotal=@0x11/*_libvlc_meta_TrackTotal*/
+_libvlc_meta_Director=@0x12/*_libvlc_meta_Director*/
+_libvlc_meta_Season=@0x13/*_libvlc_meta_Season*/
+_libvlc_meta_Episode=@0x14/*_libvlc_meta_Episode*/
+_libvlc_meta_ShowName=@0x15/*_libvlc_meta_ShowName*/
+_libvlc_meta_Actors=@0x16/*_libvlc_meta_Actors*/
+_libvlc_meta_AlbumArtist=@0x17/*_libvlc_meta_AlbumArtist*/
+_libvlc_meta_DiscNumber=@0x18/*_libvlc_meta_DiscNumber*/
+end intellisense**/

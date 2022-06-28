@@ -1,0 +1,37 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=260;bottom=364)
+winform.add(
+button={cls="button";text="从底部开始删除";left=128;top=308;right=227;bottom=340;z=4};
+button2={cls="button";text="从顶部开始删除";left=19;top=308;right=118;bottom=340;z=5};
+edit={cls="edit";left=134;top=270;right=222;bottom=295;edge=1;z=3};
+listbox={cls="listbox";left=56;top=26;right=228;bottom=247;edge=1;items={};z=1};
+static={cls="static";text="删除指定内容的项：";left=22;top=273;right=135;bottom=296;transparent=1;z=2}
+)
+/*}}*/
+
+for(i=1;2;1){
+    winform.listbox.add("1")
+}
+winform.show() 
+winform.button.oncommand = function(id,event){
+    for(i=winform.listbox.count;1;-1){//循环了2次 全部清除
+        if(winform.listbox.getItemText(i) == winform.edit.text){    
+            winform.listbox.delete(i)
+        }
+    }
+}
+winform.button2.oncommand = function(id,event){
+    for(i=1;winform.listbox.count;1){//循环了2次 为什么没有都清除呢？
+        if(winform.listbox.getItemText(i) == winform.edit.text){    
+            winform.listbox.delete(i)
+        }
+    }
+    //因为当i为1的时候，列表项1符合删除条件被删除。删除后列表项2自动上移，变成了列表项1。
+    //当i为2的时候，列表的第2项已经跑到第1项去了，所以原来的第2项没有被删掉
+}
+//.listbox.add()=添加表项，参数为文本型
+//.listbox.count=列表框的表项计数
+//.listbox.getItemText()=获取指定表项内容
+//.listbox.delete()=删除指定表项内容
+win.loopMessage();

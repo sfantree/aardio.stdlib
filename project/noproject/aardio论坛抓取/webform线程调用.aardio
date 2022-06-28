@@ -1,0 +1,30 @@
+
+// webform线程调用
+
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="Web Form";right=759;bottom=469)
+winform.add(
+button={cls="button";text="button";left=532;top=12;right=748;bottom=105;z=1}
+)
+/*}}*/
+
+import web.form;
+var wb = web.form( winform,5/*_UIFLAG_DIALOG*/,,,true);
+wb.silent = true;
+wb.go("http://www.aardio.com")
+winform.show();
+wb.wait("");
+winform.doSomething = function(){
+        ele = wb.querySelector("A[href]")
+        if(ele){
+                winform.msgbox(ele.href)
+                ele.click()
+        }
+}
+winform.button.oncommand = function(id,event){
+        thread.create(function(winform){
+                winform.doSomething();
+        },winform)
+}
+win.loopMessage();

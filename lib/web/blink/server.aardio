@@ -1,0 +1,49 @@
+﻿//server 网页服务器
+import win.ui.accelerator;
+import wsock.tcp.simpleHttpServer;
+import wsock.tcp.client; 
+
+namespace web.blink;
+
+class server{
+	ctor( mb,option ){
+		if(!_STUDIO_INVOKED){
+			mb.go( ..wsock.tcp.simpleHttpServer.startUrl( option.publicPath ) )
+		}
+		else {
+			var timeout = option.timeout : 0.5;
+			var devPort = option.devPort : 36152;
+			var tcp = ..wsock.tcp.client();
+				
+			if( tcp.connectTimeout("localhost",devPort,timeout) ){
+				mb.go("http://localhost:"+devPort)
+				tcp.close();
+			};
+			else {
+				mb.getForm().setInterval( 
+					1000,function(){
+						if( tcp.connectTimeout("localhost",devPort,timeout) ){
+							mb.go("http://localhost:"+devPort)
+							tcp.close();
+							
+							return false;
+						};
+					} 
+				) 
+				mb.html = option.devHtml : "正在等待 http://localhost:"+devPort +" 启动……" 
+			}
+			
+			var accelerator = ..win.ui.accelerator({ 
+				{ 
+					vkey = 0x7B/*_VK_F12*/; 
+					oncommand = function() mb.showDevTools()
+				};    
+			},mb.getForm() );
+		}
+	};
+}
+
+/**intellisense()
+web.blink.server(mb,option) = @.server(mb__/*web.blink对象,\n自动支持在开发环境中打开前端调试服务器页面\n在发布后打开编译后页面。*/,{\n		publicPath = "/web/index.html";\n		devPort = 36152;\n	}\n) 
+end intellisense**/
+

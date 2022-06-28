@@ -1,0 +1,337 @@
+﻿//scrollview 滚动视图
+import xcgui.ctrl.metaProperty;
+namespace xcgui.ctrl;
+
+class scrollview{
+
+	ctor(hParentPointer,tParam){ 
+		if(! (hParentPointer || tParam) ) return null;
+		if(type(tParam)!=type.table){
+			this.hPointer = topointer( hParentPointer);
+		}
+		else {
+			if( tParam.resource ) ..xcgui.res.load(tParam.resource);
+			if(tParam.layout){
+				var hEle = ..xcgui.loadLayout(tParam.layout,hParentPointer);
+				if( ::Xcgui.XC_IsHELE (hEle) ){ 
+					if( ::Xcgui.XEle_GetType(hEle) != 0x1A/*_XC_SCROLLVIEW*/) return null; 
+					::Xcgui.XEle_AdjustLayoutObject(hEle);
+					this.hPointer = topointer(hEle);
+				}
+				else {
+					return null;
+				}
+			}
+			else {
+				this.hPointer = topointer( ::Xcgui.XSView_Create (tParam.left,tParam.top,tParam.right-tParam.left,tParam.bottom-tParam.top,hParentPointer) );	
+			}	
+		}
+	};
+	
+	@_metaProperty;
+	
+}
+
+scrollview._metaProperty = metaProperty(
+	setTotalSize = function(cx,cy){
+		return ::Xcgui.XSView_SetTotalSize(owner.hPointer,cx,cy);
+	}
+	getTotalSize = function(){
+		var size = ::SIZE();
+		::Xcgui.XSView_GetTotalSize(owner.hPointer,size);
+		return size.cx,size.cy; 
+	}
+	setLineSize = function(nWidth,nHeight){
+		return ::Xcgui.XSView_SetLineSize(owner.hPointer,nWidth,nHeight);
+	}
+	getLineSize = function(){
+		var size = ::SIZE();
+		::Xcgui.XSView_GetLineSize(owner.hPointer,size);
+		return size.cx,size.cy;
+	}
+	setScrollBarSize = function(size){
+		return ::Xcgui.XSView_SetScrollBarSize(owner.hPointer,size);
+	}
+	getViewPosH = function(){
+		return ::Xcgui.XSView_GetViewPosH(owner.hPointer);
+	}
+	getViewPosV = function(){
+		return ::Xcgui.XSView_GetViewPosV(owner.hPointer);
+	}
+	getViewWidth = function(){
+		return ::Xcgui.XSView_GetViewWidth(owner.hPointer);
+	}
+	getViewHeight = function(){
+		return ::Xcgui.XSView_GetViewHeight(owner.hPointer);
+	}
+	getViewRect = function(pRect){
+		var rc = ::RECT();
+		::Xcgui.XSView_GetViewRect(owner.hPointer,rc);
+		return rc;
+	}
+	getScrollBarH = function(){
+		return ..xcgui.ctrl.scrollbar( ::Xcgui.XSView_GetScrollBarH(owner.hPointer) );
+	}
+	getScrollBarV = function(){
+		return ..xcgui.ctrl.scrollbar( ::Xcgui.XSView_GetScrollBarV(owner.hPointer) );
+	}
+	setBorderSize = function(left,top,right,bottom){
+		return ::Xcgui.XSView_SetBorderSize(owner.hPointer,left,top,right,bottom);
+	}
+	getBorderSize = function(pBorder){
+		var rc =  ::RECT();
+		::Xcgui.XSView_GetBorderSize(owner.hPointer,rc);
+		return rc.left,rc.top,rc.right,rc.bottom
+	}
+	scrollPosH = function(pos){
+		return ::Xcgui.XSView_ScrollPosH(owner.hPointer,pos);
+	}
+	scrollPosV = function(pos){
+		return ::Xcgui.XSView_ScrollPosV(owner.hPointer,pos);
+	}
+	scrollPosXH = function(posX){
+		return ::Xcgui.XSView_ScrollPosXH(owner.hPointer,posX);
+	}
+	scrollPosYV = function(posY){
+		return ::Xcgui.XSView_ScrollPosYV(owner.hPointer,posY);
+	}
+	showSBarH = function(bShow){
+		return ::Xcgui.XSView_ShowSBarH(owner.hPointer,bShow);
+	}
+	showSBarV = function(bShow){
+		return ::Xcgui.XSView_ShowSBarV(owner.hPointer,bShow);
+	}
+	enableAutoShowScrollBar = function(bEnable){
+		return ::Xcgui.XSView_EnableAutoShowScrollBar(owner.hPointer,bEnable);
+	}
+	scrollLeftLine = function(){
+		return ::Xcgui.XSView_ScrollLeftLine(owner.hPointer);
+	}
+	scrollRightLine = function(){
+		return ::Xcgui.XSView_ScrollRightLine(owner.hPointer);
+	}
+	scrollTopLine = function(){
+		return ::Xcgui.XSView_ScrollTopLine(owner.hPointer);
+	}
+	scrollBottomLine = function(){
+		return ::Xcgui.XSView_ScrollBottomLine(owner.hPointer);
+	}
+	scrollLeft = function(){
+		return ::Xcgui.XSView_ScrollLeft(owner.hPointer);
+	}
+	scrollRight = function(){
+		return ::Xcgui.XSView_ScrollRight(owner.hPointer);
+	}
+	scrollTop = function(){
+		return ::Xcgui.XSView_ScrollTop(owner.hPointer);
+	}
+	scrollBottom = function(){
+		return ::Xcgui.XSView_ScrollBottom(owner.hPointer);
+	}
+)
+
+/**intellisense()
+xcgui.ctrl.scrollview(.(父窗口,参数表) = 创建一个滚动视图
+xcgui.ctrl.scrollview() = !stdxcscrollview.
+win.ui.ctrl.xcscrollview() = !stdxcscrollview.
+end intellisense**/
+
+/**intellisense(!stdxcscrollview)
+getScrollBarH() = 获取水平滚动条\n!stdxcscrollbar.
+getScrollBarV() = 获取垂直滚动条\n!stdxcscrollbar.
+setTotalSize(.(cx,cy) = 设置内容大小.
+getTotalSize(__) = 获取内容总大小,返回cx,cy
+setLineSize(.(cx,cy) = 设置滚动单位大小.
+getLineSize(__) = 获取滚动单位大小,返回cx,cy
+setScrollBarSize(__) = 设置滚动条大小
+getViewPosH() = 获取视口原点X坐标
+getViewPosV() = 获取视口原点Y坐标
+getViewWidth() = 获取视口宽度
+getViewHeight() = 获取视口高度
+getViewRect(__) = 获取视口坐标
+setBorderSize(.(left,top,right,bottom) = 设置边框大小
+getBorderSize(__) = 获取边框大小\n返回left,top,right,bottom
+scrollPosH(__) = 水平滚动条,滚动到指定位置点
+scrollPosV(__) = 垂直滚动条,滚动到指定位置点
+scrollPosXH(__) = 水平滚动条,滚动到指定坐标
+scrollPosYV(__) = 垂直滚动条,滚动到指定坐标
+showSBarH(__) = 显示水平滚动条
+showSBarV(__) = 显示垂直滚动条
+enableAutoShowScrollBar(__) = 启用自动显示滚动条
+scrollLeftLine() = 向左滚动
+scrollRightLine() = 向右滚动
+scrollTopLine() = 向上滚动
+scrollBottomLine() = 向下滚动
+scrollLeft() = 水平滚动到左侧
+scrollRight() = 水平滚动到右侧
+scrollTop() = 垂直滚动到顶部
+scrollBottom() = 垂直滚动到底部
+background = 获取控件的背景管理器\n!stdxcbkmanager.
+bkAddFill(.("状态",图像,颜色数值或RGB分量) = 设置控件填充颜色\n可用的背景状态请查看xcgui.state
+bkAddImage(.("状态",图像) = 设置窗口顶部图像\n图像可直接指定路径或资源路径,也可使用xcgui.image对象
+bkAddBorder(.("状态",线宽,透明度,RGB颜色) = 添加背景边框\n状态可以是字符串或数值,可用值参考xucgui.state
+id = ID值
+z = Z序
+topmost(true) = Z序置顶
+getWindow() = 返回父窗体\n!stdxcwnd
+hitEle(.(x,y) = 根据指定的坐标获取子节点\n!stdxcele
+getParent() = 获取父节点\n!stdxcele
+getParentHandle() = 获取父节点句柄
+getParentType() = 获取父节点类型
+getObjectType() = 获取节点类型
+addEle(__) = 添加子节点
+insertEle(.(child,index) = 在index指定的位置插入子节点child 
+remove() = 移除元素,但不销毁.
+disabled = 是否禁用
+hide = 是否隐藏;
+pointerEvents = 是否触发鼠标事件\n值设为false可实现鼠标穿透效果
+transparent = 是否支持背景透明\n透明PNG图像需要设置此属性为true
+alpha = 透明度
+color = 字体颜色
+border = 设置是否允许显示边框\n只写属性
+focusBorderColor = 焦点边框颜色
+enableDrawFocus = 是否允许绘制焦点
+focusBorder = 是否启用焦点
+scrollView = 是否允许显示滚动
+tabstop = 是否允许键盘切换焦点
+tooltip = 提示文本
+css("__") = 修改CSS样式名\n无参数时返回CSS样式名
+popupToolTip(.(x,y) = 在指定坐标弹出提示
+getFont() = 获取字体\n!stdxcfont.
+setFont(.(字体名,字体大小,样式) = 创建字体
+setFont(.(字体名） = 设置字体
+setFont(.(name="字体"） = 设置字体\n参数为LOGFONT对象，或指定部分LOGFONT属性的表
+setFont(.(句柄） = 设置字体\n参数为字体句柄
+getClientRect() = 返回客户区区块,::RECT对象\n!rect. 
+getRect = 返回控件区块,::RECT对象\n!rect. 
+setRect(.(rect,是否重绘) = 设置区块,参数@1为::RECT对象
+getLogicRect = 返回控件逻辑区块,::RECT对象\n!rect. 
+setLogicRect(.(rect,是否重绘) = 设置控件逻辑区块,参数@1为::RECT对象
+setPos(.(x坐标,y坐标,宽,高) = 调整控件位置或排序,所有参数可选\n同时指定x,y坐标则移动位置\n同时指定宽高则改变大小
+getPos() = 返回相对坐标,宽,高,返回4个值：x,y,cx,cy
+autoResize = 是否允许aardio窗口自动调整控件位置\n只有在窗口设计器中添加的控件,并是aardio窗口对象的成员时此属性才有效
+getWidth() = 获取宽度
+getHeight() = 获取高度
+layoutObject = 获取或绑定布局对象\n获取布局对象时如果布局对象不存在则自动创建\n!stdxclayoutObj.
+getParentLayoutObject() = 获取父布局对象
+adjustLayoutObject() = 调整布局对象
+adjustLayout() = 调整布局
+setLayoutHeight(.(宽度,选项) = 设置布局宽度
+setLayoutWidth(.(高度,选项) = 设置布局高度 
+cursor = 鼠标指针
+redraw() = 重绘
+redrawRect(__) = 重绘区块,参数为::RECT对象
+close() = 销毁控件
+post("click__",wParam,lParam) = 发送消息,不获取返回值\n参数@1可使用任何字符串自定义新的控件消息
+send("click__",wParam,lParam) = 发送消息,获取消息处理函数的返回值\n任何一个事件回调函数返回非null值都会结束当次事件并返回该值,\n参数@1可使用任何字符串自定义新的控件消息
+.onMessage= @.on("message",function(message,wParam,lParam){
+	if( message == "自定义消息" ) return __/*返回非null值结束本次回调*/;
+})
+.onScrollHorz = @.on("scrollHorz",function(pos){
+	__
+})
+.onScrollVert = @.on("scrollVert",function(pos){
+	__
+})
+.onPaint = @.on("paint",function(hDraw){
+	__
+})
+.onPaintEnd = @.on("paintEnd",function(hDraw){
+	__
+})
+.onPaintScrollView = @.on("paintScrollView",function(hDraw){
+
+})
+.onMove = @.on("move",function(nFlags,pt){
+	
+	__
+})
+.onEnter = @.on("enter",function(){
+
+})
+.onHover = @.on("hover",function(nFlags, pt){
+	
+	__
+})
+.onLeave = @.on("leave",function(hEleHover){
+
+})
+.onWheel = @.on("wheel",function(nFlags,pt){
+	
+	__
+})
+.onLbuttonDown = @.on("lbuttonDown",function(nFlags, pt){
+	
+	__
+})
+.onLbuttonUp = @.on("lbuttonUp",function(nFlags, pt){
+	
+	__
+})
+.onRbuttonDown = @.on("rbuttonDown",function(nFlags, pt){
+	
+	__
+})
+.onRbuttonUp = @.on("rbuttonUp",function(nFlags, pt){
+	
+	__
+})
+.onDblclick = @.on("dblclick",function(nFlags, pt){
+	
+	__
+})
+.onFocus = @.on("focus",function(){
+	__
+})
+.onKillFocus = @.on("killFocus",function(){
+	__
+})
+.onDestroy = @.on("destroy",function(){
+	__
+})
+.onSize = @.on("size",function(){
+	__
+})
+.onShow = @.on("show",function(shown){
+	__
+})
+.onSetFont = @.on("font",function(){
+	__
+})
+.onKeyDown = @.on("keyDown",function(wParam,lParam){
+	__
+})
+.onChar = @.on("char",function(wParam,lParam){
+	__
+})
+.onSetCapture = @.on("setCapture",function(){
+	__
+})
+.onKillCapture = @.on("killCapture",function(){
+	__
+})
+.onCursor = @.on("cursor",function(wParam,lParam){
+	__
+})
+.onDropfiles = @.on("dropfiles",function(wParam){
+	var files = ..win.getDropFile(wParam) __
+})
+.onMenuPopup = @.on("menuPopup",function(hMenu){
+	__
+})
+.onMenuPopupWnd = @.on("menuPopupWnd",function(hMenu,pInfo){
+	__
+})
+.onMenuSelect = @.on("menuSelect",function(id){
+	__
+})
+.onMenuDrawBackground = @.on("menuDrawBackground",function(hDraw,pInfo){
+	__
+})
+.onMenuDrawitem = @.on("menuDrawitem",function(hDraw,pInfo){
+	__
+})
+.onMenuExit = @.on("menuExit",function(){
+	__
+})
+end intellisense**/

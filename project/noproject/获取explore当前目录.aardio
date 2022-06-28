@@ -1,0 +1,135 @@
+import winex;
+import com;
+import console;
+
+// 获取windows explore当前目录
+// https://www.autoitscript.com/forum/topic/89833-windows-explorer-current-folder
+
+
+getHwnds = function(){
+	var Hwnds = {};
+	for hwnd,title,theadId,processId in winex.each() { 
+    	//console.log(hwnd,title,theadId,processId);
+    	var isMatch = winex.match(hwnd,,"^<Cabinet>|<Explore>WClass$",) 
+    	if(isMatch)
+    	{
+        	//console.log(hwnd,title,theadId,processId);
+        	table.push(Hwnds, hwnd);
+    	}
+	}
+	return Hwnds;
+}
+
+// Returns an 'ShellFolderView' Object for the given Window handle
+ObjectSHFolderViewFromWin_ = function(hwnd){
+	if(not hwnd) {
+	    return null;
+	}
+	var $oShell;
+	var $oShellWindows;
+	var $oIEObject;
+	var $oSHFolderView;
+	var $oShell = com.TryCreateObject("Shell.Application");
+	if(not $oShell) {
+	     return null;
+	}
+	var $oShellWindows = $oShell.Windows();
+	if(not $oShellWindows) {
+	     return null;
+	}
+	
+	var $oCount = $oShellWindows.Count;
+	//console.log($oCount);
+	for(i=1;$oCount;1){
+		$oIEObject = $oShellWindows[i - 1];
+		//console.dump($oIEObject);
+		if(not $oIEObject) {
+		    continue;
+		}
+	    if($oIEObject.hwnd == hwnd) {
+	        $oSHFolderView = $oIEObject.Document;
+	        if(com.IsObject($oSHFolderView)) {
+	            return $oSHFolderView;
+	        }
+	    }
+	}
+	return null;
+}
+
+ExplorerWinGetSelectedItems_ = function(hwnd){
+	if(not hwnd) {
+	    return null;
+	}
+	var $oSHFolderView;
+    var $iSelectedItems;
+    var $iCounter = 0;
+    var $aSelectedItems = {};
+	
+	$oSHFolderView =  ObjectSHFolderViewFromWin_(hwnd);
+	//console.dump("$oSHFolderView", $oSHFolderView)
+	if(not $oSHFolderView) {
+	    return null;
+	}
+	
+/*
+	try{
+		$iSelectedItems = $oSHFolderView.SelectedItems.Count;
+	}
+	catch(e){}
+	
+	if(not $iSelectedItems) {
+	    //return null;
+	}
+*/
+	
+	var $oSHFolderViewPath;
+	try{
+		$oSHFolderViewPath = $oSHFolderView.Folder.Self.Path;
+	}
+	catch(e){}
+	
+	//console.dump("$oSHFolderViewPath", $oSHFolderViewPath)
+	
+	if(not $oSHFolderViewPath) {
+	    return null;
+	}
+	
+	return $oSHFolderViewPath;
+	
+	/*
+    table.push($aSelectedItems, $iSelectedItems);
+	table.push($aSelectedItems, $oSHFolderViewPath);
+	
+	var $oSelectedFolderItems;
+	try{
+		$oSelectedFolderItems = $oSHFolderView.SelectedItems;
+	}
+	catch(e){}
+	if(not $oSelectedFolderItems) {
+	    return null;
+	}
+	
+	var oSelectedPath = {};
+	for(i=1;# $oSelectedFolderItems;1){
+		var each = $oSelectedFolderItems[i];
+		table.push(oSelectedPath, each);
+	}
+*/
+}
+
+// https://stackoverflow.com/a/26265176
+//::Shlwapi := ..raw.loadDll("Shlwapi.dll") 
+
+var Hwnds = getHwnds();
+
+for(i=1;#Hwnds;1){
+	var hwnd = Hwnds[i];
+    //var o = ObjectSHFolderViewFromWin_(hwnd);
+    //console.dump(hwnd);
+    var path = ExplorerWinGetSelectedItems_(hwnd);
+    console.dump(path);
+}
+
+
+
+console.pause();

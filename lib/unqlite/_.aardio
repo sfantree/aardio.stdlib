@@ -1,0 +1,299 @@
+import web.json;
+import util.metaProperty;
+
+class unqlite{
+	ctor( path,flag){
+		path = ..io.localpath(path) : path;
+		var rc,db = unqlite_open(null,path,flag === null?4/*UNQLITE_OPEN_CREATE*/ : flag );
+	  	if( rc != 0 ){ return null,"打开数据库失败" }
+	  	this.db = db;
+	  	 
+	  	this.__fetch_one_callback = ..raw.tocdecl(function(p,size){
+				this.currentData__ = ..raw.tostring(p,1,size);
+		},"int(pointer p,INT size,pointer)");
+	
+	  	..table.add_gc( this,"close" )
+	}; 
+	@_metaProperty;
+}
+
+namespace unqlite {
+
+	_dll = ..raw.loadDll($"~\lib\unqlite\.res\unqlite.dll","std_unqlite.dll","cdecl"); 
+	import ..unqlite.script;
+	import ..unqlite.cursor;
+
+	_metaProperty = ..util.metaProperty(
+	
+		close = function(){
+			if( owner.db ){
+				unqlite_close(owner.db );
+				owner.db = null;
+			}
+		};
+		store = function(k,v,...){
+			if(!#k) return null,"键名不能为空"; 
+			if(...)v = ..string.format(v,...)
+			return unqlite_kv_store(owner.db,k,#k,v,#v);
+		};
+		storeObject = function(k,tab){ 
+			if(!#k) return null,"键名不能为空"; 
+			if( type(tab) != "table" ) error("参数2必须是表对象",2)
+			var json = json_stringify(tab)
+			return unqlite_kv_store(owner.db,k,#k,json,#json);
+		} 
+		storeFile = function(k,path){
+			if(!#k) return null,"键名不能为空"; 
+			path = ..io.localpath(path) : path;
+			var rc,map,size = unqlite_util_load_mmaped_file(path,null,0);
+			if( rc != 0 ) return rc;
+			
+			rc = unqlite_kv_store(owner.db,k,#k,map,size);
+			unqlite_util_release_mmaped_file(map,size);
+			return rc;
+		};  
+		fetch = function(k,proc){
+			if(!#k) return null,"键名不能为空"; 
+			if( !proc ){
+				if( 0 == unqlite_kv_fetch_callback(owner.db,k,#k, owner.__fetch_one_callback ) )
+					return owner.currentData__;
+					
+				return;
+			};
+			
+			if( type(proc) != type.function ) error("参数@2必须指定回调函数",2);
+			
+			var pc = ..raw.tocdecl(function(p,size){
+				proc( ..raw.tostring(p,1,size) )
+			},"int(pointer p,INT size,pointer)");
+			
+			return unqlite_kv_fetch_callback(owner.db,k,#k,pc,null);
+		}
+		fetchObject = function(k,proc){
+			if(!#k) return null,"键名不能为空"; 
+			if( !proc ){
+				if( 0 == unqlite_kv_fetch_callback(owner.db,k,#k, owner.__fetch_one_callback ) ){
+					var data = owner.currentData__ ; 
+					if( data ){
+						var first = data[1]; 
+						if( first == '{'# || first == '['# ){
+							return json_parse( data);
+						}
+						return data;
+					} 
+				}	
+				return;
+			};
+			
+			if( type(proc) != type.function ) error("参数@2必须指定回调函数",2);
+			
+			var pc = ..raw.tocdecl(function(p,size){
+				var data = ..raw.tostring(p,1,size) ; 
+				if( data ){
+					var first = data[1]; 
+					if( first == '{'# || first == '['# ){
+						data = json_parse( data);
+					} 
+				} 
+				proc( data )
+			},"int(pointer p,INT size,pointer)");
+			
+			return unqlite_kv_fetch_callback(owner.db,k,#k,pc,null);
+		}
+		append = function(k,v,...){
+			if(!#k) return null,"键名不能为空"; 
+			if(...)v = ..string.format(v,...)
+			return unqlite_kv_append(owner.db,k,#k,v,#v);
+		};
+		delete = function(k ){
+			if(!#k) return null,"键名不能为空"; 
+			return unqlite_kv_delete(owner.db,k,#k);
+		}; 
+		compile = function(jx9){
+			return script(owner,jx9);
+		} 
+		cursor = function(){
+			return cursor(owner);
+		} 
+		configString = function(id){
+			var rc,ps,len = unqlite_config_string(owner.db,id,null,0);
+			if( len > 0 ){
+				var str = ..raw.tostring(ps,1,len); 
+				return str;
+			}
+		};
+		configErrLog = function(){
+			return owner.configString( 3 /*UNQLITE_CONFIG_ERR_LOG*/);
+		};
+		beginTrans = function(){
+			return unqlite_begin(owner.db); 
+		}
+		commitTrans = function(){
+			return unqlite_commit(owner.db); 
+		}
+		rollbackTrans = function(){
+			return unqlite_rollback(owner.db); 
+		}
+		kvConfig = function(op,...){
+			return _dll.unqlite_kv_config(owner.db,op,...); 
+		}
+		config = function(op,...){
+			return _dll.unqlite_config(owner.db,op,...); 
+		}
+	)  
+	
+	var dll = _dll; 
+	version = ..raw.str(topointer(dll.unqlite_lib_version()));
+	unqlite_open= dll.api("unqlite_open","int(pointer &ppDB,string zFilename,INT iMode)");
+	unqlite_config_string = dll.api("unqlite_config","int(POINTER pDb,int nOp,pointer &s,INT &len)");
+	unqlite_close= dll.api("unqlite_close","int(POINTER pDb)");
+	unqlite_kv_store= dll.api("unqlite_kv_store","int(POINTER pDb,pointer pKey,int nKeyLen,pointer pData,long  nDataLen)");
+	unqlite_kv_append= dll.api("unqlite_kv_append","int(POINTER pDb,pointer pKey,int nKeyLen,pointer pData,long  nDataLen)");
+	unqlite_kv_fetch= dll.api("unqlite_kv_fetch","int(POINTER pDb,pointer pKey,int nKeyLen,pointer pBuf,long &pBufLen)");
+	unqlite_kv_fetch_callback= dll.api("unqlite_kv_fetch_callback","int(POINTER pDb,pointer pKey,int keyLen,pointer func ,pointer pUserData)");
+	unqlite_kv_delete= dll.api("unqlite_kv_delete","int(POINTER pDb,pointer pKey,int nKeyLen)");
+	unqlite_begin= dll.api("unqlite_begin","int(POINTER pDb)");
+	unqlite_commit= dll.api("unqlite_commit","int(POINTER pDb)");
+	unqlite_rollback= dll.api("unqlite_rollback","int(POINTER pDb)");
+	unqlite_util_load_mmaped_file= dll.api("unqlite_util_load_mmaped_file","int(string zFile,pointer &ppMap,long  &pFileSize)");
+	unqlite_util_release_mmaped_file= dll.api("unqlite_util_release_mmaped_file","int(pointer pMap,long  iFileSize)");
+	config = dll.unqlite_lib_config;
+	signature = dll.api("unqlite_lib_signature","string(void)");
+	ident= dll.api("unqlite_lib_ident","string(void)"); 
+	json_stringify = ..web.json.stringify;
+	json_parse = ..web.json.parse; 
+}
+
+/**intellisense()
+unqlite = 嵌入式NoSQL引擎
+unqlite(.("/test->db" ) = 打开数据库,\n可选使用参数二用 _UNQLITE_OPEN_ 前缀常量指定选项\n默认为 _UNQLITE_OPEN_CREATE 
+unqlite() = !unqlite.
+unqlite.version = unqlite版本
+end intellisense**/
+
+/**intellisense(!unqlite) 
+storeObject(.("键名",表对象) = 写入表对象\n成功返回0,失败返回非0
+store(.("键名",值,格式化参数) = 写入键值\n格式化参数为可选参数\n成功返回0,失败返回非0
+storeFile(.("键名","文件路径") = 存储文件到数据库\n成功返回0,失败返回非0
+append(.("键名",值,格式化参数) = 追加值到指定键\n格式化参数为可选参数\n成功返回0,失败返回非0
+delete(.("键名") = 删除键值
+fetch(键名,回调函数) = @.fetch("__/*键名*/",function( value ){\n	io.print( "查询返回", value )\n} )
+fetch(键名) = 如果不指定回调函数,直接返回查询结果\n失败返回空值
+fetchObject(键名) = 如果不指定回调函数,直接返回对象\n失败返回空值
+fetchObject(键名,回调函数) = @.fetchObject("__/*键名*/",function( tab ){\n	io.print( "查询返回对象", tab )\n} )
+configErrLog() = 返回错误信息
+compile(.("jx9脚本") = 编译jx9脚本,\n参数可以是脚本代码或脚本文件路径
+compile() = !unqlite_jx9.
+cursor() = 创建游标\n!unqlite_cursor.
+beginTrans() = 开始事务\n成功返回0,失败返回非0
+commitTrans() = 提交事务\n成功返回0,失败返回非0
+rollbackTrans() = 回滚事务\n成功返回0,失败返回非0
+end intellisense**/
+
+ /**intellisense()
+_SXRET_OK=@0/*_SXRET_OK*/
+_SXERR_MEM=@-1/*_SXERR_MEM*/
+_SXERR_IO=@-2/*_SXERR_IO*/
+_SXERR_EMPTY=@-3/*_SXERR_EMPTY*/
+_SXERR_LOCKED=@-4/*_SXERR_LOCKED*/
+_SXERR_ORANGE=@-5/*_SXERR_ORANGE*/
+_SXERR_NOTFOUND=@-6/*_SXERR_NOTFOUND*/
+_SXERR_LIMIT=@-7/*_SXERR_LIMIT*/
+_SXERR_MORE=@-8/*_SXERR_MORE*/
+_SXERR_INVALID=@-9/*_SXERR_INVALID*/
+_SXERR_ABORT=@-10/*_SXERR_ABORT*/
+_SXERR_EXISTS=@-11/*_SXERR_EXISTS*/
+_SXERR_SYNTAX=@-12/*_SXERR_SYNTAX*/
+_SXERR_UNKNOWN=@-13/*_SXERR_UNKNOWN*/
+_SXERR_BUSY=@-14/*_SXERR_BUSY*/
+_SXERR_OVERFLOW=@-15/*_SXERR_OVERFLOW*/
+_SXERR_WILLBLOCK=@-16/*_SXERR_WILLBLOCK*/
+_SXERR_NOTIMPLEMENTED=@-17/*_SXERR_NOTIMPLEMENTED*/
+_SXERR_EOF=@-18/*_SXERR_EOF*/
+_SXERR_PERM=@-19/*_SXERR_PERM*/
+_SXERR_NOOP=@-20/*_SXERR_NOOP*/
+_SXERR_FORMAT=@-21/*_SXERR_FORMAT*/
+_SXERR_NEXT=@-22/*_SXERR_NEXT*/
+_SXERR_OS=@-23/*_SXERR_OS*/
+_SXERR_CORRUPT=@-24/*_SXERR_CORRUPT*/
+_SXERR_CONTINUE=@-25/*_SXERR_CONTINUE*/
+_SXERR_NOMATCH=@-26/*_SXERR_NOMATCH*/
+_SXERR_RESET=@-27/*_SXERR_RESET*/
+_SXERR_DONE=@-28/*_SXERR_DONE*/
+_SXERR_SHORT=@-29/*_SXERR_SHORT*/
+_SXERR_PATH=@-30/*_SXERR_PATH*/
+_SXERR_TIMEOUT=@-31/*_SXERR_TIMEOUT*/
+_SXERR_BIG=@-32/*_SXERR_BIG*/
+_SXERR_RETRY=@-33/*_SXERR_RETRY*/
+_SXERR_IGNORE=@-63/*_SXERR_IGNORE*/
+_UNQLITE_OK=@0/*_UNQLITE_OK*/
+_UNQLITE_NOMEM=@-1/*_UNQLITE_NOMEM*/
+_UNQLITE_ABORT=@-10/*_UNQLITE_ABORT*/
+_UNQLITE_IOERR=@-2/*_UNQLITE_IOERR*/
+_UNQLITE_CORRUPT=@-24/*_UNQLITE_CORRUPT*/
+_UNQLITE_LOCKED=@-4/*_UNQLITE_LOCKED*/
+_UNQLITE_BUSY=@-14/*_UNQLITE_BUSY*/
+_UNQLITE_DONE=@-28/*_UNQLITE_DONE*/
+_UNQLITE_PERM=@-19/*_UNQLITE_PERM*/
+_UNQLITE_NOTIMPLEMENTED=@-17/*_UNQLITE_NOTIMPLEMENTED*/
+_UNQLITE_NOTFOUND=@-6/*_UNQLITE_NOTFOUND*/
+_UNQLITE_NOOP=@-20/*_UNQLITE_NOOP*/
+_UNQLITE_INVALID=@-9/*_UNQLITE_INVALID*/
+_UNQLITE_EOF=@-18/*_UNQLITE_EOF*/
+_UNQLITE_UNKNOWN=@-13/*_UNQLITE_UNKNOWN*/
+_UNQLITE_LIMIT=@-7/*_UNQLITE_LIMIT*/
+_UNQLITE_EXISTS=@-11/*_UNQLITE_EXISTS*/
+_UNQLITE_EMPTY=@-3/*_UNQLITE_EMPTY*/
+_UNQLITE_COMPILE_ERR=@-70/*_UNQLITE_COMPILE_ERR*/
+_UNQLITE_VM_ERR=@-71/*_UNQLITE_VM_ERR*/
+_UNQLITE_FULL=@-73/*_UNQLITE_FULL*/
+_UNQLITE_CANTOPEN=@-74/*_UNQLITE_CANTOPEN*/
+_UNQLITE_READ_ONLY=@-75/*_UNQLITE_READ_ONLY*/
+_UNQLITE_LOCKERR=@-76/*_UNQLITE_LOCKERR*/
+_UNQLITE_CONFIG_JX9_ERR_LOG=@1/*_UNQLITE_CONFIG_JX9_ERR_LOG*/
+_UNQLITE_CONFIG_MAX_PAGE_CACHE=@2/*_UNQLITE_CONFIG_MAX_PAGE_CACHE*/
+_UNQLITE_CONFIG_ERR_LOG=@3/*_UNQLITE_CONFIG_ERR_LOG*/
+_UNQLITE_CONFIG_KV_ENGINE=@4/*_UNQLITE_CONFIG_KV_ENGINE*/
+_UNQLITE_CONFIG_DISABLE_AUTO_COMMIT=@5/*_UNQLITE_CONFIG_DISABLE_AUTO_COMMIT*/
+_UNQLITE_CONFIG_GET_KV_NAME=@6/*_UNQLITE_CONFIG_GET_KV_NAME*/
+_UNQLITE_VM_CONFIG_OUTPUT=@1/*_UNQLITE_VM_CONFIG_OUTPUT*/
+_UNQLITE_VM_CONFIG_IMPORT_PATH=@2/*_UNQLITE_VM_CONFIG_IMPORT_PATH*/
+_UNQLITE_VM_CONFIG_ERR_REPORT=@3/*_UNQLITE_VM_CONFIG_ERR_REPORT*/
+_UNQLITE_VM_CONFIG_RECURSION_DEPTH=@4/*_UNQLITE_VM_CONFIG_RECURSION_DEPTH*/
+_UNQLITE_VM_OUTPUT_LENGTH=@5/*_UNQLITE_VM_OUTPUT_LENGTH*/
+_UNQLITE_VM_CONFIG_CREATE_VAR=@6/*_UNQLITE_VM_CONFIG_CREATE_VAR*/
+_UNQLITE_VM_CONFIG_HTTP_REQUEST=@7/*_UNQLITE_VM_CONFIG_HTTP_REQUEST*/
+_UNQLITE_VM_CONFIG_SERVER_ATTR=@8/*_UNQLITE_VM_CONFIG_SERVER_ATTR*/
+_UNQLITE_VM_CONFIG_ENV_ATTR=@9/*_UNQLITE_VM_CONFIG_ENV_ATTR*/
+_UNQLITE_VM_CONFIG_EXEC_VALUE=@0xA/*_UNQLITE_VM_CONFIG_EXEC_VALUE*/
+_UNQLITE_VM_CONFIG_IO_STREAM=@0xB/*_UNQLITE_VM_CONFIG_IO_STREAM*/
+_UNQLITE_VM_CONFIG_ARGV_ENTRY=@0xC/*_UNQLITE_VM_CONFIG_ARGV_ENTRY*/
+_UNQLITE_VM_CONFIG_EXTRACT_OUTPUT=@0xD/*_UNQLITE_VM_CONFIG_EXTRACT_OUTPUT*/
+_UNQLITE_KV_CONFIG_HASH_FUNC=@1/*_UNQLITE_KV_CONFIG_HASH_FUNC*/
+_UNQLITE_KV_CONFIG_CMP_FUNC=@2/*_UNQLITE_KV_CONFIG_CMP_FUNC*/
+_UNQLITE_LIB_CONFIG_USER_MALLOC=@1/*_UNQLITE_LIB_CONFIG_USER_MALLOC*/
+_UNQLITE_LIB_CONFIG_MEM_ERR_CALLBACK=@2/*_UNQLITE_LIB_CONFIG_MEM_ERR_CALLBACK*/
+_UNQLITE_LIB_CONFIG_USER_MUTEX=@3/*_UNQLITE_LIB_CONFIG_USER_MUTEX*/
+_UNQLITE_LIB_CONFIG_THREAD_LEVEL_SINGLE=@4/*_UNQLITE_LIB_CONFIG_THREAD_LEVEL_SINGLE*/
+_UNQLITE_LIB_CONFIG_THREAD_LEVEL_MULTI=@5/*_UNQLITE_LIB_CONFIG_THREAD_LEVEL_MULTI*/
+_UNQLITE_LIB_CONFIG_VFS=@6/*_UNQLITE_LIB_CONFIG_VFS*/
+_UNQLITE_LIB_CONFIG_STORAGE_ENGINE=@7/*_UNQLITE_LIB_CONFIG_STORAGE_ENGINE*/
+_UNQLITE_LIB_CONFIG_PAGE_SIZE=@8/*_UNQLITE_LIB_CONFIG_PAGE_SIZE*/
+_UNQLITE_OPEN_READONLY=@1/*_UNQLITE_OPEN_READONLY*/
+_UNQLITE_OPEN_READWRITE=@2/*_UNQLITE_OPEN_READWRITE*/
+_UNQLITE_OPEN_CREATE=@4/*_UNQLITE_OPEN_CREATE*/
+_UNQLITE_OPEN_EXCLUSIVE=@8/*_UNQLITE_OPEN_EXCLUSIVE*/
+_UNQLITE_OPEN_TEMP_DB=@0x10/*_UNQLITE_OPEN_TEMP_DB*/
+_UNQLITE_OPEN_NOMUTEX=@0x20/*_UNQLITE_OPEN_NOMUTEX*/
+_UNQLITE_OPEN_OMIT_JOURNALING=@0x40/*_UNQLITE_OPEN_OMIT_JOURNALING*/
+_UNQLITE_OPEN_IN_MEMORY=@0x80/*_UNQLITE_OPEN_IN_MEMORY*/
+_UNQLITE_OPEN_MMAP=@0x100/*_UNQLITE_OPEN_MMAP*/
+_UNQLITE_SYNC_NORMAL=@2/*_UNQLITE_SYNC_NORMAL*/
+_UNQLITE_SYNC_FULL=@3/*_UNQLITE_SYNC_FULL*/
+_UNQLITE_SYNC_DATAONLY=@0x10/*_UNQLITE_SYNC_DATAONLY*/
+_UNQLITE_LOCK_NONE=@0/*_UNQLITE_LOCK_NONE*/
+_UNQLITE_LOCK_SHARED=@1/*_UNQLITE_LOCK_SHARED*/
+_UNQLITE_LOCK_RESERVED=@2/*_UNQLITE_LOCK_RESERVED*/
+_UNQLITE_LOCK_PENDING=@3/*_UNQLITE_LOCK_PENDING*/
+_UNQLITE_LOCK_EXCLUSIVE=@4/*_UNQLITE_LOCK_EXCLUSIVE*/
+end intellisense**/

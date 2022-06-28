@@ -1,0 +1,16 @@
+import console;
+import fsys.codepage;
+
+//加载ANSI,UTF-8,Unicode编码的文本文件
+var str = fsys.codepage.load("文本文件路径")
+
+//显示文本
+console.log(str);
+
+//使用ANSI编码保存
+fsys.codepage.save("文本文件路径",str,0)
+
+//使用UTF-8编码保存
+fsys.codepage.save("文本文件路径",str)
+
+console.pause(true);

@@ -1,0 +1,11 @@
+
+import thread.manage
+manage = thread.manage()
+
+aa = function(){
+    import winex;
+    winex.click("198714");
+}
+manage.create(aa);
+
+manage.waitClose()

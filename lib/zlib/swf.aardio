@@ -1,0 +1,77 @@
+//swf 压缩格式
+import zlib;
+namespace zlib;
+
+class swf{
+	ctor( path ){
+		this.path = path;
+		this.file = ..io.open(path,"rb");
+		this.header = {
+			BYTE sig[3];
+			BYTE version;
+			INT size;
+			_struct_aligned = 1;
+		} 
+		if( ! ( this.file ? this.file.read(this.header) ) ){
+			this.file.close()
+			return null,"不是有效的swf文件";
+		}
+		if( this.header.sig == "CWS" ){
+			this.data = this.file.read(-1);  
+            this.data,err  = ..zlib.uncompress(this.data,this.header.size - 8 ); 
+            this.file.close();
+		}
+		elseif( this.header.sig == "FWS" ){
+			this.data = this.file.read(-1); 
+            this.file.close();
+		}
+		else {
+			this.file.close();
+			return null,"不是有效的swf文件";
+		} 
+	};
+	compress = function(path){
+		if( this.header.sig == "CWS" ) return false,"已经是压缩格式" 
+		this.header.sig = "CWS";
+		
+		if(!path) path = this.path;
+		var file,err = ..io.open(path,"w+b");
+		if(!file) return null,err;
+		
+		file.write( this.header ); 
+		file.write( ..zlib.compress(this.data,true)  );
+		file.close();
+		
+		this.path = path;
+		return true;
+	}
+	uncompress = function(path){
+		if( this.header.sig == "FWS" ) return false,"已经是非压缩格式"
+		this.header.sig = "FWS";
+ 
+		if(!path) path = this.path;
+		var file,err = ..io.open(path,"w+b");
+		if(!file) return null,err;
+		
+		file.write( this.header );
+		file.write( this.data );
+		file.close();
+		this.path = path;
+		return true;
+	} 
+}
+
+/**intellisense() 
+zlib.swf = swf文件压缩解压缩
+zlib.swf(.("swf文件路径") = 创建swf文件对象
+zlib.swf() = !zlibswffile.
+!zlibswffile.path = swf文件路径\n压缩或解压后会修改该路径为最后存储的位置
+!zlibswffile.compress() = 压缩\n成功返回true,\n可选参参数中指定存储路径,不指定则修改原文件,\n如果已经是压缩格式不操作直接返回false
+!zlibswffile.uncompress() = 解压缩\n成功返回true,\n可选参参数中指定存储路径,不指定则修改原文件,\n如果文件已经是非压缩格式不操作直接返回false
+!zlibswffile.header.sig = 压缩格式为"FWS"\n非压缩格式为"CWS"
+!zlibswffile.header.size = 原始文件大小
+!zlibswffile.header.data = 原始文件数据
+!zlibswffile.header.version = 版本
+end intellisense**/
+
+ 

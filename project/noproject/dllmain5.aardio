@@ -1,0 +1,68 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=191;bottom=167)
+winform.add(
+button={cls="button";text="生成DLL";left=49;top=45;right=145;bottom=80;font=LOGFONT(name='宋体');z=1};
+button2={cls="button";text="调用DLL";left=49;top=94;right=145;bottom=126;font=LOGFONT(name='宋体');z=2}
+)
+/*}}*/
+import console;
+console.open();
+
+var codeUtf8 = /** 
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <windows.h>
+
+int __stdcall DllMain(void * hinstDLL, unsigned long fdwReason, void * lpvReserved) {
+
+	if (fdwReason == 1/*DLL_PROCESS_ATTACH*/ ){ 
+		
+	}
+	return 1;
+}
+
+/* 位置1：这里添加C函数 */
+__declspec(dllexport) void func1(char *p) 
+{     
+	strcpy( p , "aardio" );
+} 
+
+
+**/
+
+winform.button.oncommand = function(id,event){
+	import tcc; 
+	var vm = tcc();
+	vm.addLib( 
+		"user32",
+		"kernel32",
+		"gdi32"
+	) 
+	vm.output( "/bin.dll", codeUtf8 );
+	vm.close(); 
+}
+
+winform.button2.oncommand = function(id,event){
+	var dll = raw.loadDll( "/bin.dll" );
+
+	// 位置2：这里添加C函数
+	
+	var func1 = dll.api( "func1","void(pointer)", "cdecl" );
+	
+	var buffer = raw.realloc(128);
+	console.log(type(buffer))
+	
+	func1(raw.toPointer(buffer));
+	
+	var s = raw.tostring(buffer);
+	console.dump(s);
+	//console.dump(string.hex(raw.str(buffer)))
+	
+}
+
+winform.show();
+win.loopMessage();
+return winform;

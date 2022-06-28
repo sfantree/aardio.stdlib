@@ -1,0 +1,65 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add()
+/*}}*/
+
+import win;
+
+var Window_WriteChar = function(hwnd, content, fontName, fontSize, fontColor, pixelX, pixelY) {
+    var hDC = 0;
+    if(hwnd == nil) {
+        var hwnd = win.getForeground()
+        hDC = ::GetDC(0)
+    } else {
+        hDC = ::GetDC(hwnd)
+    }
+    
+    if(hDC == 0) {
+        return;
+    }
+    
+    if(content == nil) {
+        content = "精易论坛 bbs.125.la";
+    }
+    
+    if(fontName == nil) {
+        fontName = "宋体";
+    }
+        
+    if(fontColor == nil) {
+        fontColor = 255;
+    }
+    
+    if(fontSize == nil) {
+        fontSize = 26;
+    }
+
+    
+    var lpLogFont = ::LOGFONT(name=fontName; charset=134; h = fontSize); 
+    
+    var hFont = ::Gdi32.CreateFontIndirect( lpLogFont );
+    
+    var hFontOld = ::Gdi32.SelectObject(hDC, hFont);
+    
+    var bkModeOld = ::Gdi32.SetBkMode(hDC, 1);
+    
+    var crFontOld = ::Gdi32.SetTextColor(hDC, fontColor) ;
+    
+    ::Gdi32.TextOut(hDC, pixelX, pixelY, content, string.len(content));
+
+	::Gdi32.SetBkMode(hDC, bkModeOld);
+	::Gdi32.SetTextColor(hDC, crFontOld);
+	::Gdi32.SelectObject (hDC, hFontOld);
+	::Gdi32.DeleteObject (hFont);
+	
+	if(hwnd) {
+	    ::ReleaseDC (hwnd, hDC);   
+	}
+	 
+}
+
+Window_WriteChar(, "精易论坛 bbs.125.la 模块版本:8.5.0", "黑体", 23, , 30, 30) 
+
+winform.show();
+win.loopMessage();

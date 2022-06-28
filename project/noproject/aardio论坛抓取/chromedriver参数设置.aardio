@@ -1,0 +1,15 @@
+ 
+import chrome.driver;
+
+var driver = chrome.driver( );
+
+/*
+excludeSwitches ={"enable-logging"} 是排除参数
+添加参数是 driver.addArguments("--disable-web-security")
+*/
+
+driver.setOptions(
+    excludeSwitches ={"enable-logging"} //注意这里参数前千万不要加 --
+)
+
+//var browser = driver.startBrowser("https://www.douban.com");

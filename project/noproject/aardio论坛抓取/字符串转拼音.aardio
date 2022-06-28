@@ -1,0 +1,7 @@
+import console;
+
+//字符串如何转拼音
+import string.conv.pinyin;
+console.log( string.conv.pinyin("字符串如何转拼音") );
+
+console.pause(true);

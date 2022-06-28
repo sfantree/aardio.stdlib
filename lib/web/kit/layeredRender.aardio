@@ -1,0 +1,47 @@
+//layeredRender 分层绘图模块
+import gdi;
+import gdip.graphics;
+import gdip.bitmap;
+namespace web.kit;
+
+class layeredRender{
+	ctor( wkeView,hwnd ){
+		if( ! wkeView[["hWebView"]] ) error("参数@1必须是web.kit.view视图对象",2);
+		this.wkeView = wkeView; 
+	};
+	delete = function(){
+		if( this.bitmap ) {
+			this.bitmap.dispose();
+			this.bitmap = null;
+		}
+	}
+	resize = function(w,h){
+		if ( w!=this.width || h!=this.height ){
+            if( this.bitmap ) this.bitmap.dispose();
+        	
+            this.bitmap = ..gdip.bitmap(w,h);
+        	this.width = w;
+        	this.height = h;
+		}
+	};
+	draw = function(hwnd){
+		var wkeView = this.wkeView;
+		var w,h = this.width,this.height; 
+		if(! ( w && h ) ) return; 
+		 
+		var bmpData = this.bitmap.lockMemory();
+        wkeView.paint(bmpData.Scan0,bmpData.Stride);
+        this.bitmap.unlockMemory(bmpData)
+        
+        ..gdi.layeredBuffer( hwnd,  
+        	function( hdc,hMemDc,hMemBitmap,width,height ){
+        	
+            	var graphics = ..gdip.graphics(hMemDc)
+        		graphics.drawImageRect(this.bitmap,x:0,y:0,cx:w,cy:h);
+        		graphics.delete()
+            	 
+        		..gdi.updateLayeredWindow( hwnd,hMemDc,::SIZE(width,height) ,..gdi.blendFunction()  ); 
+        	}
+        )
+    }
+}

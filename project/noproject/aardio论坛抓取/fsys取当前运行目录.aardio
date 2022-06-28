@@ -1,0 +1,9 @@
+import console; 
+import fsys;
+import fsys.path;
+
+console.log("io._exepath:" , io._exepath);
+console.log("fsys.getCurDir():", fsys.getCurDir());
+console.log('io.fullpath("/")', io.fullpath("/"));
+console.log('io.fullpath("~")', io.fullpath("~"));
+console.pause(true);

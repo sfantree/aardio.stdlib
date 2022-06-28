@@ -1,0 +1,33 @@
+import web.form;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=534;bottom=402)
+winform.add(
+btnDlCtrlDefault={cls="button";text="启用脚本";left=358;top=339;right=469;bottom=372;db=1;dr=1;z=1}
+)
+/*}}*/
+
+//创建web窗体,禁止执行JS
+var wb = web.form( winform  , ,0x80/*_DLCTL_NO_SCRIPTS*/   );
+
+wb.html = /**
+<!doctype html>
+<html>
+<head><meta charset="utf-8">
+<script type="text/javascript">
+    alert("abc")
+</script>
+</head>
+<body>点下面的“启用脚本按钮”</body>
+</html>
+**/
+
+winform.show()
+
+import web.form.util;
+winform.btnDlCtrlDefault.oncommand = function(id,event){
+    wb.getDoc().scripts(0).innerHTML = `alert('456')`; //修改script节点内容
+    web.form.util.dlCtrl(wb);//恢复js脚本执行
+    wb.html =  wb.getDoc().documentElement.outerHTML
+}
+
+win.loopMessage();

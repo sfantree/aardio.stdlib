@@ -1,0 +1,490 @@
+﻿//layoutObject 布局对象
+
+import util.metaProperty;
+namespace xcgui;
+
+class layoutObject{
+
+	ctor(hLayout,tParam){  
+		if(hLayout){
+			this.hLayout = topointer( hLayout);
+		}
+		else {
+			this.hLayout = topointer( ::Xcgui.XLayout_Create () );
+			::Xcgui.XLayout_SetLayoutHeight(this.hLayout,3,1);
+			::Xcgui.XLayout_SetLayoutWidth(this.hLayout,3,1);
+		}
+		
+		if(!this.hLayout) return null;
+	};
+	
+	@_metaProperty;	
+}
+
+	
+namespace layoutObject{
+
+	show = ::Xcgui.XC_ShowLayoutFrame;
+	
+	align = {
+		left=0;
+		top=1;
+		right=2;
+		bottom=3;
+		center=4;
+		equidistant=5;
+	};	
+
+	_metaProperty = ..util.metaProperty(
+	
+		destroy = function(){
+			if(owner.hLayout){
+				::Xcgui.XLayout_Destroy(owner.hLayout);
+				owner.hLayout = null;
+			}
+		}
+		addEle = function(hEle){
+			return ::Xcgui.XLayout_AddEle(owner.hLayout,hEle);
+		}
+		addLayoutObject = function(hLayoutObject){
+			return ::Xcgui.XLayout_AddLayoutObject(owner.hLayout,hLayoutObject);
+		}
+		addShape = function(hShape){
+			return ::Xcgui.XLayout_AddShape(owner.hLayout,hShape);
+		}
+		add = function(hChild){
+			return ::Xcgui.XLayout_Add(owner.hLayout,hChild);
+		}
+		insert = function(hChild,index){
+			return ::Xcgui.XLayout_Insert(owner.hLayout,hChild,index);
+		}
+		remove = function(){
+			return ::Xcgui.XLayout_RemoveLayout(owner.hLayout);
+		}
+		removeChild = function(hChild){
+			return ::Xcgui.XLayout_RemoveChild(owner.hLayout,hChild);
+		}
+		getZOrder = function(hChild){
+			return ::Xcgui.XLayout_GetZOrder(owner.hLayout,hChild);
+		}
+		adjust = function(){
+			return ::Xcgui.XLayout_AdjustLayout(owner.hLayout);
+		}
+		getEle = function(){
+			return ..xcgui.ctrl.queryObject( ::Xcgui.XLayout_GetEle(owner.hLayout) );
+		}
+		getParentLayout = function(){ 
+			return ..xcgui.layoutObject(  ::Xcgui.XLayout_GetParentLayout(owner.hLayout) );
+		}
+		getParent = function(){
+			return ..xcgui.ctrl.queryObject( ::Xcgui.XLayout_GetParent(owner.hLayout) );
+		}
+		getWindow = function(){
+			return ..xcgui.window( ::Xcgui.XLayout_GetWindow(owner.hLayout) );
+		}
+		id = {
+			_get = function(){
+				return ::Xcgui.XLayout_GetID(owner);
+			}
+			_set = function(v){
+				::Xcgui.XLayout_SetID(owner,v);
+			}	
+		};
+		uid = {
+			_get = function(){
+				return ::Xcgui.XLayout_GetUID(owner);
+			}
+			_set = function(v){
+				::Xcgui.XLayout_SetUID(owner,v);
+			}	
+		};
+		vert = {
+			_set = function(v){ 
+				return ::Xcgui.XLayout_SetHorizon(owner.hLayout,!v);
+			}
+		}
+		getRect = function(){
+			var rc = ::RECT();
+			::Xcgui.XLayout_GetRect(owner.hLayout,rc);
+			return rc;
+		}
+		getRectFrame = function(pRect){
+			var rc = ::RECT();
+			::Xcgui.XLayout_GetRectFrame(owner.hLayout,rc);
+			return rc;
+		}
+		setRectFrame = function(pRect){
+			return ::Xcgui.XLayout_SetRectFrame(owner.hLayout,pRect);
+		}
+		setAlignH = function(a){
+			if( a ) a = align[a] :a;
+			return ::Xcgui.XLayout_SetAlignH(owner.hLayout,a);
+		}
+		setAlignV = function(a){
+			if( a ) a = align[a] :a;
+			return ::Xcgui.XLayout_SetAlignV(owner.hLayout,a);
+		}
+		setPadding = function(left,top,right,bottom){
+			return ::Xcgui.XLayout_SetPadding(owner.hLayout,left,top,right,bottom);
+		}
+		setLayoutHeight = function(v,t){
+			if(t===null){
+				if(v<0){
+					t = 1/*layout_size_type_fill*/;
+					v = 1;
+				};
+				elseif(v==0) {
+					t = 2/*layout_size_type_auto*/
+					v = 1;
+				}
+				elseif( v<=1 && v > 0 ) {
+					t = 3/*layout_size_type_weight*/
+				} 
+			}
+			::Xcgui.XLayout_SetLayoutHeight(owner,t,v);
+		};
+		setLayoutWidth = function(v,t){
+			if(t===null){
+				if(v<0){
+					t = 1/*layout_size_type_fill*/;
+					v = 1;
+				};
+				elseif(v==0) {
+					t = 2/*layout_size_type_auto*/
+					v = 1;
+				}
+				elseif( v<=1 && v > 0 ) {
+					t = 3/*layout_size_type_weight*/
+				} 
+			}
+			::Xcgui.XLayout_SetLayoutWidth(owner,t,v);	
+		};
+		getLayoutHeight = function(){
+			var v,t = {int value},{int value}
+			::Xcgui.XLayout_GetLayoutHeight(owner,t,v);
+			return v.value,t.value;
+		};
+		getLayoutWidth = function(){
+			var v,t = {int value},{int value}
+			::Xcgui.XShapePic_GetLayoutWidth(owner,t,v);
+			return v.value,t.value;
+		};
+		setSpace = function(nSpace){
+			return ::Xcgui.XLayout_SetSpace(owner.hLayout,nSpace);
+		}
+		getWidth = function(){
+			return ::Xcgui.XLayout_GetWidth(owner.hLayout);
+		}
+		getHeight = function(){
+			return ::Xcgui.XLayout_GetHeight(owner.hLayout);
+		}
+		getWidthIn = function(){
+			return ::Xcgui.XLayout_GetWidthIn(owner.hLayout);
+		}
+		getHeightIn = function(){
+			return ::Xcgui.XLayout_GetHeightIn(owner.hLayout);
+		}
+		getContentSize = function(){
+			var sz = ::SIZE();
+			::Xcgui.XLayout_GetContentSize(owner.hLayout,sz);
+			return sz;
+		}
+		showLayout = function(bShow){
+			return ::Xcgui.XLayout_ShowLayout(owner.hLayout,bShow);
+		}
+		getChildCount = function(){
+			return ::Xcgui.XLayout_GetChildCount(owner.hLayout);
+		}
+		getChildType = function(index){
+			return ::Xcgui.XLayout_GetChildType(owner.hLayout,index);
+		}
+		getChild = function(index){
+			return ..xcgui.ctrl.queryObject( ::Xcgui.XLayout_GetChild(owner.hLayout,index) );
+		}
+		draw = function(hDraw){
+			return ::Xcgui.XLayout_Draw(owner.hLayout,hDraw);
+		}
+		createTrackBar = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			var ctrl = ..xcgui.ctrl.trackbar(,{left=x;top=y;right=x+cx;bottom=y+cy});
+			::Xcgui.XLayout_AddEle(owner.hLayout,ctrl);
+			return ctrl;
+		}
+		createList = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			var ctrl = ..xcgui.ctrl.list(,{left=x;top=y;right=x+cx;bottom=y+cy});
+			::Xcgui.XLayout_AddEle(owner.hLayout,ctrl);
+			return ctrl;
+		}
+		createButton = function(text,cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			var ctrl = ..xcgui.ctrl.button(  ,{text=text;left=x;top=y;right=x+cx;bottom=y+cy});
+			::Xcgui.XLayout_AddEle(owner.hLayout,ctrl);
+			return ctrl;
+		}
+		createListBox = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			var ctrl = ..xcgui.ctrl.listbox(,{left=x;top=y;right=x+cx;bottom=y+cy});
+			::Xcgui.XLayout_AddEle(owner.hLayout,ctrl);
+			return ctrl;
+		}
+		createPane = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			var ctrl = ..xcgui.ctrl.pane(,{left=x;top=y;right=x+cx;bottom=y+cy});
+			::Xcgui.XLayout_AddEle(owner.hLayout,ctrl);
+			return ctrl;
+		}
+		createCheckBox = function(text,cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			var ctrl = ..xcgui.ctrl.checkbox(,{text=text;left=x;top=y;right=x+cx;bottom=y+cy});
+			::Xcgui.XLayout_AddEle(owner.hLayout,ctrl);
+			return ctrl;
+		}
+		createScrollView = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			var ctrl = ..xcgui.ctrl.scrollview(,{left=x;top=y;right=x+cx;bottom=y+cy});
+			::Xcgui.XLayout_AddEle(owner.hLayout,ctrl);
+			return ctrl;
+		}
+		createEdit = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			var ctrl = ..xcgui.ctrl.edit(,{left=x;top=y;right=x+cx;bottom=y+cy});
+			::Xcgui.XLayout_AddEle(owner.hLayout,ctrl);
+			return ctrl;
+		}
+		createTreeView = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			var ctrl = ..xcgui.ctrl.treeview(,{left=x;top=y;right=x+cx;bottom=y+cy});
+			::Xcgui.XLayout_AddEle(owner.hLayout,ctrl);
+			return ctrl;
+		}
+		createPropertyGrid = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			var ctrl = ..xcgui.ctrl.propertygrid(,{left=x;top=y;right=x+cx;bottom=y+cy});
+			::Xcgui.XLayout_AddEle(owner.hLayout,ctrl);
+			return ctrl;
+		}
+		createTab = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			var ctrl = ..xcgui.ctrl.tab(,{left=x;top=y;right=x+cx;bottom=y+cy});
+			::Xcgui.XLayout_AddEle(owner.hLayout,ctrl);
+			return ctrl;
+		}
+		createListView = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			var ctrl = ..xcgui.ctrl.listview(,{left=x;top=y;right=x+cx;bottom=y+cy});
+			::Xcgui.XLayout_AddEle(owner.hLayout,ctrl);
+			return ctrl;
+		}
+		createCalendar = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			var ctrl = ..xcgui.ctrl.calendar(,{left=x;top=y;right=x+cx;bottom=y+cy});
+			::Xcgui.XLayout_AddEle(owner.hLayout,ctrl);
+			return ctrl;
+		}
+		createMenuBar = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			var ctrl = ..xcgui.ctrl.menubar(,{left=x;top=y;right=x+cx;bottom=y+cy});
+			::Xcgui.XLayout_AddEle(owner.hLayout,ctrl);
+			return ctrl;
+		}
+		createComboBox = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			var ctrl = ..xcgui.ctrl.combobox(,{left=x;top=y;right=x+cx;bottom=y+cy});
+			::Xcgui.XLayout_AddEle(owner.hLayout,ctrl);
+			return ctrl;
+		}
+		createEle = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			var ctrl = ..xcgui.ctrl.ele(,{left=x;top=y;right=x+cx;bottom=y+cy});
+			::Xcgui.XLayout_AddEle(owner.hLayout,ctrl);
+			return ctrl;
+		}
+		createLink = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			var ctrl = ..xcgui.ctrl.link(,{left=x;top=y;right=x+cx;bottom=y+cy});
+			::Xcgui.XLayout_AddEle(owner.hLayout,ctrl);
+			return ctrl;
+		}
+		createProgress = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			var ctrl = ..xcgui.ctrl.progress(,{left=x;top=y;right=x+cx;bottom=y+cy});
+			::Xcgui.XLayout_AddEle(owner.hLayout,ctrl);
+			return ctrl;
+		}
+		createDateTimePick = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			var ctrl = ..xcgui.ctrl.datetimepick(,{left=x;top=y;right=x+cx;bottom=y+cy});
+			::Xcgui.XLayout_AddEle(owner.hLayout,ctrl);
+			return ctrl;
+		}
+		createRadioButton = function(text,cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			var ctrl = ..xcgui.ctrl.radiobutton(,{text=text;left=x;top=y;right=x+cx;bottom=y+cy});
+			::Xcgui.XLayout_AddEle(owner.hLayout,ctrl);
+			return ctrl;
+		}
+		createEllipse = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			var ctrl = ..xcgui.ctrl.ellipse(,{left=x;top=y;right=x+cx;bottom=y+cy});
+			::Xcgui.XLayout_AddEle(owner.hLayout,ctrl);
+			return ctrl;
+		}
+		createScrollBar = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			var ctrl = ..xcgui.ctrl.scrollbar(,{left=x;top=y;right=x+cx;bottom=y+cy});
+			::Xcgui.XLayout_AddEle(owner.hLayout,ctrl);
+			return ctrl;
+		}
+		createRect = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			var ctrl = ..xcgui.ctrl.rect(,{left=x;top=y;right=x+cx;bottom=y+cy});
+			::Xcgui.XLayout_AddShape(owner.hLayout,ctrl);
+			return ctrl;
+		}
+		createGif = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			var ctrl = ..xcgui.ctrl.gif(,{left=x;top=y;right=x+cx;bottom=y+cy});
+			::Xcgui.XLayout_AddShape(owner.hLayout,ctrl);
+			return ctrl;
+		}
+		createLine = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			var ctrl = ..xcgui.ctrl.line(,{left=x;top=y;right=x+cx;bottom=y+cy});
+			::Xcgui.XLayout_AddShape(owner.hLayout,ctrl);
+			return ctrl;
+		}
+		createPicture = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			var ctrl = ..xcgui.ctrl.picture(,{left=x;top=y;right=x+cx;bottom=y+cy});
+			::Xcgui.XLayout_AddShape(owner.hLayout,ctrl);
+			return ctrl;
+		}
+		createEllipse = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			var ctrl = ..xcgui.ctrl.ellipse(,{left=x;top=y;right=x+cx;bottom=y+cy});
+			::Xcgui.XLayout_AddShape(owner.hLayout,ctrl);
+			return ctrl;
+		}
+		createText = function(text,cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			var ctrl = ..xcgui.ctrl.text(,{text=text;left=x;top=y;right=x+cx;bottom=y+cy});
+			::Xcgui.XLayout_AddShape(owner.hLayout,ctrl);
+			return ctrl;
+		}
+		createGroupBox = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			var ctrl = ..xcgui.ctrl.groupbox(,{left=x;top=y;right=x+cx;bottom=y+cy});
+			::Xcgui.XLayout_AddShape(owner.hLayout,ctrl);
+			return ctrl;
+		}
+	
+		_topointer = function(){
+			return owner.hLayout;
+		}
+		
+	);
+
+}
+
+/**intellisense()
+xcgui.layoutObject() = 创建一个布局对象\n参数可使用布局对象指针\n!stdxclayoutObj.
+xcgui.layoutObject.show(true) = 显示布局对象边界,用于开发调试
+end intellisense**/
+
+/**intellisense(!stdxclayoutObj)
+destroy() = 销毁布局对象
+addEle(__) = 添加元素到布局对象,自动将元素添加到父UI中
+addLayoutObject(__) = 添加布局对象到当前布局对象
+addShape(__) = 添加形状对象到当前布局对象,自动将形状对象添加到父UI中
+add(__) = 添加对象到当前布局对象中; 如果是形状对象或UI元素对象,自动将元素添加到父UI中
+insert(.(hChild,index) = 插入对象到当前布局对象中; 如果是形状对象或UI元素对象,自动将元素添加到父UI中
+remove() = 将自己从父对象中移除,断开与父窗口或父UI元素的连接
+removeChild(__) = 将指定子对象从布局对象中移除, 父UI对象保存不变,父UI对象指的是窗口或UI元素
+getZOrder(__) = 获取子对象在布局中的Z序位置索引
+adjust() = 调整布局
+getEle() = 获取布局对象所在元素
+getParentLayout() = 获取父布局对象
+getParent() = 获取父对象,父可能是元素或窗口
+getWindow() = 获取布局对象所在窗口
+id = ID
+uid = UID
+vert = 设置是否垂直布局,只写属性
+setRectFrame(__) = 设置外围框架坐标
+getRect(__) = 获取内围坐标
+getRectFrame(__) = 获取外围框架坐标
+setAlignH(__) = 设置水平对齐方式
+setAlignV(__) = 设置垂直对齐方式
+setPadding(.(left,top,right,bottom) = 设置内填充大小
+setLayoutHeight(.(宽度,选项) = 设置布局宽度\n选项不指定时,宽度为-1则填充父空间,宽度为0表示自动计算大小,宽度小于等于1表示按百分比撑满剩余空间
+setLayoutWidth(.(高度,选项) = 设置布局高度 \n选项不指定时,高度为-1则填充父空间,高度为0表示自动计算大小,高度小于等于1表示按百分比撑满剩余空间
+getLayoutWidth() = 获取布局宽度,选项
+getLayoutHeight() = 获取布局高度,选项
+setSpace(__) = 设置子对象之间的间距
+getWidth() = 获取宽度
+getHeight() = 获取高度
+getWidthIn() = 获取宽度,不包含内边距大小
+getHeightIn() = 获取高度,不包含内边距大小
+getContentSize(__) = 获取内容大小
+showLayout(__) = 是否显示布局对象
+getChildCount() = 获取子对象数量
+getChildType(__) = 获取子对象类型
+getChild(__) = 获取子对象
+draw(__) = 绘制布局对象
+createTrackBar(.(宽,高,左坐标,顶坐标) = 在此对象内创建trackbar控件,\n左坐标,顶坐标为可选参数,默认为0
+createList(.(宽,高,左坐标,顶坐标) = 在此对象内创建list控件,\n左坐标,顶坐标为可选参数,默认为0
+createButton(.(文本,宽,高,左坐标,顶坐标) = 在此对象内创建button控件,\n左坐标,顶坐标为可选参数,默认为0
+createListBox(.(宽,高,左坐标,顶坐标) = 在此对象内创建listbox控件,\n左坐标,顶坐标为可选参数,默认为0
+createPane(.(宽,高,左坐标,顶坐标) = 在此对象内创建pane控件,\n左坐标,顶坐标为可选参数,默认为0
+createCheckBox(.(文本,宽,高,左坐标,顶坐标) = 在此对象内创建checkbox控件,\n左坐标,顶坐标为可选参数,默认为0
+createScrollView(.(宽,高,左坐标,顶坐标) = 在此对象内创建scrollview控件,\n左坐标,顶坐标为可选参数,默认为0
+createEdit(.(宽,高,左坐标,顶坐标) = 在此对象内创建edit控件,\n左坐标,顶坐标为可选参数,默认为0
+createTreeView(.(宽,高,左坐标,顶坐标) = 在此对象内创建treeview控件,\n左坐标,顶坐标为可选参数,默认为0
+createPropertyGrid(.(宽,高,左坐标,顶坐标) = 在此对象内创建propertygrid控件,\n左坐标,顶坐标为可选参数,默认为0
+createTab(.(宽,高,左坐标,顶坐标) = 在此对象内创建tab控件,\n左坐标,顶坐标为可选参数,默认为0
+createListView(.(宽,高,左坐标,顶坐标) = 在此对象内创建listview控件,\n左坐标,顶坐标为可选参数,默认为0
+createCalendar(.(宽,高,左坐标,顶坐标) = 在此对象内创建calendar控件,\n左坐标,顶坐标为可选参数,默认为0
+createMenuBar(.(宽,高,左坐标,顶坐标) = 在此对象内创建menubar控件,\n左坐标,顶坐标为可选参数,默认为0
+createComboBox(.(宽,高,左坐标,顶坐标) = 在此对象内创建combobox控件,\n左坐标,顶坐标为可选参数,默认为0
+createEle(.(宽,高,左坐标,顶坐标) = 在此对象内创建ele控件,\n左坐标,顶坐标为可选参数,默认为0
+createLink(.(宽,高,左坐标,顶坐标) = 在此对象内创建link控件,\n左坐标,顶坐标为可选参数,默认为0
+createProgress(.(宽,高,左坐标,顶坐标) = 在此对象内创建progress控件,\n左坐标,顶坐标为可选参数,默认为0
+createDateTimePick(.(宽,高,左坐标,顶坐标) = 在此对象内创建datetimepick控件,\n左坐标,顶坐标为可选参数,默认为0
+createRadioButton(.(文本,宽,高,左坐标,顶坐标) = 在此对象内创建radiobutton控件,\n左坐标,顶坐标为可选参数,默认为0
+createScrollBar(.(宽,高,左坐标,顶坐标) = 在此对象内创建scrollbar控件,\n左坐标,顶坐标为可选参数,默认为0
+createRect(.(宽,高,左坐标,顶坐标) = 在此对象内创建rect控件,\n左坐标,顶坐标为可选参数,默认为0
+createGif(.(宽,高,左坐标,顶坐标) = 在此对象内创建gif控件,\n左坐标,顶坐标为可选参数,默认为0
+createLine(.(宽,高,左坐标,顶坐标) = 在此对象内创建line控件,\n左坐标,顶坐标为可选参数,默认为0
+createPicture(.(宽,高,左坐标,顶坐标) = 在此对象内创建picture控件,\n左坐标,顶坐标为可选参数,默认为0
+createEllipse(.(宽,高,左坐标,顶坐标) = 在此对象内创建ellipse控件,\n左坐标,顶坐标为可选参数,默认为0
+createText(.(文本,宽,高,左坐标,顶坐标) = 在此对象内创建text控件,\n左坐标,顶坐标为可选参数,默认为0
+createGroupbox(.(宽,高,左坐标,顶坐标) = 在此对象内创建groupbox控件,\n左坐标,顶坐标为可选参数,默认为0
+createTrackBar() = !stdxctrackbar.
+createList() = !stdxclist.
+createButton() = !stdxcbutton.
+createListBox() = !stdxclistbox.
+createPane() = !stdxcpane.
+createCheckBox() = !stdxcbutton.
+createScrollView() = !stdxcscrollview.
+createEdit() = !stdxcedit.
+createTreeView() = !stdxctree.
+createPropertyGrid() = !stdxcpropertygrid.
+createTab() = !stdxctab.
+createListView() = !stdxclistview.
+createCalendar() = !stdxccalendar.
+createMenuBar() = !stdxcmenubar.
+createComboBox() = !stdxccombobox.
+createEle() = !stdxcele.
+createLink() = !stdxclink.
+createProgress() = !stdxcprogress.
+createDateTimePick() = !stdxcdatetimepick.
+createRadioButton() = !stdxcbutton.
+createScrollBar() = !stdxcscrollbar.
+createRect() = !stdxcrect.
+createGif() = !stdxcgif.
+createLine() = !stdxcline.
+createPicture() = !stdxcpicture.
+createEllipse() = !stdxcellipse.
+createText() = !stdxcshapetext.
+createGroupbox() = !stdxcgroupbox.
+end intellisense**/

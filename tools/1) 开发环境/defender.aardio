@@ -1,0 +1,155 @@
+//RUNAS//信任开发目录
+import fonts.fontAwesome;
+import win.dlg.message;
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio - Windows Defender 开发目录设置工具";right=762;bottom=485;bgcolor=16777215)
+winform.add(
+btnAdd={cls="plus";left=599;top=397;right=639;bottom=427;color=3947580;db=1;dr=1;font=LOGFONT(h=-13);iconStyle={font=LOGFONT(h=-13;name='FontAwesome')};iconText='\uF07C';notify=1;z=5};
+btnOpenSecHealth={cls="plus";text="打开系统安全设置";left=111;top=438;right=278;bottom=462;color=8388608;db=1;dr=1;font=LOGFONT(h=-13);notify=1;textPadding={left=5};z=6};
+btnSave={cls="plus";text="更新 Windows Defender 排除目录";left=375;top=437;right=661;bottom=467;align="left";bgcolor=-5197169;db=1;dr=1;font=LOGFONT(h=-13);iconStyle={align="left";font=LOGFONT(h=-13;name='FontAwesome');padding={left=20}};iconText='\uF17A';notify=1;textPadding={left=39};z=3};
+edit={cls="edit";left=32;top=53;right=740;bottom=392;db=1;dl=1;dr=1;dt=1;edge=1;hscroll=1;multiline=1;vscroll=1;z=1};
+static={cls="static";text="Windows Defender 排除目录(每行一个)：";left=34;top=20;right=392;bottom=47;dl=1;dr=1;dt=1;font=LOGFONT(h=-13);transparent=1;z=2};
+static2={cls="static";text="Windows Defender 实时保护功能会导致生成 EXE 时卡顿异常,请务必将工程目录添加到排除目录。";left=33;top=402;right=736;bottom=428;color=5921370;db=1;dr=1;transparent=1;z=4}
+)
+/*}}*/
+
+winform.btnOpenSecHealth.skin({
+	color={
+		active=0xFF00FF00;
+		default=0xFF000080;
+		disabled=0xFF6D6D6D;
+		hover=0xFFFF0000
+	}
+})
+
+winform.show(); 
+
+import service;
+if( service.isRunning("Windefend") ){
+	winform.btnSave.disabledText = {'\uF254';'\uF251';'\uF252';'\uF253';'\uF250';text ="正在查询信任目录配置 ……"}
+	winform.btnAdd.disabled = true;
+	
+	thread.invoke( 
+		function(winform,idePublishDir){
+			
+			import ide;
+			import sys.mpPreference;
+			import fsys;
+			
+			var exclusionPaths = idePublishDir;
+			if(!exclusionPaths){
+				var defProjectDir = ide.getConfig("project_default_dir");
+				if(!#defProjectDir) defProjectDir = io.fullpath("~/project");
+	 		 
+	 			var curProjectDir = ide.getProjectDir() 
+	 			if( (#curProjectDir) && (!fsys.path.ischild(defProjectDir,curProjectDir)) ){
+	 				exclusionPaths = {defProjectDir,curProjectDir}	
+	 			}
+	 			else {
+	 				exclusionPaths = {defProjectDir}	
+	 			}
+			}
+			
+			var exclusionPaths,err = sys.mpPreference.getExclusionPaths(exclusionPaths)
+			if(exclusionPaths!==null){ 
+				winform.edit.text = string.join(exclusionPaths,'\r\n');
+				winform.btnSave.disabledText = null;
+				winform.btnAdd.disabled = false;
+			}
+			elseif(err) {
+				
+				winform.btnSave.disabledText = null;
+				winform.btnSave.disabled = true;
+				winform.msgWarn("系统未启用 Windows Defender")
+			}
+		 		
+		},winform,_IDE_PUBLISTH_PROJECT_DIR
+	)
+}
+else {
+	winform.msgWarn("系统未启用 Windows Defender")
+	winform.btnSave.disabled = true;
+	winform.btnAdd.disabled = true;
+	winform.close();
+}
+
+winform.btnSave.oncommand = function(id,event){
+    var exclusionPaths = {}
+	for(line in string.lines(string.trim(winform.edit.text))){
+		table.push(exclusionPaths,string.trim(line));
+	}
+	
+	winform.btnSave.disabledText = {'\uF254';'\uF251';'\uF252';'\uF253';'\uF250';text="正在更新 Windows Defender 配置 ……"}
+	thread.invoke( 
+		function(winform,exclusionPaths,publishDir){
+			import sys.mpPreference;
+			var ret,err = sys.mpPreference.setExclusionPaths(exclusionPaths)
+			winform.btnSave.disabledText = null;
+			
+			if(#err){
+				winform.msgErr("系统未启用 Windows Defender");
+			}
+			else{
+				if(publishDir){
+					winform.close();
+				}
+				else {
+					winform.msgOk("已更新 Windows Defender 排除目录。")
+				}
+			} 
+		},winform,exclusionPaths,_IDE_PUBLISTH_PROJECT_DIR
+	)
+}
+
+import fsys.dlg.dir;
+winform.btnAdd.oncommand = function(id,event){
+	var path = fsys.dlg.dir(,winform,"aardio - 请选择添加到信任列表的目录","选择并添加");
+	if(path){
+		var txt = winform.edit.text;
+		txt = string.trim(txt);
+		if(#txt){
+			winform.edit.text = txt + '\r\n' + path;
+		}
+		else {
+			winform.edit.text = path;
+		}
+		
+	}
+}
+
+winform.btnAdd.skin({
+	color={
+		active=0xFF00FF00;
+		default=0xFF3C3C3C;
+		disabled=0xFF6D6D6D;
+		hover=0xFFFF0000
+	}
+});
+
+winform.btnSave.skin({
+	background={
+		default=0x668FB2B0;
+		disabled=0xFFCCCCCC;
+		hover=0xFF928BB3
+	};
+	color={
+		default=0xFF000000;
+		disabled=0xFF6D6D6D
+	}
+});
+
+winform.btnOpenSecHealth.oncommand = function(id,event){
+	import com.shell;
+	
+	for i,item in com.shell.eachApp(){ 
+		if(string.startWith(item.path,"Microsoft.Windows.SecHealthUI_.",true)
+			|| string.endWith(item.path,"!SecHealthUI",true) 
+			) {
+			com.shell.activateApp(item.path);
+			return;	
+		}
+	}
+}
+
+win.loopMessage();

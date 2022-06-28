@@ -1,0 +1,30 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add()
+/*}}*/
+
+import web.blink.form;
+var mb = web.blink.form(winform);
+mb.html = /**
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+</head>
+<body>
+    <div id="container">
+        <div class="lside"> <button>一个按钮</button></div>
+        <div class="rside"> </div>  
+    </div>
+</body>
+</html>
+**/
+
+mb.waitDoc()
+
+var num = mb.eval("document.querySelectorAll('div').length")  
+winform.msgbox(num)
+  
+winform.show()
+win.loopMessage();

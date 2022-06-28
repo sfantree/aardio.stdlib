@@ -1,0 +1,531 @@
+﻿//listbox 列表框
+import xcgui.ctrl.metaProperty;
+namespace xcgui.ctrl;
+
+class listbox{
+
+	ctor(hParentPointer,tParam){ 
+		if(! (hParentPointer || tParam) ) return null;
+		if(type(tParam)!=type.table){
+			this.hPointer = topointer( hParentPointer);
+		}
+		else {
+			if( tParam.resource ) ..xcgui.res.load(tParam.resource);
+			if(tParam.layout){
+				var hEle = ..xcgui.loadLayout(tParam.layout,hParentPointer);
+				if( ::Xcgui.XC_IsHELE (hEle) ){ 
+					if( ::Xcgui.XEle_GetType(hEle) != 0x1C/*_XC_LISTBOX*/) return null; 
+					::Xcgui.XEle_AdjustLayoutObject(hEle);
+					this.hPointer = topointer(hEle);
+				}
+				else {
+					return null;
+				}
+			}
+			else {
+				this.hPointer = topointer( ::Xcgui.XListBox_Create(tParam.left,tParam.top,tParam.right-tParam.left,tParam.bottom-tParam.top,hParentPointer) );	
+			}	
+		}
+		this@ = _metaProperty;
+		this.loadTemplate($"~\lib\xcgui\.res\ListBox_Item.xml");
+	};
+}
+
+var xcguistate = ..xcgui.state;
+listbox._metaProperty = metaProperty(
+	setDrawItemBkFlags = function(nFlags){
+		return ::Xcgui.XListBox_SetDrawItemBkFlags(owner.hPointer,nFlags);
+	}
+	setItemData = function(iItem,nUserData){
+		return ::Xcgui.XListBox_SetItemData(owner.hPointer,iItem,nUserData);
+	}
+	getItemData = function(iItem){
+		return ::Xcgui.XListBox_GetItemData(owner.hPointer,iItem);
+	}
+	bkAddItemBorder = function(state,width,alpha,color,g,b){
+		if(b!==null) color = ..gdi.RGB(color,g,b);
+		return ::Xcgui.XListBox_AddItemBkBorder(owner.hPointer,xcguistate[state] : state,color,alpha,width);
+	}
+	bkAddItemFill = function(state,alpha,color,g,b){
+		if(b!==null) color = ..gdi.RGB(color,g,b)
+		return ::Xcgui.XListBox_AddItemBkFill(owner.hPointer,xcguistate[state] : state,color,alpha);
+	}
+	bkAddItemImage = function(nState,image){
+		if(type(image) == type.string) image = ..xcgui.image(image,repeat,top,right,bottom);
+		return ::Xcgui.XListBox_AddItemBkImage(owner.hPointer,xcguistate[state] : state,image);
+	}
+	bkItemInfoCount = function(){
+		return ::Xcgui.XListBox_GetItemBkInfoCount(owner.hPointer);
+	}
+	bkItemInfoClear = function(){
+		return ::Xcgui.XListBox_ClearItemBkInfo(owner.hPointer);
+	}
+	setItemInfo = function(iItem,height,selHeight,userData){
+		return ::Xcgui.XListBox_SetItemInfo(owner.hPointer,iItem,{
+			int userData = userData;
+			int height = height;
+			int selHeight = selHeight;
+		});
+	}
+	getItemInfo = function(iItem,pItem){
+		var info = {
+			int userData = userData;
+			int height = height;
+			int selHeight = selHeight;
+		}
+		::Xcgui.XListBox_GetItemInfo(owner.hPointer,iItem,info);
+		return info.height,info.selHeight,info.userData
+	}
+	selected = {
+		_set = function(iItem){
+			return ::Xcgui.XListBox_SetSelectItem(owner.hPointer,iItem);
+		}
+		_get = function(){
+			return ::Xcgui.XListBox_GetSelectItem(owner.hPointer);
+		}
+	}
+	deselect = function(iItem){
+		return ::Xcgui.XListBox_CancelSelectItem(owner.hPointer,iItem);
+	}
+	deselectAll = function(){
+		return ::Xcgui.XListBox_CancelSelectAll(owner.hPointer);
+	}
+	getSelections = function(){
+		var size = owner.getSelectionCount();
+		if(!size) return;
+		
+		var array ={ int items[] = {length=size}}
+		size = ::Xcgui.XListBox_GetSelectAll(owner.hPointer,array,size);
+		return array.items;
+	}
+	getSelectionCount = function(){
+		return ::Xcgui.XListBox_GetSelectCount(owner.hPointer);
+	}
+	getHoverItem = function(){
+		return ::Xcgui.XListBox_GetItemMouseStay(owner.hPointer);
+	}
+	selectAll = function(){
+		return ::Xcgui.XListBox_SelectAll(owner.hPointer);
+	}
+	setItemHeight = function(nHeight,nSelHeight){
+		return ::Xcgui.XListBox_SetItemHeightDefault(owner.hPointer,nHeight,nSelHeight);
+	}
+	getItemHeight = function(pHeight,pSelHeight){
+		return ::Xcgui.XListBox_GetItemHeightDefault(owner.hPointer,pHeight,pSelHeight);
+	}
+	getItemIndex = function(hXCGUI){
+		return ::Xcgui.XListBox_GetItemIndexFromHXCGUI(owner.hPointer,hXCGUI);
+	}
+	rowSpace = {
+		_set = function(v){
+			 ::Xcgui.XListBox_SetRowSpace(owner.hPointer,v);
+		}
+		_get = function(){
+			return ::Xcgui.XListBox_GetRowSpace(owner.hPointer);
+		}
+	}
+	hitTest = function(x,y){
+		return ::Xcgui.XListBox_HitTest(owner.hPointer,::POINT(x,y)); 
+	}
+	hitTestOffset = function(x,y){
+		return ::Xcgui.XListBox_HitTestOffset(owner.hPointer,::POINT(x,y)); 
+	}
+	loadTemplate = function(path){
+		if( #path < 0x410/*_MAX_PATH_U8*/  ){
+			if ..io.exist(path) return ::Xcgui.XListBox_SetItemTemplateXML(owner.hPointer,..io.fullpath(path));
+			path = ..string.loadBuffer(path) : path;
+		}
+		return ::Xcgui.XListBox_SetItemTemplateXMLFromStringA(owner.hPointer,path);
+	}
+	getTemplateObject = function(iItem,nTempItemID){
+		return ::Xcgui.XListBox_GetTemplateObject(owner.hPointer,iItem,nTempItemID);
+	}
+	enableMultiSel = function(bEnable){
+		return ::Xcgui.XListBox_EnableMultiSel(owner.hPointer,bEnable);
+	}
+	createAdapter = function(){
+		return ..xcgui.adapter.table( ::Xcgui.XListBox_CreateAdapter(owner.hPointer) );
+	}
+	adapter = {
+		_set = function(v){
+			owner[["(adapter)"]] = v;
+			 ::Xcgui.XListBox_BindAdapter(owner.hPointer,v);
+		}
+		_get = function(){
+			if( owner[["(adapter)"]] ) return owner[["(adapter)"]];
+			var ad = ..xcgui.adapter.table( ::Xcgui.XListBox_GetAdapter(owner.hPointer) );
+			owner[["(adapter)"]] =  ad or owner.createAdapter();
+			return owner[["(adapter)"]];
+		}
+	}
+	refreshData = function(){
+		return ::Xcgui.XListBox_RefreshData(owner.hPointer);
+	}
+	refreshItem = function(iItem){
+		return ::Xcgui.XListBox_RefreshItem(owner.hPointer,iItem);
+	}
+	sort = function(column,bAscending){
+		return owner.adapter.sort(column,bAscending)
+	}
+	getDataType = function(item,column){
+		return owner.adapter.getDataType(item,column)
+	}
+	getFieldDataType = function(item,fieldName){
+		return owner.adapter.getFieldDataType(item,fieldName)
+	}
+	addField = function(fieldName){
+		return owner.adapter.addField(fieldName)
+	}
+	setField = function(fieldName){
+		return owner.adapter.setField(fieldName)
+	}
+	addString = function(value){
+		return owner.adapter.addString(value)
+	}
+	addFieldString = function(fieldName,value){
+		return owner.adapter.addFieldString(fieldName,value)
+	}
+	addImage = function(image,repeat,top,right,bottom){
+		return owner.adapter.addImage(image,repeat,top,right,bottom)
+	}
+	addFieldImage = function(fieldName,image,repeat,top,right,bottom){
+		return owner.adapter.addFieldImage(fieldName,image,repeat,top,right,bottom)
+	}
+	insertString = function(item,value){
+		return owner.adapter.insertString(item,value)
+	}
+	insertFieldString = function(item,fieldName,value){
+		return owner.adapter.insertFieldString(item,fieldName,value)
+	}
+	insertImage = function(item,image,repeat,top,right,bottom){
+		return owner.adapter.insertImage(item,image,repeat,top,right,bottom)
+	}
+	insertFieldImage = function(item,fieldName,image,repeat,top,right,bottom){
+		return owner.adapter.insertFieldImage(item,fieldName,image,repeat,top,right,bottom)
+	}
+	setString = function(item,column,value){
+		return owner.adapter.setString(item,column,value)
+	}
+	setFieldString = function(item,fieldName,value){
+		return owner.adapter.setFieldString(item,fieldName,value)
+	}
+	setInt = function(item,column,value){
+		return owner.adapter.setInt(item,column,value)
+	}
+	setFieldInt = function(item,fieldName,value){
+		return owner.adapter.setFieldInt(item,fieldName,value)
+	}
+	setFloat = function(item,column,value){
+		return owner.adapter.setFloat(item,column,value)
+	}
+	setFieldFloat = function(item,fieldName,value){
+		return owner.adapter.setFieldFloat(item,fieldName,value)
+	}
+	setImage = function(item,column,image,repeat,left,top,right,bottom){
+		return owner.adapter.setImage(item,column,image,repeat,left,top,right,bottom)
+	}
+	setFieldImage = function(item,fieldName,image){
+		return owner.adapter.setFieldImage(item,fieldName,image)
+	}
+	delete = function(item){
+		return owner.adapter.delete(item)
+	}
+	deleteEx = function(item,nCount){
+		return owner.adapter.deleteEx(item,nCount)
+	}
+	clear = function(){
+		return owner.adapter.clear()
+	}
+	clearField = function(){
+		return owner.adapter.clearField()
+	}
+	count = function(){
+		return owner.adapter.count()
+	}
+	fieldCount = function(){
+		return owner.adapter.fieldCount()
+	}
+	getString = function(item,column){
+		return owner.adapter.getString(item,column)
+	}
+	getFieldString = function(item,fieldName){
+		return owner.adapter.getFieldString(item,fieldName)
+	}
+	getImage = function(item,column){
+		return owner.adapter.getImage(item,column)
+	}
+	getFieldImage = function(item,fieldName){
+		return owner.adapter.getFieldImage(item,fieldName)
+	}
+	getInt = function(item,column){
+		return owner.adapter.getInt(item,column)
+	}
+	getFieldInt = function(item,fieldName){
+		return owner.adapter.getFieldInt(item,fieldName)
+	}
+	getFloat = function(item,column){
+		return owner.adapter.getFloat(item,column)
+	}
+	getFieldFloat = function(item,fieldName){
+		return owner.adapter.getFieldFloat(item,fieldName)
+	}
+)
+
+/**intellisense()
+xcgui.ctrl.listbox(.(父窗口,参数表) = 创建一个列表框
+xcgui.ctrl.listbox() = !stdxclistbox.
+win.ui.ctrl.xclistbox() = !stdxclistbox.
+end intellisense**/
+
+/**intellisense(!stdxclistbox)
+getScrollView() = 获取滚动视图接口\n!stdxcscrollview.
+sort(.(column,bAscending) = 对内容进行排序
+getDataType(.(item,column) = 获取项数据类型
+getFieldDataType(.(item,fieldName) = 获取项数据类型
+addField(__) = 添加数据列
+setField(__) = 设置数据列
+addString(__) = 添加数据项,默认值放到第一列
+addFieldString(.(fieldName,value) = 添加数据项,填充指定列数据
+addImage(__) = 添加数据项,默认值放到第一列
+addFieldImage(.(fieldName,hImage) = 添加数据项,并填充指定列数据
+insertString(.(item,value) = 插入数据项,填充第一列数据
+insertFieldString(.(item,fieldName,value) = 插入数据项,并填充指定列数据
+insertImage(.(item,hImage) = 插入数据项,填充第一列数据
+insertFieldImage(.(item,fieldName,hImage) = 插入数据项,并填充指定列数据
+setString(.(item,column,value) = 设置项数据
+setFieldString(.(item,fieldName,value) = 设置项数据
+setInt(.(item,column,value) = 设置项数据
+setFieldInt(.(item,fieldName,value) = 设置项数据
+setFloat(.(item,column,value) = 设置项数据
+setFieldFloat(.(item,fieldName,value) = 设置项数据
+setImage(.(item,column,hImage) = 设置项数据
+setFieldImage(.(item,fieldName,hImage) = 设置项数据
+delete(__) = 删除项
+deleteEx(.(item,nCount) = 删除多个项
+clear() = 删除所有项
+clearField() = 删除所有列,并且清空所有数据
+count() = 获取项数量
+fieldCount() = 获取列数量
+getString(.(item,column) = 获取项文本内容
+getFieldString(.(item,fieldName) = 获取项文本内容
+getImage(.(item,column) = 获取项图片句柄\n!stdxcimage.
+getFieldImage(.(item,fieldName) = 获取项图片句柄\n!stdxcimage.
+getImage() = !stdxcimage.
+getFieldImage() = !stdxcimage.
+getInt(.(item,column) = 获取项值
+getFieldInt(.(item,fieldName) = 获取项值
+getFloat(.(item,column) = 获取项值
+getFieldFloat(.(item,fieldName) = 获取项值
+setDrawItemBkFlags(__) = 设置是否绘制指定状态下项的背景
+setItemData(.(iItem,nUserData) = 设置项用户数据
+getItemData(__) = 获取项用户数据
+selected =  选择项
+deselect(__) = 取消选择指定项
+deselectAll() = 取消所有选中的项
+getSelections() = 获取所有选择项
+getSelectionCount() = 获取选择项数量
+getHoverItem() = 获取鼠标停留项
+selectAll() = 选择所有项
+setItemHeight(.(nHeight,nSelHeight) = 设置项默认高度
+getItemHeight(.(pHeight,pSelHeight) = 获取项默认高度
+getItemIndex(__) = 获取当前对象所在模板实例,属于列表中哪一个项
+rowSpace = 行间距
+hitTest(.(x,y) = 检测坐标点所在项
+hitTestOffset(.(x,y) = 检测坐标点所在项,自动添加滚动视图偏移量
+loadTemplate(__) = 设置列表项模板文件\n参数支持文件路径、资源路径、或内存数据
+getTemplateObject(.(iItem,nTempItemID) = 通过模板项ID,获取实例化模板项ID对应的对象句柄
+enableMultiSel(__) = 是否启用多行选择功能
+createAdapter() = 创建数据适配器并绑定,根据绑定的项模板初始化数据适配器的列
+adapter = 数据适配器
+sort(.(iColumnAdapter,bAscending) = 排序
+refreshData() = 刷新数据
+refreshItem(__) = 刷新指定项模板,以便更新UI
+background = 获取控件的背景管理器\n!stdxcbkmanager.
+bkAddFill(.("状态",图像,颜色数值或RGB分量) = 设置控件填充颜色\n可用的背景状态请查看xcgui.state
+bkAddImage(.("状态",图像) = 设置窗口顶部图像\n图像可直接指定路径或资源路径,也可使用xcgui.image对象
+bkAddBorder(.("状态",线宽,透明度,RGB颜色) = 添加背景边框\n状态可以是字符串或数值,可用值参考xucgui.state
+bkAddItemBorder(.(状态,线宽,透明度,RGB颜色) = 添加项背景内容边框\n状态可以是字符串或数值,可用值参考xucgui.state
+bkAddItemBorder(.(状态,线宽,透明度,R,G,B) = 添加项背景内容边框\n状态可以是字符串或数值,可用值参考xucgui.state
+bkAddItemFill(.(状态,透明度,RGB颜色) = 添加项背景内容填充\n状态可以是字符串或数值,可用值参考xucgui.state
+bkAddItemFill(.(状态,透明度,R,G,B) = 添加项背景内容填充\n状态可以是字符串或数值,可用值参考xucgui.state
+bkAddItemImage(.(状态,图像) = 添加项背景内容图片,参数为xcgui.image对象
+bkItemInfoCount() = 获取项背景内容数目
+bkItemInfoClear() = 清除项背景内容
+id = ID值
+z = Z序
+topmost(true) = Z序置顶
+getWindow() = 返回父窗体\n!stdxcwnd
+hitEle(.(x,y) = 根据指定的坐标获取子节点\n!stdxcele
+getParent() = 获取父节点\n!stdxcele
+getParentHandle() = 获取父节点句柄
+getParentType() = 获取父节点类型
+getObjectType() = 获取节点类型
+addEle(__) = 添加子节点
+insertEle(.(child,index) = 在index指定的位置插入子节点child 
+remove() = 移除元素,但不销毁.
+disabled = 是否禁用
+hide = 是否隐藏;
+pointerEvents = 是否触发鼠标事件\n值设为false可实现鼠标穿透效果
+transparent = 是否支持背景透明\n透明PNG图像需要设置此属性为true
+alpha = 透明度
+color = 字体颜色
+border = 设置是否允许显示边框\n只写属性
+focusBorderColor = 焦点边框颜色
+enableDrawFocus = 是否允许绘制焦点
+focusBorder = 是否启用焦点
+scrollView = 是否允许显示滚动
+tabstop = 是否允许键盘切换焦点
+tooltip = 提示文本
+css("__") = 修改CSS样式名\n无参数时返回CSS样式名
+popupToolTip(.(x,y) = 在指定坐标弹出提示
+getFont() = 获取字体\n!stdxcfont.
+setFont(.(字体名,字体大小,样式) = 创建字体
+setFont(.(字体名） = 设置字体
+setFont(.(name="字体"） = 设置字体\n参数为LOGFONT对象，或指定部分LOGFONT属性的表
+setFont(.(句柄） = 设置字体\n参数为字体句柄
+getClientRect() = 返回客户区区块,::RECT对象\n!rect. 
+getRect = 返回控件区块,::RECT对象\n!rect. 
+setRect(.(rect,是否重绘) = 设置区块,参数@1为::RECT对象
+getLogicRect = 返回控件逻辑区块,::RECT对象\n!rect. 
+setLogicRect(.(rect,是否重绘) = 设置控件逻辑区块,参数@1为::RECT对象
+setPos(.(x坐标,y坐标,宽,高) = 调整控件位置或排序,所有参数可选\n同时指定x,y坐标则移动位置\n同时指定宽高则改变大小
+getPos() = 返回相对坐标,宽,高,返回4个值：x,y,cx,cy
+autoResize = 是否允许aardio窗口自动调整控件位置\n只有在窗口设计器中添加的控件,并是aardio窗口对象的成员时此属性才有效
+getWidth() = 获取宽度
+getHeight() = 获取高度
+layoutObject = 获取或绑定布局对象\n获取布局对象时如果布局对象不存在则自动创建\n!stdxclayoutObj.
+getParentLayoutObject() = 获取父布局对象
+adjustLayoutObject() = 调整布局对象
+adjustLayout() = 调整布局
+setLayoutHeight(.(宽度,选项) = 设置布局宽度
+setLayoutWidth(.(高度,选项) = 设置布局高度 
+cursor = 鼠标指针
+redraw() = 重绘
+redrawRect(__) = 重绘区块,参数为::RECT对象
+close() = 销毁控件
+post("click__",wParam,lParam) = 发送消息,不获取返回值\n参数@1可使用任何字符串自定义新的控件消息
+send("click__",wParam,lParam) = 发送消息,获取消息处理函数的返回值\n任何一个事件回调函数返回非null值都会结束当次事件并返回该值,\n参数@1可使用任何字符串自定义新的控件消息
+
+.onMessage= @.on("message",function(message,wParam,lParam){
+	if( message == "自定义消息" ) return __/*返回非null值结束本次回调*/;
+})
+.onTempCreate = @.on("listboxTempCreate",function(pItem){
+	__
+})
+.onTempCreateEnd = @.on("listboxTempCreateEnd",function(pItem){
+	__
+})
+.onTempDestroy = @.on("listboxTempDestroy",function(pItem){
+	__
+})
+.onTempAdjustCoordinate = @.on("listboxTempAdjustCoordinate",function(pItem){
+	__
+})
+.onDrawitem = @.on("listboxDrawitem",function(hDraw,pItem){
+	__
+})
+.onSelect = @.on("listboxSelect",function(iItem){
+	__
+})
+.onPaint = @.on("paint",function(hDraw){
+	__
+})
+.onPaintEnd = @.on("paintEnd",function(hDraw){
+	__
+})
+.onPaintScrollView = @.on("paintScrollView",function(hDraw){
+
+})
+.onMove = @.on("move",function(nFlags,pt){
+	
+	__
+})
+.onEnter = @.on("enter",function(){
+
+})
+.onHover = @.on("hover",function(nFlags, pt){
+	
+	__
+})
+.onLeave = @.on("leave",function(hEleHover){
+
+})
+.onWheel = @.on("wheel",function(nFlags,pt){
+	
+	__
+})
+.onLbuttonDown = @.on("lbuttonDown",function(nFlags, pt){
+	
+	__
+})
+.onLbuttonUp = @.on("lbuttonUp",function(nFlags, pt){
+	
+	__
+})
+.onRbuttonDown = @.on("rbuttonDown",function(nFlags, pt){
+	
+	__
+})
+.onRbuttonUp = @.on("rbuttonUp",function(nFlags, pt){
+	
+	__
+})
+.onDblclick = @.on("dblclick",function(nFlags, pt){
+	
+	__
+})
+.onFocus = @.on("focus",function(){
+	__
+})
+.onKillFocus = @.on("killFocus",function(){
+	__
+})
+.onDestroy = @.on("destroy",function(){
+	__
+})
+.onSize = @.on("size",function(){
+	__
+})
+.onShow = @.on("show",function(shown){
+	__
+})
+.onSetFont = @.on("font",function(){
+	__
+})
+.onKeyDown = @.on("keyDown",function(wParam,lParam){
+	__
+})
+.onChar = @.on("char",function(wParam,lParam){
+	__
+})
+.onSetCapture = @.on("setCapture",function(){
+	__
+})
+.onKillCapture = @.on("killCapture",function(){
+	__
+})
+.onCursor = @.on("cursor",function(wParam,lParam){
+	__
+})
+.onDropfiles = @.on("dropfiles",function(wParam){
+	var files = ..win.getDropFile(wParam) __
+})
+.onMenuPopup = @.on("menuPopup",function(hMenu){
+	__
+})
+.onMenuPopupWnd = @.on("menuPopupWnd",function(hMenu,pInfo){
+	__
+})
+.onMenuSelect = @.on("menuSelect",function(id){
+	__
+})
+.onMenuDrawBackground = @.on("menuDrawBackground",function(hDraw,pInfo){
+	__
+})
+.onMenuDrawitem = @.on("menuDrawitem",function(hDraw,pInfo){
+	__
+})
+.onMenuExit = @.on("menuExit",function(){
+	__
+})
+end intellisense**/

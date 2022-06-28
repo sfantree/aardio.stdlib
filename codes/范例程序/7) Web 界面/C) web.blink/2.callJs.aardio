@@ -1,0 +1,45 @@
+//aardio调用JS
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="miniblink调用JS、嵌入网页开发工具";right=1213;bottom=743)
+winform.add(
+cBrowser={cls="custom";text="网页控件";left=1;top=0;right=1213;bottom=462;border=1;db=1;dl=1;dr=1;dt=1;edge=1;z=1};
+cDevTools={cls="custom";text="开发工具";left=4;top=470;right=1213;bottom=736;db=1;dl=1;dr=1;z=2};
+splitter={cls="splitter";left=-2;top=460;right=1212;bottom=465;clip=1;db=1;dl=1;dr=1;horz=1;z=3}
+)
+/*}}*/
+
+import web.blink.form;
+var mb = web.blink.form(winform.cBrowser)
+
+/*
+在winform.cDevTools控件窗口里打开网页调试工具，
+showDevTools函数的返回值 devTools 跟上面的 mb 一样是一个web.blink.view对象。
+*/
+var devTools = mb.showDevTools(,winform.cDevTools);
+
+//打开网页
+mb.go("http://www.so.com") 
+winform.show();
+
+//等待网页打开
+mb.wait();
+
+//调用JS函数
+mb.querySelector("#input").value = "aardio";
+mb.querySelector("#search-button").click();
+
+//等待网页打开
+mb.wait();
+
+//执行JS脚本
+mb.doScript("window.aardioText = '欢迎使用搜索引擎';");
+
+//调用JS函数
+mb.window.alert( mb.window.aardioText );
+
+//获取JS变量值
+winform.text = mb.document.location.href;
+
+winform.splitter.split(winform.cBrowser,winform.cDevTools);
+win.loopMessage();

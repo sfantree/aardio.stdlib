@@ -1,0 +1,57 @@
+﻿//gifsicle 优化工具
+import process;
+import process.popen;
+import string.cmdline;
+
+namespace process;
+	
+class gifsicle{
+	ctor(output,...){
+		if(!path) return;
+		var args = ..string.cmdline.arguments(...);
+		
+		if(output){
+			if( output!="-" && ..io.exist(output) )output = ..io.fullpath(output);
+			..table.unshift(args,"--output",output); 
+		}
+		else {
+			..table.unshift(args,"--batch","--unoptimize"); 
+		} 
+
+		return ..process.popen(path,args);
+	} 
+}
+
+namespace gifsicle{
+	
+	path = ..io.appData("aardio\ext\gifsicle\gifsicle.dll",$"~\lib\process\gifsicle\.res\gifsicle.dll");
+	..io.appData("aardio\ext\gifsicle\COPYING",$"~\lib\process\gifsicle\.res\COPYING");
+ 
+ 	get = function(input,output,...){
+        if(!path) return;
+        
+        var args = ..string.cmdline.arguments(...);
+        ..table.unshift(args,..io.fullpath(input));   
+
+    	var prcs = ..process.gifsicle(output,args);
+    	if(prcs) return prcs.readAll(); 
+    } 
+
+    optimize = function(input,output,level,lossiness){ 
+        if(!level) level = 3;
+        if(lossiness) lossiness = "--lossy=" + lossiness; 
+    	return get(output,input,"--optimize=" + (level:3),lossiness);
+    }  
+}
+ 
+/**intellisense()
+process.gifsicle = GIF 图像优化与处理工具\n https://github.com/kohler/gifsicle/blob/master/COPYING
+process.gifsicle( = 创建 gifsicle 管道进程\n一般不建议直接使用此构造函数,\n应改用 process.gifsicle.optimize 函数
+process.gifsicle(.(output,->->->) = 创建 gifsicle 管道进程\n@output 参数指定输出文件,\n@output 为 null 修改文件自身,\n@output 为 "-" 文件输出到管道,\n其他参数请参考 gifsicle 文档\n\n一般不建议直接使用此构造函数,\n应改用 process.gifsicle.optimize 函数
+process.gifsicle.optimize(.(input,output,level,lossiness) = @input 指定输入 GIF 文件路径,\n@output 参数指定输出文件,\n省略 @output 为 null 修改文件自身,\n@output 为 "-" 文件输出到管道\n@level 指定优化级别,可选值1到3,默认为3\n可选用 @lossiness 指定损耗值以启用有损压缩,建议值 20
+process.gifsicle.get(input,output,cmdline->->->) = @.get(__/*执行命令并返回进程输出\n成功进程输出为空字符串，否则返回错误信息,\n参数@1指定输入 GIF 文件路径,\n可选用参数@2 指定输出 GIF 文件路径,\n参数@3可以用文本、数组、或多个文本参数指定命令行参数*/,,"--optimize=3 --colors 128 --lossy=20")
+process.gifsicle() = !process_popen.
+end intellisense**/
+
+
+

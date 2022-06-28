@@ -1,0 +1,316 @@
+import win.ui.ctrl.metaProperty;
+import win.ui.ctrl.mCtrl.gridTable;
+import win.ui.ctrl.edit;
+
+namespace win.ui.ctrl.mCtrl; 
+
+class grid{
+	ctor(parent,tParam){  
+		
+		if(tParam){
+			tParam.cls = "mCtrl.grid"; 
+		}  
+		
+		if(tParam.mcStyle!==null){
+			tParam.style = tParam.style | tParam.mcStyle;
+		}
+		else {
+			tParam.style = tParam.style  |
+				0x0010/*MC_GS_RESIZABLECOLUMNS*/ | 0x0020/*MC_GS_RESIZABLEROWS*/ |
+				0x0040/*MC_GS_FOCUSEDCELL*/ | 0x0300/*MC_GS_COMPLEXSEL*/ | 0x0400/*MC_GS_SHOWSELALWAYS*/ | 
+				0x0080/*MC_GS_EDITLABELS*/;
+						
+		}  
+		        
+	} 
+	onCreate = function(){   
+		owner.$gridTable = owner.getTable();
+	} 
+	@_metaProperty;
+}
+
+grid._metaProperty = ..win.ui.ctrl.metaProperty( 
+		_prenotify = {
+			[0x40000077/*_MC_GN_ENDLABELEDITW */ ] = function(id,code,ptr,nmhdr){ 
+				if(owner.onEditChanged){
+					var dispInfo = ..raw.convert(ptr,MC_NMGDISPINFO());
+					return owner.onEditChanged(dispInfo.cell.text,dispInfo.row,dispInfo.column,dispInfo); 
+				} 
+				return true; 
+			}
+		}; 
+		getTable = function(){
+			var hTable = ::User32.SendMessageP(owner.hwnd, 0x4432/*_MC_GM_GETTABLE*/, 0, 0);
+			return gridTable(hTable);
+		};
+		setTable = function(tab){ 
+			::User32.SendMessage(owner.hwnd, 0x4433/*_MC_GM_SETTABLE*/, 0, tab);
+			owner.$gridTable = owner.getTable();
+		};
+		createTable = function(){ 
+			return gridTable();
+		};
+		getRowHeight = function(row){
+			if(row)row--; else row = 0xffff/*HEADER*/;
+			return SendMessageInt(hwndGrid, 0x4442/*_MC_GM_GETROWHEIGHT*/,row,0);
+		};
+		setRowHeight = function(row,height){
+			if(row)row--; else row = 0xffff/*HEADER*/; 
+			SendMessageInt(hwndGrid, 0x4441/*_MC_GM_SETROWHEIGHT*/,row,::MAKELONG(height, 0));
+		};
+		geometry = function(){
+			var hwnd = owner.hwnd;
+			
+			var geom = { 
+				INT mask = 2#111111; 
+				WORD columnHeaderHeight; 
+				WORD rowHeaderWidth; 
+				WORD defColumnWidth; 
+				WORD defRowHeight; 
+				WORD paddingHorz; 
+				WORD paddingVert;
+				update = function(){
+					::User32.SendMessage(hwnd,0x443C/*_MC_GM_SETGEOMETRY*/,0,owner);
+				} 
+			} 
+			
+			::User32.SendMessage(hwnd,0x443D/*_MC_GM_GETGEOMETRY*/,0,geom);
+			
+			return geom;
+		};
+		rowCount = function(){
+			return ::SendMessage(owner.hwnd,0x4435/*_MC_GM_GETROWCOUNT*/)
+		};
+		columnCount = function(){
+			return ::SendMessage(owner.hwnd,0x4434/*_MC_GM_GETCOLUMNCOUNT*/)
+		};
+		resizeTable = function(rowCount,columnCount,defHeaders){
+			return owner.$gridTable.resize(rowCount,columnCount,defHeaders))
+		}; 
+		clear = function(what){
+			::User32.SendMessage(owner.hwnd,0x4437/*_MC_GM_CLEAR*/,what,0);
+		}; 
+		setCell = function(row,col,cell){
+			return owner.$gridTable.setCell(row,col,cell)
+		};
+		setCellText = function(row,col,text){
+			return owner.$gridTable.setCellText(row,col,text)
+		};
+		getCell = function(row,col){
+			return owner.$gridTable.getCell(row,col)
+		};
+		getCellText = function(row,col){
+				return owner.$gridTable.getCellText(row,col)
+		};
+		setCellAlign = function(row,col,align){
+			return owner.$gridTable.setCellAlign(row,col,align)
+		};
+		setSelection = function(selection){
+		  	if(selection){
+		  		selection = ..table.assign({},selection);
+		  		if(#selection.rcData){
+		  			selection.count = #selection.rcData;
+		  			selection.rcData = ..raw.buffer(rcData);
+		  		}
+		  	}
+		  	
+			return ::User32.SendMessageB(owner.hwnd,0x4432 + 22/*MC_GM_GETSELECTION*/,0,selection); 
+		};
+		getSelection = function(){
+		  	var selection = MC_GSELECTION();
+			::User32.SendMessage(owner.hwnd,0x4432 + 23/*MC_GM_GETSELECTION*/,0,selection);
+			if(selection.count){
+				selection.rcData = ..raw.convertArray(selection.rcData,selection.count,MC_GRECT);
+			}
+			else {
+				selection.rcData = null;
+			}
+			
+			return selection;
+		}; 
+		getEditor = function(){ 
+			var hwnd = ::User32.SendMessage(owner.hwnd,0x4432 + 24/*MC_GM_GETEDITCONTROL*/,0,0);
+			if(hwnd){
+				var ed = ..win.ui.ctrl.edit();
+				ed.hwnd = hwnd;
+				return ed;
+			} 
+		};
+	)
+	
+class MC_NMGDISPINFO { 
+	struct hdr = ::NMHDR();
+	WORD column; 
+	WORD row; 
+	struct cell = MC_TABLECELL();
+};
+MC_NMGDISPINFO.MC_TABLECELL = MC_TABLECELL;
+
+class MC_GRECT { 
+    WORD columnFrom; 
+    WORD rowFrom; 
+    WORD columnTo; 
+    WORD rowTo;
+};
+
+class MC_GSELECTION {
+    struct rcExtents = MC_GRECT(); 
+    INT count=-1;
+    ptr rcData;
+} ;
+MC_GSELECTION.MC_GRECT = MC_GRECT;
+
+_dll.mcGrid_Initialize(); 
+..subscribe("beforeUnload",_dll.mcGrid_Terminate); 
+
+/**intellisense()
+win.ui.ctrl.mCtrl.grid() = MCtrl 表格控件\n!mCtrlGrid.
+win.ui.ctrl.mCtrl.grid = MCtrl 表格控件
+end intellisense**/
+
+/**intellisense(!mCtrlGrid)
+cls = 设计时类名
+color = 获取或修改字体颜色数值
+bgcolor= 获取或修改景颜色数值
+className = 运行时类名
+hwnd = 控件句柄
+id = 控件ID
+text = 控件文本
+disabledText = 指定文本时,禁用此控件,并显示指定文本,\n指定为null时,启用此控件,并恢复控件之前的正常文本
+getForm() = 如果是窗体返回自身\n如果是控件则返回_parentForm\n!winform.
+isForm = 窗体返回true,控件返回false
+_parentForm = 控件所在的父窗口(指win.form对象)\n!winform.
+getParent() = 返回父窗口\n
+setParent(__/*控件对象*/) = 改变父窗口 
+addCtrl = @.addCtrl(\n	button={ cls="button";text="button";left=33;top=32;right=126;bottom=81;autoResize=false }  \n)
+translateAccelerator = @.translateAccelerator = function(msg){ \n	__/*返回是否快捷键*/\n} 
+adjust = @.adjust = function( cx,cy,wParam ) {	 \n	__ \n};  
+adjust() = 调整窗口 - 自定义事件函数
+_embedObject = 嵌入OLE控件对象\n!embedObject.
+createEmbed(.("类名",容器对象) = 嵌入COM控件,\n参数@1也可以指定一个已存在的COM对象,\n容器对象为可选参数,返回容器对象\n\n创建失败会抛出异常
+tryCreateEmbed(.("类名",容器对象) = 嵌入COM控件,\n参数@1也可以指定一个已存在的COM对象,\n容器对象为可选参数,\n\n成功返回容器对象,失败返回false,错误信息
+createEmbed() = !embedObject.
+tryCreateEmbed() = !embedObject.
+hide = 控件是否隐藏
+disabled = 是否禁用
+left = 左侧坐标
+right = 右侧坐标
+top = 顶部坐标
+bottom = 底部坐标
+width = 宽度
+height = 高度
+redraw() = 刷新
+setRedraw(false) = 禁止重绘
+setRedraw(true) = 恢复重绘
+redrawTransparent() = 刷新\n透明背景时请使用此函数替代redraw()
+show(true__) = 显示控件
+getRect() = 控件区块位置(::RECT结构体)
+getRect(true) = 控件屏幕区块位置(::RECT结构体)  
+setRect(rc) = 设置控件区块位置(::RECT结构体)  
+setRect(rc,true) = 设置控件屏幕区块位置(::RECT结构体)
+getClientRect() =  控件客户区块位置(::RECT结构体)\n!rect.
+getFont() = 控件字体(::LOGFONT结构体)\n!logfont.
+setFont(__/*指定字体*/) = 指定LOGFONT字体对象,或逻辑字体句柄 
+setFont(混入字体属性) = @.setFont(point=10;name="宋体");
+theme = 外观主题,例如\nwinform.button.theme = "Explorer"\nwinform.button.theme = false
+modifyStyle(.(remove,add) = 如果指定第三个参数,则使用此参数调用::SetWidnowPos 
+modifyStyleEx(.(remove,add) = 如果指定第三个参数,则使用此参数调用::SetWidnowPos
+capture = 是否捕获全局鼠标消息
+close() = 关闭控件窗口
+invalidate(__/*可选使用::RECT()对象指定客户区*/) = 使窗口绘图区无效
+invalidate(__/*可选使用::RECT()对象指定客户区*/,0) = 使窗口绘图区无效\n不刷新背景
+update() = 重绘invalidate函数指定的区块
+setFocus() = 设置焦点 
+tabNext(.(移动焦点,是否反向) = 获取下一个支持tab控制焦点的控件\n参数@1为true会自动移动焦点到该控件\n参数@2为true则获取上一个控件,否则获取下一个控件
+tabNext() = 
+setPos(.(x坐标,y坐标,宽,高,插入位置,参数) = 调整窗口位置或排序,所有参数可选\n同时指定x,y坐标则移动位置\n同时指定宽高则改变大小\n指定插入位置(句柄或_HWND前缀常量)则调整Z序
+getPos() = 返回相对父窗口客户区的坐标,宽,高,\n参数为true返回屏幕坐标,宽,高,\nx,y,cx,cy=win.getPos(hwnd)
+messageOnly() = 将窗口转换为message-only window\n该窗口不可见,仅用于消息分发
+setTimeout(.(函数或代码,延时,其他附加参数) = 推迟执行指定的函数或代码\n此函数异步执行参数中指定的函数，不会阻塞当前代码继续执行，\n延时参数是可选参数，以毫秒为单位，默认为0毫秒\n可选用附加参数指定调用延时函数的实参\n返回值为定时器ID
+setInterval(.(间隔时间,回调函数) = 创建定时器\n间隔时间以毫秒为单位
+changeInterval(.(定时器ID,间隔时间,回调函数) = 重新设置间隔时间或回调函数
+clearInterval(__/*定时器ID*/) = 删除定时器\n参数如果为null则忽略不执行\n否则定时器ID必须是setInterval函数或setTimeout函数的返回值
+msgbox("__") = 弹出对话框,可选用参数@2指定标题
+msgboxErr("__") = 弹出错误对话框,可选用参数@2指定标题
+msgboxTest("__") = 弹出询问对话框,可选用参数@2指定标题
+msgInfo(__) = 显示提示框\n请先调用win.dlg.message.install安装此函数
+msgWarn(__) = 显示警告提示框\n请先调用win.dlg.message.install安装此函数
+msgOk(__) = 显示正确提示框\n请先调用win.dlg.message.install安装此函数
+msgErr(__) = 显示错误提示框\n请先调用win.dlg.message.install安装此函数
+msgGreat(__) = 显示竖大拇指图标提示框\n请先调用win.dlg.message.install安装此函数
+msgSorry(__) = 显示倒竖大拇指图标提示框\n请先调用win.dlg.message.install安装此函数
+msgSmile(__) = 显示微笑图标提示框\n请先调用win.dlg.message.install安装此函数
+msgFrown(__) = 显示皱眉图标提示框\n请先调用win.dlg.message.install安装此函数
+threadCallable() = 开启此控件的跨线程调用功能
+saveScale() = 根据控件当前位置、缩放比例，更新控件的设计时位置参数。\n以避免下次窗口缩放自适应调整控件当前位置更改被清除，\n控件所有调整位置的属性或成员函数已自动调用此函数。
+reloadScale() = 按设计时位置参数、重新调整控件位置以适应窗口当前缩放比例。\n父窗口缩放时会自动执行此操作。\n默认在启动窗口消息循环时会自适应调整所有控件。\n所以在启动消息循环前添加控件不必调用此函数。
+orphanWindow() = 使控件脱离原来的窗口,可以显示在父窗口外面,\n但仍然显示在原来的位置,继续如影随形的跟随父窗口移动或改变大小,\n控件原来的固定边距等参数仍然有效
+group() = 将在此控件范围内的所有其他控件设为此控件的子窗口
+translateCommand() = 这个函数开启消息转发功能,\n允许子窗口的_WM_COMMAND,_WM_CTLCOLORSTATIC等消息给父窗口,\n使父窗体可以处理这些消息控制控件的外观、触发命令等
+resize( = 发送WM_SIZE消息给窗口
+resize(.(宽度,高度) = 如果指定了参数则调整窗口大小,\n无论是否实际调整窗口大小,发送WM_SIZE消息给窗口
+onDestroy = @.onDestroy = function(){\n	__/*窗口销毁前触发*/\n}
+onnotify = @.onnotify = function(id,code,ptr){\n	__/*通知事件触发*/\n}
+oncommand = @.oncommand = function(id,event){\n	__/*命令事件触发*/\n}
+wndproc = @.wndproc = function(hwnd,message,wParam,lParam){\n	__/*窗口消息回调，返回任意非null值阻止默认回调\nwndproc重复赋值时追加函数而不是覆盖之前的回调\n设为null添除所有消息回调函数\nwndproc也可以是一个表,键要为处理的消息,值为对应的消息回调函数*/	\n}
+wait(.(等待函数,超时,延时间隔) = 循环执行等待函数,并等待返回值\n直到等待函数返回非空值,或存在第二个返回值,或当前窗口关闭\n等待函数返回的值就是wait函数的返回值,\n如果指定超时,超过指定毫秒时返回null,\n除等待函数以外,所有参数可选
+sendMessage(.(msg,wParam,lParam) = 发送窗口消息\n此函数用法请参考 ::User32.SendMessage
+postMessage(.(msg,wParam,lParam) = 投递窗口消息到消息队列中\n此函数用法请参考 ::User32.PostMessage
+publish("__/*发布消息名*/",) = 在窗口所在界面线程发布消息,\n运行界面线程所有所有调用subscribe函数订阅此消息的函数,\n可添加任意个触发参数
+reduce(array,callback,debounce) = @.reduce(\n	{__/*在这里指定要遍历处理每个元素的数组或表,\n并在回调函数中返回每次需要间隔的延时,以毫秒为单位,返回0或空值中断处理,\n回调参数为下一个元素的值和索引,处理完后回调参数为null,\n如果此时未返回null或0退出处理函数,将返回第一个元素继续遍历*/},\n	function(value,index){\n		if(value){\n			return 50\n		}\n	} \n)
+onEditChanged = @.onEditChanged = function(text,row,col,dispInfo){\n 	__/*text为列文本,row为行号,col为列号,返回值指定是否允许更新列文本*/\n 	return true;\n}
+getTable() = 返回控件绑定的数据表\n!mCtrlGridTable.
+setTable(.(gridTalbe) = 修改控件绑定的数据表,\n参数应当是 win.ui.ctrl.mCtrl.gridTable对象
+createTable() = 创建并返回 win.ui.ctrl.mCtrl.gridTable对象\n!mCtrlGridTable.
+getRowHeight(.(行号) = 获取行高度
+setRowHeight(.(行号,高度) = 设置行高度
+columnCount() = 列总数
+rowCount() = 行总数
+resize(.(行总数,列总数,添加默认标题) = 调整表格大小,\n默认设置默认列标题为字母、行标题为数字
+clear(.(行总数,列总数) = 清空表格,\n不指定清空全部内容\n| 1 清空普通单元格,\n| 2 清空列标题\n| 4 清空行标题
+setCell(.(行号,列号,MC_TABLECELL结构体) = 设置格列，参数@3为MC_TABLECELL结构体\n行号省略表示列标题，列号省略表示行标题
+setCellText(.(行号,列号,文本) = 设置列文本\n行号省略表示列标题，列号省略表示行标题
+getCell(.(行号,列号) = 返回指定列的MC_TABLECELL结构体\n行号省略表示列标题，列号省略表示行标题
+getCellTextl(.(行号,列号) = 返回指定列的文本\n行号省略表示列标题，列号省略表示行标题
+setCellAlign(.(行号,列号,对齐选项) = 设置对齐选项,\n参数@3应使用一个表指定对齐方式,\n对齐表可用left,right,center指定水平对齐选项\n可用top bottom,middle指定垂直对齐选项\n指定的对齐选项字段值为真时使用该对齐方式
+geometry() = 返回外观设置结构体，可调用返回对象的 update 函数更新\n!mCtrlGridGeometry.
+getEditor() = 返回编辑框\n!edit.
+getSelection() = 返回选区
+setSelection() = 设置选区
+end intellisense**/
+
+/**intellisense(!mCtrlGridGeometry) 
+columnHeaderHeight = 列标题高度 
+rowHeaderWidth = 行标题宽度
+defColumnWidth = 默认列宽 
+defRowHeight = 默认行高
+paddingHorz = 水平边距
+paddingVert = 垂直边距
+update() = 更新
+end intellisense**/
+
+ /**intellisense()
+_MC_GS_NOTABLECREATE=@1/*_MC_GS_NOTABLECREATE*/
+_MC_GS_NOGRIDLINES=@2/*_MC_GS_NOGRIDLINES*/
+_MC_GS_DOUBLEBUFFER=@4/*_MC_GS_DOUBLEBUFFER*/
+_MC_GS_OWNERDATA=@8/*_MC_GS_OWNERDATA*/
+_MC_GS_RESIZABLECOLUMNS=@0x10/*_MC_GS_RESIZABLECOLUMNS*/
+_MC_GS_RESIZABLEROWS=@0x20/*_MC_GS_RESIZABLEROWS*/
+_MC_GS_FOCUSEDCELL=@0x40/*_MC_GS_FOCUSEDCELL*/
+_MC_GS_EDITLABELS=@0x80/*_MC_GS_EDITLABELS*/
+_MC_GS_NOSEL=@0/*_MC_GS_NOSEL*/
+_MC_GS_SINGLESEL=@0x100/*_MC_GS_SINGLESEL*/
+_MC_GS_RECTSEL=@0x200/*_MC_GS_RECTSEL*/
+_MC_GS_COMPLEXSEL=@0x300/*_MC_GS_COMPLEXSEL*/
+_MC_GS_SHOWSELALWAYS=@0x400/*_MC_GS_SHOWSELALWAYS*/
+_MC_GS_COLUMNHEADERNORMAL=@0/*_MC_GS_COLUMNHEADERNORMAL*/
+_MC_GS_COLUMNHEADERNUMBERED=@0x1000/*_MC_GS_COLUMNHEADERNUMBERED*/
+_MC_GS_COLUMNHEADERALPHABETIC=@0x2000/*_MC_GS_COLUMNHEADERALPHABETIC*/
+_MC_GS_COLUMNHEADERNONE=@0x3000/*_MC_GS_COLUMNHEADERNONE*/
+_MC_GS_COLUMNHEADERMASK=@0x3000/*_MC_GS_COLUMNHEADERMASK*/
+_MC_GS_ROWHEADERNORMAL=@0/*_MC_GS_ROWHEADERNORMAL*/
+_MC_GS_ROWHEADERNUMBERED=@0x4000/*_MC_GS_ROWHEADERNUMBERED*/
+_MC_GS_ROWHEADERALPHABETIC=@0x8000/*_MC_GS_ROWHEADERALPHABETIC*/
+_MC_GS_ROWHEADERNONE=@0xC000/*_MC_GS_ROWHEADERNONE*/
+_MC_GS_ROWHEADERMASK=@0xC000/*_MC_GS_ROWHEADERMASK*/
+end intellisense**/

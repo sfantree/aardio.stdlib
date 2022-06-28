@@ -1,0 +1,1561 @@
+//view 视图对象
+import fsys;
+import util.metaProperty;
+import inet.url;
+import web.blink.callback;
+import web.blink.query;
+import fsys.cookies;
+
+namespace web.blink;
+var wke = _dll;
+var wkex = _dllx;
+if(!wke) error("请直接导入web.blink（ 不要单独导入web.blink.view ）",2);
+
+class view{
+	ctor(winform,hWebView,...){
+		if( winform[["hwnd"]] ){
+			var rc = winform.getClientRect();
+			
+			if( !hWebView ){
+				this.hWebView = wke.wkeCreateWebWindow(2/*WKE_WINDOW_TYPE_CONTROL*/, winform.hwnd, 0, 0, rc.width(), rc.height());
+				this.hWkeWindow = wke.wkeGetWindowHandle(this.hWebView);
+				this.hHostWindow = wke.wkeGetHostHWND(this.hWebView);
+				..win.modifyStyle(this.hWkeWindow,,0x2000000/*_WS_CLIPCHILDREN*/);
+				wke.wkeShowWindow(this.hWebView, 0x5/*_SW_SHOW*/);
+			}
+			else{
+				this.hWebView = hWebView;
+				this.hWkeWindow = wke.wkeGetWindowHandle(this.hWebView);
+				this.hHostWindow = wke.wkeGetHostHWND(this.hWebView);
+				..win.setParent(this.hWkeWindow,winform.hwnd);
+				..win.setRect(this.hWkeWindow,rc)
+				..win.modifyStyle(this.hWkeWindow
+					,0x40000/*_WS_THICKFRAME*/| 0x800000/*_WS_BORDER*/| 0x400000/*_WS_DLGFRAME*/
+					,0x40000000/*_WS_CHILD*/
+					)
+			}
+			
+			this._form = winform;
+			winform.modifyStyle(,0x2000000/*_WS_CLIPCHILDREN*/);
+			winform.modifyStyleEx(0x20/*_WS_EX_TRANSPARENT*/);
+			winform.isDialogMessage = function(){};
+			winform.onEraseBkgnd  = lambda() 0;
+			
+			if( winform.isForm ? winform.onEraseBkgnd === null ){
+				winform.onEraseBkgnd  = function(hwnd,message,wParam,lParam){
+    				return 0;
+				}
+			}
+			winform._adjust = function( cx,cy,wParam ) {	 
+				wke.wkeResizeWindow(this.hWebView, cx, cy); 
+			};
+			wke.wkeResizeWindow(this.hWebView, rc.width(), rc.height());
+		}
+		elseif( type( hWebView ) == type.number ){
+			this.hWebView = hWebView;
+			this.hWkeWindow = wke.wkeGetWindowHandle(this.hWebView);
+			this.hHostWindow = wke.wkeGetHostHWND(this.hWebView);
+		}
+		elseif( ( ... !== null) && (type(winform) == type.number) ){
+			var t,cx,cy,x,y,hParnet = winform,hWebView,...;
+			if( x === null ) x = 0x80000000/*_CW_USEDEFAULT*/
+			this.hWebView = wke.wkeCreateWebWindow(t,hParnet,x,y,cx,cy);
+			this.hWkeWindow = wke.wkeGetWindowHandle(this.hWebView);
+			this.hHostWindow = wke.wkeGetHostHWND(this.hWebView);
+			this._form = ..win._form( hwnd = this.hWkeWindow );
+			wke.wkeShowWindow(this.hWebView, 0x5/*_SW_SHOW*/);
+		}
+		else{
+			this.hWebView =  wke.wkeCreateWebView();
+		}
+
+		for i,path in ..table.eachIndex(..web.blink.plugins){ 
+			wke.wkeAddPluginDirectoryW(this.hWebView,path);
+		}
+		
+		this._cdeclCallback = {};
+		_cache_views__[this.hWebView] = this;
+		 
+		wke.wkeSetLocalStorageFullPathW(this.hWebView,..io.createDir( ..fsys.getSpecial( 0x1c /*_CSIDL_LOCAL_APPDATA*/  ,"aardio/std/miniblink/") ) );
+		wke.wkeSetCookieJarFullPathW(this.hWebView,..fsys.getSpecial( 0x1c /*_CSIDL_LOCAL_APPDATA*/  ,"aardio/std/miniblink/.cookies2.data"))
+		wke.wkeSetDragDropEnable(this.hWebView,true); 
+		
+		this@ = _metaProperty;
+	};
+	getForm = function(){
+		return owner._form;
+	};
+	
+}
+ 
+namespace view {
+
+	wkeSetMediaVolume = wke.api("wkeSetMediaVolume","void(addr hView,float volume)")
+	wkeGetMediaVolume = wke.api("wkeGetMediaVolume","float(addr hView)")
+	wkeSetZoomFactor = wke.api("wkeSetZoomFactor","void(addr hView,float volume)")
+	wkeGetZoomFactor = wke.api("wkeGetZoomFactor","float(addr hView)")
+	wkeGetViewDC = wke.api("wkeGetViewDC","ptr(addr hView)")
+	wkeSetDeviceParameter = wke.api("wkeSetDeviceParameter","ptr(addr hView,string device,string paramStr,int paramInt,float paramFloat)")
+
+	_metaProperty = ..util.metaProperty(
+		_serialize = ..thread._callableSerialize;
+		_topointer = function(){
+			return topointer( owner.hWebView );
+		};
+		getDc = function(){
+			return wkeGetViewDC( owner.hWebView );
+		};
+		jsExecState = {
+			_get = function(){
+				if(owner.hWebView) return wke.wkeGlobalExecP(owner.hWebView);
+			} 
+		};
+		mediaVolume = {
+			_get = function(){
+				if(owner.hWebView) return wkeGetMediaVolume(owner.hWebView);
+			}
+			_set = function( value ){
+				if(owner.hWebView) wkeSetMediaVolume(owner.hWebView,value);
+			} 	
+		};
+		zoomFactor = {
+			_get = function(){
+				if(owner.hWebView) return wkeGetZoomFactor(owner.hWebView);
+			}
+			_set = function( value ){
+				if(owner.hWebView) wkeSetZoomFactor(owner.hWebView,value);
+			} 	
+		};
+		transparent = {
+			_get = function(){
+				if(owner.hWebView) return wke.wkeIsTransparentB(owner.hWebView);
+			}
+			_set = function( value ){
+				if(owner.hWebView) wke.wkeSetTransparent(owner.hWebView,!!value);
+			} 	
+		};
+		cookieFilePath = {
+			_set = function( value ){
+				if(owner.hWebView) wke.wkeSetCookieJarFullPathW(owner.hWebView,..io.fullpath(value));
+			} 	
+		};
+		storageFilePath = {
+			_set = function( value ){
+				if(owner.hWebView) wke.wkeSetLocalStorageFullPathW(owner.hWebView,..io.fullpath(value));
+			} 	
+		};
+		cookieEnabled = {
+			_get = function(){
+				if(owner.hWebView) return wke.wkeIsCookieEnabledB(owner.hWebView);
+			}
+			_set = function( value ){
+				if(owner.hWebView) wke.wkeSetCookieEnabled(owner.hWebView,!!value);
+			} 	
+		}; 
+		cookie  = {
+			_get = function(){
+				if(owner.hWebView) {
+					var c = wke.wkeGetCookie(owner.hWebView);
+					if(c)return  ..raw.str(topointer(c));
+				}
+			} 
+			_set = function( value ){
+				if(owner.hWebView) {
+					for line in ..string.lines(value) { 
+						wke.wkeSetCookie(owner.hWebView,"",line);
+					}
+				}
+			}	
+		};
+		cookieData = function(url){
+			var cookieFile = ..fsys.cookies();
+    		var vistor = ..raw.tocdecl( function(p,name,value,domain,path,secure,httpOnly,expires){ 
+    			var cookie = {
+            		domain = domain;
+            		flag  = null;
+            		path = path;
+            		secure = secure;
+            		expires = expires !="0" ? ..time.gmt( expires ) :null;
+            		name = name;
+            		value = value;
+            		httpOnly = httpOnly;
+        		}
+        		
+        		..table.push(cookieFile,cookie);
+        		if(!cookieFile[cookie.domain])cookieFile[cookie.domain] = {@{_readonly=false}}
+        		cookieFile[cookie.domain][cookie.name] = cookie;   
+    		},"(ptr p,string name,string value,string domain,string path,int secure,int httpOnly,int &expires)")
+    		
+    		wke.wkeVisitAllCookie(owner.hWebView,null,vistor);
+    		if(url){
+    			return cookieFile.getCookies(url);
+    		}
+    		return cookieFile;
+		}; 
+		cookieSet = function(cookie,url){
+			if(!owner.hWebView)return;
+			
+			if(type(cookie) == type.table){
+				if(#cookie ){
+					if( cookie.stringifySetCookieLine){
+						for(i=1;#cookie;1){
+							wke.wkeSetCookie(owner.hWebView,url:"", cookie.stringifySetCookieLine(i,"")); 
+						} 
+					}
+					else {
+						error("参数请指定fsys.cookies对象",2)
+					} 
+				};
+				
+				var fc = ..fsys.cookies();
+				cookie = fc.stringifySetCookieLine(cookie); 
+			}
+			wke.wkeSetCookie(owner.hWebView,url:"", cookie); 
+			
+			/*
+			wke.wkeSetCookie这个接口函数不太正常，设置也看不到效果，似乎会导致乱码，暂且放到这里。
+			*/
+		};
+		cookieClear = function(){
+			//if(owner.hWebView) return wke.wkeClearCookie(owner.hWebView)
+			if(owner.hWebView) wke.wkePerformCookieCommand(owner.hWebView,0); 
+		};
+		cookieClearSession = function(){
+			if(owner.hWebView) wke.wkePerformCookieCommand(owner.hWebView,1);
+		};
+		cookieSave = function(){
+			if(owner.hWebView) wke.wkePerformCookieCommand(owner.hWebView,2);
+		};
+		cookieReload = function(){
+			if(owner.hWebView) wke.wkePerformCookieCommand(owner.hWebView,3);
+		};
+		post = function(url,postData){
+			if( type(postData) == "table" ){
+				postData = ..inet.url.stringifyParameters(postData);
+			};
+			
+			wke.wkePostURL(owner.hWebView,url,postData,#postData);
+		};
+		go = function(url,baseUrl){
+			if( type(url) != type.string ) error("URL参数错误",2);
+			
+			if(!..string.find(url,"://") ){
+				var path,search = ..string.match(url,"([^#?]+)(.*)");
+				if( ..io.localpath(path)	) {
+					if( ..web.blink.fileSystem )url = "::" + url;
+					else {
+						url = ..string.concat("file:///", ..io.fullpath(path),search); 
+					}
+				} 
+				elseif( ..io.exist(path) ){
+					url = ..string.concat("file:///", ..io.fullpath(path),search); 
+				}				
+			}
+
+			if( owner.hWebView ){ 
+				wke.wkeLoadURL(owner.hWebView,url );
+			}
+		};
+		canGoBack = function(){
+			if( owner.hWebView ){
+				return wke.wkeCanGoBackB(owner.hWebView);
+			}
+		};
+		canGoForward = function(){
+			if( owner.hWebView ){
+				return wke.wkeCanGoForwardB(owner.hWebView);
+			}
+		};
+		goBack = function(){
+			if( owner.hWebView ){
+				wke.wkeGoBack(owner.hWebView);
+			}
+		};
+		goForward = function(){
+			if( owner.hWebView ){
+				wke.wkeGoForward(owner.hWebView);
+			}
+		};
+		goToOffset = function(idx){
+			if( owner.hWebView ){
+				wke.wkeGoToOffset(owner.hWebView,idx);
+			}	
+		};
+		goToIndex = function(idx){
+			if( owner.hWebView ){
+				wke.wkeGoToIndex(owner.hWebView,idx);
+			}	
+		};	
+		write = function(html,baseUrl){
+			if( html!==null && !type.isString(html)  ) html = tostring(html);
+			
+			if( owner.hWebView ){
+				if(!baseUrl){ baseUrl = "/" }
+				
+				if( ..io.localpath(baseUrl)	) {
+					if( ..web.blink.fileSystem)baseUrl = "::" + baseUrl;
+					else {
+						baseUrl = "file:///" + ..io.fullpath(baseUrl); 
+					}
+				} 
+				elseif( baseUrl[2] == ':'# && baseUrl[1] != ':'#  ){
+					baseUrl = "file:///" + ..io.fullpath(baseUrl);
+				}
+			
+				wke.wkeLoadHtmlWithBaseUrl(owner.hWebView,html,baseUrl); 
+			}
+		};
+		read = function(hFrame){
+			if(owner.hWebView){
+				if( hFrame === null ) hFrame = owner.frameMain();
+				var size = {INT value}
+				var p = wke.wkeGetContentAsMarkupP(owner.hWebView,hFrame,size);
+				if(p){
+					return ..raw.tostring(p,1,size.value);
+				}
+			}
+		};
+		html = {
+			_get = lambda() owner.read();
+			_set = function( value ){
+				if( owner.hWebView ){
+					if( value!==null && !type.isString(value)  ) value = tostring(value);
+					wke.wkeLoadHtmlWithBaseUrl(owner.hWebView,value:"","file:///" + ..io.fullpath("/")); 
+				}
+			}
+		};
+		css = function(css,hFrame){
+			if(owner.hWebView){
+				if(!hFrame) hFrame = owner.getMainFrame();
+				wke.wkeInsertCSSByFrame(owner.hWebView,hFrame,css);
+			} 
+		};
+		mhtml = function(){
+			if(owner.hWebView){
+				var addr = wke.wkeUtilSerializeToMHTML(owner.hWebView)
+				if(addr) return ..raw.str(topointer(addr))
+			}
+		};
+		load = function(url){
+			if( type(url) != type.string ) error("文件路径参数错误",2);
+			
+			if( owner.hWebView ){
+				if( ..io.localpath(url)	) {
+					if( ..web.blink.fileSystem )url = "::" + url;
+					else {
+						url = "file:///" + ..io.fullpath(url); 
+					}
+				} 
+				elseif( ..io.exist(url) ){
+					url = "file:///" + ..io.fullpath(url);
+				}
+				
+				wke.wkeLoadURL(owner.hWebView,url);
+			}
+		};
+		isDocumentReady = function(){
+			if( owner.hWebView ){
+				return wke.wkeIsDocumentReadyB(owner.hWebView );
+			}
+		};
+		stopLoading = function(){
+			if( owner.hWebView ){
+				wke.wkeStopLoading(owner.hWebView );
+			}
+		};
+		reload = function(){
+			if( owner.hWebView ){
+				wke.wkeReload(owner.hWebView );
+			}
+		};
+		resize = function(w,h){
+			if(type(h)!=type.number) error("请指定高度参数",2);
+			
+			if( owner.hWebView ){
+				wke.wkeResize(owner.hWebView,w,h );
+			}
+		};
+		getWidth = function(){
+			if( owner.hWebView ){
+				return wke.wkeGetWidth(owner.hWebView ); 
+			}
+		};
+		getHeight = function(){
+			if( owner.hWebView ){
+				return wke.wkeGetHeight(owner.hWebView ); 
+			}
+		};
+		getContentsWidth = function(){
+			if( owner.hWebView ){
+				return wke.wkeGetContentWidth(owner.hWebView ); 
+			}
+		};
+		getContentsHeight = function(){
+			if( owner.hWebView ){
+				return wke.wkeGetContentHeight(owner.hWebView ); 
+			}
+		};
+		selectAll = function(){
+			if(owner.hWebView)wke.wkeEditorSelectAll(owner.hWebView); 
+		};
+		copy = function(){
+			if(owner.hWebView)wke.wkeEditorCopy(owner.hWebView); 
+		};
+		cut = function(){
+			if(owner.hWebView)wke.wkeEditorCut(owner.hWebView); 
+		};
+		paste = function(){
+			if(owner.hWebView)wke.wkeEditorPaste(owner.hWebView); 
+		};
+		delete = function(){
+			if(owner.hWebView)wke.wkeDelete(owner.hWebView); 
+		};
+		setEditable = function(editable){
+			if(owner.hWebView)wke.wkeSetEditable(owner.hWebView,!!editable); 
+		};
+		focus = function(){
+			if(owner.hWebView)wke.wkeSetFocus(owner.hWebView); 
+		};
+		unfocus = function(){
+			if(owner.hWebView)wke.wkeKillFocus(owner.hWebView); 
+		};
+		sleep = function(){
+			if(owner.hWebView)wke.wkeSleep(owner.hWebView); 
+		};
+		wake = function(){
+			if(owner.hWebView) wke.wkeWake(owner.hWebView); 
+		};
+		isAwake = function(){
+			if(owner.hWebView) return wke.wkeIsAwakeB(owner.hWebView); 
+		};
+		isDirty = function(){
+			if( owner.hWebView ) return wke.wkeIsDirtyB( owner.hWebView ); 
+		};
+		paint = function(bits,pitch){
+			return wke.wkePaint(owner.hWebView,bits,pitch:0); 
+		};
+		mouseEvent = function(message,x,y,flags){
+			if(flags===null)flags=1/*_WKE_LBUTTON*/
+			if(owner.hWebView)wke.wkeFireMouseEvent(owner.hWebView,message,x,y,flags); 
+		};
+		contextMenuEvent = function(x,y,flags){
+			if(flags===null)flags=2/*_WKE_RBUTTON*/
+			if(owner.hWebView)wke.wkeFireContextMenuEvent(owner.hWebView,x,y,flags); 
+		};
+		mouseWheel = function(x,y,delta,flags){
+			if(flags===null)flags=0x10/*_WKE_MBUTTON*/
+			if(owner.hWebView)wke.wkeFireMouseWheelEvent(owner.hWebView,x,y,delta,flags); 
+		};
+		keyDown = function(vkCode,flags,sysKey){
+			if(owner.hWebView)wke.wkeFireKeyDownEvent(owner.hWebView,vkCode,flags,sysKey); 
+		};
+		keyPress = function(charCode,flags,sysKey){
+			if(owner.hWebView)wke.wkeFireKeyPressEvent(owner.hWebView,charCode,flags,sysKey); 
+		};
+		keyUp = function(vkCode,flags,sysKey){
+			if(owner.hWebView)wke.wkeFireKeyUpEvent(owner.hWebView,vkCode,flags,sysKey); 
+		}; 
+		doScript = function(js,...){
+			if( type(js) != type.string ) error("参数必须指定脚本代码",2);
+			if(owner.hWebView){
+				if(...)js=..string.format(js,...)
+				var v = ..web.blink.runJs(owner.hWebView,js ); 
+				return ..web.blink.jsParseValue(owner.jsExecState,v );
+			}
+		};
+		eval = function(js,...){
+			if( type(js) != "string" ) error("参数必须指定脚本代码",2);
+			if( ... ) js = ..string.format(js,...);
+			var v = ..web.blink.jsEval(owner.jsExecState,"return (" + js +")");
+			return  ..web.blink.jsParseValue(owner.jsExecState,v );
+		};
+		document = {
+			_get = function(){
+				return owner.eval("document");
+			} 	
+		};
+		window = {
+			_get = function(){
+				return owner.eval("window"); 
+			} 	
+		};
+		script = {
+			_get = function(){
+				return owner.eval("window"); 
+			} 	
+		};
+		plugin = {
+			_get = function(){
+				return owner.eval("document.plugin");
+			} 	
+		};
+		getLocation = function(hFrame){
+			if(owner.hWebView){
+				if( hFrame === null ) hFrame = owner.frameMain();
+				return ..raw.str( wke.wkeGetFrameUrlP(owner.hWebView,hFrame) );
+			} 
+		};
+		location = {
+			_get = function(){
+				return owner.getLocation(); 
+			} 	
+		};
+		destroy = function(){
+			var hWebView = owner.hWebView ;
+			if( hWebView ){
+				_cache_views__[hWebView] = null;
+				owner.hWebView = null;//避免调用其他浏览器接口（下面的代码可能会重入wndproc）
+				wke.wkeDestroyWebView(hWebView);
+			}
+		};  
+		userAgent = { 
+			_set = function( value ){
+				if( owner.hWebView )wke.wkeSetUserAgent(owner.hWebView,value);
+			}
+			_get = function( value ){
+				if( owner.hWebView )return ..raw.str(wke.wkeGetUserAgentP(owner.hWebView));
+			} 	 	
+		};
+		requestSetRequestHeader = function(hRequest, key, value){
+			if(!hRequest) error("请在参数@1中指定请求句柄",2);
+    		wke.wkeNetSetHTTPHeaderFieldW(hRequest, key, value,false);
+		};
+		requestGetRequestHeader = function(hRequest,key){
+			if(!hRequest) error("请在参数@1中指定请求句柄",2);
+			
+			if(!#key){
+				var result = {}
+				var next = wke.wkeNetGetRawHttpHeadP(hRequest);
+				while(next){
+					var header = ..raw.convert(next,{str data;ptr next});
+					..table.push(result,header.data);
+					next = header.next;
+				}
+				return result;	
+			}
+    		return ..raw.str(wke.wkeNetGetHTTPHeaderFieldP(hRequest, key));
+		};
+		requestSetResponseHeader = function(hRequest, key, value){
+			if(!hRequest) error("请在参数@1中指定请求句柄",2);
+    		wke.wkeNetSetHTTPHeaderFieldW(hRequest, key, value,true);
+		};
+		requestSetMimeType = function(hRequest, mime){
+			if(!hRequest) error("请在参数@1中指定请求句柄",2);
+    		wke.wkeNetSetMIMEType(hRequest, mime);
+		};
+		responseGetHeader = function(hRequest,key){
+			if(!hRequest) error("请在参数@1中指定请求句柄",2);
+			
+			if(!#key){
+				var result = {}
+				var next = wke.wkeNetGetRawResponseHeadP(hRequest);
+				while(next){
+					var header = ..raw.convert(next,{str data;ptr next});
+					..table.push(result,header.data);
+					next = header.next;
+				}
+				return result;	
+			}
+    		return ..raw.str(wke.wkeNetGetHTTPHeaderFieldFromResponseP(hRequest, key));
+		};
+		responseGetMimeType = function(hRequest){
+			if(!hRequest) error("请在参数@1中指定请求句柄",2);
+			
+			var p = wke.wkeCreateStringP("",0);
+			if(p){
+    			wke.wkeNetGetMIMEType(hRequest, p);
+    			var s = ..raw.str(wke.wkeGetStringP(p));
+    			wke.wkeDeleteString(p);
+    			return s;
+    		}
+		};
+		requestSetData = function(hRequest, data, len){
+			if(!hRequest) error("请在参数@1中指定请求句柄",2);
+    		if(!len) len = #data;
+    		wke.wkeNetSetData(hRequest, data, len);
+		};
+		hookOnRequestEnd =function(hRequest){
+			if(!hRequest) error("请在参数@1中指定请求句柄",2);
+    		wke.wkeNetHookRequest(hRequest);
+		};
+		requestGetMethod = function(hRequest){
+			if(!hRequest) error("请在参数@1中指定请求句柄",2);
+			var t = wke.wkeNetGetRequestMethod(hRequest);
+			return ({"get";"post";"put"})[t];
+		}; 
+		requestHold = function(hRequest){
+			if(!hRequest) error("请在参数@1中指定请求句柄",2);
+			return !!wke.wkeNetHoldJobToAsynCommit(hRequest);
+		};
+		requestContinue = function(hRequest){
+			if(!hRequest) error("请在参数@1中指定请求句柄",2);
+			wke.wkeNetContinueJob(hRequest);
+		};
+		requestCancel = function(hRequest){
+			if(!hRequest) error("请在参数@1中指定请求句柄",2);
+			wke.wkeNetCancelRequest(hRequest);
+		};
+		requestGetUrl = function(hRequest){
+			if(!hRequest) error("请在参数@1中指定请求句柄",2);
+			return ..raw.str( wke.wkeNetGetUrlByJobP(hRequest) );
+		};
+		requestSetUrl = function(hRequest,url){
+			if(!hRequest) error("请在参数@1中指定请求句柄",2);
+			return wke.wkeNetChangeRequestUrl(hRequest,url);
+		};
+		setProxy = function(url){
+			var tUrl = ..inet.url.split(url);
+			var proxy = ..table.mixin( {
+   				int scheme = 1;
+   				BYTE host[100];
+   				WORD port;
+   				BYTE user[50];
+   				BYTE password[50];
+			},tUrl);
+			
+			proxy.scheme = _proxyType[..string.upper(proxy.scheme)] : 1;
+			wke.wkeSetViewProxy(owner.hWebView, proxy); 
+		}
+ 		isMainFrame = function(frame){
+ 			return wke.wkeWebFrameIsMainFrameB(frame);
+ 		};
+ 		isRemoteFrame = function(frame){
+ 			return wke.wkeIsWebRemoteFrame(frame);
+ 		};
+ 		fromPoint = function(x = 0,y=0){
+			var doc = owner.document;
+   			if( doc  ) {
+   				var ele = doc.elementFromPoint(x,y);
+   				if( type(ele) == type.table ) return ele;
+   			}
+		};
+		getPoint = function(ele){
+			var x,y = 0,0;
+			while(ele && (ele.offsetLeft!==null) ){
+				x+=ele.offsetLeft
+				y+=ele.offsetTop
+				ele= ele.offsetParent
+			} 
+			return x,y;
+		}; 
+		scrollPos = function(x,y){
+			var doc = owner.document;
+			var root =  doc.body; 
+			var cx,cy = root.scrollWidth,root.scrollHeight;
+			if( x !== null || y !== null ){
+				if(!x) x = root.scrollLeft;
+				if(!y) y = root.scrollTop;
+				if(x<0) x = cx + x + 1;
+				if(y<0) y = cy + y + 1;
+				root.scrollTop = y; 
+				root.scrollLeft = x;
+			}
+			return root.scrollLeft,root.scrollTop,cx,cy;
+		};
+		querySelector = function(...){
+			var doc = owner.eval('document');
+			if(doc) return doc.querySelector(...); 
+		};
+		waitQuerySelector = function(selectors,timeout){
+			var wb = owner;
+			return ..win.wait(
+				function(){
+					var doc = wb.eval('document');
+					if(doc) return doc.querySelector(selectors); 
+				},wb._form[["hwnd"]],timeout,200
+			); 
+		};
+		querySelectorAll = function(...){
+			var doc = owner.eval('document');
+			if(doc) return doc.querySelectorAll(...);
+		};
+		queryEles = function(selectors,opt){
+		 	var tab = {}
+		 	var cmp = ..string.cmpMatch;
+		 	if( type(selectors) == "table" ){
+		 		opt = selectors;
+		 		selectors = "*";
+		 	}
+		 	var eles = owner.querySelectorAll(selectors);
+		  
+		 	for(i=0;eles.length-1){
+		 		var ele = eles[i];
+		 		try {
+					for(k,v in opt) { 
+						attr = ele[k]; 
+						if( type(attr) == "table" ){
+							if( type(v) == "table" ){
+								for(attr_k,attr_v in v){
+									if( ! cmp( attr[attr_k],attr_v )){  
+										return;
+									} 
+								} 
+							}
+							else {
+								return;
+							};
+						} 
+						if( ( (k == "id") || (k == "name") ) && ( !..string.match(v,"\p")) ){
+							if( ( attr!=v ) && ( 0 != ..string.cmp( attr,v ) ) ){  
+								return;
+							} 
+						}
+						elseif( ( attr!=v ) && ( ! cmp( attr,v ) ) ){  
+							return;
+						} 
+					} 
+					..table.push(tab,ele);
+				}
+		 	} 
+		 	
+			return ..web.blink.query( tab,owner );
+		};
+		waitQueryEles = function(selectors,args,timeout,complete=true ){
+			var qEle;
+			var wb = owner;
+			return ..win.wait(
+				function(){
+					var doc = wb.document;
+					var qEle =  wb.queryEles(selectors,args);
+					if( #qEle > 0  && ( (!complete) || doc.readyState == 'loaded' || doc.readyState  == 'complete')  )
+						return qEle;
+				},
+				wb._form[["hwnd"]],timeout,200
+			); 	
+		};
+		dispatchEvent = function(ele,event){ 
+			ele = owner.getEle(ele);
+            var evt = owner.document.createEvent( 'Events' );  
+            evt.initEvent(event, true, true);  
+            if(ele.dispatchEvent)return !ele.dispatchEvent(evt); 
+    	};
+		getEle = function( id ){
+        	if( type(id) == "table" ) return id;
+        	var doc = owner.document;
+        	var ele = doc.getElementById(id);
+        	if( ele ) return ele;
+        	ele = doc.getElementsByName(id);
+        	if(ele) return ele[1];
+    	};
+    	waitEle = function(name,frame,timeout,waitState){
+			var wb = owner;
+			return ( ..win.wait(
+				function(){
+					return ( wb.getEle(name) );
+				},owner._form[["hwnd"]],timeout,200
+			) ); 
+		};
+		waitDoc = function(timeout){
+			var delay = ..win.delay;
+			var isWnd = ..win.isWindow;
+			var hwnd = owner._form[["hwnd"]];
+			var tk = 0;
+			
+			while( delay(200) && isWnd(hwnd)  ){
+		  		if( owner.hWebView && (wke.wkeIsDocumentReadyB( owner.hWebView )  ) ){
+		  			return owner.document;
+				}		
+					
+				if( timeout ) {
+					tk+=201;
+					if( tk>timeout )
+						return null,"Timeout!"  
+				};
+			} 
+		};
+		wait = function(url,timeout){
+			var delay = ..win.delay;
+			var isWnd = ..win.isWindow;
+			var hwnd = owner._form[["hwnd"]];
+			var tk = 0;
+			
+			if(type(url) == type.number){
+				timeout = url;
+				url = null;
+			}
+			
+			var location; 
+			while( delay(200) && ( (!hwnd) || isWnd(hwnd) ) ){
+		  		if( owner.hWebView 
+		  			&& wke.wkeIsDocumentReadyB(owner.hWebView ) 
+		  			&& owner.eval(`document.readyState=="complete"`) ) {
+		  			if(#url){
+		  				var location = owner.eval("document.location.href");
+		  				if( ! ( location ?  ..string.find( location,url) ) ){
+		  					delay(200); 
+		  					continue; 
+		  				};
+		  			}
+		  			
+		  			delay(1000);
+		  			return true;
+				}		
+					
+				if( timeout ) {
+					tk+=201;
+					if( tk>timeout ){
+						return null,"Timeout!"  
+					}
+				};
+	  		
+			} 
+			 
+			return false;
+		};
+		["select"] = function(eleName,v,sel=true){ 
+        	var opt,child,value,text;
+        	var ele = owner.getEle(eleName);
+         
+        	if(ele){
+            	if(type(v)==type.number and v < ele.length){
+                	opt = ele.options[i];
+            	}else{
+                	for(i=0;ele.length-1;1){
+                    	child = ele.options[i]; 
+                    	if( child ? ( (child.value==v) or (child.innerText==v) ) ){
+							opt=child;
+						}
+                	}
+            	}
+        	} 
+        	if( opt ){
+            	opt.selected = sel;
+            	if( ele.onchange ) owner.dispatchEvent(ele,"change");
+        	}
+        	return opt; 
+    	};
+    	["setEle"] = function(eleName,val,name){ 
+        	var ele = owner.getEle(eleName);
+        	if(!ele) return null,"未找到节点";
+         	
+        	if( type(val) == type.table ){
+            	for(k,v in val) 
+                	owner.setEle(eleName,v,k); 
+        	}
+        	elseif(name){ 
+            	ele[name] = val; 
+        	}
+        	elseif( ..string.cmp(ele.tagName,"textArea") == 0  ){
+            	ele.innerHTML = val;
+        	}
+        	elseif( !..string.cmp(ele.tagName,"input") ){
+            	select(ele.type) { 
+                	case "radio","checkbox" {
+                    	ele.checked = val;
+                	};
+                	else {
+                    	ele.value = val;
+                	};
+            	};
+        	}; 
+        	elseif(  ..string.cmp(ele.tagName,"select") == 0 ){
+            	owner.select( ele,val );
+        	}
+        	return ele;
+    	};  
+        click = function( eleName,min=1,max=500 ){
+        	//..win.delay( ..math.random(min,max) );
+        	var ele = owner.getEle(eleName); 
+        	if(!ele) return;
+        	
+			owner.dispatchEvent(ele,"mousemove"); 
+			owner.dispatchEvent(ele,"mouseenter");
+			owner.dispatchEvent(ele,"mouseover");
+			owner.dispatchEvent(ele,"keydown");
+    		owner.dispatchEvent(ele,"keyup");
+    		owner.dispatchEvent(ele,"mousedown");
+    		owner.dispatchEvent(ele,"mouseup") 
+    		
+    		if(ele.click) ele.click(); 
+    		else owner.dispatchEvent(ele,"click");
+    		
+    		if(ele.tagName=="INPUT"){ ele.focus();}
+    		owner.dispatchEvent(ele,"focus");
+    		owner.dispatchEvent(ele,"mousemove"); 
+    		owner.dispatchEvent(ele,"mouseleave");
+    		owner.wait(); 
+    	};
+    	attach = function( func,event, ele){  
+			if(!event) error("请指定事件参数@2",2);
+			event = ..string.replace(event,"^on",""); 
+			
+ 			if( !ele ) ele = owner.getDoc();
+ 			elseif( type(ele) == type.string ){
+ 				ele = owner.getEle(ele); 
+ 			}
+ 			if(!ele) return false;
+ 			 
+ 			ele.addEventListener(event,func,true); 
+ 			return func;
+		}; 
+		attachAll = function( tEle ){
+			for( ele,tEvent in tEle ){ 
+				for(event,func in tEvent ){
+					owner.attach( func,event,ele);
+				} 
+			} 
+		};
+		print = function(hdc,scale){
+			error("使用web.blink.form打开网页才能支持此函数",2);	
+		};
+		enableHeadless = function(b){
+			if(owner.hWebView)wke.wkeSetHeadlessEnabled(owner.hWebView,!!b); 
+		};
+		enableCspCheck = function(b){
+			if(owner.hWebView)wke.wkeSetCspCheckEnable(owner.hWebView,!!b); 
+		}; 
+		enableNewWindow  = function(b){
+			if(owner.hWebView)wke.wkeSetNavigationToNewWindowEnable(owner.hWebView,!!b); 
+		};
+		enableContextMenu  = function(b){
+			if(owner.hWebView){
+				if(type(b)===type.table){
+					var ids = {selectedAll=1;selectedText=2;undo=3;copyImage=4;elementAt=5;cut=6;paste=7;print=8;goForward=9;goBack=10;reload=11;saveImage=12}
+					for(k,v in b){
+						if(ids[k])wke.wkeSetContextMenuItemShow(owner.hWebView,1 << ids[k],!!v)
+					}
+					return;
+				}
+				wke.wkeSetContextMenuEnabled(owner.hWebView,!!b); 
+			}
+		};
+		enableMemoryCache = function(b){
+			if(owner.hWebView)wke.wkeSetMemoryCacheEnable(owner.hWebView,!!b); 
+		}; 
+		enableTouch = function(b){
+			if(owner.hWebView)wke.wkeSetTouchEnabled(owner.hWebView,!!b); 
+		}; 
+		enableNpapiPlugins = function(b){
+			if(owner.hWebView)wke.wkeSetNpapiPluginsEnabled(owner.hWebView,!!b); 
+		}; 
+		enableMouse = function(b){
+			if(owner.hWebView)wke.wkeSetMouseEnabled(owner.hWebView,!!b); 
+		}; 
+		enableDropGo = function(b){
+			if(owner.hWebView){
+				wke.wkeSetDragEnable(owner.hWebView,!!b); 
+			}
+		}; 
+		enableDragDrop = function(b){
+			if(owner.hWebView)wke.wkeSetDragDropEnable(owner.hWebView,!!b); 
+		}; 
+		setNetInterface = function(it){
+			if(owner.hWebView)wke.wkeSetViewNetInterface(owner.hWebView,it); 
+		};
+		getCursorType = function(it){
+			if(owner.hWebView) return wke.wkeGetCursorInfoType(owner.hWebView,it); 
+		};
+		frameIsMain = function(hFrame){
+			if(owner.hWebView) return wke.wkeIsMainFrame(owner.hWebView,hFrame); 
+		};
+		frameIsRemote = function(hFrame){
+			if(owner.hWebView) return wke.wkeIsWebRemoteFrame(owner.hWebView,hFrame); 
+		};
+		frameMain = function(){
+			if(owner.hWebView) return wke.wkeWebFrameGetMainFrameP(owner.hWebView); 
+		};
+		frameJsExecState = function(frame){
+			if(owner.hWebView) return wke.wkeGetGlobalExecByFrameP(owner.hWebView,frame:1);
+		};
+		jsThrow = function(e){
+			if(owner.hWebView && type(e)==type.string){
+				..web.blink.jsThrow(owner.jsExecState,e);
+			}
+		};
+		jsLasterr = function(){
+			var st = owner.jsExecState;
+			if(st) return ..web.blink.jsLasterr(st);
+		};
+		frameEval = function(hFrame,js,...){
+			if( type(js) != "string" ) error("参数@1必须指定脚本代码",2);
+			if( ... ) js = ..string.format(js,...);
+			
+			if( hFrame === null ) hFrame = owner.frameMain();
+			var jexec = owner.frameJsExecState(hFrame);
+			var v = ..web.blink.jsEval(jexec,"return (" + js +")");
+			return  ..web.blink.jsParseValue(jexec,v );
+		};
+		frameCss = function(css,hFrame){
+			if( type(css) != type.string ) error("参数@1必须指定CSS文本",2); 
+			if( hFrame === null ) hFrame = owner.frameMain();
+			
+			if(owner.hWebView){
+				wke.wkeInsertCSSByFrame(owner.hWebView,hFrame,css)  
+			}
+		};
+		frameLoadScript  = function(path,hFrame,charset,prop ){   
+			var doc = owner.frameEval(hFrame,"document") 
+			if(!doc) return; 
+		  
+		  	if( type(path) == "table" ){
+		  		var r = {} 
+		  		for(n,p in path){
+		  			for(i=1;#p ){ 
+		  				if( owner.frameEval(hFrame,n) )
+		  					break; 
+		  				 	
+		  				owner.frameLoadScript( p[i],hFrame,charset,prop );
+		  			}
+		  			r[n] = owner.script[n];
+		  		} 
+		  		return r ;
+		  	}  
+    				
+			if( (!charset) && (doc.charSet == "utf-8") ){
+				charset = "utf-8"
+			}
+			
+			var s = ..string.load( path ); 
+			if( #s ){ 
+				if( s[1] == 0xEF  && s[2] == 0xBB && s[3] == 0xBF) {
+					s = ..string.fromto( ..string.sub(s,4 ) );
+				}
+				else if ( charset ?  ..string.cmp(charset,"utf-8") != 0 ){
+					s = ..string.fromto( s,0,65001 );
+				};
+				
+				return owner.doScript( s ); 
+			}
+			else {
+				if( ..io.localpath(path) )
+					return;
+			}
+			
+			var ele = doc.createElement("script");
+			ele.type = "text/javascript"; 
+			ele.charset = charset;
+			
+			if( prop ) ..table.mixin( ele,prop ) 
+    		ele.src = path;
+    		
+    		var loaded;
+    		ele.onload = function(){
+    			loaded = true;
+    		};
+    	 
+    	 	var ele = doc.getElementsByTagName('head')[0].appendChild(ele) ;
+    	 	var delay = ..win.delay;
+    	 	if( ! prop[["async"]] ){  
+    			..win.wait( lambda() loaded ,owner._form.hwnd );
+    		}
+    		
+    		return ele;
+		};
+		loadScript  = function(path,frame,charset,prop ){   
+			 return owner.frameLoadScript(path,,charset,prop);
+		};
+		jQuery = {
+			_get = function(){ 
+				owner.waitDoc();
+				return owner.script.jQuery || owner.loadScript( {
+					jQuery = {
+						"/res/js/jQuery/jQuery.min.js";
+						"/view/js/jQuery/jQuery.min.js";
+						"http://libs.baidu.com/jquery/1.10.2/jquery.min.js";
+						"http://lib.sinaapp.com/js/jquery/1.10.2/jquery-1.10.2.min.js";
+						"http://code.jquery.com/jquery-1.10.2.min.js" 
+					}
+				}, ,"utf-8" ).jQuery; 
+			} 
+		};
+		setLanguage = function(lang){
+			if(owner.hWebView) return wke.wkeSetLanguage(owner.hWebView,lang:"zh-CN"); 
+		};
+		deviceParameterInt = function(device,v){
+			if(owner.hWebView) return wkeSetDeviceParameter(owner.hWebView,device,"",v,0); 
+		};
+		deviceParameterString = function(device,v){
+			if(owner.hWebView) return wkeSetDeviceParameter(owner.hWebView,device,v,0,0); 
+		};
+		deviceParameterFloat = function(device,v){
+			if(owner.hWebView) return wkeSetDeviceParameter(owner.hWebView,device,"",0,v); 
+		};
+		addPluginDirectory = function(path){
+			wke.wkeAddPluginDirectoryW(owner.hWebView,..io.fullpath(path));
+		};
+		config = function(name,value){
+			wke.wkeSetDebugConfig(owner.hWebView,name,value);
+		};
+		enableNodejs = function(e){
+			owner.preloadScript("Object.defineProperty(window,'nodeJs',{get(){delete window.nodeJs;window.nodeJs = window.mbRequire;window.mbRequire.require=window.mbRequire;return window.mbRequire;},configurable:true});") 
+			wke.wkeSetDebugConfig(owner.hWebView,"enableNodejs",(e || e===null)?"1":"0");
+		} 
+		gcResource = function(iv){
+			wkeSetResourceGc(owner.hWebView,iv);
+		};
+		gc = function(iv){
+			wke.wkeGC(owner.hWebView,iv);
+		};
+		jsNew = function(cls,...){
+			if(!owner.script.jsNew){
+				var js = /*  
+ 				jsNew = function(jsObject,...args) {
+					if(typeof(jsObject) == "string") jsObject = eval(jsObject);
+    				return new jsObject(...args)
+				};
+				*/
+				owner.doScript(js);  
+			}
+			return owner.script.jsNew( cls,... );
+		};
+		jsObject = function(v){
+			if(v){
+				var j = ..web.json.stringify(v);
+				if(j) return owner.script.JSON.parse(j);	
+			}
+			else {
+				return owner.jsNew("Object")
+			}
+		};
+		jsArray = function(v){
+			if(v){
+				var j = ..web.json.stringify(v);
+				if(j) return owner.script.JSON.parse(j);	
+			}
+			else {
+				return owner.jsNew("Array")
+			}
+		};
+		createGdipBitmap = function(img){
+			if(!..gdip[["bitmap"]]) error("请先导入 gdip.bitmap",2);
+			
+			var canvas = owner.document.createElement("canvas");
+			canvas.width = img.width;
+			canvas.height = img.height;
+			
+			var ctx = canvas.getContext("2d");
+			ctx.drawImage(img,0,0,canvas.width,canvas.height);
+			var imageData = ctx.getImageData(0,0,canvas.width,canvas.height)
+			 
+			var bmp = ..gdip.bitmap(canvas.width,canvas.height);
+			var data = bmp.lockMemory(,0x26200A/*_PixelFormat32bppARGB*/) 
+			data.Scan0 = owner.jsSwapImageBuffer(imageData.data.buffer)
+			bmp.unlockMemory(data);
+			return bmp;
+		};
+		jsSwapImageBuffer = function(data){
+			var buffer = data[["Scan0"]]:data;
+			wkex.wkeSwapGdip2ImageData(buffer,#buffer);
+			return data;
+		}
+		jsImageData = function(buffer,width,height){
+			if( buffer[["Scan0"]]){
+				height = buffer.Height;
+				width = buffer.Width;
+				buffer = buffer.Scan0;
+			};
+			
+			if(!owner.script.jsImageData){
+				var js = /*  
+ 				jsImageData = function(buffer,...args) { 
+    				return new ImageData( new Uint8ClampedArray(buffer),...args)
+				};
+				*/
+				owner.doScript(js);  
+			}
+			return owner.script.jsImageData(buffer,width,height);
+		};
+		jsSaveCallback = function(c){
+			if(!owner.hWebView)return;
+    		var reg  = owner.script.aardioCallbackRegistrySave;
+    		if(!reg){
+				var js = /* 
+				( function(){
+					var free;
+					var callbacks = [];
+					var registry = {};
+					aardioCallbackRegistrySave = function(v){
+						var id;
+						if( typeof(free) == "number" ){
+							id = free;
+							free = callbacks[free]; 
+						}
+						else {
+							id = callbacks.length;
+						}
+						callbacks[id] = v;
+						return id; 	
+					}
+					
+					aardioCallbackRegistryGet = function(id){
+						return callbacks[id]; 
+					}
+					
+					aardioCallbackRegistryDelete = function(id){ 
+						var v = callbacks[id];
+						callbacks[id] = free;
+						free = id;
+					}
+					
+					return registry;
+				})();
+				
+				*/
+				owner.doScript(js);
+				reg  = owner.script.aardioCallbackRegistrySave;
+    		};
+    		
+    		var this = owner;
+    		var key = reg(c);
+    		var ret = {
+        		@{_call = function(...){
+        			if(!this.hWebView)return;
+            		var g = this.script.aardioCallbackRegistryGet;
+            		if(!g) return;
+            		
+        			var f  = g(key);
+        			if(f)return f(...);
+    			}} };
+    			
+    		..table.gc(ret,function(){
+    			if(!this.hWebView)return;
+        		var del = this.script.aardioCallbackRegistryDelete;
+        		if(del)del(key);
+    		});
+    		
+    		return ret;
+		};
+		showDevTools = function(path,winform){
+			if(!path) path = ..io.fullpath("~\lib\web\blink\.build\front_end\inspector.html");
+			
+			if( ..io.localpath(path) && ..web.blink.fileSystem ) path = "::" + path;
+			else {
+				path = ..io.fullpath(path);
+				path = ..string.replace(path,"\\","/");
+			}
+			
+			var mb;
+			var showDevToolsCallback = ..raw.tocdecl(function(hWebView,param){
+				mb = ..web.blink.view(winform,hWebView); 
+				mb.go(path);
+				if(mb.hWkeWindow && ..win.title){
+					..win.setText(mb.hWkeWindow, ..win.title + " - DevTools");
+				}
+			},"void(addr,ptr)")
+				 
+			wke.wkeShowDevtoolsW(owner.hWebView,path,showDevToolsCallback,null);
+			mb =  ..win.wait(lambda() mb,owner._form[["hwnd"]]);
+			return mb;
+		};
+		getFaviconIcon = function(cb){
+			return wke.wkeNetGetFavicon(owner.hWebView,..raw.tocdecl(function(v,prm,url,pb){
+				if(pb){
+					var mem = ..raw.convert(pb,{int size;ptr p;INT length});
+					cb(url,..raw.buffer(mem.length,mem.p));	
+					//wke.wkeFreeMemBuf(pb);
+				}
+			},"int(ptr v,ptr prm,str url,ptr buf)") ,null) 
+		};
+		preloadScript = function(js){
+			if(js) {
+				if(#owner[["(initScript)"]]) owner[["(initScript)"]] = ..string.replace( owner[["(initScript)"]],"@;"+js,"");
+				owner[["(initScript)"]] = ..string.concat(owner[["(initScript)"]],";",js)
+				owner.onCreateScriptContext = true;
+			}
+			return owner[["(initScript)"]];
+		};
+	)
+	_metaProperty.flash = _metaProperty.plugin;
+	
+	for(event,callbackInfo in ..web.blink.callback){
+		
+		_metaProperty[event] = {
+			_set = function(proc){ 
+				var setCallback = callbackInfo[1];
+				if(setCallback) setCallback = wke[setCallback];
+			
+				if(proc){ 
+					if(!owner._cdeclCallback[event] ){
+						owner._cdeclCallback[event] = ..raw.tocdecl(callbackInfo[3],callbackInfo[2],owner); 
+						if(setCallback)setCallback(owner.hWebView,owner._cdeclCallback[event],null);
+					}
+				}
+				else {
+					if(setCallback)setCallback(owner.hWebView,null,null);
+				}
+				
+				//如果为布尔值，仅开启或关闭回调，不改变实际的回调函数
+				if(type(proc)!="boolean"){
+					owner[[event + "__"]] = proc;	
+				} 
+			}
+			_get = function(){
+				return owner[[event + "__"]]
+			}
+		}
+	}
+ 
+	_metaProperty.onURLChanged = _metaProperty.onUrlChanged; 
+	
+	_proxyType = { 
+    	HTTP = 1;
+    	SOCKS = 2;
+    	SOCKS4 = 2;
+    	SOCKS4A = 3;
+    	SOCKS5 = 4;
+    	SOCKS5HOSTNAME = 5; 
+	};
+	
+	_cache_views__ = { /*@{_weak="kv"}*/ }
+ 	fromJsExecState = function(jsExecState){
+ 		if(!jsExecState) error("参数错误",2)
+ 		var hWebView = wke.jsGetWebView(jsExecState);
+ 		if( _cache_views__[hWebView] ) {
+ 			return  _cache_views__[hWebView]
+ 		}
+ 		var view = { @_metaProperty;hWebView = hWebView };
+ 	}
+ 	
+ 	//web.blink.xcall
+ 	xcall = function(method,...){
+ 		var g,f;
+ 		for(h,view in _cache_views__){
+ 			g = view.window; if(g) {
+ 				f = g[method];if(f) f(...); 
+ 			}
+ 		} 
+ 	}
+ 	
+ 	//web.blink.each
+ 	each = function(){
+ 		var k,v;
+ 		return function(){
+ 			k,v = ..table.next(_cache_views__,k);
+ 			return v;
+ 		}
+ 	}
+}
+
+/**intellisense()
+web.blink.view = 网页视图
+web.blink.view( = 创建网页视图
+web.blink.view(.() = 如果不指定参数,仅创建视图不负责创建显示窗口
+web.blink.view(.(winform,hWebView) = 嵌入网页窗口到参数@1指定父窗口对象,\n如果指定了hWebView则嵌入该网页视图绑定的窗口到父窗口,\n否则使用浏览器组件直接创建子窗口并嵌入到父窗口,\n控件创建的窗口句柄可通过hWkeWindow属性获取
+web.blink.view(.(type,width,height,x,y,hwndParent) = 使用浏览器组件直接创建网页窗口,必须事先导入win.ui库,\n参数@1为0创建普通窗口,为1创建透明窗口,为3创建子窗口,\n除宽度、高度以外,其他参数可以不指定
+web.blink.view() = !web_blink_view.
+end intellisense**/
+
+/***intellisense(!web_blink_view)
+external = @.external = {\n	__/*external的成员函数可在主框架JS中调用\n\n要牢记web.blink与其他浏览器控件的一个区别:\naardio中获取的所有js对象在web.blink里都是临时性的,\naardio程序不需要管理这些JS对象的生存周期,\n但是也要注意调用win.delay,winform.setTimeout等函数\n都有可能导致这些临时的js对象被js回收。\n所以任何延时的触发消息循环的代码以后最好重新获取JS对象\n*/\n};
+jsExecState = 获取当前页JS环境
+frameJsExecState(__) = 获取指定框架JS环境,参数可选指定框架句柄\nonDocumentReady,onUrlChanged等回调事件中可获取框架句柄 
+zoomFactor = 缩放百分比\n浮点数,1.0为实际大小
+mediaVolume = 音量,范微0.0到1.0
+transparent = 背景是否透明\n不透明则使用白色背景
+location = 返回当前网址
+getLocation() = 返回当前网址,可选在参数中指定框架句柄
+cookie = 返回网页cookie，文本
+cookieEnabled = 是否允许Javascript使用cookie,\n在JS里可使用navigator.cookieEnabled获取该值\n如果要禁用持久化Cookie,请将cookieFilePath设为null
+cookieFilePath = 设置cookie存储文件路径,只写属性,\n设为null禁用持久化Cookie,仅支持内存会话cookie,\n默认存储cookie的路径为%LocalAppData%\aardio\std\miniblink\.cookies.dat\n在打开网页前设置才会生效
+storageFilePath = 设置LocalStorage存储根目录\n此根目录必须是已存在的目录,\n实际存储路径为根目录下的LocalStorage子目录\n\n默认值为%LocalAppData%\aardio\std\miniblink\n在打开网页前设置才会生效
+post(.(网址,POST数据) = POST提交数据\n参数@2可以是字符串,也可以是包含表单键值对的表对象
+go("__/*网址*/") = 打开网址\n如果导入 web.npPlugin.flash 则支持输入 swf 文件网址
+canGoBack() = 能否后退
+canGoForward() = 能否前进
+goBack() = 后退
+goForward() = 前进
+goToOffset(.(offset) = 导航到导航历史的相对位置
+goToIndex(.(index) = 导航到导航历史的绝对位置
+userAgent = 获取或设置User Agent
+read() = 读取HTML代码,\n可选在参数中指定框架句柄
+write(.(html,baseUrl) = 写入HTML\n如果参数@!不是字符串、buffer、null 则自动转为字符串\n可选使用参数@2指定基网址,不指定默认指定为当前应用程序根目录
+html = @.html = /**\n<!doctype html>\n<html>\n<head>\n    <style type="text/css">\n    html,body{ height:100%; margin:0; } __\n    </style>\n    <script type="text/javascript"></script>\n</head>\n<body>\n    <div id="header"></div>\n    <div id="container"> \n        <div class="lside"> </div> \n        <div class="rside"> </div>  \n    </div>\n</body>\n</html>\n**/
+mhtml() = 获取MTHML格式网页数据
+css(.(css,hFrame) = 插入CSS,\n参数@1指定CSS文本,\n可选使用参数@2指定框架句柄
+load(.(filename) = 加载本地网页文件
+isDocumentReady() = 文档对象是否准备就绪
+stopLoading() = 停止加载
+reload() = 重新载入
+resize(.(w,h) = 调整网页视图大小
+getWidth() = 网页视图宽度
+getHeight() = 网页视图高度
+showDevTools( = 显示网页开发工具,返回加载开发工具的web.blink.view浏览器对象,\n显示网页开发工具以后，可在网页右键菜单里点击“检查”切换HTML节点\n这个函数有时候打开调试工具会显示空白,可重新运行程序再试
+showDevTools(.(界面资源路径,父窗口) = 所有参数可选,可选在参数@1中指定调试器界面文件路径,\n默认路径为"~\lib\web\blink\.build\front_end",\n可复制front_end到工程目录并嵌入到aardio资源文件,\n导入 web.blink.portable 以后可以自资源文件内存加载front_end
+showDevTools() = !web_blink_view.
+getContentsWidth() = 文档宽度
+getContentsHeight() = 文档高度
+selectAll() = 全选
+copy() = 复制
+cut() = 剪切
+paste() = 复制
+delete() = 删除
+setEditable(.(editable) = 设置编辑状态
+getCaret() = 返回输入光标位置\n有输入光标时返回结构体{int x;int y;int width;int height}\n无光标返回null
+focus() = 设置焦点
+unfocus() = 取消焦点
+sleep() = 休眠
+wake() = 恢复运行
+isAwake() = 是否运行
+isDirty() = 是否需要重绘\n这个函数测试永远都返回true，无存在意义
+paint(.(bits,pitch) = 绘图,参数@1为位图像素数组指针\n关于这个函数的用法请参考web.blink.gdiRender2
+mouseEvent	(.(message,x,y,flags) = 转发鼠标事件到网页\nmessage为_WM_前缀的窗口鼠标消息常量\nx,y 参数为相对于窗口左上角的坐标值,\n\nflags 参数为_WKE_前缀常量,可省略,支持的选项如下\n_WKE_CONTROL 表示按下Ctrl键_WKE_SHIFT 表示按下Shift键\n_WKE_LBUTTON 表示按下鼠标左键\n_WKE_MBUTTON 表示按下鼠标左键\n_WKE_RBUTTON 表示按下鼠标右键\n多个选项以 | 连接\n不指定则默认为_WKE_LBUTTON
+contextMenuEvent(.(x,y,flags) = 转发右键菜单事件到网页\nx,y 参数为相对于窗口左上角的坐标值,\n\nflags 参数为_WKE_前缀常量,可省略,支持的选项如下\n_WKE_CONTROL 表示按下Ctrl键_WKE_SHIFT 表示按下Shift键\n_WKE_LBUTTON 表示按下鼠标左键\n_WKE_MBUTTON 表示按下鼠标左键\n_WKE_RBUTTON 表示按下鼠标右键\n多个选项以 | 连接\n不指定则默认为_WKE_RBUTTON
+mouseWheel(.(x,y,delta,flags) = 转发滚轮事件到网页\nx,y 参数为相对于屏幕左上角的坐标值,\ndelta为120的倍数,负数向下滚动,正数向上滚动,\n\nflags 参数为_WKE_前缀常量,可省略,支持的选项如下\n_WKE_CONTROL 表示按下Ctrl键_WKE_SHIFT 表示按下Shift键\n_WKE_LBUTTON 表示按下鼠标左键\n_WKE_MBUTTON 表示按下鼠标左键\n_WKE_RBUTTON 表示按下鼠标右键\n多个选项以 | 连接\n不指定则默认为_WKE_MBUTTON
+keyUp(.(vkCode,flags,sysKey) = 转发按键释放事件到网页\n\nvkCode 参数指定虚拟键码,请参考标准库key.VK\n\nflags 参数可用指定一个或多个以下选项:\n       _WKE_REPEAT表示重复按键,\n       _WKE_EXTENDED表示扩展键,\n       多个选项以 | 连接\n\nsysKey 参数指定是否同时按下ALT键,
+keyPress(.(charCode,flags,sysKey) = 转发WM_CHAR事件到网页\n\ncharCode 参数指定字符代码,\n\nflags 参数可用指定一个或多个以下选项:\n       _WKE_REPEAT表示重复按键,\n       _WKE_EXTENDED表示扩展键,\n       多个选项以 | 连接\n\nsysKey 参数指定是否同时按下ALT键,
+keyDown(.(vkCode,flags,sysKey) = 转发按键释放事件到网页\n\nvkCode 参数指定虚拟键码,请参考标准库key.VK\n\nflags 参数可用指定一个或多个以下选项:\n       _WKE_REPEAT表示重复按键,\n       _WKE_EXTENDED表示扩展键,\n       多个选项以 | 连接\n\nsysKey 参数指定是否同时按下ALT键,
+doScript(.(js代码) = 执行JS脚本\n如果指定多个参数则首先调用string.format格式化\n这里的JS脚本在临时创建的匿名函数体内执行,\n可使用return返回值
+eval(.(JS表达式,->->->) = 计算JS表达式并返回值,请不要在前在加return\n如果要加return，请改用doScript函数,\n如果指定了一个或多个格式化参数,将自动调用string.format格式化JS\n\n任何网页返回的js对象应当现用现取,不可保存在aardio中\n延时或任何窗口消息分发都可能导致js传给aardio的对象被回收
+document = Javascript网页文档对象\n延时或任何窗口消息分发都可能导致js传给aardio的对象被回收,\\ndocument.
+window = Javascript全局对象\n任何网页返回的js对象应当现用现取,不可保存在aardio中\n延时或任何窗口消息分发都可能导致js传给aardio的对象被回收,\n!jsGlobal.
+script = Javascript全局对象\n任何网页返回的js对象应当现用现取,不可保存在aardio中\n延时或任何窗口消息分发都可能导致js传给aardio的对象被回收,\\n!jsGlobal.
+waitDoc() = 等待文档对象准备就绪,并返回文档对象\ndocument.
+wndproc(.(hwnd,message,wParam,lParam) = 处理窗口消息\n返回值为真表示不再需要后续默认消息处理
+config(.("antiAlias","0") = 关闭抗锯齿,默认值已设为"1",即打开抗锯齿
+config(.("drawMinInterval","3") = 设置帧率
+config(.("minimumFontSize","10") = 修改字体设置
+config(.("minimumLogicalFontSize","10") = 修改字体设置
+config(.("defaultFontSize","10") = 修改字体设置
+config(.("defaultFixedFontSize","10") = 修改字体设置
+config(.("consoleOutput","1") = 关闭console在dbgview下的输出
+config(.("jsEnable","0") = 禁用JS
+config(.("imageEnable","1") = 禁用图像
+destroy() = 销毁对象
+getForm() = 返回该网页视图绑定的窗体对象,\n如果参数为 true 或 省略则返回当前窗体或上层窗体对象,\n窗体对象指 win.form 对象或基于 win.form 的 custom 控件,\n如果参数为false 则返回浏览器实际绑定的窗口对象\n!winform.
+wait(.(网址,超时) = 等待页面加载完成,\n所有参数可选,参数@2可指定超时毫秒数,\n成功返回true
+querySelectorAll(.("CSS选择器") = 查询并返回节点集合,length属性获取节点个数
+querySelector(.("CSS选择器") = 查询并返回节点
+waitQuerySelector(.("CSS选择器",超时) = 查询并等待查询成功后返回节点,\n可选使用参数@2指定超时值,以毫秒为单位
+querySelectorAll() = !ele.
+querySelector() = !ele.
+waitQuerySelector() = !ele.
+print(.(hdc,scale) = 用于GDI打印输出,hdc为打印机设备DC，\nscale指定缩放比例,正数为缩放文档,负数按输出页面缩放\n例如-0.5为缩放至页面的50%
+responseGetMimeType(hRequest) = 用于onResponse事件中获取MIME响应头
+requestSetMimeType(.(hRequest, mime) = 用于onRequestBegin事件中修改请求MIME类型\n参数@1为onRequestBegin中获取的请求句柄\n参数@2请使用字符串指定MIME类型
+requestGetRequestHeader(.(hRequest,key) = 可用于onRequestBegin事件内获取请求HTTP头\n可选用 @key 参数指定 HTTP 请求头键名,\n不指定key时返回所有 HTTP 请求头组成的数组
+responseGetHeader(.(hRequest,key) = 获取响应 HTTP 头\n可选用 @key 参数指定 HTTP 响应头键名,\n不指定key时返回所有 HTTP 响应头组成的数组
+requestSetRequestHeader(.(hRequest, key, value) = 用于onRequestBegin事件中修改发送的请求HTTP头,\n参数@1为onRequestBegin中获取的请求句柄\nkey, value都应该是字符串，分别指定键和值
+requestSetResponseHeader(.(hRequest,key,value) = 修改服务器回应的HTTP头,此函数暂不可用\n参数@2使用字符串指定键名,参数@3使用字符串指定值 
+requestSetData(.(hRequest, data, len) = 用于onRequestBegin事件中修改服务器回应的数据,\nonRequestBegin事件必须调用return true阻止默认的请求,\n参数@1可指定字符串、缓冲区(buffer)、或指针\n可选用参数@3指定数据长度,如果数据为指针则必须指定长度\n\n注意requestSetData函数是在请求发送前修改数据,\nhookOnRequestEnd则是在服务器返回数据后再修改
+requestGetMethod(.(hRequest) = 获取HTTP请求方法,返回值为小写字符串
+requestHold(.(hRequest) = 暂停网络请求,成功返回true,失败返回false
+requestContinue(.(hRequest) = 继续网络请求
+requestCancel(.(hRequest) = 取消网络请求
+requestGetUrl(.(hRequest) = 获取网络请求URL
+requestSetUrl(.(hRequest,url) = 修改网络请求URL
+hookOnRequestEnd(.(hRequest) = 允许此请求结束后触发onRequestEnd事件\n在onRequestEnd事件中可修改服务器返回的内存数据\n调用此函数后,网络层收到数据会暂存数据于内存中\n此函数严重影响性能,请慎用\n\n注意requestSetData函数是在请求发送前修改数据,\nhookOnRequestEnd则是在服务器返回数据后再修改
+setProxy("__") = 设置代理,\n参数使用URL标准语法，例如以下格式都可以:\n代理协议://用户名:密码@主机地址:端口号\n代理协议://主机地址\n\n支持的协议如下:\nHTTP://\nSOCKS://\nSOCKS4://\nSOCKS4A://\nSOCKS5://\nSOCKS5HOSTNAME:// 
+loadScript("js地址","","utf-8") = 动态加载js文件\n参数@1也可以使用一个表,键为JS对象名,值指定多个JS文件地址用于加载该对象,\n参数@2仅用于兼容web.form,不需要指定,\n可选用参数@3指定文件编码
+frameLoadScript(.("js网址",框架句配曲,"utf-8") = 动态加载js文件\n参数@1也可以使用一个表,键为JS对象名,值指定多个JS文件地址用于加载该对象,\n可选用参数@2指定框架句柄,\n可选用参数@3指定文件编码
+dispatchEvent("__/*节点ID*/","click") = 触发事件
+setEle(.(控件名字,属性值,属性名) = 更新控件值,成节返回节点,失败返回null空值\n第一个参数也可以是ele对象,\n属性名,框架名为可选参数.\n属性值可以是一个指定多个属性键值对的table对象
+select("控件名字",__/*输入选项索引,或选项值、选项文本*/) = 查找下拉选框的指定选项,选中并返回选项节点\n第一个参数也可以是ele对象
+click(.(控件名字,随机延时最小值,延时最大值,框架名) = 模拟点击控件,\n第一个参数也可以是ele对象,\n随机延时值为可选参数（此参数暂时无效）,默认为1,500.\n框架名为可选参数
+attach = @.attach(\n	function(event){\n		io.print("点击坐标", event.screenX,event.screenY )\n		io.print("触发节点", event.srcElement.innerText )\n	}\n	,"onclick__",ele/*也可输入getEle()所需参数,省略表示doc*/ \n)
+attachAll = @.attachAll(  \n	/* html节点ID = 事件触发函数表 */\n	caption_button_min = {\n		onclick = function(event){\n			wb._form.hitmin();	\n		} \n	}\n)  
+waitEle(.("ID或名称",,超时值) = 返回一个节点对象,除参数一以外,其他能数可选\n第三个参数指定超时值(单位为毫秒)\n参数@2必须为空
+getEle(.("ID或名称") = 返回一个节点对象
+waitQueryEles( = 函数等待queryEles返回有效节点,\n即使找不到节点,此函数也会返回一个空数组,\nweb窗体关闭或超时返回null空值
+waitQueryEles(.(CSS选择器,查询参数,超时,间隔,完全加载) = 函数等待wb.queryEles返回有效节点,\nweb窗体关闭或超时返回null空值\n\n该函数返回的是一个数组,但可以通过调用数组的成员函数\n批量调用节点的同名成员函数,支持click函数\n\n\n\n参数@1指定一个表对象，\n该参数表可包含一个或多个键值，用于匹配节点的属性值,\n属性值使用 string.cmpMatch函数进行比对，\n等价于调用string.cmp函数进行忽略大小写的比较。\n并且在失败后调用 string.match函数使用模式匹配语法进行比较。\n\n注意在匹配节点属性时有几个例外：\ntagName,id,name属性如果匹配值不含标点则使用忽略大小写的完全比对（禁用模式匹配和部分匹配）\n\n\n可选使用参数@3指定超时值，单位毫秒，其他参数可选
+queryEles( = 搜索节点对象,该函数返回的是一个数组,\n但可以通过调用数组的成员函数批量调用节点的同名成员函数,支持click函数,\n即使找不到节点,此函数也会返回一个空数组,
+queryEles(.(CSS选择器,查询参数表,超时值) = 搜索节点对象,该函数返回的是一个数组,\n但可以通过调用数组的成员函数批量调用节点的同名成员函数,支持click函数\n\n参数@1指定一个表对象，\n该参数表可包含一个或多个键值，用于匹配节点的属性值,\n属性值使用 string.cmpMatch函数进行比对，\n等价于调用string.cmp函数进行忽略大小写的比较,\n并且在失败后调用 string.match函数使用模式匹配语法进行比较。\n\n注意在匹配节点属性时有几个例外：\ntagName,id,name属性如果匹配值不含标点则使用忽略大小写的完全比对（禁用模式匹配和部分匹配）\n\n\n可选使用参数@2指定获取网页文档对象的超时值，单位毫秒，此参数一般不需要指定
+queryEles() = !ele. 
+waitQueryEles() = !ele.
+waitEle() = !ele.
+getEle() = !ele.
+jQuery("__") = jQuery选择器,并可自动载入jQuery库\nn首次调用按需加载jQuery v1.10:\n "/res/js/jQuery/jQuery.min.js"\n失败则通过网络CDN服务器下载jquery-1.10.0.min.js
+jQuery() = 无参数时返回jQuery类对象\n首次调用按需加载 jQuery v1.10:\n "/res/js/jQuery/jQuery.min.js"\n失败则通过网络CDN服务器下载jquery-1.10.0.min.js\n!jQuery.
+cookieClear() = 清空cookie
+cookieClearSession() = 清空会话cookie
+cookieSave() = 保存cookie
+cookieReload() = 自文件重新载入cookie
+cookieData() = 返回所有cookie,返回值为fsys.cookies对象\n如果参数指定网址,使用文本返回该网址的cookies\n!stdfsyscookies.
+enableCspCheck(__) = 设置是否允许内容安全检测,\n参数可指定true或false
+enableNewWindow(__) = 设置是否允许导航到新窗口,\n参数可指定true或false
+enableContextMenu(setting) =  @.enableContextMenu(\n	copyImage=false;\n	goForward=true;\n	goBack=true;\n	reload=true;\n)__/*启用或禁用网页默认右键菜单\n用法请参考函数源码*/
+enableMemoryCache(__) = 设置是否允许缓存,\n参数可指定true或false
+enableTouch(__) = 设置是否开启触摸支持,\n参数可指定true或false
+enableMouse(__) = 设置是否允许鼠标消息,\n参数可指定true或false
+enableNpapiPlugins(__) = 设置是否允许 NPAPI 插件,\n参数可指定true或false
+enableDropGo(__) = 设置是否允许拖拽文件后自动加载网页,\n仅对使用web.blink.view直接创建的窗口有效,\n启用enableDragDrop时此函数失效,\n参数可指定true或false
+enableDragDrop(__) = 设置是否支持HTML5拖放,\n参数可指定true或false
+enableHeadless(__) = 设置是否切换到无界面模式,\n参数可指定true或false
+setNetInterface("__") = 绑定网卡
+setLanguage("en-US;q=0.9") = 自定义Accept-Language请求头,\n用于指定默认的首选语言，支持 en-US,zh-CN
+getCursorType() = 获取指针类型,返回枚举数值,\n参考wke.h中的WkeCursorInfoType
+frameIsMain(__/*框架句柄*/) = 是否主框架
+frameIsRemote(__/*框架句柄*/) = 是否远程框架
+frameMain() = 返回主框架句柄
+frameCss(.(css,框架句柄) = 在指定框架添加CSS\n省略框架则在主框架执行
+frameEval(.(框架句柄,js,->->->) = 在指定框架运算JS表达式并返回值,\n如果指定一个或多个格式化参数,先调用string.format格式化js,\n此函数可跨域
+deviceParameterFloat("window->devicePixelRatio",0) = 设置Javascript设备参数：物理像素 / 独立像素比率
+deviceParameterString("navigator->platform","android__") = 设置Javascript设备参数数：硬件平台
+deviceParameterInt(.("navigator->maxTouchPoints",0__) = 设置Javascript设备参数：最大同时触摸的点数
+deviceParameterInt(.("navigator->hardwareConcurrency",0__) = 设置Javascript设备参数：cpu虚拟核心数
+deviceParameterInt(.("navigator->vibrate",0__) = 设置Javascript设备参数：是否以持震动设备
+deviceParameterInt(.("screen->width",0__) = 设置Javascript设备参数：屏幕宽度
+deviceParameterInt(.("screen->height",0__) = 设置Javascript设备参数：屏幕高度
+deviceParameterInt(.("screen->availWidth",0__) = 设置Javascript设备参数：屏幕可用宽度
+deviceParameterInt(.("screen->availHeigh",0__) = 设置Javascript设备参数：屏幕可用高度
+deviceParameterInt(.("navigator->pixelDepth",0__) = 设置Javascript设备参数：像素位数
+addPluginDirectory(__) = 添加插件搜索目录
+fromPoint(.(x坐标,y坐标) = 自指定的坐标获取HTML元素n如果该坐标不是HTML元素返回null,flash控件返回null
+fromPoint() = !ele.
+getPoint(__) = x,y=wb.getPoint(ele)\n返回对象的页面坐标
+scrollPos(.(scrollLeft,scrollRight) = 返回滚动条位置scrollLeft,scrollRight,\n参数可省略,指定参数时改变滚动条位置,\n可使用负数指定相对于右下角的坐标，-1,-1表示滚动到页面右、下角
+gcResource(__) = 设置缓存资源回收间隔,参数为指定间隔秒数的数值\n该设置可改变图像等资源文件304缓存时间
+gc(__) = 设置内存回收间隔,参数为指定间隔秒数的数值
+createGdipBitmap(__) = 参数指定网页上的img元素\n创建返回一个包含复制了网页图像的gdip.bitmap对象,\n调用此函数前必须自行导入gdip.bitmap
+jsSwapImageBuffer(buffer) = 参数指定包含图像数据的buffer缓冲区对象或gdip.BitmapData对象,\n此函数将GDI+的位图缓冲区与网页图像缓冲区每个像素的R字节与B字节对换,\nGDI+与网页canvas使用的位图缓冲区唯一的区别就是R,B字节是相反的,\nGDI+中像素格式必须指定为PixelFormat32bppARGB\n返回值为输入参数
+jsImageData( = 创建JS的ImageData对象
+jsImageData(.(buffer,width,height) = 创建JS的ImageData对象\n参数@1指定包含图像数据的buffer缓冲区对象或gdip.BitmapData对象\nwidth指定宽度,height指定高度,\n如果参数@1是gdip.BitmapData可省略width,height参数
+jsNew( = 调用js的new操作符创建js对象
+jsNew(.(js类,->->->) = 调用js的new操作符创建js对象\n参数@2可以是JS类对象,也可以直接指定类名字符串\n可选添加一个或多个构造参数
+jsObject() = 创建纯Javascript对象，\n可选在参数中指定一个aardio表对象用于复制到JS对象
+jsArray() = 创建纯Javascript数组，\n可选在参数中指定一个aardio数组对象用于复制到JS数组
+jsThrow(__) = 抛出JS异常,参数应指定字符串\n调用showDevTools函数打开JS开发工具并切换到console控制台可查看该异常\n也可以直接用error函数抛出aardio异常
+jsLasterr() = 调用 web.blink.jsLasterr 获取最后一次JS调用异常
+jsSaveCallback(__) = 在JS回调aardio函数的代码中,\n可用此函数保存调用参数中传过来的JS回调函数，以避免被JS环境回收,\n返回的包装函数可延时异步调用,\n如果将返回的函数赋值给win.form窗体或控件对象的成员函数,\n即可利用窗体成员函数可以跨线程回调特性,跨线程回调该JS函数
+getFaviconIcon(callback) = @.getFaviconIcon(\n	function(url,buf) winform.setIcon(buf); \n)\n}/获取网页图标,只能在onRequestFinish事件回调函数内使用\n如果获取图标失败则不会触发回调函数
+enableNodejs() = 启用 Node.js，\n在 JavaScript中可以调用 nodeJs.require 函数导入 Node.js 模块\n经测试启用这功能后很容易崩溃,\n例如访问一个不存在的变量名就会崩溃,\n所以不建议大家使用，\n传入false 参数关闭 Node.js
+preloadScript(__) = 可使用一个字符串参数指定初始化时执行的JavaScript脚本\n多次调用只会追加不会替换，相同的脚本即使多次调用也只会添加一次
+plugin = 获取默认的或 name 属性为 plugin 的 NPAPI 插件对象
+flash = 获取默认的或 name 属性为 plugin 的 Flash NPAPI 插件对象\n直接打开 *.swf 文件时会自动创建此对象\nMiniblink 调用 flash 接口不是很稳定,\n有时候会报 Uncaught Error: Error calling method on NPObject\n改用 web.kit 可正常使用此对象调用 Flash 函数且不会报错\n!webBlinkNpPluginFlash.
+end intellisense***/
+
+/**intellisense(!webBlinkNpPluginFlash)
+Play() = 播放
+Stop() = 暂停
+Rewind() = 返回到影片的第一帧
+Back() = 影片后退一帧并停止播放
+Forward() = 影片后退一帧并停止播放
+GotoFrame(.(索引) = 将影片跳转到指定的帧并停止播放.\n必须首先调用percentLoaded()函数保证影片完全加载
+PercentLoaded() = 返回影片加载的百分比
+LoadMovie(.(layer,url) = 将由url指定的影片载入到由layer指定的层上\n如果url指定了一个资源文件路径,使用临时文件加载,并设置embedMovie属性为 true
+Pan(.(x,y,mode) = 将一个放大过的影片平移由x和y指定的距离,x和y均为相对值,\nmode默认值为1,按百分比计算,如果设为0则以像素计算
+SetVariable(.("变量名",值) = 设置FLASH变量
+GetVariable("$version__/*变量名*/") = 获取FLASH变量
+TotalFrames()= 返回影片总帧数
+CurrentFrame() = 当前帧索引,注意第一帧索引为0
+IsPlaying() = 是否正在播放动画
+SetZoomRect(.(left,top,right,buttom)=放大指定区域
+Zoom(.(percent)=改变动画大小   
+TGotoFrame(.(movieClip,frame_number)- movieClip跳转到指定帧数
+TGotoLabel(.(movieClip,label_name)= movieClip跳转到指定标签
+TCurrentFrame(.(movieClip)= 回传movieClip当前帧-1
+TCurrentLabel(.(movieClip)=回传movieClip当前标签
+TPlay(.(movieClip)=播放movieClip
+TStopPlay(.(movieClip)=停止movieClip的播放
+TCallFrame(.(movieClip,frame_number)=call指定帧上的action
+TCallLabel(.(movieClip,label)=call指定标签上的action
+TGetProperty(.(movieClip,property)=获取movieClip的指定属性
+TSetProperty(.(movieClip,property,number)=设置movieClip的指定属性
+setAttribute(.(name,value)=设置节点属性,\n相当于在HTML里写属性值
+getAttribute(.(name)=获取节点属性
+end intellisense**/
+
+/**intellisense()
+_WKE_NAVIGATION_TYPE_LINKCLICK=@0/*_WKE_NAVIGATION_TYPE_LINKCLICK*/
+_WKE_NAVIGATION_TYPE_FORMSUBMITTE=@1/*_WKE_NAVIGATION_TYPE_FORMSUBMITTE*/
+_WKE_NAVIGATION_TYPE_BACKFORWARD=@2/*_WKE_NAVIGATION_TYPE_BACKFORWARD*/
+_WKE_NAVIGATION_TYPE_RELOAD=@3/*_WKE_NAVIGATION_TYPE_RELOAD*/
+_WKE_NAVIGATION_TYPE_FORMRESUBMITT=@4/*_WKE_NAVIGATION_TYPE_FORMRESUBMITT*/
+_WKE_NAVIGATION_TYPE_OTHER=@5/*_WKE_NAVIGATION_TYPE_OTHER*/
+_WKE_LBUTTON=@1/*_WKE_LBUTTON*/
+_WKE_RBUTTON=@2/*_WKE_RBUTTON*/
+_WKE_SHIFT=@4/*_WKE_SHIFT*/
+_WKE_CONTROL=@8/*_WKE_CONTROL*/
+_WKE_MBUTTON=@0x10/*_WKE_MBUTTON*/
+_WKE_EXTENDED=@0x100/*_WKE_EXTENDED*/
+_WKE_REPEAT=@0x4000/*_WKE_REPEAT*/
+end intellisense**/

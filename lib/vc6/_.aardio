@@ -1,0 +1,147 @@
+/*
+此支持库.vc目录下文件取自网络,仅供学习测试,任何用途概与本人无关
+*/
+import process;
+import process.popen;
+import util.metaProperty;
+import win.path;
+import win.reg;
+import fsys;
+
+import win.reg;
+var reg = win.reg("HKEY_CURRENT_USER\Software\Microsoft\MicrosoftSDK\InstalledSDKs\44EA8771-41C9-4767-8E5F-C3490C9E8C26",true);
+if(!reg) reg = win.reg("HKEY_CURRENT_USER\Software\Microsoft\MicrosoftSDK\InstalledSDKs\63DADB24-DC99-45EB-A748-EC93AB8A7497",true);
+var windowsSdkDir;
+if( reg ){
+	windowsSdkDir = reg.queryValue("Install Dir");
+	if(windowsSdkDir){
+		..win.path.add( ..fsys.joinpath(windowsSdkDir,"Include"),"INCLUDE" );  
+		..win.path.add( ..fsys.joinpath(windowsSdkDir,"Lib"),"LIB");  
+		..win.path.add( ..fsys.joinpath(windowsSdkDir,"bin"),"PATH" );  
+		..string.setenv("WindowsSdkDir",windowsSdkDir) 
+	}
+	reg.close();
+} 
+
+if( !windowsSdkDir && ..io.exist("~\lib\vc6\.vc\Microsoft SDK")) {
+	..win.path.add( "~\lib\vc6\.vc\Microsoft SDK\Include","INCLUDE" );    
+	..win.path.add( "~\lib\vc6\.vc\Microsoft SDK\Lib","LIB"); 
+	..win.path.add( "~\lib\vc6\.vc\Microsoft SDK\Bin","PATH"); 
+	..string.setenv("WindowsSdkDir",..io.fullpath("~\lib\vc6\.vc\Microsoft SDK\") );
+}
+
+//↑SDK里的头文件版本较新，所以一定要先添加↑
+..win.path.add( "~\lib\vc6\.vc\Bin","PATH" );
+..win.path.add( "~\lib\vc6\.vc\Include","INCLUDE");  
+..win.path.add( "~\lib\vc6\.vc\ATL\Include","INCLUDE" );  
+..win.path.add( "~\lib\vc6\.vc\MFC\Include","INCLUDE");  
+..win.path.add( "~\lib\vc6\.vc\Lib","LIB");  
+..win.path.add( "~\lib\vc6\.vc\MFC\Lib","LIB");  
+..win.path.add( "~\lib\vc6\.vc\MASM\INCLUDE","INCLUDE");  
+..win.path.add( "~\lib\vc6\.vc\MASM\LIB","LIB"); 
+
+class vc6{
+	ctor( sourceDir){ 
+		this.sourceDir = sourceDir : "\";
+	}; 
+	exec = function(param,... ){
+		..fsys.setCurDir( this.sourceDir  )
+		var prcs = ..process( ..string.join({param;... }," ")  );  
+		if(!prcs) error("不支持该命令行",2); 
+		prcs.waitOne();
+		prcs.free();
+	};  
+	popen = function(param,... ){
+		..fsys.setCurDir( this.sourceDir  )
+		var prcs = ..process.popen( ..string.join({param;... }," ")  );  
+		if(!prcs) error("不支持该命令行",2); 
+		return prcs;
+	}; 
+	addPath = function(name,path,...){
+		..win.path.add(path,name);
+		
+		if(!...) return;
+		return this.addPath(name,...);
+	}; 
+	addIncludePath = function(path,...){
+		..win.path.add(path,"INCLUDE" );
+		
+		if(!...) return;
+		return this.addPath( ... );
+	}; 
+	addLibPath = function(path,...){
+		..win.path.add(path,"LIB");
+		
+		if(!...) return;
+		return this.addPath( ... );
+	}; 
+	@_metaProperty;
+} 
+
+namespace vc6{
+
+	_metaProperty = ..util.metaProperty(
+	
+		cpp = { 
+			_set = function( value ){
+				..string.save( ..fsys.joinpath(owner.sourceDir ,"__aardio_gen.cpp"),value ) ;
+			} 	
+		}; 
+	)
+	
+	self.loadcode = function(cpp){
+		if(!type.isString(cpp)){
+			error("参数必须指定 C++ 代码",2)
+		}
+		
+		var result;
+		var dir = ..io.tmpname()
+		..io.createDir(dir)
+
+		..string.save(dir + "\loadcode.cpp",cpp );
+		var vc = ..vc6(dir);
+		var prcs  = vc.popen(
+			'cl *.cpp'
+			,'/W3' /*警告等级*/
+			,'/MD' /*使用多线程动态运行库*/
+			,'/O2 /Ot /EHsc' /*代码优化选项*/
+			,'/D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL"' /*定义常数和宏*/
+			,'/I"./INCLUDE"'/*指定头文件目录*/
+			,'kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib' /*导入库*/
+			,'/link /SUBSYSTEM:WINDOWS /MACHINE:X86' /*后面是链接参数 */
+			,'/out:loadcode.dll'/*输出文件名*/
+			,'/dll' /*输出DLL*/ 
+			,'/LIBPATH:".\LIB" /LIBPATH:".\LIB2"' /*指定库目录*/
+		)
+		
+		if(prcs){
+			prcs.waitOne();
+			prcs.close();
+			
+			var dllPath = ..io.exist(dir + "\loadcode.dll")
+			if(dllPath){
+				result = ..raw.loadDll(..string.load(dllPath),,"cdecl");
+				..io.remove(dllPath);
+			}
+			
+		}
+		
+		..fsys.delete(dir);
+		return result;
+	}
+	
+}
+
+/**intellisense()
+vc6(.("C++工程目录路径" ) =  创建编译器对象
+vc6() = !vc6env.
+vc6.loadcode(cpp) = @.loadcode(`\n#include <windows.h> \n#define DllExport __declspec( dllexport )\n\nextern "C" {\n	DllExport int __cdecl getValue() { \n		__/*编译参数@1指定的C++代码到临时 DLL 文件,\n并通过加载该临时 DLL,然后立即删除 临时DLL文件\n然后该回可以在 aardio 中使用的 DLL 对象*/\n		return 0;\n	}\n}`);
+!vc6env.addPath(.("PATH","目录") = 添加环境变量,支持多个目录参数
+!vc6env.addIncludePath(.("目录") = 环境变量中添加默认头文件目录,支持多个目录参数
+!vc6env.addLibPath(.("目录") = 环境变量中添加默认库文件目录,支持多个目录参数
+!vc6env.sourceDir = 设置源码目录
+!vc6env.popen(命令参数) = @.popen(\n	'cl *.cpp'\n	,'/W3' /*警告等级*/\n	,'/MD' /*使用多线程动态运行库*/\n	,'/O2 /Ot /GL /EHsc' /*代码优化选项*/\n	,'/D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL"' /*定义常数和宏*/\n	,'/I"./INCLUDE"'/*指定头文件目录*/\n
+!vc6env.exec(命令参数) = @.exec(\n	'cl *.cpp'\n	,'/W3' /*警告等级*/\n	,'/MD' /*使用多线程动态运行库*/\n	,'/O2 /Ot /GL /EHsc' /*代码优化选项*/\n	,'/D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL"' /*定义常数和宏*/\n	,'/I"./INCLUDE"'/*指定头文件目录*/\n	,'kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib' /*导入库*/\n	,'/link /SUBSYSTEM:WINDOWS /MACHINE:X86' /*后面是链接参数 */\n	,'/out:test.dll'/*输出文件名*/\n	,'/dll' /*输出DLL*/\n	,'/def:test.def' /*dll模块定义文件*/\n	,'/LIBPATH:".\LIB" /LIBPATH:".\LIB2"' /*指定库目录*/\n)
+!vc6env.cpp = @.cpp = /******\n#include <iostream>\n#include <windows.h>\nusing namespace std;\n  \nextern "C" __declspec(dllexport) int __cdecl Add( int a, int b)  \n{ \n	MessageBox(0, "我是DLL我被调用", "我是C++ DLL", MB_OK); \n	return a + b;\n}__/*输入C++源码*/\n******/
+!vc6env.popen() = !process_popen.
+end intellisense**/

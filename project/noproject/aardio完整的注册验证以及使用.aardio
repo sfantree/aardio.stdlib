@@ -1,0 +1,109 @@
+import win.ui;
+import win.clip;
+import inet.mac;
+import sys.hd;
+import sys.cpu;
+import console;
+/*DSG{{*/
+var winform = ..win.form(cls="TY_FORM";text="DD时时彩计划注册机";right=511;bottom=215;border="thin";max=false;topmost=1)
+winform.add(
+Btn_CopyMachineCode={cls="button";text="粘贴机器码";left=376;top=16;right=496;bottom=40;z=5};
+Btn_CreateRegCode={cls="button";text="生成注册码(&C)";left=376;top=104;right=496;bottom=168;z=6};
+DP_Exp={cls="datetimepick";left=80;top=48;right=176;bottom=72;edge=1;z=8};
+radiobutton={cls="radiobutton";text="一个月";left=80;top=80;right=144;bottom=104;checked=1;z=9};
+radiobutton2={cls="radiobutton";text="二个月";left=144;top=80;right=208;bottom=104;z=10};
+radiobutton3={cls="radiobutton";text="三个月";left=208;top=80;right=272;bottom=104;z=11};
+radiobutton4={cls="radiobutton";text="半年";left=272;top=80;right=320;bottom=104;z=12};
+radiobutton5={cls="radiobutton";text="一年";left=328;top=80;right=376;bottom=104;z=13};
+radiobutton6={cls="radiobutton";text="终身";left=384;top=80;right=432;bottom=104;z=14};
+static={cls="static";text="机器码：";left=28;top=21;right=84;bottom=45;transparent=1;z=1};
+static2={cls="static";text="注册码：";left=28;top=109;right=84;bottom=133;transparent=1;z=2};
+static3={cls="static";text="过期时间：";left=16;top=52;right=80;bottom=76;transparent=1;z=7};
+static4={cls="static";text="快捷选择：";left=16;top=81;right=80;bottom=105;transparent=1;z=15};
+static5={cls="static";text="默认是一个月后过期，请看清楚时间";left=184;top=53;right=448;bottom=77;transparent=1;z=16};
+static6={cls="static";text="解码：";left=40;top=180;right=80;bottom=204;transparent=1;z=17};
+TB_DeRegCode={cls="edit";left=80;top=176;right=496;bottom=200;edge=1;multiline=1;z=18};
+TB_MachineCode={cls="edit";left=80;top=16;right=368;bottom=40;edge=1;z=3};
+TB_RegCode={cls="edit";left=80;top=104;right=368;bottom=168;autohscroll=false;edge=1;multiline=1;vscroll=1;z=4}
+)
+/*}}*/
+
+//****************  普通变量  ******************************************
+
+winform.DP_Exp.setFormat("yyyy'-'MM'-'dd")
+//****************  用户标识  ******************************************
+var currentUser = "123456112";
+
+//****************  函数 ***********************************************
+math.randomize();
+function encryptDate( dateTick, currentUser ){
+	var cryptNum = tonumber(currentUser) * tonumber(string.left(currentUser,1));
+	//取加密日期
+	var rstr=string.split("ABCDEFGHIJKLMNOPQRSTUVWXYZ","");
+	var tick = tostring( dateTick + cryptNum);
+	var tb = {};
+	for(i=1;#tick;1){
+		table.push( tb, rstr[math.random(1, #rstr)] ++ tick[[i]] );
+	}
+	var tickStr = string.reverse(string.join(tb));
+	return tickStr;
+}
+function decryptDate( cryptStr, currentUser ){
+	var cryptNum = tonumber(currentUser) * tonumber(string.left(currentUser,1));
+	num = string.reverse( string.replace(cryptStr,"[A-Z]+","") );
+	num = tonumber( num ) - cryptNum ;
+	return num, time(num);
+}
+//**********************************************************************
+winform.Btn_CreateRegCode.oncommand = function(id,event){
+	var s = string.split( string.trim( winform.TB_MachineCode.text ), "<->",3 );
+	var r = {};
+	import crypt; 
+	for(i=1;#s;1){
+		table.push( r, math.abs( string.crc32( s[i] ++ currentUser) ) );
+	}
+	var dt = encryptDate( tonumber(winform.DP_Exp.time),currentUser );
+	table.push( r, math.abs( string.crc32( dt ++ currentUser) ) );
+	table.push( r, dt );
+	winform.TB_RegCode.text = string.join(r,"-");
+	
+	var a,b = decryptDate( encryptDate( tonumber(winform.DP_Exp.time),currentUser ) ,currentUser );
+	winform.TB_DeRegCode.text = b
+	
+	win.clip.write( winform.TB_RegCode.text )
+	win.msgbox("注册码生成，并已复制到剪贴板上 ！","提示",,winform.hwnd);
+}
+
+winform.Btn_CopyMachineCode.oncommand = function(id,event){
+	//winform.msgbox( winform.Btn_CopyMachineCode.text );
+	winform.TB_MachineCode.text = win.clip.read();
+}
+
+//设置过期时间---快捷选择
+checkDateLong = function( n=1 ){
+	winform.DP_Exp.time = time.now().addmonth( n );
+}
+checkDateLong( 1 );
+winform.radiobutton6.oncommand = function(id,event){
+	checkDateLong( 240 );
+}
+winform.radiobutton5.oncommand = function(id,event){
+	checkDateLong( 12 );
+}
+winform.radiobutton4.oncommand = function(id,event){
+	checkDateLong( 6 );
+}
+winform.radiobutton3.oncommand = function(id,event){
+	checkDateLong( 3 );
+}
+winform.radiobutton2.oncommand = function(id,event){
+	checkDateLong( 2 );
+}
+winform.radiobutton.oncommand = function(id,event){
+	checkDateLong( 1 );
+}
+
+
+
+winform.show() 
+win.loopMessage();

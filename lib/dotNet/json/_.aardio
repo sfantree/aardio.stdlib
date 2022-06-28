@@ -1,0 +1,21 @@
+﻿import dotNet;
+import dotNet.appDomain;
+
+namespace dotNet;
+
+var assembly = dotNet.load("Newtonsoft.Json",$"~\lib\dotNet\json\.res\Newtonsoft.Json.dll")
+json = assembly.import("Newtonsoft.Json").JsonConvert;
+
+appDomain.jsonStringify = function(v,pretty){
+	return json.SerializeObject(v,pretty?1:0)
+}
+
+/**intellisense(dotNet)
+json = 导入此扩展库,\n则所有被封装的 .Net 对象自动支持 web.json.stringify 函数,\ndotNet.createArrayList 返回的原生 .Net 对象除外\n\n此扩展自动注册内存程序集 Newtonsoft.Json.dll\n自动创建 Newtonsoft.Json 名字空间
+json.SerializeObject(__) = 将参数指定的 .Net 对象转为 JSON\n如果参数@2指定为1，则添加缩进格式
+json.DeserializeObject(__) = 将参数指定的 JSON 转为 .Net 对象
+end intellisense**/
+
+/**details(说明)
+此扩展库基于开源的 Newtonsoft.Json： https://github.com/JamesNK/Newtonsoft.Json
+end details**/

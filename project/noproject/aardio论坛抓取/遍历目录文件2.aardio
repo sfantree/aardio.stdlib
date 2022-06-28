@@ -1,0 +1,28 @@
+import fsys;
+import console;
+
+
+// 可否说说迭代 遍历 递归
+// http://bbs.aardio.com/forum.php?mod=viewthread&tid=490
+// (出处: aardio官方社区)
+
+// 递归遍历 子目录
+global.enum = function(ml) {
+    fsys.enum(  ml,
+                "*.*",
+                function(dir,file,fullpath,findData){
+                    if(file){
+                        io.print("发现文件："+file,"完整路径："+fullpath)
+                    }
+                    else{
+                        io.print("发现目录：" + dir)
+                        enum(fullpath)
+                    }
+       }, false
+    );
+}
+
+io.open()
+enum("G:\Program Files (x86)\aardio\lib\string")
+execute("pause")
+io.close()

@@ -1,0 +1,51 @@
+import win.ui;
+import win.ui.menu;
+/*DSG{{*/
+mainForm = ..win.form( bottom=400;parent=...;text="修改子菜单演示";right=600 )
+mainForm.add(
+button={ bottom=328;text="我弹";left=229;top=292;z=1;right=351;cls="button" };
+button2={ bottom=329;right=503;left=359;top=293;z=2;text="我弹不同的子菜单";cls="button" }
+)
+/*}}*/
+
+//创建弹出菜单  
+mainForm.popmenu = win.ui.popmenu(mainForm);
+mainForm.popmenu.add("子菜单",mainForm.subMenu2 )
+mainForm.popmenu.add("菜单标题",function(){ })
+
+mainForm.button.oncommand = function(id,event){
+
+        mainForm.popmenu.delete( 1 )
+       
+        var subMenu = win.ui.popmenu(mainForm);//创建弹出菜单
+        subMenu.addTable( {
+                { "菜单文本";  function(id){
+                       
+                } }; { /*分隔线*/ }
+                { "退出程序"; function(id){  
+                        mainForm.close()
+                } };
+        } )
+        mainForm.popmenu.insert( 1,"子菜单",subMenu )
+        mainForm.popmenu.popup();
+}
+
+mainForm.button2.oncommand = function(id,event){
+
+        mainForm.popmenu.delete( 1 )
+       
+        var subMenu = win.ui.popmenu(mainForm);//创建弹出菜单
+        subMenu.addTable( {
+                { "菜单文本2";  function(id){
+                       
+                } }; { /*分隔线*/ }
+                { "退出程序2"; function(id){  
+                        mainForm.close()
+                } };
+        } )
+        mainForm.popmenu.insert( 1,"子菜单2",subMenu )
+        mainForm.popmenu.popup();
+}
+
+mainForm.show()
+win.loopMessage();

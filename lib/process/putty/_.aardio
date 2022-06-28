@@ -1,0 +1,141 @@
+import win;
+import win.reg;
+import inet.url;
+import process;
+import winex;
+import winex.key;
+import win.clip;
+import fsys;
+
+namespace process;
+
+class putty {
+
+    ctor( hostName,password,user="root",session,severPort="22",ppk,...){
+    
+    	this.exePath = ..fsys.appdata("/aardio/std/putty.exe",$ "~/lib/process/putty/.res/putty.exe");
+    	if( !hostName ) { 
+    		this =  ..process( this.exePath );
+    		return this;
+    	}
+    	
+    	if(!password) error("请使用参数@2请定登录密码",2);
+    	
+    	if(!session) {
+    	
+    		var reg = ..win.reg("HKEY_CURRENT_USER\Software\SimonTatham\PuTTY\Sessions",true);
+    		if( reg ){
+    			for(keyname,writetime in reg.eachKey() ){
+    				var subreg=reg.openReg(keyname); 
+    				var h = subreg.queryValue("HostName");
+    				if( h && h == hostName){
+    					session = ..inet.url.decode(keyname,false); 
+    				}
+    			}
+    			
+    		}
+    		
+    		if(!session) session = "Default Settings";
+    	} 
+    	
+    	var po = ""
+    	if( ..io.exist(ppk) ){
+    		po = "-i";
+    		ppk = ..io.fullpath(ppk)
+    	}
+ 
+    	var prcs =  ..process( this.exePath 
+			,"-load",session,po,ppk,
+			,"-ssh","-l",user 
+			,"-pw",'"'+password+'"'
+			,"-P",tostring(severPort)
+			,hostName,...
+			)
+		
+		this.session = session;
+		this.process = prcs;
+		this.hwnd = ..winex.find("PuTTY",,this.id)  
+	};
+	download = function( remotePath,localPath,echo ){
+		if(!remotePath) error("请使用参数@1指定远程路径",2)
+		if( ..string.indexAny(remotePath,"*?><|"";&![]'`(){}") ) error('linux文件名禁止使用以下字符:\n'+ "*?><|"";&![]'`(){}",2);
+    	
+    	if(!..process.pscp) error("请先导入库 process.pscp",2)
+    	..process.pscp.download( echo,remotePath,localPath,hostName,password,user,severPort,ppk)
+    };
+    upload = function( localPath,remotePath=".",echo ){
+    	if(!remotePath) error("请使用参数@1指定远程路径",2)
+		if( ..string.indexAny(remotePath,"*?><|"";&![]'`(){}") ) error('linux文件名禁止使用以下字符:\n'+ "*?><|"";&![]'`(){}",2);
+		
+		if(!..process.pscp) error("请先导入库 process.pscp",2)
+    	..process.pscp.upload( echo,localPath,remotePath,hostName,password,user,severPort,ppk)
+    }; 
+	copyAll = function(){
+		..winex.click(this.hwnd,368)
+	};
+	send = function(str){
+		if(str){
+			..winex.sayIme(str + '\n',this.hwnd)
+		}
+	};
+	waitString = function(p){
+		var m;
+		var clip = ..win.clip.read(); 
+		do{
+			sleep(200)
+			..winex.click(this.hwnd,368);
+			var s = ..win.clip.read();
+			if( s ? ..string.match(s,p) ) {
+				sleep(200);
+				m = ..string.match(s,p);  
+			}
+		}while(!m);
+		
+		..win.clip.write(clip)
+		sleep(1000) 
+	};
+	close = function(){
+		if(this.hwnd){ 
+			..winex.close(this.hwnd)  
+			var hwnd,ctrl = ..winex.waitActive("PuTTY Exit Confirmation","OK","\#32770","Button",1)
+			..winex.click(hwnd,1); 
+			
+			this.process.free();
+			this.hwnd = null;
+			this.process = null;
+		}
+	};
+}
+
+namespace putty{
+	reg = function(session){
+		if(!session){
+			session = "Default Settings";
+		}
+		
+		if( type(session) != type.string ) error("请指定会话设置名字",2);
+		return  ..win.reg("HKEY_CURRENT_USER\Software\SimonTatham\PuTTY\Sessions\" 
+    		+ ..inet.url.encode(session,false),true)
+	} 
+}
+
+/**intellisense()
+process.putty = putty自动登录工具
+process.putty( = 创建putty进程
+process.putty(.(主机,密码) = 一般两个参数即可自动登录\n用户名默认为root,参数@1可以是IP或会话设置名\n输入IP则自动查找合适的会话设置\n\n不输入任何参数打开设置界面\n设置也可以自注册表修改,参考此扩展库源码
+process.putty(.(主机,密码,用户名,会话设置名,端口,私钥,其他参数) = 除主机名,密码以外其他参数可选\n参数@1可以是主机IP,或会话设置名\n如果不指定会话设置则自动查找合适的设置\n用户名可省略,默认为"root"
+process.putty() = !process_putty.
+!process_putty.session = 会话设置名
+!process_putty.exePath = putty执行文件路径
+!process_putty.waitString("\:[~/\w]+[#\$]\s*$") = 等待直到模式匹配控制台输出成功\n该功能会占用剪贴板
+!process_putty.send(.('shell命令') = 使用键盘输入shell命令\n该函数自动追加一个换行在命令尾部
+!process_putty.copyAll() = 复制所有功能到剪帖板
+!process_putty.close() = 注销并退出程序\n不会弹出关闭确认对话框
+!process_putty.process = !process.
+!process_putty.download( = 下载文件
+!process_putty.download(.(远程路径,本地路径,回显函数) = 回显函数不必指定\n默认输出到控制台,如果导入了console则打开控制台
+!process_putty.upload( = 上传文件
+!process_putty.upload(.(本地路径,远程目录,回显函数,) = 回显函数不必指定\n默认输出到控制台,如果导入了console则打开控制台\n远程目录路径默认为".",即用户当前目录
+process.putty.reg(.(会话设置名) = 打开当前会话注册表设置
+process.putty.reg() = !reg.
+end intellisense**/

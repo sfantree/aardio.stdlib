@@ -1,0 +1,81 @@
+﻿import crypt.bin;
+import web.rest.jsonClient;
+import web.rest.jsonLiteClient;
+
+namespace baidu;
+
+class client {
+    
+    ctor(http){
+        this = http : ..web.rest.jsonLiteClient()
+        this.apiKey = apiKey;
+        this.secretKey = secretKey;
+
+        this.oauthApi = this.api("https://aip.baidubce.com/oauth/2.0/","GET");
+        this.beforeStringifyRequestParameters = function(params,codepage){
+            
+        	if( params[["image"]] ){
+        		
+        		if( (#params.image < 0x410/*_MAX_PATH_U8*/) && ..io.exist(params.image)){
+        			params.image = ..string.load(params.image);
+        		}
+        		elseif( ..string.startWith(params.image,"http",true) ){
+        			params.image = this._http.get(params.image);
+        		} 
+        		
+        		if(params.image) params.image = ..crypt.bin.encodeBase64(params.image);
+        	}
+        	return params;
+        }
+    };
+    setAuth = function(apiKey,secretKey){ 
+        if(secretKey){
+        	var result,err = this.oauthApi.token({
+            	grant_type = "client_credentials";
+            	client_id = apiKey;
+            	client_secret =  ..string.trim( secretKey );
+        	});  
+        	
+        	if(!result[["access_token"]]) return null,"认证失败";
+        	
+        	this.extraUrlParameters = {
+            	access_token = result.access_token;
+        	}   
+
+        	return result;
+        }
+        else {
+            if(..string.startWith(apiKey,"http://",true)){
+                apiKey = this._http.get(apiKey);
+            };
+            
+        	this.extraUrlParameters = {
+            	access_token = apiKey;
+        	} 
+        	
+        	return true;
+        }
+    }
+}
+
+namespace client{
+    
+    class json{
+    	ctor( ){
+    		this = ..baidu.client( ..web.rest.jsonClient() )
+    	}; 
+    } 
+	
+}
+
+
+/*
+感谢xauto分享的调用代码
+http://bbs.aardio.com/forum.php?mod=viewthread&tid=22093
+*/
+
+/**intellisense()
+baidu.client = 百度客户端支持库,\n包含baidu.client以及baidu.client.json
+baidu.client() = 创建百度API客户端,返回数据为JSON格式\n[点里打开百度API文档](http://ai.baidu.com/docs) \n!web_restClient.
+baidu.client.json() = 创建百度API客户端,\n提交数据与返回数据格式都是JSON\n[点里打开百度API文档](http://ai.baidu.com/docs) \n!web_restClient.
+end intellisense**/

@@ -1,0 +1,196 @@
+﻿import win.path;
+import process.popen;
+import sevenZip.decoder2.httpFile;
+import string.cmdline;
+import web.json;
+
+namespace process.ruby;
+
+install = function(url){
+    if(..io.exist(path)){
+    	return path;
+    }
+    
+	if(!url){
+		path = ..win.path.search("ruby.exe")
+		if(path) return path;
+		
+		url = "https://mirror.sjtu.edu.cn/github-release/oneclick/rubyinstaller2/releases/download/RubyInstaller-3.0.0-1/rubyinstaller-3.0.0-1-x86.7z"
+	}
+	
+	path = ..io.appData("aardio/std/ruby/" + ..io.splitpath(url).name + "/bin/ruby.exe")
+	if(..io.exist(path)){
+		return path;
+	}
+	
+	var dir = ..sevenZip.decoder2.httpFile.download(url,"正在下载 Ruby",..io.appData("aardio/std/ruby/down"),..io.appData("aardio/std/ruby"))
+	if(dir){
+		 return ..io.exist(path)
+	}
+}
+
+workDir = ..io.fullpath("/")
+
+cmd = function(filename,param,...){
+	var rubyPath = install();
+	if(!rubyPath) return;
+	rubyPath = ..io.splitpath(rubyPath).dir;
+    
+	if(param){
+		param = ..string.cmdline.arguments(param,...);
+	}
+	elseif(filename) {
+		var cmdline = ..string.cmdline(filename);
+		if(cmdline[0]){
+			filename = cmdline[0];
+			cmdline[0] = null;
+			
+			param = cmdline;
+		}
+		else {
+			error("参数错误",2)
+		}
+	}
+	else {
+		error("参数错误",2)
+	}
+	
+	var cmd =  ..io.exist( ..io.joinpath(rubyPath,filename + ".cmd" )) : ..fsys.shortpath( filename + ".cmd" ) :  filename;
+	var prcs,err = ..process( cmd ,param,{workDir=..io.fullpath(self.workDir)});
+	if(prcs){
+		prcs.wait();
+		return true;
+	}
+	
+	return null,err; 
+}
+
+rake = function(...){
+	var prcs = pcmd("rake",...);
+	if(prcs){
+		prcs.writeClose();
+		var _,out,err = prcs.waitOne() 
+		prcs.close();
+		return out,err;
+	}
+}
+
+pcmd = function(filename,param,...){
+	var rubyPath = install();
+	if(!rubyPath) return;
+	rubyPath = ..io.splitpath(rubyPath).dir;
+		
+	if(param){
+		param = ..string.cmdline.arguments(param,...);
+	}
+	elseif(filename) {
+		var cmdline = ..string.cmdline(filename);
+		if(cmdline[0]){
+			filename = cmdline[0];
+			cmdline[0] = null;
+			
+			param = cmdline;
+		}
+		else {
+			error("参数错误",2)
+		}
+	}
+	else {
+		error("参数错误",2)
+	}
+		
+	var cmd =  ..io.exist( ..io.joinpath(rubyPath,filename + ".cmd" )) : ..fsys.shortpath( filename + ".cmd" ) :  filename;
+	var prcs,err = ..process.popen( cmd ,param,{workDir=..io.fullpath(self.workDir)});
+ 
+	if(prcs){
+		prcs.codepage = 65001; 
+		return prcs;
+	}
+	
+	return null,err;	
+}
+
+popen = function(str,param,...){
+    var rubyPath = install();
+    if(!rubyPath) return;
+    
+    var args = {rubyPath;"--encoding=utf-8"}
+    
+    if(type.isString(str)){
+        if(#str < 0x410/*_MAX_PATH_U8*/){
+    		if(..io.exist(str)){
+    			..table.push(args,str);
+    			str = null;
+    		}
+    		elseif(..io.localpath(str)){
+    			str = ..string.load(str);
+    		}        	
+        }
+    }
+    
+    if(self.loadPath){
+    	for i,v in ..table.eachIndex(self.loadPath){
+    		..table.push(args,`-I"`+..io.fullpath(v)+`"`)
+    	}    	
+    }
+
+    ..table.concat(args,..string.cmdline.arguments(param,...) );
+    
+	var prcs,err = ..process.popen(rubyPath, argsh, {workDir=..io.fullpath(self.workDir)});
+	if(!prcs){ return null,err; } 
+	prcs.codepage = 65001;
+	
+	if(str){
+		prcs.write('# encoding: UTF-8\n');
+		prcs.write(str);
+		prcs.writeClose('\0\n'); 		
+	}
+	
+	return prcs;
+}
+
+exec = function(str,...){
+    
+	var prcs,err = popen(str,...);
+	if(!prcs){ return null,err; } 
+	
+	prcs.writeClose();
+	var ok,out,err,exitCode = prcs.waitOne()
+	if(ok && !#err){
+		return out; 
+	}
+	
+	return null,err;
+}
+
+self.eval = function(rubyCode){
+	var prcs,err = popen();
+	if(!prcs){ return null,err; } 
+	
+	prcs.write('# encoding: UTF-8\n');
+	prcs.write('require "json"\n');
+	prcs.write('puts JSON.generate(  (');
+	prcs.write(rubyCode);
+	prcs.writeClose(') )\0\n'); 
+		
+	var ok,out,err,exitCode = prcs.waitOne()
+	if(ok && !#err){
+		return ..web.json.parse(out); 
+	}
+	
+	return null,err;
+}
+
+/**intellisense(process.ruby)
+install() = 安装 Ruby 环境并返回 Ruby.exe 路径,\n可选在参数中指定 7z 格式下载网址,\n如果不指定参数，则首先查找系统已安装的 Ruby,\n如果未找到则下载 Ruby 3.0\n如果不调用此函数,在执行其他函数时会自动调用
+path = 可选使用此属性自定义 Ruby.exe 路径
+cmd(.("命令文件名",其他命令行参数->->->) = 运行 Ruby 命令,\n此函数会打开控制台,\n\n第一个参数指定cmd命令,可选自第二个参数开始指定命令行参数\n多个命令行参数则调用 process.joinArguments 合并,\n不在双引号内、且包含空白或需要转义的参数转义处理后首尾添加双引号
+pcmd(.("命令文件名",其他命令行参数->->->) = 创建进程管道运行Ruby命令,返回 process.popen 对象,\n默认工作目录为 process.ruby.workDir\n\n第一个参数指定cmd命令,可选自第二个参数开始指定命令行参数\n多个命令行参数则调用 process.joinArguments 合并,\n不在双引号内、且包含空白或需要转义的参数转义处理后首尾添加双引号
+popen(.(rubyCode,->->->) = 以管道方式打开 Ruby 进程,\n支持不定个数启动参数,也可以在一个字符串参数中写多个参数\n参数@rubyCode可以是 *.rb 代码文件路径、Ruby代码
+exec(.(rubyCode,->->->) = 以管道方式打开 Ruby 进程执行 Ruby 代码,\n支持不定个数启动参数,也可以在一个字符串参数中写多个参数\n参数@rubyCode可以是 *.rb 代码文件路径、Ruby代码
+eval("__") = 解析 Ruby 表达式的值并转换为 aardio 对象
+pcmd() = !process_popen.
+popen() = !process_popen.
+rake(.(命令行参数->->->) = 工作目录下应当先创建 rakefile 文件,\n创建进程管道运行 rake 命令,返回标准输出,错误输出,\n默认工作目录为 process.ruby.workDir,\n\n第一个参数指定cmd命令,可选自第二个参数开始指定命令行参数\n多个命令行参数则调用 process.joinArguments 合并,\n不在双引号内、且包含空白或需要转义的参数转义处理后首尾添加双引号
+workDir = Ruby 工作目录\n默认值为..io.fullpath("/")
+end intellisense**/

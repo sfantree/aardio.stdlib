@@ -1,0 +1,29 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add(
+button={cls="button";text="button";left=461;top=377;right=568;bottom=421;z=3};
+checklist={cls="checklist";left=422;top=23;right=739;bottom=340;edge=1;items={};z=1};
+edit={cls="edit";text="edit";left=29;top=16;right=331;bottom=347;edge=1;multiline=1;z=2}
+)
+/*}}*/
+
+winform.edit.text = /*
+测试1
+
+测试2
+*/
+
+winform.button.oncommand = function(id, event) {
+    winform.checklist.clear();
+   
+    for line in winform.edit.lines(true) {
+        winform.checklist.addItem(line);
+    }
+    
+    // 复选框 全选
+    winform.checklist.setChecked(0);
+}
+
+winform.show()
+win.loopMessage();

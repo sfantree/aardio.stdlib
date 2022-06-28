@@ -1,0 +1,173 @@
+//cursor 游标
+namespace unqlite;
+
+class cursor{
+	ctor( unqlite,zJx9 ){
+		var rc,handle = unqlite_kv_cursor_init(unqlite.db);
+		if(rc!=0)return null,rc;
+		this.handle = handle;
+		this.db = unqlite.db;
+		
+		this.__fetch_one_callback = ..raw.tocdecl(function(p,size){
+				this.currentData__ = ..raw.tostring(p,1,size);
+		},"int(pointer p,INT size,pointer)");
+		
+		..table.add_gc(this,"release");
+	};
+	@_metaProperty;
+}
+
+var dll = assert(_dll,"请先导入unqlite支持库")
+namespace cursor {
+	_metaProperty = ..util.metaProperty(
+		
+		key = function(proc){
+			if( !proc ){
+				if( 0 == unqlite_kv_cursor_key_callback(owner.handle,owner.__fetch_one_callback ) )
+					return owner.currentData__;
+					
+				return;
+			}; 
+			if( type(proc) != type.function ) error("参数@2必须指定回调函数",2);
+			
+			var pc = ..raw.tocdecl(function(p,size){
+				proc( ..raw.tostring(p,1,size) )
+			},"int(pointer p,INT size,pointer)");
+			
+			return unqlite_kv_cursor_key_callback(owner.db,pc,null)
+		}
+		data = function(proc){
+			if( !proc ){
+				if( 0 == unqlite_kv_cursor_data_callback(owner.handle,owner.__fetch_one_callback ) )
+					return owner.currentData__;
+					
+				return;
+			}; 
+			if( type(proc) != type.function ) error("参数@2必须指定回调函数",2);
+			
+			var pc = ..raw.tocdecl(function(p,size){
+				proc( ..raw.tostring(p,1,size) )
+			},"int(pointer p,INT size,pointer)");
+			
+			return unqlite_kv_cursor_data_callback(owner.db,pc,null)
+		}
+		dataObject = function(proc){
+			if( !proc ){
+				if( 0 == unqlite_kv_cursor_data_callback(owner.handle,owner.__fetch_one_callback ) ){
+					var data = owner.currentData__ ; 
+					if( data ){
+						var first = data[1]; 
+						if( first == '{'# || first == '['# ){
+							return json_parse( data);
+						}
+						return data;
+					} 
+				}	
+				return;
+			}; 
+			if( type(proc) != type.function ) error("参数@2必须指定回调函数",2);
+			
+			var pc = ..raw.tocdecl(function(p,size){
+				var data = ..raw.tostring(p,1,size) ; 
+				if( data ){
+					var first = data[1]; 
+					if( first == '{'# || first == '['# ){
+						data = json_parse( data);
+					} 
+				} 
+				proc( data )
+			},"int(pointer p,INT size,pointer)");
+			
+			return unqlite_kv_cursor_data_callback(owner.db,pc,null)
+		}
+		valid = function(){
+			return unqlite_kv_cursor_valid_entry(owner.handle)
+		}
+		prev = function(){
+			return unqlite_kv_cursor_prev_entry(owner.handle)
+		}
+		next = function(){
+			return unqlite_kv_cursor_next_entry(owner.handle)
+		}
+		last = function(){
+			return unqlite_kv_cursor_last_entry(owner.handle)
+		}
+		first = function(){
+			return unqlite_kv_cursor_first_entry(owner.handle)
+		}
+		each = function(){ 
+			return function(k){
+				if(k)owner.next();
+				else { owner.first() }
+				
+				if( owner.valid() ){
+					return owner.key(),owner.data();
+				}
+			},owner 
+		}
+		eachObject = function(){ 
+			return function(k){
+				if(k)owner.next();
+				else { owner.first() }
+				
+				if( owner.valid() ){
+					return owner.key(),owner.dataObject();
+				}
+			},owner 
+		}
+		seek = function(k,iPos){
+			if( iPos===null ) iPos = 1/*UNQLITE_CURSOR_MATCH_EXACT*/
+			return unqlite_kv_cursor_seek(owner.handle,k,#k,iPos)
+		} 
+		delete = function(k){ 
+			if(k) if( 0 != owner.seek(k) ) return -6/*SXERR_NOTFOUND*/;
+			return unqlite_kv_cursor_delete_entry(owner.handle)
+		}
+		reset = function(k){  
+			return unqlite_kv_cursor_reset(owner.handle)
+		}
+		release = function(){
+			if( owner.handle ){
+				unqlite_kv_cursor_release( owner.db,owner.handle );
+				owner.handle = null;
+				owner.db = null;
+			}
+		} 
+	)
+	/* Cursor Iterator pointer */
+	unqlite_kv_cursor_init= dll.api("unqlite_kv_cursor_init","int(POINTER pDb,pointer &ppOut)","cdecl");
+	unqlite_kv_cursor_release= dll.api("unqlite_kv_cursor_release","int(POINTER pDb,POINTER pCur)","cdecl");
+	unqlite_kv_cursor_seek= dll.api("unqlite_kv_cursor_seek","int(POINTER pCursor,pointer pKey,int nKeyLen,int iPos)","cdecl");
+	unqlite_kv_cursor_first_entry= dll.api("unqlite_kv_cursor_first_entry","int(POINTER pCursor)","cdecl");
+	unqlite_kv_cursor_last_entry= dll.api("unqlite_kv_cursor_last_entry","int(POINTER pCursor)","cdecl");
+	unqlite_kv_cursor_valid_entry= dll.api("unqlite_kv_cursor_valid_entry","bool(POINTER pCursor)","cdecl");
+	unqlite_kv_cursor_next_entry= dll.api("unqlite_kv_cursor_next_entry","int(POINTER pCursor)","cdecl");
+	unqlite_kv_cursor_prev_entry= dll.api("unqlite_kv_cursor_prev_entry","int(POINTER pCursor)","cdecl");
+	unqlite_kv_cursor_key_callback= dll.api("unqlite_kv_cursor_key_callback","int(POINTER pCursor,pointer func,pointer pUserData)","cdecl");
+	unqlite_kv_cursor_data_callback= dll.api("unqlite_kv_cursor_data_callback","int(POINTER pCursor,pointer func,pointer pUserData)","cdecl");
+	unqlite_kv_cursor_delete_entry= dll.api("unqlite_kv_cursor_delete_entry","int(POINTER pCursor)","cdecl");
+	unqlite_kv_cursor_reset= dll.api("unqlite_kv_cursor_reset","int(POINTER pCursor)","cdecl");	
+	json_stringify = ..web.json.stringify;
+	json_parse = ..web.json.parse; 
+}
+
+/**intellisense(!unqlite_cursor)
+key() = 返回当前键名
+data() = 返回当前值
+dataObject() = 返回表对象值
+valid() = 是否有效数据
+prev() = 前移一行
+next() = 后移一行
+last() = 移动到尾行
+first() = 移动到首行
+seek(.("键名") = 移动游标到指定键
+delete() = 删除当前行,可选在参数中指定键名
+reset() = 重置游标
+release() = 关闭游标对象
+each() = @for(k,v in ??.each() ){ 
+	__
+}
+eachObject() = @for(k,v in ??.eachObject() ){ 
+	__
+}
+end intellisense**/

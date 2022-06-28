@@ -1,0 +1,24 @@
+
+// http://bbs.aardio.com/forum.php?mod=redirect&goto=findpost&ptid=5637&pid=38561
+
+import console; 
+import com;
+
+var oExcel = com.TryCreateObject("Excel.Application.14")
+oExcel.Visible = true; 
+//oExcel.WorkBooks.Add();
+//oExcel.ActiveWorkBook.ActiveSheet.Cells(1,1).Value = "test";
+//oExcel.WorkBooks(1).Sheets(1).Cells(1,1).Value = "test";
+
+oExcel.WorkBooks.Add();
+var sheet = oExcel.ActiveWorkbook.Sheets(1);
+
+sheet.Cells(1,1).Value2 = "test";
+
+oExcel.ActiveWorkBook.Saved = true;
+//oExcel.Quit();
+
+//console.log("您输入的是" ,num );
+console.pause(true);
+
+

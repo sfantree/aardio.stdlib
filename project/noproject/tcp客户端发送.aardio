@@ -1,0 +1,20 @@
+import win.ui;
+/*DSG{{*/
+mainForm = win.form(text="aardio form";right=759;bottom=151)
+mainForm.add(
+button={cls="button";text="button";left=608;top=48;right=712;bottom=90;z=2};
+edit={cls="edit";left=32;top=48;right=598;bottom=90;db=1;dl=1;dr=1;dt=1;edge=1;multiline=1;z=1}
+)
+/*}}*/
+
+import wsock.tcp.client;
+tcpClient = wsock.tcp.client()
+tcpClient.connect("127.0.0.1",5599)
+
+
+mainForm.button.oncommand = function(id,event){
+        tcpClient.write(mainForm.edit.text);       
+}
+
+mainForm.show()
+return win.loopMessage();

@@ -1,0 +1,28 @@
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form( bottom=699;scroll=1;text="aardio Form";right=647;parent=...)
+winform.add(
+static={ bottom=684;text="static";left=10;top=9;z=1;transparent=1;right=636;cls="static" }
+)
+/*}}*/
+
+import web.form;
+var wb = web.form( winform.static );
+wb.go("http://bbs.xmfish.com/register.php")
+wb.wait("");
+var ele = wb.getEle("authmobile")  
+ele.value = "123"               
+var ele = wb.getEle("btnGetVerify")
+
+/*
+wb.click( 控件名字, 随机延时最小值 = 1, 延时最大值 = 500, 框架名 )
+*/
+
+ele.click()//点击“获取手机验证码”没反应
+/*用以下也不行
+ele=wb.queryEles(id="btnGetVerify";innerHTML="获取手机验证码")
+ele.click()
+*/
+winform.show()
+win.loopMessage();
+return winform,wb;

@@ -1,0 +1,56 @@
+﻿//changeNotification 监听桌面会话
+import win.ts;
+namespace win.ts; 
+
+class changeNotification {
+
+	ctor( winform ){ 
+		if(!winform){
+			winform = ..win.form( {} );
+			winform.messageOnly();
+		}
+		this._form = winform;
+		
+		this.register = function( flags = 1/*_NOTIFY_FOR_ALL_SESSIONS*/){
+			this.deregister();
+			
+			if(!::Wtsapi32.WTSRegisterSessionNotification(this._form.hwnd, flags)  ){
+				return; 
+			}
+			
+			winform.wndproc = {
+				[0x02B1/*_WM_WTSSESSION_CHANGE */] = function(hwnd,message,status,sessionId){ 
+					if(this.onSessionChange){
+						return this.onSessionChange(sessionId,statusText[status],status);
+					}
+				} 
+				[0x2/*_WM_DESTROY*/] = function(hwnd,message,wParam,lParam){
+					this.deregister();
+				}
+			}
+		};
+		
+		this.deregister = function(){
+			::Wtsapi32.WTSUnRegisterSessionNotification(this._form.hwnd);
+		};
+		
+		this.register();
+		..table.gc(this,"deregister");
+	} 
+} 
+
+namespace changeNotification{ 
+	statusText = {"console.connect","console.disconnect","remote.connect","remote.disconnect","logon","logoff","lock","unlock","remote.control"}
+} 
+
+/**intellisense()
+win.ts.changeNotification = 监听用户对桌面会话的操作
+win.ts.changeNotification(.(窗口对象) = 注册文件监听窗口\监听用户对桌面会话的操作,\n省略参数则创建 message only window
+win.ts.changeNotification() = !wtsChangeNotification.
+!wtsChangeNotification._form = !winform.
+!wtsChangeNotification.register(.(选项) = 注册并启用文件监视功能,\n所有参数都可以省略,默认使 _NOTIFY_FOR_ALL_SESSIONS 选项
+!wtsChangeNotification.deregister() = 注销并关闭监听
+!wtsChangeNotification.onSessionChange = @.onSessionChange = function(sessionId,statusText,statusCode){\n	__/*桌面会话改变，：例如用户登录，远程桌面连接断开等*/\n}
+_NOTIFY_FOR_THIS_SESSION=@0/*_NOTIFY_FOR_THIS_SESSION*/
+_NOTIFY_FOR_ALL_SESSIONS=@1/*_NOTIFY_FOR_ALL_SESSIONS*/
+end intellisense**/

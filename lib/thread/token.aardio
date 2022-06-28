@@ -1,0 +1,57 @@
+﻿//token 令牌
+import process.token;
+
+namespace thread;
+
+class token{
+	ctor(thandle,access,gc,openAsSelf){
+		var token = {ptr handle}
+		if(openAsSelf===null) openAsSelf = true;
+		if(gc===null) gc = true;
+	
+		if(::Advapi32.OpenThreadToken(thandle:..thread.getHandle(),access : 8/*_TOKEN_QUERY*/,openAsSelf,token)){
+			return ..process.token( token = token.handle; gc = gc )
+		} 
+		
+		return null;
+	} 
+}
+
+token.impersonate = function(process,proc){
+	var tkImpersonation = ..thread.token(null, 0x20008/*_TOKEN_READ*/ | 4/*_TOKEN_IMPERSONATE*/,false)
+	if(tkImpersonation){
+		if(!::Advapi32.RevertToSelf()){
+			tkImpersonation.close();
+			tkImpersonation = null;
+		}
+	}
+			
+	var token = ..process.token(process,8/*_TOKEN_QUERY*/ | 4/*_TOKEN_IMPERSONATE*/|2/*_TOKEN_DUPLICATE*/)
+
+	var ret;
+	if(token){  
+		var th = token.duplicate() 
+		if(th) {
+
+			if( ::Advapi32.SetThreadTokenB(,th) ){
+				ret = proc();
+
+				::Advapi32.RevertToSelf();
+				if(tkImpersonation)::Advapi32.SetThreadTokenB(,tkImpersonation);
+			} 
+
+			if(tkImpersonation) tkImpersonation.close();
+		};
+	}
+	
+	return ret;
+}
+
+/**intellisense()
+thread.token = 线程令牌
+thread.token(threadHandle,access,gc) = 打开线程令牌,\n@threadHandle 参数指定线程句柄，省略取当前线程句柄,\naccess指定访问权限,省略时默认值为 _TOKEN_QUERY\n@gc 指定返回对象在回收时默认自动调用close函数，省略时默认为 true
+thread.token() = !processToken.
+thread.token.impersonate(process,proc) = @.impersonate("winlogon.exe",function(){
+	__/*@process 参数指定进程对象、句柄、或已执行文件名,\n指定系统进程需要管理权限,\n@proc 参数指定设置模拟令牌期间执行的回调函数,\n此函数返回回调函数的第一个返回值*/
+})
+end intellisense**/

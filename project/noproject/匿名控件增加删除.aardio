@@ -1,0 +1,61 @@
+import win.ui;
+import time;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add(
+button={cls="button";text="创建匿名控件";left=187;top=306;right=319;bottom=366;z=1};
+button2={cls="button";text="1";left=496;top=304;right=628;bottom=364;z=3};
+button3={cls="button";text="关闭匿名控件";left=342;top=306;right=474;bottom=366;z=2}
+)
+/*}}*/
+
+匿名控件 = {};
+
+winform.button.oncommand = function(id,event){
+	
+	for (索引 = 1; 3)
+	{
+		table.append(匿名控件, winform.add({
+			{
+				cls = "button";
+				text = tostring(time());
+				left = 135 + 索引 * 100;
+				top = 117;
+				right = 239 + 索引 * 100;
+				bottom = 161;
+				transparent = 1;
+				z = 2 + 索引
+			}
+		}))	
+	}
+	
+	匿名控件数量 = table.len(匿名控件);
+	win.msgbox(匿名控件数量, "匿名控件数量");
+
+}
+
+winform.button3.oncommand = function(id,event){
+	
+	if (table.len(匿名控件) != 0)
+	{
+		
+		for (索引 = 1; table.len(匿名控件))
+		{
+			匿名控件[索引].close();
+			匿名控件[索引] = null;
+		}
+		
+		匿名控件数量 = table.len(匿名控件);
+		win.msgbox(匿名控件数量, "匿名控件数量");
+		
+	}
+	
+}
+
+winform.button2.oncommand = function(id,event){
+	import console;
+	console.dump(table)
+}
+
+winform.show();
+win.loopMessage();

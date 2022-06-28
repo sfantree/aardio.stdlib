@@ -1,0 +1,21 @@
+import zlib;
+import fsys;
+
+io.open();
+var data = string.load(fsys.getSysDir() + "\calc.exe");
+io.print("开始压缩 calc.exe...");
+var result = zlib.compress(data);
+io.print("压缩完毕");
+io.print("源数据大小：", #data);
+io.print("压缩后大小：", #result, "压缩比：", string.format("%d%%", (#result / #data) * 100), '\n');
+
+io.print("正在解压缩 calc.exe...");
+var data2 = zlib.uncompress(result);
+io.print("解压缩完毕");
+io.print("源数据大小：", #result);
+io.print("解压缩后大小：", #data2, '\n');
+
+io.print(data == data2);
+
+execute("pause");
+io.close();

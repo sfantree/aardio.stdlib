@@ -1,0 +1,87 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add(
+btnApiTest={cls="button";text="测试";left=453;top=74;right=557;bottom=104;z=6};
+btnApply={cls="button";text="应用";left=518;top=409;right=687;bottom=443;z=4};
+btnCancel={cls="button";text="取消";left=311;top=409;right=457;bottom=442;z=3};
+btnConfirm={cls="button";text="确定";left=83;top=409;right=229;bottom=440;z=2};
+editApi={cls="edit";left=68;top=74;right=413;bottom=104;edge=1;multiline=1;z=5};
+static={cls="static";text="设置Anki Connect地址：";left=68;top=52;right=227;bottom=83;transparent=1;z=1}
+)
+/*}}*/
+
+winform.btnConfirm.oncommand = function(id,event){
+	
+}
+
+winform.btnCancel.oncommand = function(id,event){
+	
+}
+
+winform.btnApply.oncommand = function(id,event){
+	 winform.msgbox(
+	           "请"
+	           );
+}
+
+var checkApiUrlFormat = function(url){
+	var pattern =  "http[s]?\://[^\s]*\:\d*"
+	return (..table.count((..string.gmatch(url, pattern))) != 0)
+}
+
+var checkApiUrlConnect = function(url){
+    // http://127.0.0.1:8765
+	import inet.http;
+	var http = inet.http();
+	http.setTimeouts(100, 100, 100)
+	var html,err,errCode = http.get(url);
+	http.close();
+	if(html){ 
+		return true;
+	} else {
+		return false;
+	}
+}
+
+winform.btnApiTest.oncommand = function(id,event){
+    winform.btnApiTest.disabled = true;
+    var url = winform.editApi.text;
+	if(! checkApiUrlFormat(url)){
+	    winform.msgbox(
+	           "请输入正确的API格式，例如 http://127.0.0.1:1234"
+	           );
+	    winform.btnApiTest.disabled = false;
+	    return;
+	}
+	if(checkApiUrlConnect(url)) {
+		winform.msgbox(
+	           "连接成功"
+	           );
+	} else {
+		winform.msgbox(
+	           "连接失败"
+	           );
+	}
+		    winform.btnApiTest.disabled = false;
+	    return;
+}
+
+
+
+var readConfig = function(){
+	var iniFilePath = ..io._exedir + "/config.ini"
+	import fsys.ini
+    var iniObj = ..fsys.ini(iniFilePath);
+    var sec = iniObj.getSection("main");
+    if(sec.api) {
+        winform.editApi.text = sec.api;
+    }
+    return;
+}
+readConfig();
+
+
+winform.show();
+win.loopMessage();
+return winform;

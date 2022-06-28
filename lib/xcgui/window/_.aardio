@@ -1,0 +1,1061 @@
+﻿//window 窗口
+import win.ui;
+import xcgui.ctrl;
+
+namespace xcgui;
+
+class window{
+	ctor( tParam ){
+		if(!tParam) return;
+		
+		if( type(tParam) == type.pointer ){
+			tParam = {hPointer==topointer(tParam);}
+		}
+		
+		if(!tParam[["hPointer"]]){
+			if( tParam.image ){
+				tParam.xcBkImage = tParam.image;
+				tParam.image = null;
+			}
+			
+			tParam.createWindowEx = function(dwExStyle,lpClassName,lpWindowName,dwStyle,x,y, nWidth,nHeight, hWndParent,hMenu,hInstance,lpParam){
+				if( tParam[["layout"]] ){
+					if( tParam.resource ) ..xcgui.res.load(tParam.resource);
+					var hwindow = ..xcgui.loadLayout(tParam.layout);
+					if(::Xcgui.XC_IsHWINDOW(hwindow)){
+						::Xcgui.XWnd_AdjustLayout(hwindow);
+						return ::Xcgui.XWnd_GetHWND (hwindow) 
+					}
+					return;
+				}
+				
+				var hPointer;
+				if( !tParam.xcframe ){
+					hPointer = ::Xcgui.XWnd_CreateEx(dwExStyle,lpClassName,lpWindowName,dwStyle,x,y, nWidth,nHeight, hWndParent,tParam.xcStyle===null?47/*_xc_window_style_default*/:tParam.xcStyle);
+				}
+				else{
+				 	hPointer = ::Xcgui.XFrameWnd_CreateEx(dwExStyle,lpClassName,lpWindowName,dwStyle,x,y, nWidth,nHeight, hWndParent,tParam.xcStyle===null?47/*_xc_window_style_default*/:tParam.xcStyle);
+				}   
+				
+				if( tParam.bkImage : tParam.xcBkImage : (tParam.bgcolor!==null) ){
+					var hbk = ::Xcgui.XWnd_GetBkManager( hPointer);
+					if(hbk) {
+						hbk =  ..xcgui.background(hbk); 
+						if( tParam.bkImage : tParam.xcBkImage ){
+							if( tParam.bkBottom !== null ){
+								hbk.addImage("windowLeave",tParam.bkImage : tParam.xcBkImage,"expand",tParam.bkLeft,tParam.bkTop,tParam.bkRight,tParam.bkBottom)
+							}
+							else {
+								hbk.addImage("windowLeave",tParam.bkImage : tParam.xcBkImage,"tile");//窗体背景，只有平铺与九宫格贴图两个选项
+							}
+						}
+						else {
+							hbk.addFill("windowLeave",0xFF,tParam.bgcolor);
+						}
+						
+						::Xcgui.XWnd_EnableDragWindow(hPointer ,true);   
+					}
+				}
+				return ::Xcgui.XWnd_GetHWND (hPointer) 
+				
+			}
+			this =  ..win._form(tParam);
+			this.modifyStyle(,0x2000000/*_WS_CLIPCHILDREN*/);
+			this.hPointer = ::Xcgui.XC_hWindowFromHWnd (this.hwnd);
+			this.xcBkImage = tParam.xcBkImage;
+			this.bkLeft = tParam.bkLeft;
+			this.bkTop = tParam.bkTop;
+			this.bkRight = tParam.bkRight;
+			this.bkBottom = tParam.bkBottom;
+		
+			this._xcCtrlAutoResize = {};
+			this.isDialogMessage = function(hwnd,msg){};
+			
+			this.addCtrls = this.add;
+			this.add = function( tParam,parentCtrl ) {
+				var result = this.addCtrls( tParam,parentCtrl )
+				var xczorder = {}
+        		for name,opt in tParam{
+        			if(!result[name]) ..table.push(xczorder,{name;opt})
+        		}
+        		..table.sort(xczorder,function(b){
+        			return owner[2].z < b[2].z 
+        		} ) 
+ 		
+ 				var ctrl; 
+ 				var parent = parentCtrl : owner;
+ 	 			var factory = ..xcgui.ctrl;
+				for(i=1;#xczorder ){  
+		    		var name = xczorder[i][1];
+		    		var opt = xczorder[i][2];
+						
+					opt[["parent"]] = parent;
+					ctrl = factory.create(opt);
+					if(!ctrl)continue ;
+					
+					if( type(name) == type.string ){
+						var conflict = parent[name];
+						if( conflict && conflict.close) conflict.close(); 
+						parent[name] = ctrl;
+					} 
+					
+					if( (opt.autoResize === null) || (opt.autoResize)  )
+						owner._xcCtrlAutoResize[ctrl.hPointer] = ctrl; 
+						
+					ctrl._defRect = ::RECT( opt.left,opt.top,opt.right,opt.bottom);
+					ctrl._defClientRect := ::RECT( 0, 0, opt.right - opt.left, opt.bottom - opt.top);
+					
+					opt[["style"]] = null;
+		    		opt[["exstyle"]] = null;
+		    		opt[["left"]] = null;
+		    		opt[["right"]] = null;
+		    		opt[["top"]] = null;
+		    		opt[["bottom"]] = null;
+		    		opt[["autoResize"]] = null;
+		    		opt[["hwnd"]] = null; 
+		    		opt[["hPointer"]] = null; 
+
+					if(opt.bgcolor!==null) opt.bgcolor = opt.bgcolor | 0xFF000000
+					ctrl.bgcolor = opt.bgcolor;
+					opt.bgcolor = null;
+		    		ctrl[["bkLeft"]] = opt.bkLeft; 
+		    		ctrl[["bkTop"]] = opt.bkTop; 
+		    		ctrl[["bkRight"]] = opt.bkRight; 
+		    		ctrl[["bkBottom"]] = opt.bkBottom;
+		    		ctrl[["bkRepeat"]] = opt.repeat : "expand";//控件全部默认九宫格切图
+		    		ctrl.bkImage = opt.bkImage;
+		    		opt[["bkImage"]] = null;
+		    		opt[["repeat"]] = null;
+		    		
+					opt.valign = !opt.valign? 4:_textAlign[opt.valign]
+					opt.align = !opt.align? 1:_textAlign[opt.align]
+					opt.align = opt.align | opt.valign;
+		   	 		..table.mixin(ctrl,opt);
+
+					result[name] = ctrl;
+				} 
+				
+				return result;
+    		};
+    		
+    		this.adjust = function(){
+				if( ..win.isIconic(this.hwnd) ) return;
+				
+				var dpiScaleX,dpiScaleY = (this.dpiScaleX : 1) ,(this.dpiScaleY : 1);
+				var defParent = this._defClientRect;
+				if(!defParent) return;
+				 
+				var parent = this.getClientRect(); 
+				var xRate = (parent.right-parent.left)/(defParent.right-defParent.left);
+				var yRate = (parent.bottom-parent.top)/(defParent.bottom-defParent.top); 
+				
+   				var defCtrl; 
+   				var l,t,r,b,w,h;
+   				var ctrlSize = {};
+   				
+   				for(hPointer,ctrl in this._xcCtrlAutoResize ){
+   					if( ctrl.getParentHandle() != this.hPointer )  continue;
+   					defCtrl = ctrl._defRect;
+   					w = defCtrl.right-defCtrl.left;
+			    	h = defCtrl.bottom -defCtrl.top;
+			    	   
+   					if( ctrl[["dl"]] )
+						l = defCtrl.left * dpiScaleX;
+					else
+						l = defCtrl.left * xRate ;
+					
+					if( ctrl[["dt"]] )
+						t = defCtrl.top * dpiScaleY ;
+					else
+						t = defCtrl.top * yRate ;
+					
+					
+					if( ctrl[["dr"]] ) {
+						r = parent.right - ( defParent.right - defCtrl.right)* dpiScaleX ;
+							
+						if( ctrl[["aw"]] == false ) && ( ctrl[["dl"]] == false )
+							l = r  - (w* dpiScaleX);
+					}
+					else {
+						if( ctrl[["aw"]] )
+							r = defCtrl.right * xRate ;
+						else
+							r = l+w* dpiScaleX; 
+					}
+		
+					if( ctrl[["db"]] ) 	{
+						b = parent.bottom - ( defParent.bottom - defCtrl.bottom )* dpiScaleY ;
+						if( ( ctrl[["ah"]] == false ) && ( ctrl[["dt"]] == false ) )
+							t  = b  - (h* dpiScaleY) ;
+					}
+					else{
+						if( ctrl[["ah"]] )
+							b = defCtrl.bottom * yRate;
+						else
+							b = t + h* dpiScaleY; 
+					}
+					
+					ctrl.resetRect(..math.floor(l),t, r - l, b - t,true);
+   				}
+   				 
+   				this.redraw();//Z Orderd Draw
+    		}
+    		
+		}
+		else {
+			this.hPointer = topointer(tParam.hPointer);
+			this.hwnd = ::Xcgui.XWnd_GetHWND(this.hPointer);
+			this.form = ..win._form.getForm(this.hwnd);
+			this@ = _metaProperty;
+			
+			if( __cacheforms__[this.hPointer] ) return __cacheforms__[this.hPointer];
+			__cacheforms__[this.hPointer] = this;
+		}
+	}
+}
+
+import xcgui.window.event;
+namespace window{
+	__cacheforms__ = { @{weak="v"} };
+	
+	_metaProperty = ..util.metaProperty(
+		on = function( message,func ){  
+			return event.reg(owner,message,func);
+ 		};
+ 	
+		id = {
+			_get = function(){
+				return ::Xcgui.XWnd_GetID(owner);
+			}
+			_set = function(v){
+				::Xcgui.XWnd_SetID(owner,v);
+			}	
+		};
+		color = {
+			_get=function(){
+				return ::Xcgui.XWnd_GetTextColor(owner)
+			}
+			_set=function(v){
+				::Xcgui.XWnd_SetTextColor(owner,v & 0xFFFFFF,v>> 24 & 0xFF);
+			}
+		};
+		background = {
+			_get=function(){
+				var hbk = ::Xcgui.XWnd_GetBkManager( owner.hPointer );
+				if(hbk) owner[["background"]] =  ..xcgui.background(hbk);
+				return owner[["background"]]; 
+			} 
+		}
+		bkAddBorder = function(state,width,alpha,color,g,b){
+			return owner.background.addBorder(state,width,alpha,color,g,b)
+		}
+		bkAddFill = function(state,alpha,color,g,b){
+			return owner.background.addFill(state,alpha,color,g,b)
+		}
+		bkAddImage = function(state,image,stretch,top,right,bottom){
+			return owner.background.addImage(state,image,stretch,top,right,bottom)
+		} 
+		setTransparentType = function(v){
+			return ::Xcgui.XWnd_SetTransparentType(owner.hPointer ,v);   
+		}
+		addEle = function(hEle){
+			return ::Xcgui.XWnd_AddEle(owner.hPointer,hEle);
+		}
+		insertEle = function(hChildEle,index){
+			return ::Xcgui.XWnd_InsertEle(owner.hPointer,hChildEle,index);
+		}
+		addShape = function(hShape){
+			return ::Xcgui.XWnd_AddShape(owner.hPointer,hShape);
+		}
+		redraw = function(bImmediate){
+			return ::Xcgui.XWnd_RedrawWnd(owner.hPointer,bImmediate);
+		}
+		redrawRect = function(pRect,bImmediate){
+			return ::Xcgui.XWnd_RedrawWndRect(owner.hPointer,pRect,bImmediate);
+		}
+		setFocus = function(hFocusEle){
+			return ::Xcgui.XWnd_SetFocusEle(owner.hPointer,hFocusEle);
+		}
+		getFocus = function(){
+			return ..xcgui.ctrl.queryObject( ::Xcgui.XWnd_GetFocusEle(owner.hPointer) );
+		}
+		getHover = function(){
+			return ..xcgui.ctrl.queryObject( ::Xcgui.XWnd_GetStayHELE(owner.hPointer) );
+		}
+		drawWindow = function(hDraw){
+			return ::Xcgui.XWnd_DrawWindow(owner.hPointer,hDraw);
+		}
+		setCursor = function(hCursor){
+			return ::Xcgui.XWnd_SetCursor(owner.hPointer,hCursor);
+		}
+		getCursor = function(){
+			return ::Xcgui.XWnd_GetCursor(owner.hPointer);
+		}
+		enableDragBorder = function(bEnable){
+			return ::Xcgui.XWnd_EnableDragBorder(owner.hPointer,bEnable);
+		}
+		enableDragWindow = function(bEnable){
+			return ::Xcgui.XWnd_EnableDragWindow(owner.hPointer,bEnable);
+		}
+		enableDragCaption = function(bEnable){
+			return ::Xcgui.XWnd_EnableDragCaption(owner.hPointer,bEnable);
+		}
+		enableDrawBk = function(bEnable){
+			return ::Xcgui.XWnd_EnableDrawBk(owner.hPointer,bEnable);
+		}
+		enableAutoFocus = function(bEnable){
+			return ::Xcgui.XWnd_EnableAutoFocus(owner.hPointer,bEnable);
+		}
+		enableMaxWindow = function(bEnable){
+			return ::Xcgui.XWnd_EnableMaxWindow(owner.hPointer,bEnable);
+		}
+		setCaptureEle = function(hEle){
+			return ::Xcgui.XWnd_SetCaptureEle(owner.hPointer,hEle);
+		}
+		getCaptureEle = function(){
+			return ..xcgui.ctrl.queryObject( ::Xcgui.XWnd_GetCaptureEle(owner.hPointer) );
+		}
+		getDrawRect = function(){
+			var rc = ::RECT();
+			::Xcgui.XWnd_GetDrawRect(owner.hPointer,rc);
+			return rc; 
+		}
+		show = function(cmdShow){
+			if(cmdShow===true || cmdShow===null )nCmdShow=0x5/*_SW_SHOW*/
+			elseif(cmdShow===false)cmdShow= 0x0/*_SW_HIDE*/
+			return ::Xcgui.XWnd_ShowWindow(owner.hPointer,cmdShow);
+		}
+		setCursorSys = function(hCursor){
+			return ::Xcgui.XWnd_SetCursorSys(owner.hPointer,hCursor);
+		}
+		setFont = function(font,size,style){ 
+			font = ..xcgui.font(font,size,style);
+			if(font) ::Xcgui.XWnd_SetFont(owner.hPointer,font)
+		};
+		setLayoutSize = function(left,top,right,bottom){
+			return ::Xcgui.XWnd_SetLayoutSize(owner.hPointer,left,top,right,bottom);
+		}
+		getLayoutSize = function(borderSize){
+			var borderSize = ::RECT();
+			::Xcgui.XWnd_GetLayoutSize(owner.hPointer,borderSize);
+			return borderSize.left,borderSize.top,borderSize.right,borderSize.bottom;
+		}
+		setDragBorderSize = function(left,top,right,bottom){
+			return ::Xcgui.XWnd_SetDragBorderSize(owner.hPointer,left,top,right,bottom);
+		}
+		getDragBorderSize = function(pSize){
+			var borderSize = ::RECT();
+			::Xcgui.XWnd_GetDragBorderSize(owner.hPointer,borderSize);
+			return borderSize.left,borderSize.top,borderSize.right,borderSize.bottom;
+		}
+		setMinimumSize = function(width,height){
+			return ::Xcgui.XWnd_SetMinimumSize(owner.hPointer,width,height);
+		}
+		hitChildEle = function(x,y){
+			return ..xcgui.ctrl.queryObject( ::Xcgui.XWnd_HitChildEle(owner.hPointer,::POINT(x,y)) );
+		}
+		getChildCount = function(){ 
+			return ::Xcgui.XWnd_GetChildCount(owner.hPointer);
+		}
+		getChildByIndex = function(index){
+			return ..xcgui.ctrl.queryObject( ::Xcgui.XWnd_GetChildByIndex(owner.hPointer,index) );
+		}
+		getChildById = function(id){
+			return ..xcgui.ctrl.queryObject( ::Xcgui.XWnd_GetChildByID(owner.hPointer,id) );
+		}
+		getEle = function(id){
+			return ..xcgui.ctrl.queryObject( ::Xcgui.XWnd_GetEle(owner.hPointer,id) );
+		}
+		getChildShapeCount = function(){
+			return ::Xcgui.XWnd_GetChildShapeCount(owner.hPointer);
+		}
+		getChildShapeByIndex = function(index){
+			return ..xcgui.ctrl.queryObject( ::Xcgui.XWnd_GetChildShapeByIndex(owner.hPointer,index));
+		}
+		close = function(){
+			return ::Xcgui.XWnd_CloseWindow(owner.hPointer);
+		}
+		bindLayoutEle = function(nPosition,hEle){
+			return ::Xcgui.XWnd_BindLayoutEle(owner.hPointer,nPosition,hEle);
+		}
+		getLayoutEle = function(nPosition){
+			return ..xcgui.ctrl.queryObject(  ::Xcgui.XWnd_GetLayoutEle(owner.hPointer,nPosition) );
+		}
+		bindLayoutObject = function(nPosition,hLayout){
+			return ::Xcgui.XWnd_BindLayoutObject(owner.hPointer,nPosition,hLayout);
+		}
+		getLayoutObject = function(nPosition){
+			return ..xcgui.layoutObject( ::Xcgui.XWnd_GetLayoutObject(owner.hPointer,nPosition) );
+		}
+		adjustLayout = function(){
+			return ::Xcgui.XWnd_AdjustLayout(owner.hPointer);
+		}
+		adjustLayoutObject = function(){
+			return ::Xcgui.XWnd_AdjustLayoutObject(owner.hPointer);
+		}
+		createCaret = function(hEle,x,y,width,height){
+			return ::Xcgui.XWnd_CreateCaret(owner.hPointer,hEle,x,y,width,height);
+		}
+		setCaretSize = function(width,height){
+			return ::Xcgui.XWnd_SetCaretSize(owner.hPointer,width,height);
+		}
+		setCaretPos = function(x,y){
+			return ::Xcgui.XWnd_SetCaretPos(owner.hPointer,x,y);
+		}
+		setCaretPosEx = function(x,y,width,height){
+			return ::Xcgui.XWnd_SetCaretPosEx(owner.hPointer,x,y,width,height);
+		}
+		setCaretColor = function(color){
+			return ::Xcgui.XWnd_SetCaretColor(owner.hPointer,color);
+		}
+		showCaret = function(bShow){
+			return ::Xcgui.XWnd_ShowCaret(owner.hPointer,bShow);
+		}
+		destroyCaret = function(){
+			return ::Xcgui.XWnd_DestroyCaret(owner.hPointer);
+		}
+		getCaretEle = function(){
+			return ..xcgui.ctrl.queryObject( ::Xcgui.XWnd_GetCaretHELE(owner.hPointer) );
+		}
+		getClientRect = function(){
+			var rc = ::RECT();
+			::Xcgui.XWnd_GetClientRect(owner.hPointer,rc);
+			return rc;
+		}
+		getBodyRect = function(){
+			var rc = ::RECT();
+			::Xcgui.XWnd_GetBodyRect(owner.hPointer,rc);
+			return rc;
+		}
+		setTransparentAlpha = function(alpha){
+			return ::Xcgui.XWnd_SetTransparentAlpha(owner.hPointer,alpha);
+		}
+		setTransparentColor = function(color){
+			return ::Xcgui.XWnd_SetTransparentColor(owner.hPointer,color);
+		}
+		setShadowInfo = function(nSize,nDepth,nAngeleSize,bRightAngle,color){
+			return ::Xcgui.XWnd_SetShadowInfo(owner.hPointer,nSize,nDepth,nAngeleSize,bRightAngle,color);
+		}
+		getTransparentType = function(){
+			return ::Xcgui.XWnd_GetTransparentType(owner.hPointer);
+		}
+		enableCss = function(bEnable){
+			return ::Xcgui.XWnd_EnableCSS(owner.hPointer,bEnable);
+		}
+		css = function(name){
+			if(name===null)return ::Xcgui.XWnd_GetCssName(owner.hPointer);
+			return ::Xcgui.XWnd_SetCssName(owner.hPointer,name);
+		}
+		getLayoutAreaRect = function(pRect){
+			var rc = ::RECT();
+			::Xcgui.XFrameWnd_GetLayoutAreaRect(owner.hPointer,rc);
+			return rc;
+		}
+		setView = function(hEle){
+			return ::Xcgui.XFrameWnd_SetView(owner.hPointer,hEle);
+		}
+		setPaneSplitBarColor = function(color,alpha){
+			return ::Xcgui.XFrameWnd_SetPaneSplitBarColor(owner.hPointer,color,alpha);
+		}
+		saveLayoutToFile = function(fileName){
+			return ::Xcgui.XFrameWnd_SaveLayoutToFile(owner.hPointer,..io.fullpath(fileName));
+		}
+		addPane = function(hPaneDest,hPaneNew,align){
+			return ::Xcgui.XFrameWnd_AddPane(owner.hPointer,hPaneDest,hPaneNew,align);
+		}
+		mergePane = function(hPaneDest,hPaneNew){
+			return ::Xcgui.XFrameWnd_MergePane(owner.hPointer,hPaneDest,hPaneNew);
+		}
+		createTrackBar = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			return ..xcgui.ctrl.trackbar(owner,{left=x;top=y;right=x+cx;bottom=y+cy});
+		}
+		createList = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			return ..xcgui.ctrl.list(owner,{left=x;top=y;right=x+cx;bottom=y+cy});
+		}
+		createButton = function(text,cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			return ..xcgui.ctrl.button(owner,{text=text;left=x;top=y;right=x+cx;bottom=y+cy});
+		}
+		createListBox = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			return ..xcgui.ctrl.listbox(owner,{left=x;top=y;right=x+cx;bottom=y+cy});
+		}
+		createPane = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			return ..xcgui.ctrl.pane(owner,{left=x;top=y;right=x+cx;bottom=y+cy});
+		}
+		createCheckBox = function(text,cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			return ..xcgui.ctrl.checkbox(owner,{text=text;left=x;top=y;right=x+cx;bottom=y+cy});
+		}
+		createScrollView = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			return ..xcgui.ctrl.scrollview(owner,{left=x;top=y;right=x+cx;bottom=y+cy});
+		}
+		createEdit = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			return ..xcgui.ctrl.edit(owner,{left=x;top=y;right=x+cx;bottom=y+cy});
+		}
+		createTreeView = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			return ..xcgui.ctrl.treeview(owner,{left=x;top=y;right=x+cx;bottom=y+cy});
+		}
+		createPropertyGrid = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			return ..xcgui.ctrl.propertygrid(owner,{left=x;top=y;right=x+cx;bottom=y+cy});
+		}
+		createTab = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			return ..xcgui.ctrl.tab(owner,{left=x;top=y;right=x+cx;bottom=y+cy});
+		}
+		createListView = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			return ..xcgui.ctrl.listview(owner,{left=x;top=y;right=x+cx;bottom=y+cy});
+		}
+		createCalendar = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			return ..xcgui.ctrl.calendar(owner,{left=x;top=y;right=x+cx;bottom=y+cy});
+		}
+		createMenuBar = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			return ..xcgui.ctrl.menubar(owner,{left=x;top=y;right=x+cx;bottom=y+cy});
+		}
+		createComboBox = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			return ..xcgui.ctrl.combobox(owner,{left=x;top=y;right=x+cx;bottom=y+cy});
+		}
+		createEle = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			return ..xcgui.ctrl.ele(owner,{left=x;top=y;right=x+cx;bottom=y+cy});
+		}
+		createLink = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			return ..xcgui.ctrl.link(owner,{left=x;top=y;right=x+cx;bottom=y+cy});
+		}
+		createProgress = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			return ..xcgui.ctrl.progress(owner,{left=x;top=y;right=x+cx;bottom=y+cy});
+		}
+		createDateTimePick = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			return ..xcgui.ctrl.datetimepick(owner,{left=x;top=y;right=x+cx;bottom=y+cy});
+		}
+		createRadioButton = function(text,cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			return ..xcgui.ctrl.radiobutton(owner,{text=text;left=x;top=y;right=x+cx;bottom=y+cy});
+		}
+		createEllipse = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			return ..xcgui.ctrl.ellipse(owner,{left=x;top=y;right=x+cx;bottom=y+cy});
+		}
+		createScrollBar = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			return ..xcgui.ctrl.scrollbar(owner,{left=x;top=y;right=x+cx;bottom=y+cy});
+		}
+		createRect = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			return ..xcgui.ctrl.rect(owner,{left=x;top=y;right=x+cx;bottom=y+cy});
+		}
+		createGif = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			return ..xcgui.ctrl.gif(owner,{left=x;top=y;right=x+cx;bottom=y+cy});
+		}
+		createLine = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			return ..xcgui.ctrl.line(owner,{left=x;top=y;right=x+cx;bottom=y+cy});
+		}
+		createPicture = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			return ..xcgui.ctrl.picture(owner,{left=x;top=y;right=x+cx;bottom=y+cy});
+		}
+		createEllipse = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			return ..xcgui.ctrl.ellipse(owner,{left=x;top=y;right=x+cx;bottom=y+cy});
+		}
+		createText = function(text,cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			return ..xcgui.ctrl.text(owner,{text=text;left=x;top=y;right=x+cx;bottom=y+cy});
+		}
+		createGroupBox = function(cx,cy,x,y){
+			x = x : 0; y = y : 0;
+			return ..xcgui.ctrl.groupbox(owner,{left=x;top=y;right=x+cx;bottom=y+cy});
+		}
+		getEle = function(id){
+			var hEle;
+			if(type(id) == type.number){
+				hEle = ::Xcgui.XC_GetObjectByID(owner,id);
+			}
+			else {
+				hEle = ::Xcgui.XC_GetObjectByIDName(owner,id);
+			}
+			if(hEle)return ..xcgui.ctrl.queryObject(hEle);
+		}
+		getEleEx = function(uid){
+			var hEle;
+			if(type(id) == type.number){
+				hEle = ::Xcgui.XC_GetObjectByUID(owner,id);
+			}
+			else {
+				hEle = ::Xcgui.XC_GetObjectByUIDName(owner,id);
+			}
+			if(hEle)return ..xcgui.ctrl.queryObject(hEle);
+		}
+		_topointer = function(){
+			return owner.hPointer; 
+		}
+	)	
+	
+	with _metaProperty{
+		getTrackBar = getEle
+		getList = getEle
+		getButton = getEle
+		getListBox = getEle
+		getPane = getEle
+		getCheckBox = getEle
+		getScrollView = getEle
+		getEdit = getEle
+		getTreeView = getEle
+		getPropertyGrid = getEle
+		getTab = getEle
+		getListView = getEle
+		getCalendar = getEle
+		getMenuBar = getEle
+		getComboBox = getEle
+		getLink = getEle
+		getProgress = getEle
+		getDateTimePick = getEle
+		getRadioButton = getEle
+		getScrollBar = getEle
+		getRect = getEle
+		getGif = getEle
+		getLine = getEle
+		getPicture = getEle
+		getEllipse = getEle
+		getText = getEle
+		getGroupbox = getEle
+		getLayoutObject = getEle
+		getTrackBarEx = getEleEx
+		getListEx = getEleEx
+		getButtonEx = getEleEx
+		getListBoxEx = getEleEx
+		getPaneEx = getEleEx
+		getCheckBoxEx = getEleEx
+		getScrollViewEx = getEleEx
+		getEditEx = getEleEx
+		getTreeViewEx = getEleEx
+		getPropertyGridEx = getEleEx
+		getTabEx = getEleEx
+		getListViewEx = getEleEx
+		getCalendarEx = getEleEx
+		getMenuBarEx = getEleEx
+		getComboBoxEx = getEleEx
+		getLinkEx = getEleEx
+		getProgressEx = getEleEx
+		getDateTimePickEx = getEleEx
+		getRadioButtonEx = getEleEx
+		getScrollBarEx = getEleEx
+		getRectEx = getEleEx
+		getGifEx = getEleEx
+		getLineEx = getEleEx
+		getPictureEx = getEleEx
+		getEllipseEx = getEleEx
+		getTextEx = getEleEx
+		getGroupboxEx = getEleEx
+		getLayoutObjectEx = getEleEx
+	}
+	
+	loadLayout = function(path,hParent){
+		var form = ..xcgui.window( layout = path;parent=hParent);
+		return ..xcgui.window (form);	
+	}
+	
+	_textAlign = {
+		left=0;
+		top=0;
+		center=1;
+		right=2;
+		vcenter=4;
+		bottom=8;
+	}
+} 
+
+..win.form = ..xcgui.window;
+..win.form.getForm = ..win._form.getForm;
+..win.form._forms = ..win._form._forms;
+..win.form._defaultProc = ..win._form._defaultProc;
+
+/**intellisense()
+xcgui.window = 导入此库将会替换win.form构造函数\n必须在创建win.form对象以前导入
+xcgui.window(__) = 参数可以是win.form对象，或者窗口指针地址，\n必须在创建win.form对象以前导入xcgui.window\n!stdxcwnd.
+xcgui.window() = !stdxcwnd.
+xcgui.window.loadLayout(.(布局文件,父对象) = 加载窗口布局文件并返回窗口对象
+xcgui.window.loadLayout() = !stdxcwnd.
+end intellisense**/
+
+/**intellisense(!stdxcwnd)
+hwnd = 窗口系统句柄
+form = win.form对象\n!winform.
+background = 背景内容管理器\n\n!stdxcbkmanager.
+color= 文本颜色
+id = 窗口ID
+addEle(__) = 添加元素到窗口
+insertEle(.(hChildEle,index) = 插入元素到指定位置
+addShape(__) = 添加形状对象到窗口
+redraw(__) = 重绘窗口
+redrawRect(.(rect,bImmediate) = 重绘窗口指定区域
+setFocus(__) = 设置焦点元素
+getFocus() = 获得拥有输入焦点的元素\n!stdxcele.
+getHover() = 获取当前鼠标所停留元素\n!stdxcele.
+drawWindow(__) = 在自绘事件函数中,用户手动调用绘制窗口,以便控制绘制顺序
+setCursor(__) = 设置窗口鼠标光标
+getCursor() = 获取窗口的鼠标光标
+enableDragBorder(__) = 是否启用拖动窗口边框
+enableDragWindow(__) = 是否启用拖动窗口
+enableDragCaption(__) = 是否启用拖动窗口标题栏
+enableDrawBk(__) = 是否绘制窗口背景
+enableAutoFocus(__) = 当鼠标左键按下是否获得焦点
+enableMaxWindow(__) = 允许窗口最大化
+setCaptureEle(__) = 设置鼠标捕获元素
+getCaptureEle() = 获取当前鼠标捕获元素\n!stdxcele.
+getDrawRect(__) = 获取重绘区域
+getDrawRect() = !rect.
+show(__) = 显示隐藏窗口
+bindLayoutEle(.(nPosition,hEle) = 设置布局元素
+getLayoutEle(__) = 获取布局元素
+setCursorSys(__) = 系统函数,设置窗口类光标句柄
+setFont(__) = 设置窗口字体
+setLayoutSize(.(left,top,right,bottom) = 设置布局大小
+getLayoutSize(__) = 获取布局大小
+setDragBorderSize(.(left,top,right,bottom) = 设置窗口拖动边框大小
+getDragBorderSize(__) = 获取窗口拖动边框大小
+setMinimumSize(.(width,height) = 设置窗口的最小宽度和高度
+hitChildEle(__) = 检测所在元素
+getChildCount() = 获取当前层子元素数量,不包含子元素的子元素
+getChildByIndex(__) = 获取当前层子元素通过索引
+getChildById(__) = 获取当前层子元素通过元素ID
+getChildShapeCount() = 获取子对象(形状对象)数量,只检查当前层
+getChildShapeByIndex(__) = 获取子对象(形状对象)通过索引
+closeWindow() = 关闭窗口
+bindLayoutObject(.(nPosition,hLayout) = 绑定布局对象
+getLayoutObject(__) = 获取布局对象
+adjustLayout() = 调整窗口布局,该函数只能调整受窗口布局管理的对象,不受窗口布局管理的[布局对象]请使用函数 XWnd_AdjustLayoutObject()
+adjustLayoutObject() = 调整窗口上所有的[布局对象],如果你的[布局对象]不受窗口布局管理,那么你需要调用该函数调整布局,以便显示正确的坐标
+createCaret(.(hEle,x,y,width,height) = 创建插入符,基于元素坐标
+setCaretSize(.(width,height) = 设置插入符大小
+setCaretPos(.(x,y) = 设置插入符位置
+setCaretPosEx(.(x,y,width,height) = 设置插入符位置
+setCaretColor(__) = 设置插入符颜色
+showCaret(__) = 显示插入符
+destroyCaret() = 销毁插入符
+getCaretEle() = 获取插入符所属元素\n!stdxcele.
+getClientRect(__) = 获取窗口客户区坐标;如果是阴影窗口,那么不包含阴影部分
+getClientRect() = !rect.
+getBodyRect(__) = 获取body坐标
+setTransparentAlpha(__) = 设置透明窗口的透明度,设置后调用重绘窗口API来更新
+setTransparentColor(__) = 设置透明窗口的透明色
+setShadowInfo(.(nSize,nDepth,nAngeleSize,bRightAngle,color) = 设置窗口阴影信息
+getTransparentType() = 获取窗口透明类型
+enableCSS(__) = 启用或禁用CSS样式
+css(__) = 设置样式名\n无参数返回样式名
+getEle(__) = 获取元素通过元素ID,如果元素不在该窗口上无效
+getEle() = !stdxcele.
+hitChildEle() = !stdxcele.
+hitChildEle() = !stdxcele.
+getChildByIndex() = !stdxcele.
+getChildById() = !stdxcele.
+getLayoutEle() = !stdxcele.
+getLayoutAreaRect(__) = 用来布局窗格的区域坐标,不包含码头
+setView(__) = 设置主视图元素
+setPaneSplitBarColor(.(color,alpha) = 设置窗格分隔条颜色
+saveLayoutToFile(__) = 保存布局信息到文件
+addPane(.(hPaneDest,hPaneNew,align) = 添加窗格到框架窗口
+mergePane(.(hPaneDest,hPaneNew) = 合并窗格
+setTransparentType(__) = 设置透明样式,0为不透明,1为分层窗口,2为半透明\n,同时可以通过该函数关闭透明窗口;此函数应该放在显示窗口之后调用; 而调整布局的函数应该放在 setTransparentType 之后调用
+bkAddFill("windowTopLeave",255,__/*颜色数值或RGB分量*/) = 设置窗口顶部填充颜色
+bkAddFill("windowLeftLeave",255,__/*颜色数值或RGB分量*/) = 设置窗口左侧填充颜色
+bkAddFill("windowRightLeave",255,__/*颜色数值或RGB分量*/) = 设置窗口右侧填充颜色
+bkAddFill("windowBottomLeave",255,__/*颜色数值或RGB分量*/) = 设置窗口底部填充颜色
+bkAddFill("windowBodyLeave",255,__/*颜色数值或RGB分量*/) = 设置窗口中间填充颜色
+bkAddImage("windowTopLeave",__/*图像*/) = 设置窗口顶部图像\n图像可直接指定路径或资源路径,也可使用xcgui.image对象
+bkAddImage("windowLeftLeave",__/*图像*/) = 设置窗口左侧图像\n图像可直接指定路径或资源路径,也可使用xcgui.image对象
+bkAddImage("windowRightLeave",__/*图像*/) = 设置窗口右侧图像\n图像可直接指定路径或资源路径,也可使用xcgui.image对象
+bkAddImage("windowBottomLeave",__/*图像*/) = 设置窗口底部图像\n图像可直接指定路径或资源路径,也可使用xcgui.image对象
+bkAddImage("windowBodyLeave",__/*图像*/) = 设置窗口中间图像\n图像可直接指定路径或资源路径,也可使用xcgui.image对象
+bkAddBorder(.(状态,线宽,透明度,RGB颜色) = 添加背景内容边框\n状态可以是字符串或数值,可用值参考xucgui.state
+createTrackBar(.(宽,高,左坐标,顶坐标) = 在此对象内创建trackbar控件,\n左坐标,顶坐标为可选参数,默认为0
+createList(.(宽,高,左坐标,顶坐标) = 在此对象内创建list控件,\n左坐标,顶坐标为可选参数,默认为0
+createButton(.(文本,宽,高,左坐标,顶坐标) = 在此对象内创建button控件,\n左坐标,顶坐标为可选参数,默认为0
+createListBox(.(宽,高,左坐标,顶坐标) = 在此对象内创建listbox控件,\n左坐标,顶坐标为可选参数,默认为0
+createPane(.(宽,高,左坐标,顶坐标) = 在此对象内创建pane控件,\n左坐标,顶坐标为可选参数,默认为0
+createCheckBox(.(文本,宽,高,左坐标,顶坐标) = 在此对象内创建checkbox控件,\n左坐标,顶坐标为可选参数,默认为0
+createScrollView(.(宽,高,左坐标,顶坐标) = 在此对象内创建scrollview控件,\n左坐标,顶坐标为可选参数,默认为0
+createEdit(.(宽,高,左坐标,顶坐标) = 在此对象内创建edit控件,\n左坐标,顶坐标为可选参数,默认为0
+createTreeView(.(宽,高,左坐标,顶坐标) = 在此对象内创建treeview控件,\n左坐标,顶坐标为可选参数,默认为0
+createPropertyGrid(.(宽,高,左坐标,顶坐标) = 在此对象内创建propertygrid控件,\n左坐标,顶坐标为可选参数,默认为0
+createTab(.(宽,高,左坐标,顶坐标) = 在此对象内创建tab控件,\n左坐标,顶坐标为可选参数,默认为0
+createListView(.(宽,高,左坐标,顶坐标) = 在此对象内创建listview控件,\n左坐标,顶坐标为可选参数,默认为0
+createCalendar(.(宽,高,左坐标,顶坐标) = 在此对象内创建calendar控件,\n左坐标,顶坐标为可选参数,默认为0
+createMenuBar(.(宽,高,左坐标,顶坐标) = 在此对象内创建menubar控件,\n左坐标,顶坐标为可选参数,默认为0
+createComboBox(.(宽,高,左坐标,顶坐标) = 在此对象内创建combobox控件,\n左坐标,顶坐标为可选参数,默认为0
+createEle(.(宽,高,左坐标,顶坐标) = 在此对象内创建ele控件,\n左坐标,顶坐标为可选参数,默认为0
+createLink(.(宽,高,左坐标,顶坐标) = 在此对象内创建link控件,\n左坐标,顶坐标为可选参数,默认为0
+createProgress(.(宽,高,左坐标,顶坐标) = 在此对象内创建progress控件,\n左坐标,顶坐标为可选参数,默认为0
+createDateTimePick(.(宽,高,左坐标,顶坐标) = 在此对象内创建datetimepick控件,\n左坐标,顶坐标为可选参数,默认为0
+createRadioButton(.(文本,宽,高,左坐标,顶坐标) = 在此对象内创建radiobutton控件,\n左坐标,顶坐标为可选参数,默认为0
+createScrollBar(.(宽,高,左坐标,顶坐标) = 在此对象内创建scrollbar控件,\n左坐标,顶坐标为可选参数,默认为0
+createRect(.(宽,高,左坐标,顶坐标) = 在此对象内创建rect控件,\n左坐标,顶坐标为可选参数,默认为0
+createGif(.(宽,高,左坐标,顶坐标) = 在此对象内创建gif控件,\n左坐标,顶坐标为可选参数,默认为0
+createLine(.(宽,高,左坐标,顶坐标) = 在此对象内创建line控件,\n左坐标,顶坐标为可选参数,默认为0
+createPicture(.(宽,高,左坐标,顶坐标) = 在此对象内创建picture控件,\n左坐标,顶坐标为可选参数,默认为0
+createEllipse(.(宽,高,左坐标,顶坐标) = 在此对象内创建ellipse控件,\n左坐标,顶坐标为可选参数,默认为0
+createText(.(文本,宽,高,左坐标,顶坐标) = 在此对象内创建text控件,\n左坐标,顶坐标为可选参数,默认为0
+createGroupbox(.(宽,高,左坐标,顶坐标) = 在此对象内创建groupbox控件,\n左坐标,顶坐标为可选参数,默认为0
+createTrackBar() = !stdxctrackbar.
+createList() = !stdxclist.
+createButton() = !stdxcbutton.
+createListBox() = !stdxclistbox.
+createPane() = !stdxcpane.
+createCheckBox() = !stdxcbutton.
+createScrollView() = !stdxcscrollview.
+createEdit() = !stdxcedit.
+createTreeView() = !stdxctree.
+createPropertyGrid() = !stdxcpropertygrid.
+createTab() = !stdxctab.
+createListView() = !stdxclistview.
+createCalendar() = !stdxccalendar.
+createMenuBar() = !stdxcmenubar.
+createComboBox() = !stdxccombobox.
+createEle() = !stdxcele.
+createLink() = !stdxclink.
+createProgress() = !stdxcprogress.
+createDateTimePick() = !stdxcdatetimepick.
+createRadioButton() = !stdxcbutton.
+createScrollBar() = !stdxcscrollbar.
+createRect() = !stdxcrect.
+createGif() = !stdxcgif.
+createLine() = !stdxcline.
+createPicture() = !stdxcpicture.
+createEllipse() = !stdxcellipse.
+createText() = !stdxcshapetext.
+createGroupbox() = !stdxcgroupbox.
+getEle(__) = 使用参数指定的ID数值或name属性获取ele控件
+getTrackBar(__) = 使用参数指定的ID数值或name属性获取trackbar控件
+getList(__) = 使用参数指定的ID数值或name属性获取list控件
+getButton(__) = 使用参数指定的ID数值或name属性获取button控件
+getListBox(__) = 使用参数指定的ID数值或name属性获取listbox控件
+getPane(__) = 使用参数指定的ID数值或name属性获取pane控件
+getCheckBox(__) = 使用参数指定的ID数值或name属性获取checkbox控件
+getScrollView(__) = 使用参数指定的ID数值或name属性获取scrollview控件
+getEdit(__) = 使用参数指定的ID数值或name属性获取edit控件
+getTreeView(__) = 使用参数指定的ID数值或name属性获取treeview控件
+getPropertyGrid(__) = 使用参数指定的ID数值或name属性获取propertygrid控件
+getTab(__) = 使用参数指定的ID数值或name属性获取tab控件
+getListView(__) = 使用参数指定的ID数值或name属性获取listview控件
+getCalendar(__) = 使用参数指定的ID数值或name属性获取calendar控件
+getMenuBar(__) = 使用参数指定的ID数值或name属性获取menubar控件
+getComboBox(__) = 使用参数指定的ID数值或name属性获取combobox控件
+getEle(__) = 使用参数指定的ID数值或name属性获取ele控件
+getLink(__) = 使用参数指定的ID数值或name属性获取link控件
+getProgress(__) = 使用参数指定的ID数值或name属性获取progress控件
+getDateTimePick(__) = 使用参数指定的ID数值或name属性获取datetimepick控件
+getRadioButton(__) = 使用参数指定的ID数值或name属性获取radiobutton控件
+getScrollBar(__) = 使用参数指定的ID数值或name属性获取scrollbar控件
+getRect(__) = 使用参数指定的ID数值或name属性获取rect控件
+getGif(__) = 使用参数指定的ID数值或name属性获取gif控件
+getLine(__) = 使用参数指定的ID数值或name属性获取line控件
+getPicture(__) = 使用参数指定的ID数值或name属性获取picture控件
+getEllipse(__) = 使用参数指定的ID数值或name属性获取ellipse控件
+getText(__) = 使用参数指定的ID数值或name属性获取text控件
+getGroupbox(__) = 使用参数指定的ID数值或name属性获取groupbox控件
+getLayoutObject(__) = 使用参数指定的ID数值或name属性获取布局对象
+getEleEx(__) = 使用参数指定的UID数值或文本名称属性获取ele控件
+getTrackBarEx(__) = 使用参数指定的UID数值或文本名称属性获取trackbar控件
+getListEx(__) = 使用参数指定的UID数值或文本名称属性获取list控件
+getButtonEx(__) = 使用参数指定的UID数值或文本名称属性获取button控件
+getListBoxEx(__) = 使用参数指定的UID数值或文本名称属性获取listbox控件
+getPaneEx(__) = 使用参数指定的UID数值或文本名称属性获取pane控件
+getCheckBoxEx(__) = 使用参数指定的UID数值或文本名称属性获取checkbox控件
+getScrollViewEx(__) = 使用参数指定的UID数值或文本名称属性获取scrollview控件
+getEditEx(__) = 使用参数指定的UID数值或文本名称属性获取edit控件
+getTreeViewEx(__) = 使用参数指定的UID数值或文本名称属性获取treeview控件
+getPropertyGridEx(__) = 使用参数指定的UID数值或文本名称属性获取propertygrid控件
+getTabEx(__) = 使用参数指定的UID数值或文本名称属性获取tab控件
+getListViewEx(__) = 使用参数指定的UID数值或文本名称属性获取listview控件
+getCalendarEx(__) = 使用参数指定的UID数值或文本名称属性获取calendar控件
+getMenuBarEx(__) = 使用参数指定的UID数值或文本名称属性获取menubar控件
+getComboBoxEx(__) = 使用参数指定的UID数值或文本名称属性获取combobox控件
+getEleEx(__) = 使用参数指定的UID数值或文本名称属性获取ele控件
+getLinkEx(__) = 使用参数指定的UID数值或文本名称属性获取link控件
+getProgressEx(__) = 使用参数指定的UID数值或文本名称属性获取progress控件
+getDateTimePickEx(__) = 使用参数指定的UID数值或文本名称属性获取datetimepick控件
+getRadioButtonEx(__) = 使用参数指定的UID数值或文本名称属性获取radiobutton控件
+getScrollBarEx(__) = 使用参数指定的UID数值或文本名称属性获取scrollbar控件
+getRectEx(__) = 使用参数指定的UID数值或文本名称属性获取rect控件
+getGifEx(__) = 使用参数指定的UID数值或文本名称属性获取gif控件
+getLineEx(__) = 使用参数指定的UID数值或文本名称属性获取line控件
+getPictureEx(__) = 使用参数指定的UID数值或文本名称属性获取picture控件
+getEllipseEx(__) = 使用参数指定的UID数值或文本名称属性获取ellipse控件
+getTextEx(__) = 使用参数指定的UID数值或文本名称属性获取text控件
+getGroupboxEx(__) = 使用参数指定的UID数值或文本名称属性获取groupbox控件
+getLayoutObjectEx(__) = 使用参数指定的UID数值或文本名称属性获取布局对象
+getTrackBar() = !stdxctrackbar.
+getList() = !stdxclist.
+getButton() = !stdxcbutton.
+getListBox() = !stdxclistbox.
+getPane() = !stdxcpane.
+getCheckBox() = !stdxcbutton.
+getScrollView() = !stdxcscrollview.
+getEdit() = !stdxcedit.
+getTreeView() = !stdxctree.
+getPropertyGrid() = !stdxcpropertygrid.
+getTab() = !stdxctab.
+getListView() = !stdxclistview.
+getCalendar() = !stdxccalendar.
+getMenuBar() = !stdxcmenubar.
+getComboBox() = !stdxccombobox.
+getEle() = !stdxcele.
+getLink() = !stdxclink.
+getProgress() = !stdxcprogress.
+getDateTimePick() = !stdxcdatetimepick.
+getRadioButton() = !stdxcbutton.
+getScrollBar() = !stdxcscrollbar.
+getRect() = !stdxcrect.
+getGif() = !stdxcgif.
+getLine() = !stdxcline.
+getPicture() = !stdxcpicture.
+getEllipse() = !stdxcellipse.
+getText() = !stdxcshapetext.
+getGroupbox() = !stdxcgroupbox.
+getLayoutObject() = !stdxclayoutObj.
+getTrackBarEx() = !stdxctrackbar.
+getListEx() = !stdxclist.
+getButtonEx() = !stdxcbutton.
+getListBoxEx() = !stdxclistbox.
+getPaneEx() = !stdxcpane.
+getCheckBoxEx() = !stdxcbutton.
+getScrollViewEx() = !stdxcscrollview.
+getEditEx() = !stdxcedit.
+getTreeViewEx() = !stdxctree.
+getPropertyGridEx() = !stdxcpropertygrid.
+getTabEx() = !stdxctab.
+getListViewEx() = !stdxclistview.
+getCalendarEx() = !stdxccalendar.
+getMenuBarEx() = !stdxcmenubar.
+getComboBoxEx() = !stdxccombobox.
+getEleEx() = !stdxcele.
+getLinkEx() = !stdxclink.
+getProgressEx() = !stdxcprogress.
+getDateTimePickEx() = !stdxcdatetimepick.
+getRadioButtonEx() = !stdxcbutton.
+getScrollBarEx() = !stdxcscrollbar.
+getRectEx() = !stdxcrect.
+getGifEx() = !stdxcgif.
+getLineEx() = !stdxcline.
+getPictureEx() = !stdxcpicture.
+getEllipseEx() = !stdxcellipse.
+getTextEx() = !stdxcshapetext.
+getGroupboxEx() = !stdxcgroupbox.
+getLayoutObjectEx() = !stdxclayoutObj.
+.onMessage= @.on("message",function(message,wParam,lParam){
+	
+})
+.onPaint = @.on("paint",function(hDraw){
+	__
+})
+.onPaintEnd = @.on("paintEnd",function(hDraw){
+	__
+})
+.onMove = @.on("move",function(flags,pt){
+	
+	__
+})
+.onHover = @.on("hover",function(flags, pt){
+	
+	__
+})
+.onLeave = @.on("leave",function(hEleHover){
+
+})
+.onWheel = @.on("wheel",function(flags,pt){
+	
+	__
+})
+.onLbuttonDown = @.on("lbuttonDown",function(flags, pt){
+	
+	__
+})
+.onLbuttonUp = @.on("lbuttonUp",function(flags, pt){
+	
+	__
+})
+.onRbuttonDown = @.on("rbuttonDown",function(flags, pt){
+	
+	__
+})
+.onRbuttonUp = @.on("rbuttonUp",function(flags, pt){
+	
+	__
+})
+.onDblclick = @.on("dblclick",function(flags, pt){
+	
+	__
+})
+.onFocus = @.on("focus",function(){
+	__
+})
+.onKillFocus = @.on("killFocus",function(){
+	__
+})
+.onDestroy = @.on("destroy",function(){
+	__
+})
+.onSize = @.on("size",function(flags,pSize){
+	var size = ..raw.convert(pSize,::SIZE());
+	__
+})
+.onExitSizeMove = @.on("exitSizeMove",function(){
+	__
+})
+.onKeyDown = @.on("keyDown",function(wParam,lParam){
+	__
+})
+.onChar = @.on("char",function(wParam,lParam){
+	__
+})
+.onCaptureChange = @.on("capture",function(hwnd){
+	__
+})
+.onCursor = @.on("cursor",function(wParam,lParam){
+	__
+})
+.onDropfiles = @.on("dropfiles",function(wParam){
+	var files = ..win.getDropFile(wParam) __
+})
+
+.onMenuPopup = @.on("menuPopup",function(hMenu){
+	__
+})
+.onMenuPopupWnd = @.on("menuPopupWnd",function(hMenu,pInfo){
+	__
+})
+.onMenuSelect = @.on("menuSelect",function(id){
+	__
+})
+.onMenuDrawBackground = @.on("menuDrawBackground",function(hDraw,pInfo){
+	__
+})
+.onMenuDrawitem = @.on("menuDrawitem",function(hDraw,pInfo){
+	__
+})
+.onMenuExit = @.on("menuExit",function(){
+	__
+})
+.onTimer = @.on("timer",function(id){
+	__
+})
+.onFloatPane = @.on("floatPane",function(hFloatWnd,hPane){
+	__
+})
+end intellisense**/

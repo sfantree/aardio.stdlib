@@ -1,0 +1,41 @@
+import win.ui;
+/*DSG{{*/
+var LoginWin = win.form(text="aardio form";right=367;bottom=247)
+LoginWin.add(
+button={cls="button";text="登录";left=56;top=200;right=134;bottom=232;z=9};
+button2={cls="button";text="找回密码";left=152;top=200;right=230;bottom=232;z=10};
+button3={cls="button";text="注册";left=248;top=200;right=326;bottom=232;z=11};
+edit={cls="edit";left=120;top=128;right=312;bottom=152;edge=1;multiline=1;z=6};
+edit2={cls="edit";left=120;top=160;right=312;bottom=184;edge=1;multiline=1;password=1;z=7};
+radiobutton={cls="radiobutton";text="管理员";left=120;top=96;right=192;bottom=120;z=4};
+radiobutton2={cls="radiobutton";text="用户";left=240;top=96;right=312;bottom=120;z=5};
+static={cls="static";text="身份";left=48;top=96;right=112;bottom=120;center=1;font=LOGFONT(h=-16);transparent=1;z=1};
+static2={cls="static";text="用户名";left=48;top=128;right=112;bottom=152;center=1;font=LOGFONT(h=-16);transparent=1;z=2};
+static3={cls="static";text="密码";left=48;top=160;right=112;bottom=184;center=1;font=LOGFONT(h=-16);transparent=1;z=3};
+static4={cls="static";text="银行系统";left=120;top=32;right=232;bottom=72;center=1;font=LOGFONT(h=-27;name='宋体';weight=700);transparent=1;z=8}
+)
+/*}}*/
+
+import console;
+import sqlite;
+
+m_db = sqlite("bank.db3");
+
+LoginWin.radiobutton.checked = true;
+//LoginWin.radiobutton2.checked = true;
+
+
+for userName, password in m_db.each("select * from user;") {
+	console.log( userName, password ) 
+}
+
+
+for Number, Password in m_db.each("select * from manage;") {
+	console.log( Number, Password ) 
+}
+
+
+
+
+LoginWin.show();
+win.loopMessage();

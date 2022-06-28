@@ -1,0 +1,540 @@
+import win.ui;
+/*DSG{{*/
+mainForm = win.form(text="anki2easy v1.2";right=299;bottom=393;border="thin")
+mainForm.add(
+button={cls="button";text="制卡";left=213;top=350;right=287;bottom=385;z=1};
+button2={cls="button";text="打开";left=14;top=350;right=86;bottom=385;z=3};
+button3={cls="button";text="CSV";left=114;top=350;right=183;bottom=385;z=5};
+edit={cls="edit";left=11;top=22;right=287;bottom=50;edge=1;readonly=1;z=2};
+edit2={cls="edit";left=11;top=68;right=287;bottom=322;autohscroll=false;edge=1;multiline=1;vscroll=1;z=4}
+)
+/*}}*/
+
+mainForm.button2.oncommand = function(id,event){
+	import fsys.dlg;
+    var path = fsys.dlg.open("富文本格式(*.rtf)|*.rtf|");
+    if(path){
+		mainForm.edit.text = path;
+	}
+}
+
+// 参数: rtf文件目录 返回:临时文件夹中的rtf目录
+function copyRtfTmp(rtfFilePath) {
+    var tmpPath = fsys.getTempDir();
+    import fsys;
+    // string.random(6)
+    import time;
+    var tm = time.now();
+    tm.format = "%Y%m%d_%H%M%S";
+    var tmpFilename = string.format("%s_%s.rtf", tostring(tm), string.random(8));
+    var result = tmpPath + tmpFilename;
+    fsys.copy(rtfFilePath, result);
+    return result;
+}
+
+var getDefaultDeckName = function() {
+	import inet.http;
+	var http = inet.http();
+	http.setTimeouts(300, 300, 300);
+	
+	var postData = `
+	{
+        "action": "deckNames",
+        "version": 6
+    }
+	`
+	var apiUrl = "http://127.0.0.1:8765";
+	var html,err,errCode = http.post(apiUrl, postData);
+	//mainForm.edit.text =(html)
+	if(html) {
+		import web.json;
+	    var responseJson, err = web.json.tryParse(html);
+	    if(not responseJson) {
+	        return "";
+	    }
+	    var deckNames = responseJson[["result"]];
+	    if (deckNames) {
+	    	//var v1flag = false; //默认 卡组 "\u9ed8\u8ba4"
+	    	var v2flag = false; // 系统预置 ["\u7cfb\u7edf\u9884\u7f6e"], 
+	        for(k, v in deckNames) {
+	        	//mainForm.edit.print(v)
+	        	if (v == "默认") {
+	                return "默认";
+	            }
+	            
+	            if (v == "系统预置") {
+	                v2flag = true;
+	            }
+	        }
+	        //if(v1flag) {
+	        //    return "\u9ed8\u8ba4";
+	        //}
+	        if(v2flag) {
+	            return "系统预置";
+	        }
+	        //mainForm.edit.print(v)
+	        return deckNames[1];
+	    }
+	}
+	return ""
+}
+
+var httpPost = function(content, tag){
+    //string.hex(.(字符串,前缀,忽略字符串)
+    
+    if(type(content) != "string") {
+        return "";
+    }
+    
+    if(not tag) {
+        tag = ""
+    }
+    
+	import inet.http;
+	var http = inet.http();
+	http.setTimeouts(300, 300, 300);
+	
+	var postTemplate = `
+	{
+		"action": "addNote",
+		"version": 6,
+		"params": {
+			"note": {
+				"deckName": "%s",
+				"modelName": "\u586b\u7a7a\u9898",
+				"tags": [
+					"%s"
+				],
+				"fields": {
+					"\u6587\u5b57": "%s"
+				}
+			}
+		}
+	}
+	`
+	var deckName = getDefaultDeckName()
+	var escapeContent = string.escape(content, true, true);
+	var escapeTag = string.escape(tag, true, true);
+	var postData = string.format(postTemplate, deckName, escapeTag, escapeContent);
+	mainForm.edit2.print(postData)
+	var apiUrl = "http://127.0.0.1:8765";
+	var html,err,errCode = http.post(apiUrl, postData);
+    http.close();
+    return html;
+}
+
+
+
+
+var makeCard = function(){
+    mainForm.edit2.text = "";
+    
+	// 1.复制rtf到临时路径
+	
+	if(not io.exist(mainForm.edit.text)) {
+		mainForm.edit2.print("找不到Rtf文件，请点击打开选择文件！");
+	    return;
+	}
+	
+	var tmpPath = copyRtfTmp(mainForm.edit.text);
+	//mainForm.edit2.text = tmpPath;
+	
+	// 2.rtf2xml
+	//var rtf2xmlExe = io._exedir + "/Rtf2Xml.exe";
+	
+	var rtf2xmlExe = fsys.joinpath(io._exedir, "Rtf2Xml.exe") ;
+	
+	//mainForm.edit2.text = rtf2xmlExe;
+	if(not io.exist(rtf2xmlExe)) {
+		mainForm.edit2.print("找不到Rtf2Xml.exe，请解压后运行！");
+	    return;
+	}
+	
+	//var cmdLine = string.format('\"%s\" \"%s\"',rtf2xmlExe, tmpPath);  //rtf2xmlExe + " " + tmpPath;
+	import process;
+	
+	// D:\Program Files (x86)\aardio\Rtf2Xml.exe C:\Users\ADMINI~1\AppData\Local\Temp\20210330_150944_ml4887pb.rtf
+	var pid = process.executeWait(rtf2xmlExe, tmpPath,,0,,); //SW_HIDE
+	if(not pid) {
+		mainForm.edit2.print("Rtf2Xml执行失败！");
+		return;
+	}
+	
+	//mainForm.edit2.text = cmdLine;
+	
+	// 3. xml解析
+	
+	var xmlpath = string.replace(tmpPath, ".rtf", ".xml");
+	var xmlstr = string.load(xmlpath);
+	if(not xmlstr){
+		mainForm.edit2.print("xml文件加载失败！");
+		return;
+	}
+	
+	import string.xml;
+	var xmlDoc = string.xml( xmlstr );
+	if(not xmlDoc){
+		mainForm.edit2.print("xml文件解析失败！");
+		return;
+	}
+	// mainForm.edit2.text = xmlstr;
+	
+	var rtfVisuals = xmlDoc.queryEles( tagName = "rtfVisuals"); 
+	if(not rtfVisuals[1]) {
+	    return;
+	}
+	
+	var paragraphList = {};
+	var eachParagraphOriginal = ""; //替换前
+	var xmlSlice2 = "";
+	var eachParagraph = ""; //替换后
+	var xmlSlice = "";
+	for(index,tagName,childCount,xNode in rtfVisuals[1].eachChild() ){
+		 if (tagName == "rtfVisualText") {
+		 	
+		 	//mainForm.edit2.text += xNode.innerText();
+		    var isUnderline = xNode.queryEles( tagName = "isUnderline");
+		    var text = xNode.queryEles( tagName = "text");
+		    //import console;
+		    //console.dump(isUnderline);
+		    if( not isUnderline[1]) {
+		        return;
+		    }
+		    
+		    if( not text[1]) {
+		        return;
+		    }
+		    
+		    //import console;
+		   
+		    if(isUnderline[1].innerText() == "True") {
+		         //console.dump("True" + text[1].innerText());
+		         // “{{c1::” ＋ textNode.取文本 () ＋ “}}
+		         xmlSlice = string.concat(xmlSlice, "{{c1::" , (text[1].innerText()) , "}}");
+		         
+		         //记录原始段落，用于判空
+		         xmlSlice2 = string.concat(xmlSlice2, text[1].innerText());
+		         
+		    } else {
+		    	
+		         //console.dump("False" + text[1].innerText());
+		         xmlSlice = string.concat(xmlSlice, text[1].innerText());
+		         xmlSlice2 = string.concat(xmlSlice2, text[1].innerText());
+		    }
+		    
+		    //mainForm.edit2.print("+++++++++++++")
+            //mainForm.edit2.print(xmlSlice)
+            //mainForm.edit2.print("+++++++++++++")
+		    
+		    //mainForm.edit2.text += isUnderline[1].innerText();
+		 }
+		 
+		 
+		 if (tagName == "rtfVisualBreak") {
+		     eachParagraph = xmlSlice;
+		     xmlSlice = ""
+		     
+		     eachParagraphOriginal = xmlSlice2;
+		     xmlSlice2 = "";
+		     
+		     // 检测eachParagraph是不是全空格
+		     //paragraphList.
+		     var pattern =  "[^\s]"
+             var i,j = string.find( eachParagraphOriginal,  pattern );
+             //mainForm.edit2.print("+++++++++++++")
+             //mainForm.edit2.print(eachParagraphOriginal)
+             //mainForm.edit2.print("+++++++++++++")
+             
+             if(i) {
+                 //table.insert(
+                 table.insert(paragraphList, eachParagraph);
+             }
+		 }
+		 
+		 
+	}
+	//import console;
+	//console.dump(paragraphList);
+	
+	// 4. paragraphList元素 到anki api
+	import fsys;
+	
+	var tagName = fsys.getFileName(mainForm.edit.text);
+	
+	mainForm.edit2.print("输出网页日志：");
+	for(i=1; #paragraphList; 1){ 
+	    var eachP = paragraphList[i];
+	    var html = httpPost(eachP, tagName);
+	    if(html)
+	    {
+	    	mainForm.edit2.print(html);
+	    } else {
+	        mainForm.edit2.print("请求超时~");
+	        mainForm.edit2.print("请检查1.Anki是否开启 2.AnkiConnect是否安装~");
+	        break;
+	    }
+	    mainForm.edit2.print("------------------------")
+	}
+    mainForm.edit2.print("制卡完成");
+}
+
+//导出为csv
+var makeCard2 = function(){
+    mainForm.edit2.text = "";
+    
+	// 1.复制rtf到临时路径
+	
+	if(not io.exist(mainForm.edit.text)) {
+		mainForm.edit2.print("找不到Rtf文件，请点击打开选择文件！");
+	    return;
+	}
+	
+	var tmpPath = copyRtfTmp(mainForm.edit.text);
+	//mainForm.edit2.text = tmpPath;
+	
+	// 2.rtf2xml
+	//var rtf2xmlExe = io._exedir + "/Rtf2Xml.exe";
+	
+	var rtf2xmlExe = fsys.joinpath(io._exedir, "Rtf2Xml.exe") ;
+	
+	//mainForm.edit2.text = rtf2xmlExe;
+	if(not io.exist(rtf2xmlExe)) {
+		mainForm.edit2.print("找不到Rtf2Xml.exe，请解压后运行！");
+	    return;
+	}
+	
+	//var cmdLine = string.format('\"%s\" \"%s\"',rtf2xmlExe, tmpPath);  //rtf2xmlExe + " " + tmpPath;
+	import process;
+	
+	// D:\Program Files (x86)\aardio\Rtf2Xml.exe C:\Users\ADMINI~1\AppData\Local\Temp\20210330_150944_ml4887pb.rtf
+	var pid = process.executeWait(rtf2xmlExe, tmpPath,,0,,); //SW_HIDE
+	if(not pid) {
+		mainForm.edit2.print("Rtf2Xml执行失败！");
+		return;
+	}
+	
+	//mainForm.edit2.text = cmdLine;
+	
+	// 3. xml解析
+	
+	var xmlpath = string.replace(tmpPath, ".rtf", ".xml");
+	var xmlstr = string.load(xmlpath);
+	if(not xmlstr){
+		mainForm.edit2.print("xml文件加载失败！");
+		return;
+	}
+	
+	import string.xml;
+	var xmlDoc = string.xml( xmlstr );
+	if(not xmlDoc){
+		mainForm.edit2.print("xml文件解析失败！");
+		return;
+	}
+	// mainForm.edit2.text = xmlstr;
+	
+	var rtfVisuals = xmlDoc.queryEles( tagName = "rtfVisuals"); 
+	if(not rtfVisuals[1]) {
+	    return;
+	}
+	
+	var paragraphList = {};
+	var eachParagraphOriginal = ""; //替换前
+	var xmlSlice2 = "";
+	var eachParagraph = ""; //替换后
+	var xmlSlice = "";
+	for(index,tagName,childCount,xNode in rtfVisuals[1].eachChild() ){
+		 if (tagName == "rtfVisualText") {
+		 	
+		 	//mainForm.edit2.text += xNode.innerText();
+		    var isUnderline = xNode.queryEles( tagName = "isUnderline");
+		    var text = xNode.queryEles( tagName = "text");
+		    //import console;
+		    //console.dump(isUnderline);
+		    if( not isUnderline[1]) {
+		        return;
+		    }
+		    
+		    if( not text[1]) {
+		        return;
+		    }
+		    
+		    //import console;
+		   
+		    if(isUnderline[1].innerText() == "True") {
+		         //console.dump("True" + text[1].innerText());
+		         // “{{c1::” ＋ textNode.取文本 () ＋ “}}
+		         xmlSlice = string.concat(xmlSlice, "{{c1::" , (text[1].innerText()) , "}}");
+		         
+		         //记录原始段落，用于判空
+		         xmlSlice2 = string.concat(xmlSlice2, text[1].innerText());
+		         
+		    } else {
+		    	
+		         //console.dump("False" + text[1].innerText());
+		         xmlSlice = string.concat(xmlSlice, text[1].innerText());
+		         xmlSlice2 = string.concat(xmlSlice2, text[1].innerText());
+		    }
+		    
+		    //mainForm.edit2.print("+++++++++++++")
+            //mainForm.edit2.print(xmlSlice)
+            //mainForm.edit2.print("+++++++++++++")
+		    
+		    //mainForm.edit2.text += isUnderline[1].innerText();
+		 }
+		 
+		 
+		 if (tagName == "rtfVisualBreak") {
+		     eachParagraph = xmlSlice;
+		     xmlSlice = ""
+		     
+		     eachParagraphOriginal = xmlSlice2;
+		     xmlSlice2 = "";
+		     
+		     // 检测eachParagraph是不是全空格
+		     //paragraphList.
+		     var pattern =  "[^\s]"
+             var i,j = string.find( eachParagraphOriginal,  pattern );
+             //mainForm.edit2.print("+++++++++++++")
+             //mainForm.edit2.print(eachParagraphOriginal)
+             //mainForm.edit2.print("+++++++++++++")
+             
+             if(i) {
+                 //table.insert(
+                 table.insert(paragraphList, eachParagraph);
+             }
+		 }
+		 
+		 
+	}
+	
+	
+	//4. 写出为csv格式
+	import string.database;
+	import fsys;
+	import time;
+	if(#paragraphList) {
+		var csvObject = string.database("," ,);
+		
+		var t2 = {};
+		for (i = 1; #paragraphList; 1) {
+		    t3 = {};
+		    table.push(t3, paragraphList[i]);
+		    table.push(t2, t3);
+		}
+		
+		
+		var tm = time.now();
+    	tm.format = "%Y%m%d_%H%M%S";
+    	var csvFilename = string.format("%s.csv", tostring(tm));
+		var csvAbsFilename = fsys.joinpath(io._exedir, csvFilename) ;
+		csvObject.save( csvAbsFilename , t2);
+		mainForm.edit2.print("导出csv完成");
+		mainForm.edit2.print(csvAbsFilename);
+	}
+	
+	//import console;
+	//console.dump(paragraphList);
+	
+	/*
+// 4. paragraphList元素 到anki api
+	import fsys;
+	
+	var tagName = fsys.getFileName(mainForm.edit.text);
+	
+	mainForm.edit2.print("输出网页日志：");
+	for(i=1; #paragraphList; 1){ 
+	    var eachP = paragraphList[i];
+	    var html = httpPost(eachP, tagName);
+	    if(html)
+	    {
+	    	mainForm.edit2.print(html);
+	    } else {
+	        mainForm.edit2.print("请求超时~");
+	        mainForm.edit2.print("请检查1.Anki是否开启 2.AnkiConnect是否安装~");
+	        break;
+	    }
+	    mainForm.edit2.print("------------------------")
+	}
+*/
+
+    
+    
+    
+}
+
+
+
+mainForm.button.oncommand = function(id,event){
+	mainForm.button.disabled = true;
+	
+	//mainForm.
+	//import thread;
+	//thread.invoke(
+	//	function(winform) {
+	//		makeCard();
+	//	}
+	//)
+	
+	makeCard();
+	mainForm.button.disabled = false;
+	collectgarbage("collect");
+}
+
+
+// 添加菜单
+var menu = win.ui.menu(mainForm);
+menu.addTable(
+	 {
+    	{ "→点击这里←"; 
+    			{ 
+    				{   "使用说明";
+    					function(id){
+            				//mainForm.msgbox("测试菜单->子菜单")
+            				//import process;
+            				//process.openUrl("https://zhuanlan.zhihu.com/p/360535620")
+            				mainForm.loadForm("/dlg/help.aardio")
+        				} 
+        			};
+        			{   "分享卡组";
+    					function(id){
+            				//mainForm.msgbox("测试菜单->子菜单2")
+            				import process;
+            				process.openUrl("https://ankiweb.net/shared/decks/chinese")
+        				} 
+        			};
+        			{   "关于软件";
+    					function(id){
+            				//mainForm.msgbox("测试菜单->子菜单2")
+            				mainForm.loadForm("/dlg/about.aardio")
+        				} 
+        			};
+    			} 
+    	};
+    }
+);
+
+import process;
+if( not process.find("anki.exe") ){
+    mainForm.edit2.print("未检测到anki进程，请先打开anki~");
+}
+
+mainForm.edit2.print("点击打开载入Rtf文件↓");
+
+mainForm.button3.oncommand = function(id,event){
+	mainForm.button.disabled = true;
+	
+	//mainForm.
+	//import thread;
+	//thread.invoke(
+	//	function(winform) {
+	//		makeCard();
+	//	}
+	//)
+	
+	makeCard2();
+	mainForm.button.disabled = false;
+	collectgarbage("collect");
+}
+
+mainForm.show();
+return win.loopMessage();

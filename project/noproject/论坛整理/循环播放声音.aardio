@@ -1,0 +1,47 @@
+import win.ui;
+import web.form;
+import crypt;
+
+import fsys;
+import fsys.media;
+import win.util.tray;//导入汽球提示支持库
+
+import time;
+import fsys.file;
+import thread;
+
+
+/*DSG{{*/
+var winform = win.form(text="miniblink";right=1174;bottom=839;width=1920)
+winform.add(
+button={cls="button";text="声音测试";left=1009;top=807;right=1170;bottom=837;z=4};
+custom={cls="custom";text="custom";left=6;top=-51;right=1170;bottom=789;db=1;dl=1;dr=1;dt=1;z=1};
+edit={cls="edit";left=875;top=3;right=1168;bottom=566;db=1;dr=1;dt=1;edge=1;multiline=1;z=2};
+edit2={cls="edit";text="Edit";left=876;top=581;right=1168;bottom=625;edge=1;multiline=1;z=3}
+)
+/*}}*/
+
+winform.button.oncommand = function(id,event){ //事件必须放在show之前
+        thread.invoke(t_alert,winform)
+        //t_alert(5);  //此处直接调用可以播放声音，但是只有播放一次
+        /*thread.create(function(winform){
+                winform.t_alert(3);
+        },winform)*/
+}
+
+t_alert=function(num=3){ //播放声音提醒
+
+   for(i=1;num;1){
+          
+   fsys.media.playSound("\res\v.wav",0x1/*_SND_ASYNC*/);
+   
+   }
+        win.util.tray(winform).pop( "OK" ) //看看节点取的是否正确
+   
+}
+
+thread.invoke(t_alert)
+
+
+winform.show();
+win.loopMessage();

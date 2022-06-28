@@ -1,0 +1,46 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(parent=...; text="aardio Form";right=291;bottom=144 )
+winform.add(
+text2={ bottom=61;right=180;left=111;top=33;font=LOGFONT( name="宋体";h=-12 );z=2;text="";edge=1;cls="edit" };
+text3={ bottom=61;right=265;left=196;multiline=1;top=33;font=LOGFONT( name="宋体";h=-12 );z=3;text="";edge=1;cls="edit" };
+rb_ch={ bottom=120;text="乘法";left=28;top=102;font=LOGFONT( name="宋体";h=-12 );z=5;right=71;cls="radiobutton" };
+static4={ text="结果:";bottom=115;right=110;left=78;top=100;font=LOGFONT( name="宋体";h=-12 );z=11;transparent=1;cls="static" };
+static2={ text="结束值";bottom=28;right=158;left=111;top=16;font=LOGFONT( name="宋体";h=-12 );z=9;transparent=1;cls="static" };
+static3={ text="递增";bottom=28;right=243;left=196;top=16;font=LOGFONT( name="宋体";h=-12 );z=10;transparent=1;cls="static" };
+result={ bottom=116;right=187;left=118;top=88;font=LOGFONT( name="宋体";h=-12 );z=6;text="";edge=1;cls="edit" };
+rb_j={ bottom=94;text="加法";left=29;top=78;font=LOGFONT( name="宋体";h=-12 );z=4;right=69;cls="radiobutton" };
+static={ text="开始值";bottom=28;right=75;left=28;top=16;font=LOGFONT( name="宋体";h=-12 );z=8;transparent=1;cls="static" };
+text1={ bottom=61;right=96;left=27;top=33;font=LOGFONT( name="宋体";h=-12 );z=1;text="";edge=1;cls="edit" };
+button={ bottom=120;color=0;text="计算";left=210;top=95;font=LOGFONT( name="宋体";h=-14;out=3;family=2;clip=2;quality=1 );z=7;right=265;cls="button" }
+)
+/*}}*/
+
+winform.button.oncommand = function(id,event){
+        //win.msgbox( winform.button.text );
+               
+        var v_start = tonumber(winform.text1.text);
+        var v_end = tonumber(winform.text2.text);
+        var v_step = tonumber(winform.text3.text);
+        var sumnum=0;//总的数值
+        //加法的运算
+        if(winform.rb_j.checked){                        
+                for(i=v_start;v_end;v_step){
+                        sumnum =sumnum + i;
+                }
+
+        }
+        //乘法的运算
+        if(winform.rb_ch.checked){  
+                sumnum=1;                       
+                for(i=v_start;v_end;v_step){
+                        sumnum = sumnum * i;
+                }
+        }       
+         winform.result.text=sumnum;
+}
+
+
+winform.show()
+win.loopMessage();
+return winform;

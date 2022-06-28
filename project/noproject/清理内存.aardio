@@ -1,0 +1,11 @@
+import console;
+import process;
+
+for prcsEntry in process.each() {
+	var h =::Kernel32.OpenProcess(0x1f0fff,false,prcsEntry.th32ProcessID)
+	if(h){
+		::Psapi.EmptyWorkingSet(h);
+		::Kernel32.CloseHandle(h);
+	}
+}
+console.pause();

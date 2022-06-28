@@ -1,0 +1,18 @@
+//下载文件
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="miniblink下载文件演示";right=1213;bottom=743)
+winform.add()
+/*}}*/
+
+import web.blink.form;
+var mb = web.blink.form(winform)
+
+import web.blink.downBox;
+web.blink.downBox(mb);
+
+//打开网页
+mb.go("http://www.aardio.com") 
+winform.show();
+
+win.loopMessage();

@@ -1,0 +1,51 @@
+﻿//protectData DPAPI
+::Crypt32  := ..raw.loadDll("Crypt32.dll");
+	
+namespace crypt.protectData;
+
+decrypt = function(dataIn,unhex,flags){
+    if((unhex===null && (type(dataIn)==="string") ) || unhex){
+    	dataIn = ..string.unhex(dataIn,"") 
+    }
+     
+    var dataOut = {INT cbData;ptr data}
+    var description = {ptr v}
+	if( ::Crypt32.CryptUnprotectData ({
+		INT cbData = #dataIn;
+		ptr data = dataIn;
+	},description,null,null,null,flags,dataOut) ){
+ 
+		var ret,desc = ..raw.buffer(dataOut.cbData,dataOut.data);
+		if(description.v){
+			desc = ..string.fromUnicode(description.v,,-1)
+			::Kernel32.LocalFree(description.v);
+		}
+		::Kernel32.LocalFree(dataOut.data);
+		return ret,desc;
+	}   
+}
+
+encrypt = function(dataIn,description,hex,flags){  
+    var dataOut = {INT cbData;ptr data}
+	if( ::Crypt32.CryptProtectData({
+		INT cbData = #dataIn;
+		ptr data = dataIn;
+	},description,null,null,null,flags,dataOut) ){ 
+		var ret = ..raw.buffer(dataOut.cbData,dataOut.data);
+		::Kernel32.LocalFree(dataOut.data);
+		if(hex || hex === null ) ret = ..string.hex(ret,""); 
+		return ret;
+	} 	
+}
+
+/**intellisense()
+crypt.protectData = DPAPI 加解密
+crypt.protectData.decrypt(.(dataIn,unhex,flags) = @dataIn 指定加密数据,\n@unhex 指定是否对@dataIn进行16进制解码,省略时默认为true\n可选用 @flags 指定选项\n如果解密系统加密数据失败,\n请先尝试在管理权限下用 thread.token.impersonate("winlogon.exe") 获取 SYSTEM 身份
+crypt.protectData.encrypt(.(dataIndescription,hex,flags) = @dataIn 指定要加密的数据，允许传入字符串,buffer,\n可选用 @hex 参数指定是否对返回值进行16进制编码,默认为true\n可选用 @flags 指定选项 
+end intellisense**/
+ 
+/**intellisense()
+_CRYPTPROTECT_UI_FORBIDDEN=@1/*_CRYPTPROTECT_UI_FORBIDDEN*/
+_CRYPTPROTECT_LOCAL_MACHINE=@4/*_CRYPTPROTECT_LOCAL_MACHINE*/
+_CRYPTPROTECT_AUDIT=@0x10/*_CRYPTPROTECT_AUDIT*/
+end intellisense**/

@@ -1,0 +1,98 @@
+import win.ui;
+import win.ui.atom;
+/*DSG{{*/
+//var winform = win.form(text="日志显示";left=600;top=600;right=1216;bottom=841;border="none";exmode="none";max=false;mode="popup";parent=...;topmost=1)
+var winform = win.form(text="aardio- 调试进程列表";left=-2;top=-2;right=610;bottom=247;exmode="none";max=false;mode="popup";parent=...;topmost=1)
+
+winform.add(
+checkbox={cls="checkbox";text="是否置顶";left=8;top=216;right=128;bottom=232;z=2};
+edit={cls="edit";left=8;top=8;right=608;bottom=200;edge=1;multiline=1;z=1}
+)
+/*}}*/
+
+import config;
+
+if(config.logform.isRun == true) {
+    //winform.close();
+}
+
+config.logform.isRun = true;
+
+
+
+// 悬浮窗跟随鼠标拖动
+winform.onMouseDown = function(wParam,lParam){
+    winform.hitCaption();
+}
+
+// 悬浮窗右键菜单
+import win.ui.menu;
+winform.popmenu=win.ui.popmenu(winform);
+winform.popmenu.add('打开',function(id){ //添加了一个打开主界面的菜单
+    winform.show();
+})
+winform.popmenu.add('退出',function(id){ //添加了一个退出程序的菜单
+    win.show(winform.hwnd,false);
+})
+
+winform.wndproc = function(hwnd, message, wParam, lParam) {
+    select(message) {
+    case 0x205
+        /*_WM_RBUTTONUP*/
+        {
+            {
+                var x, y = win.getMessagePos(); //获得鼠标位置
+                winform.popmenu.popup(x, y, true) //popup弹出坐标，第三个参数如上
+                //return;
+            }
+        }
+    case 0xACCF 
+        {
+            if( lParam = 0x205/*_WM_RBUTTONUP*/ ) {
+                win.setForeground(winform.hwnd)
+ 				winform.popmenu.popup(x, y, true);
+ 				//return;
+			}    
+        }
+    }
+}
+
+
+winform.edit.adjust = function(cx,cy){
+    winform.edit.fillParent(4);
+} 
+
+
+winform.onMinimize = function(lParam){
+	win.show(winform.hwnd,false);
+	return true;
+}
+
+winform.onClose = function(hwnd,message,wParam,lParam){
+    win.show(winform.hwnd,false);
+    return true;
+}
+
+subscribe("logd",
+	function(...) {
+		winform.edit.print(...);
+	}
+)
+
+subscribe("show",
+	function(flag) {
+		win.show(winform.hwnd, flag);
+	}
+)
+
+winform.checkbox.oncommand = function(id,event){
+	 if(winform.checkbox.checked) {
+	     win.setTopmost(winform.hwnd);
+	 } else {
+	     win.setTopmost(winform.hwnd,false);
+	 }
+}
+
+//win.show(winform.hwnd);
+win.setTopmost(winform.hwnd)
+win.loopMessage();

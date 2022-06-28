@@ -1,0 +1,14 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="产品资料管理";right=759;bottom=469)
+winform.add(
+listview={cls="listview";left=32;top=32;right=720;bottom=392;edge=1;z=1}
+)
+/*}}*/
+
+winform.listview.insertColumn("扩展名",180) 
+winform.listview.insertColumn("版本",100) 
+winform.listview.insertColumn("描述",-1)
+
+winform.show();
+win.loopMessage();

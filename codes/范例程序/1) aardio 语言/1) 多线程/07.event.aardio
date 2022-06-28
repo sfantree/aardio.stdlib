@@ -1,0 +1,48 @@
+//事件对象同步
+/*
+请参考《多线程中的交通信号灯：thread.event》
+http://bbs.aardio.com/forum.php?mod=viewthread&tid=11531
+*/
+
+import console;
+import thread.event;
+var evtMain = thread.event()
+var evtWorkThread = thread.event()
+
+thread.create( 
+	function(evtMain,evtWorkThread){ 
+		
+		import console;
+		
+		evtWorkThread.wait();
+		console.log("工作线程: 不在,有事请留言",'\n')  
+		evtMain.set();
+		
+		evtWorkThread.wait();
+		console.log("工作线程: 说了不在,有事请留言",'\n') 
+		evtMain.set();
+		
+		evtWorkThread.wait();
+		console.log("工作线程: 都说了不在！谁让你等一天了,不在就是不在！")  
+		evtMain.set();
+		
+	},evtMain,evtWorkThread
+)
+
+console.log("主线程: 在吗?");
+sleep(1000); //加特效
+evtWorkThread.set(); //主线说完了,轮到工作线程了
+evtMain.wait(); //等待工作线程应答;
+
+console.log("主线程: 现在在了吗?")
+sleep(1000); //加特效
+evtWorkThread.set(); //主线说完了,轮到工作线程了
+evtMain.wait(); //等待工作线程应答;;
+
+console.log("主线程: 都等了一天了,你还是不在吗?")
+sleep(1000); //加特效
+evtWorkThread.set(); //主线说完了,轮到工作线程了
+evtMain.wait(); //等待工作线程应答;
+
+sleep(1000); //加特效
+console.pause(true,"那好吧,请按任意键挂机！")

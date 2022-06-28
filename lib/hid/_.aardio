@@ -1,0 +1,192 @@
+﻿namespace hid;
+
+class device{
+	ctor( vendorId,productId,serialNumber){
+		if( type(vendorId) === type.string ){
+			this.hDevice = topointer( api.hid_open_path(vendorId) );
+			..table.gc(this,"close");
+		}
+		elseif( type(vendorId) == type.pointer ){
+			this.hDevice = vendorId;
+		}
+		else {
+			if(serialNumber) serialNumber = ..string.toUnicode(serialNumber); 
+			this.hDevice = api.hid_open(vendorId,productId,serialNumber);
+			..table.gc(this,"close");
+		}
+		if(!this.hDevice) return null;
+	}; 
+	setNonblocking = function(enabled){
+		return api.hid_set_nonblocking(this.hDevice,!!enabled); 
+	}
+	errorMessage = function(){
+		var e = api.hid_error(this.hDevice);
+		if(e) return ..string.fromUnicode(topointer(e),,-1);
+	}
+	read = function(len=255){
+		var data = ..raw.buffer(len);
+		var len = api.hid_read(this.hDevice,data,len);
+		if(len<0) return null,this.errorMessage();
+		if(len){
+			return ..string.left(data,len);
+		}
+	}
+	readTimeout = function(milliseconds,len=255){
+		var data = ..raw.buffer(len);
+		var len = api.hid_read_timeout(this.hDevice,data,len,milliseconds);
+		if(len<0) return null,this.errorMessage();
+		if(len){
+			return ..string.left(data,len);
+		}
+	}
+	write = function(data,len,reportId){
+		if(!len) len = #data;
+		var buf = ..raw.buffer(len+1);
+		buf[1] = reportId; ..raw.concat(buf,data,1,len);
+		var len = api.hid_write(this.hDevice,buf,len+1);
+		if(len<0) return null,this.errorMessage();
+		return len;
+	}
+	getFeatureReport = function(reportId,len=255){
+		var data = ..raw.buffer(len+1);
+		data[1] = reportId;
+		var len = api.hid_get_feature_report(this.hDevice,data,len+1);
+		if( len < 0 )  return null,this.errorMessage();
+		if( len > 0) return string.sub(data,2,len);
+	}
+	sendFeatureReport = function(data,len,reportId){
+		if(!len) len = #data;
+		var buf = ..raw.buffer(len+1);
+		buf[1] = reportId; ..raw.concat(buf,data,1,len);
+		var len = api.hid_send_feature_report(this.hDevice,buf,len+1);
+		if(len<0) return null,this.errorMessage();
+		return len;
+	}
+	getManufacturerString= function(len=255){
+	 	var data = ..raw.buffer(len*2);
+	 	var err = api.hid_get_manufacturer_string(this.hDevice,data,len);
+		if( err )  return null,this.errorMessage(); 
+		return ..string.fromUnicode(data);
+	}
+	getProductString= function(len=255){
+	 	var data = ..raw.buffer(len*2);
+	 	var err = api.hid_get_product_string(this.hDevice,data,len);
+		if( err )  return null,this.errorMessage(); 
+		return ..string.fromUnicode(data);
+	}
+	getSerialNumberString= function(len=255){
+	 	var data = ..raw.buffer(len*2);
+	 	var err = api.hid_get_serial_number_string(this.hDevice,data,len);
+		if( err )  return null,this.errorMessage(); 
+		return ..string.fromUnicode(data);
+	}
+	getIndexedString= function(idx,len=255){
+	 	var data = ..raw.buffer(len*2);
+	 	var err = api.hid_get_indexed_string(this.hDevice,idx,data,len);
+		if( err )  return null,this.errorMessage(); 
+		return ..string.fromUnicode(data);
+	}
+	close = function(){
+		if(this.hDevice){
+			api.hid_close(this.hDevice);
+			this.hDevice = null;
+		};
+	}
+	@_meta;
+}
+ 
+namespace device{
+
+	//根据HIDAPI开源许可证可自由使用hidapi.dll组件：https://github.com/signal11/hidapi 
+	api = ..raw.loadDll($"~\lib\hid\.res\hidapi.dll","hidapi.dll","cdecl");
+	api.hid_init();
+
+	each = function(vendorId,productId){
+	
+		var devs  = topointer( api.hid_enumerate(vendorId,productId) );
+		devs = ..gcdata(  
+			_topointer = devs; 
+			_gc = function(){
+				if(devs){
+					api.hid_free_enumeration(devs);
+					devs = null;
+				}
+			} 
+		)
+		var next = devs;
+		
+		return function(){
+			if(next){
+				var deviceInfo = ..raw.convert(next,{
+					string path;
+					WORD vendorId;
+					WORD productId;
+					ustring serialNumber;
+					WORD releaseNumber;
+					ustring manufacturerString; 
+					ustring productString; 
+					WORD usagePage;
+					WORD usage;
+					int interfaceNumber;
+					pointer next;
+				});
+				next = deviceInfo.next;
+				return deviceInfo;
+			}
+			else {
+				api.hid_free_enumeration(devs);
+				devs = null;
+			}
+			
+		}
+	} 
+	
+	_meta = {
+		_serialize = function(kernelCall){
+			if(kernelCall) {
+				return "global.import('hid') : hid.device( topointer(" + tonumber(owner.hDevice) + ") ) "
+			
+			}
+		};
+	}
+}
+
+/**intellisense()
+hid = USB HID 通信接口
+hid.device(.(vendorId,productId,serialNumber) = 打开设备返回句柄
+hid.device(.(path) = 打开设备返回句柄,参数为each迭代器返回的deviceInfo.path
+hid.device() = !stdhiddevice.
+hid.device.each(vid,pid) = @for deviceInfo in hid.device.each() {
+	
+}
+hid.device.each() = !hidapideviceInfo.
+end intellisense**/
+
+
+/**intellisense(!stdhiddevice)
+setNonblocking(true) = 启用非阻塞模式
+errorMessage() = 返回错误信息
+read() = 读数据,可选使用参数@1指定缓冲区长度
+readTimeout(__) = 读数据,参数@1指定毫秒单位的超时值,\n可选使用参数@1指定缓冲区长度
+write(.(数据,长度,报告ID) = 写数据,除参数@1以外其他参数为可选参数
+getFeatureReport() = 读功能报告,可选使用参数@1指定缓冲区长度
+sendFeatureReport(.(数据,长度,报告ID) = 写功能报告,除参数@1以外其他参数为可选参数
+getManufacturerString() = 读制造商字符串,可选使用参数@1指定缓冲区长度
+getProductString() = 获取产品字符串,可选使用参数@1指定缓冲区长度
+getSerialNumberString() = 获取序列号字符串,可选使用参数@1指定缓冲区长度
+getIndexedString() = 获取索引字符串,可选使用参数@1指定缓冲区长度
+close() = 关闭对象
+end intellisense**/
+
+/**intellisense(!hidapideviceInfo)
+path = 设备路径
+vendorId = 厂商ID
+productId = 产品ID
+serialNumber = 序列号
+releaseNumber = 设备版本号
+manufacturerString = 制造商,字符串
+productString = 产品,字符串
+usagePage = 使用页
+usage = 使用ID
+interfaceNumber = 接口编号
+end intellisense**/

@@ -1,0 +1,320 @@
+import win.ui;
+/*DSG{{*/
+启动窗口 = win.form(text="图片转PDF助手";right=767;bottom=463;acceptfiles=1;bgcolor=16777215)
+启动窗口.add(
+edit={cls="edit";left=208;top=248;right=728;bottom=416;autohscroll=false;edge=1;multiline=1;z=3};
+编辑框1={cls="edit";left=16;top=320;right=168;bottom=344;autohscroll=false;edge=1;multiline=1;z=1};
+超级列表框1={cls="listview";left=16;top=16;right=752;bottom=232;edge=1;fullRow=1;gridLines=1;z=2}
+)
+/*}}*/
+
+import win.ui.menu;
+import win.util.tray;
+import fsys.ini
+//程序集变量
+图片文件目录集 = {};
+
+
+// __启动窗口_创建完毕
+启动窗口_创建完毕 = function(){
+	//创建托盘图标
+	启动窗口.托盘1 = win.util.tray(启动窗口) 
+	启动窗口.tip = "图片转换" //设置鼠标提示
+	
+	// 文件是否存在 取运行目录
+	if ( io.exist("/config.ini") == false ) {
+		// 写配置项
+	    var ini = fsys.ini("/config.ini")
+	    var sec = ini.getSection("默认目录");
+	    sec.读文件目录 = "";
+	    sec.读文件夹目录 = "";
+	    sec.save() 
+	    
+	    sec = ini.getSection("JPG设置");
+	    sec.JPG是否维持原分辨率 = "300";
+	    sec.PDF是否维持原分辨率 = "";
+	    sec.save()
+	    
+	    sec = ini.getSection("PDF设置");
+	    sec.PDF图片分辨率 = "300";
+	    sec.save()
+	}
+	
+	// 设置 listview
+	启动窗口.超级列表框1.insertColumn("序号", 50);
+	启动窗口.超级列表框1.insertColumn("文件名称", 180);
+	启动窗口.超级列表框1.insertColumn("文件路径", -1);
+	
+	
+	启动窗口.编辑框1.text = "-colorspace Gray";
+	
+	启动窗口.setIcon($"~/res/demo.ico");
+}
+
+// __启动窗口_托盘事件
+启动窗口.wndproc = {
+	[0xACCF/*_WM_TRAYMESSAGE*/ ] = function(hwnd,message,wParam,lParam){
+		    // 右键单击
+			if( lParam = 0x205/*_WM_RBUTTONUP*/ ){
+			    启动窗口.close();
+			}
+     }	
+}
+
+
+// 拖放对象1.注册拖放控件
+启动窗口.onDropFiles = function(拖入文件目录集){
+	table.append(图片文件目录集, 拖入文件目录集);
+	启动窗口.编辑框1.text = "";
+	启动窗口.编辑框1.print(图片文件目录集) 
+}
+
+
+
+import fsys.dlg;
+// _读取图片_被选择
+读取图片_被选择 = function(){
+	 var ini = fsys.ini("/config.ini")
+	 var sec = ini.getSection("默认目录");
+	 var 初始目录 = sec.读文件目录
+	 var 文件路径数组 = fsys.dlg.openEx("图片文件(*.jpg,*.tif,*.png,*.bmp)|*.jpg;*.tif;*.tiff;*.png;*.bmp", "选择图片文件", 初始目录)
+     
+     if(#文件路径数组 > 0) {
+         sec.读文件目录 = fsys.getParentDir(文件路径数组[1])
+         sec.save();
+     } else {
+         return ;
+     }
+     
+     启动窗口.超级列表框1.clear();
+     for(i=1;#文件路径数组;1){
+         var tr1 = tostring(i);
+         var tr2 = fsys.getFileName(文件路径数组[i]);
+         var tr3 = 文件路径数组[i];
+         
+     	 启动窗口.超级列表框1.addItem({ tr1; tr2; tr3 });
+     
+     }
+}
+
+读取文件夹_被选择 = function(){
+	 var ini = fsys.ini("/config.ini")
+	 var sec = ini.getSection("默认目录");
+	 // 读配置项
+	 var 初始目录 = sec.读文件夹目录
+	 
+	 var 文件目录2 = fsys.dlg.opendir(初始目录, 启动窗口.hwnd, , "读文件夹目录")
+     
+     // 写配置项
+     if(#文件目录2 > 0) {
+         sec.读文件夹目录 = 文件目录2;
+         sec.save();
+     } else {
+         return ;
+     }
+     
+     var 文件路径数组 = {};
+     // 文件_枚举
+     fsys.enum( 文件目录2, {"*.tif"; "*.png"; "*.bmp"; "*.jpg"},
+     	function(dir,filename,fullpath,findData){ 
+     		if(filename){ 
+                table.push(文件路径数组, fullpath);
+     		}
+     	} 
+     	,false
+     );
+     
+     启动窗口.超级列表框1.clear();
+     for(i=1;#文件路径数组;1){
+         var tr1 = tostring(i);
+         var tr2 = fsys.getFileName(文件路径数组[i]);
+         var tr3 = 文件路径数组[i];
+     	 启动窗口.超级列表框1.addItem({ tr1; tr2; tr3 });
+     }
+}
+
+删除选中项_被选择 = function(){
+	// 取表项数
+	if(启动窗口.超级列表框1.count == 0) {
+		win.msgboxErr("无项可删！",,启动窗口.hwnd)
+	    return 0;
+	}
+	
+	
+	while(true){
+		// 取被选择表项
+	    var r, n = 启动窗口.超级列表框1.getSelection(0);
+	    if(r == 0) {
+	        break;
+	    }
+	    // 删除表项
+	    启动窗口.超级列表框1.delItem(r);
+	}
+	
+	// 刷新序号
+	for(i=1;启动窗口.超级列表框1.count;1){
+		启动窗口.超级列表框1.setItemText(tostring(i), i, 1);
+	}
+}
+
+上移顶部_被选择 = function(){
+	
+}
+
+合并成PDF_被选择 = function(){
+	// 
+	if(not io.exist("/magick.exe")){
+		win.msgboxErr("magick.exe 不在运行目录下，请手动复制magick！");
+		return -1;
+	}
+	
+	// 
+	
+	if(启动窗口.超级列表框1.count == 0) {
+	    win.msgboxErr("未指定图片，请手动添加图片！");
+		return -1;
+		
+	}
+	
+	// 选择存放位置
+	
+	var ini = fsys.ini("/config.ini")
+	var sec = ini.getSection("默认目录");
+	var 初始目录 = sec.读文件目录
+	
+	var pdf输出目录 = fsys.dlg.opendir(初始目录, 启动窗口.hwnd, , "pdf输出目录");
+	if(not pdf输出目录) {
+	    return -1;
+	
+	}
+	
+	var 图片路径列表 = {};
+	for(i=1;启动窗口.超级列表框1.count;1){
+	    	var 每个图片的绝对路径 = 启动窗口.超级列表框1.getItemText(tostring(i), 3);
+	    	table.push(图片路径列表, 每个图片的绝对路径);
+	}
+	
+	
+	var 参数_图片路径 = " convert ";
+	for(i=1;#图片路径列表;1){
+		if(#(图片路径列表[i]) > 0) {
+		    参数_图片路径 = 参数_图片路径 + string.format(' "%s" ', 图片路径列表[i]);
+		}
+		
+	}
+	
+	//import console;
+	//console.dump(图片路径列表, 参数_图片路径);
+	//return;
+	import time;
+	var tm = time.now();
+    tm.format = "%H%M%S";
+    tm.locale = "chs";
+	var 参数_pdf输出路径 = string.format(' "%s" ', io.joinpath (pdf输出目录, string.format("%s.pdf", tostring(tm)) ) );
+	
+	var 参数_附加选项 = "";
+	if(#(启动窗口.编辑框1.text) > 0) {
+		// 命令行参数不加引号
+	    参数_附加选项 = string.format("%s", 启动窗口.编辑框1.text);
+	}
+	
+	
+	var magick可执行文件路径 = io.fullpath("/magick.exe");
+	
+	var magick命令行参数 = string.format(" %s %s %s ", 参数_图片路径, 参数_附加选项, 参数_pdf输出路径);
+	
+	启动窗口.edit.text = "";
+	启动窗口.edit.dump('"' + magick可执行文件路径 + '" ' + magick命令行参数)
+	
+	import process;
+	var 返回值 = process.executeWait(magick可执行文件路径, magick命令行参数);
+	if(返回值 > 0 ) {
+	    win.msgbox("转换成功");
+	    
+	}else {
+	    win.msgbox("转换失败");
+	}
+	collectgarbage("collect");
+}
+
+
+// 菜单编辑器
+主菜单 = win.ui.menu(启动窗口);//创建主菜单
+主菜单.addTable( {
+    { "文件"; 
+    		{ 
+    			{   
+    			    "读取图片";
+    				读取图片_被选择
+        		};
+        		{   
+        		    "读取文件夹";
+    				读取文件夹_被选择
+        		}   
+    		} 
+    }; 
+    { "编辑"; 
+    		{ 
+    			{   
+    			    "删除选中项";
+    				删除选中项_被选择
+        		};
+        		{   
+    			    "上移顶部";
+    				上移顶部_被选择
+        		};
+        		{   
+    			    "上行一行";
+    				function(id){
+            			启动窗口.msgbox("测试菜单2->子菜单")
+        			} 
+        		};
+        		{   
+    			    "下移一行";
+    				function(id){
+            			启动窗口.msgbox("测试菜单2->子菜单")
+        			} 
+        		};
+        		{   "下移底部";
+    				function(id){
+            			启动窗口.msgbox("测试菜单2->子菜单2")
+        			} 
+        		}   
+    		} 
+    }; 
+    { "转换"; 
+    		{ 
+    			{   
+    			    "批量转换JPG";
+    				function(id){
+            			启动窗口.msgbox("测试菜单2->子菜单")
+        			} 
+        		};
+        		{   
+    			    "合并成PDF";
+    			    合并成PDF_被选择 
+        		};
+        		{   
+        		    "配置图片分辨率";
+    				function(id){
+            			启动窗口.msgbox("测试菜单2->子菜单2")
+        			} 
+        		}   
+    		} 
+    };
+    { "帮助"; 
+    		{ 
+    			{   
+    			    "关于";
+    				function(id){
+            			启动窗口.msgbox("测试菜单2->子菜单")
+        			} 
+        		} 
+    		} 
+    };
+} )
+
+启动窗口_创建完毕();
+
+启动窗口.show();
+return win.loopMessage();

@@ -1,0 +1,27 @@
+import console; 
+import fsys.file;
+
+var filename1 = "E:\BaiduNetdiskDownload\全程班\02.营销软件开发班（POST学习专题）\06.POST实战演练\第6课：QQ登陆论坛\第6课：QQ登陆论坛\第6课：QQ登陆论坛.exe";
+
+
+IsLcxExe = function(fullpath]){
+	
+
+	
+	var f = fsys.file(fullpath);
+	f.seek("end", -32);
+	var buffer = f.read(-1);
+	f.close();
+	console.hex(buffer);
+	var t = string.find(buffer, "tlxsoftjm")
+	
+	console.dump(t);
+	
+}
+
+IsLcxExe(filename1);
+
+
+
+console.log("您输入的是" ,num );
+console.pause(true);

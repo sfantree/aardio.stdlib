@@ -1,0 +1,184 @@
+import console; 
+import crypt
+import crypt.rsa;
+
+//console.log(rsaObject == null, err)
+
+
+
+function rsa_sign_sha256(){
+	// CryptDecodeObjectEx
+	
+	/*
+	decodeObject = function(encoded,encodingType,structType){
+		var cbSize = {INT value}
+		::Crypt32.CryptDecodeObjectEx(encodingType,structType,encoded,#encoded,flags,null,null,cbSize);
+		if(cbSize.value){
+			var structInfo = ..raw.buffer(cbSize.value);
+			if( ::Crypt32.CryptDecodeObjectEx(encodingType,structType,encoded,#encoded,flags,null,structInfo,cbSize) ){
+				return structInfo;
+			}
+		}
+	};
+	*/
+	//var keyData = cryptObject.decodeObject(derData,0x10001/*_X509_PKCS_7_ASN_ENCODING*/,8/*_X509_PUBLIC_KEY_INFO*/) 
+	
+	/**
+	AcquireContext = ::Advapi32.api("CryptAcquireContext", "int(pointer& hProv,ustr szContainer,ustr szProvider,INT provType,INT flags)");
+	
+	var ret,hCryptProv = AcquireContext( ,/*当前用户*/, provider,provType, 0xF0000000/*_CRYPT_VERIFYCONTEXT*/ || 0x20/*_CRYPT_MACHINE_KEYSET*/);
+	**/
+	
+	var rsaObject, err = crypt.rsa();
+    var cryptObject, err = crypt();
+	
+	var prov = { 0x18/*_PROV_RSA_AES*/, 0x1/*_PROV_RSA_FULL*/ }
+    var hash = false;
+    
+    var ret = null;
+    var hCryptProv = null;
+    for(i=1;#prov;1){
+    	if(not hCryptProv) {
+    	    ret,hCryptProv = crypt.AcquireContext( , , ,prov[i], 0);
+    	    console.log(1,ret);
+    	}
+    	if(not hCryptProv) {
+    	    ret,hCryptProv = crypt.AcquireContext( , , ,prov[i], 8/*_CRYPT_NEWKEYSET*/ | 0x40/*_CRYPT_SILENT*/  );
+    	    //console.log(2);
+    	}
+    	
+    	if(not hCryptProv) {
+    	    ret,hCryptProv = crypt.AcquireContext( , , ,0, 0xF0000000/*_CRYPT_VERIFYCONTEXT*/  );
+    	   // console.log(3);
+    	}
+    
+        if(not hCryptProv) {
+    	    ret,hCryptProv = crypt.AcquireContext( , , ,0, 0x20/*_CRYPT_MACHINE_KEYSET*/  );
+    	    //console.log(4);
+    	}
+    	
+    	if(hCryptProv) {
+    	    
+    	    rsaObject.hCryptProv = hCryptProv;
+    	    
+    	    //console.log("hCryptProv not null")
+    	}else {
+    	    console.log("hCryptProv is null")
+    	    return;
+    	}
+    }
+    
+    
+    /**
+    
+    .版本 2
+
+	.如果真 (CryptImportKey (hProv, pKeyBlob, KeyBlob_Len, #NULL, #CRYPT_OAEP, hKey) ＝ 假)
+    	err ＝ “CryptImportKey:” ＋ GetLastErrorDesc (GetLastError ())
+    	__Release (hHash, hKey, hProv)
+    	返回 (#NULLBIN)
+
+    
+    
+    ImportKey = ::Advapi32.api("CryptImportKey", "bool(POINTER hProv,struct pbData,INT dataLen,pointer hPubKey,INT flags,pointer &phKey)");  
+	ImportStringKey = ::Advapi32.api("CryptImportKey", "bool(POINTER hProv,pointer pbData,INT dataLen,pointer hPubKey,INT flags,pointer &phKey)");
+	
+	importKey = function(blob,flag=1/*_CRYPT_EXPORTABLE*/,hPubKey){
+		var ret,hKey;
+		if(type(blob) == type.table)
+			ret,hKey = ImportKey(this.hCryptProv,blob,..raw.sizeof(blob),hPubKey,flag);
+		elseif(#blob){
+			ret,hKey = ImportStringKey(this.hCryptProv,blob,#blob,hPubKey,flag)
+		}
+		else {
+			return null,"参数错误";
+		}
+
+		if(!ret) return null,..lasterr(,"importKey");
+		this.setKey(hKey);
+		return true;
+	};
+	
+	publicKey = crypt.bin.decodeBase64( publicKey );
+	var rsa = crypt.rsa()
+	rsa.importKey(publicKey)
+	
+    **/
+    
+    // 公钥
+    
+    //import crypt.bin;
+    //var publicKeyBase64 = "MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAOhF5tWIKI5dcV5BmOVs2MoqRPdTqbp43Tghs1maN51Hy/xw/FRbbdkY4WHevLGWQ//ucbUzVyX1faTPwgssF/cCAwEAAQ==";
+    //var publicKey = crypt.bin.decodeBase64( publicKeyBase64);
+    
+    
+    //rsaObject.importKey(publicKey , 64 /*CRYPT_OAEP*/ );
+    
+    /*
+
+公钥
+-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvtVu4Onz3oRQO405wv60JGFALO6iQuf9347I3vGDQfvbaR9GaEO2Q091p/PVKEs0+eVE+CzGqxmQqUiLFgQGIewrNoFEbomVNwHoDVwJhD/xRq9EdL29RWJ55q9m1weSBGymyeFrGF6UitnlJhUCxw/ifmT6BF/ZXjTggM42msmJzKzGA7XkCoUcTV65gV1s51/6AqsreMZZGS6WVCnlxIsg4dpgBhmPexN8A07ju9CWt9T3V0wGO/iKRT3noBsir6EGavHlCphpSpdFwz+uWydw41OU/fMA/2GbxXjXvZphOhsVHOePETkCGMYkDQumwaVb3a0ptsljChTjGqJs8wIDAQAB
+-----END PUBLIC KEY-----
+
+私钥    
+-----BEGIN PRIVATE KEY-----
+MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQC+1W7g6fPehFA7jTnC/rQkYUAs7qJC5/3fjsje8YNB+9tpH0ZoQ7ZDT3Wn89UoSzT55UT4LMarGZCpSIsWBAYh7Cs2gURuiZU3AegNXAmEP/FGr0R0vb1FYnnmr2bXB5IEbKbJ4WsYXpSK2eUmFQLHD+J+ZPoEX9leNOCAzjaayYnMrMYDteQKhRxNXrmBXWznX/oCqyt4xlkZLpZUKeXEiyDh2mAGGY97E3wDTuO70Ja31PdXTAY7+IpFPeegGyKvoQZq8eUKmGlKl0XDP65bJ3DjU5T98wD/YZvFeNe9mmE6GxUc548ROQIYxiQNC6bBpVvdrSm2yWMKFOMaomzzAgMBAAECggEAWy862uePKo0IlVwG9KClzRhXBOFF0Thu+2qLmtPGBzpj/df+2YU5SvJl4snE2YsOFjYx/W/PwiPmFq1eIDfuAjmJ8HJWE4dUMEON8QxAU9wF2uOWjz22ebfzTYIUXrz0TX7pN1+pv6w5yBsTvl2dxSZW8FQpjvuJrtUPTRy7xLuhpOVhHzEeax0dZ+7OIdAe2PaAHhbIYjt4SWwqmOITkc6yQXtS4WZMydDgEmImx76B9cw3VhDTrQf8P44oMwvgpr9opLpJlNfHKL4teI10eA5uC8y/Qzb8h1ysqdmvmT/8sxlaBHwgCt/T5iANV1jbsoBEHCCYJNAID8XdLeOsEQKBgQD4ERB7V8rPF/46wvQWodtAOg9lJCu7jdXES8RSIyiYvNVrak72CavZZB/iRSimheooupqgQch0dJHoY4y0NuYfkAfWqoTGagJHK4BacQRox4At6oS5fCLPunlSvhjnOhxBkQMEoRFJXhScaYk0aigYblIEKAqdZRcJMxSQBiBNSwKBgQDE78yr0Yu7Ww5isFrf0h+75vp1EEay502XlTEjq79Ei6CmSNgiJX12hRqtjo1/Aw611BsxPVuHykwxL1OqHlC4QG/VjkogzP+O2lGW5F5NLOLludy88wKop2oWcAlQRqyQ9QPIAWxm2XFumpSJGBNpelQpzb7U1hCVy/+SpIld+QKBgGzGBsUe9OYkLi0UCTXXWS1riA6gcrC1+9MsKfSeSBHZU3fbUK5gBUO4vKZaDv4d4FRlpqG41q4B42zUIgFvxS532IgPk1LxbvhIIesGfZl4SUNY/0PaI+WUbdiTVJYni/ZQINOp0Mur/jurpycdmWFFFp+N80Ga7yPwiwawOP/LAoGAWwFpdljOFpU8b5SJWfbS3VUeliwgT5odvBegbph2OanAYjc1UYo7kSJvMpa2gmQaTyImMrnk6zorvWreYbXCnXKBe5FWZhP1YME4hN8hSM6eR4R9If+2UdOTbaz2UNdn9VCUH7+wpVKEXZUnYLb0eYCjFfJS5i3J2j876jsIk5kCgYBgxSv6ZOGiqFTGbXk9tjv4V70VNtgm6qYfVzEkVbjtMv5bffP+bDPg/rmxee0XYtewuQY2dnhVmeyPck80N9a63Mh94vt6gV6gGytKIJFe+ZiRLnbDjXilCmQ96iJIPWOUt8YH/KK1q8HFOTtLHc+FoAHu4UFxvECUv9hx1iwZ2Q==
+-----END PRIVATE KEY-----
+
+    
+    
+    */
+    
+    
+    var pemString = /**
+    
+-----BEGIN PRIVATE KEY-----
+MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQC+1W7g6fPehFA7jTnC/rQkYUAs7qJC5/3fjsje8YNB+9tpH0ZoQ7ZDT3Wn89UoSzT55UT4LMarGZCpSIsWBAYh7Cs2gURuiZU3AegNXAmEP/FGr0R0vb1FYnnmr2bXB5IEbKbJ4WsYXpSK2eUmFQLHD+J+ZPoEX9leNOCAzjaayYnMrMYDteQKhRxNXrmBXWznX/oCqyt4xlkZLpZUKeXEiyDh2mAGGY97E3wDTuO70Ja31PdXTAY7+IpFPeegGyKvoQZq8eUKmGlKl0XDP65bJ3DjU5T98wD/YZvFeNe9mmE6GxUc548ROQIYxiQNC6bBpVvdrSm2yWMKFOMaomzzAgMBAAECggEAWy862uePKo0IlVwG9KClzRhXBOFF0Thu+2qLmtPGBzpj/df+2YU5SvJl4snE2YsOFjYx/W/PwiPmFq1eIDfuAjmJ8HJWE4dUMEON8QxAU9wF2uOWjz22ebfzTYIUXrz0TX7pN1+pv6w5yBsTvl2dxSZW8FQpjvuJrtUPTRy7xLuhpOVhHzEeax0dZ+7OIdAe2PaAHhbIYjt4SWwqmOITkc6yQXtS4WZMydDgEmImx76B9cw3VhDTrQf8P44oMwvgpr9opLpJlNfHKL4teI10eA5uC8y/Qzb8h1ysqdmvmT/8sxlaBHwgCt/T5iANV1jbsoBEHCCYJNAID8XdLeOsEQKBgQD4ERB7V8rPF/46wvQWodtAOg9lJCu7jdXES8RSIyiYvNVrak72CavZZB/iRSimheooupqgQch0dJHoY4y0NuYfkAfWqoTGagJHK4BacQRox4At6oS5fCLPunlSvhjnOhxBkQMEoRFJXhScaYk0aigYblIEKAqdZRcJMxSQBiBNSwKBgQDE78yr0Yu7Ww5isFrf0h+75vp1EEay502XlTEjq79Ei6CmSNgiJX12hRqtjo1/Aw611BsxPVuHykwxL1OqHlC4QG/VjkogzP+O2lGW5F5NLOLludy88wKop2oWcAlQRqyQ9QPIAWxm2XFumpSJGBNpelQpzb7U1hCVy/+SpIld+QKBgGzGBsUe9OYkLi0UCTXXWS1riA6gcrC1+9MsKfSeSBHZU3fbUK5gBUO4vKZaDv4d4FRlpqG41q4B42zUIgFvxS532IgPk1LxbvhIIesGfZl4SUNY/0PaI+WUbdiTVJYni/ZQINOp0Mur/jurpycdmWFFFp+N80Ga7yPwiwawOP/LAoGAWwFpdljOFpU8b5SJWfbS3VUeliwgT5odvBegbph2OanAYjc1UYo7kSJvMpa2gmQaTyImMrnk6zorvWreYbXCnXKBe5FWZhP1YME4hN8hSM6eR4R9If+2UdOTbaz2UNdn9VCUH7+wpVKEXZUnYLb0eYCjFfJS5i3J2j876jsIk5kCgYBgxSv6ZOGiqFTGbXk9tjv4V70VNtgm6qYfVzEkVbjtMv5bffP+bDPg/rmxee0XYtewuQY2dnhVmeyPck80N9a63Mh94vt6gV6gGytKIJFe+ZiRLnbDjXilCmQ96iJIPWOUt8YH/KK1q8HFOTtLHc+FoAHu4UFxvECUv9hx1iwZ2Q==
+-----END PRIVATE KEY-----
+    
+    
+    **/
+    
+    
+    rsaObject.importPemKey(pemString);
+    
+    
+    //签名数据
+    var plaintext = "sign_type=RSA";
+    var hash = rsaObject.createHash( 0x800C/*_CALG_SHA_256*/ )
+	hash.hashData(plaintext)
+    
+    /***
+    	CryptSignHash = ::Advapi32.api("CryptSignHashW","bool(POINTER hHash,INT keySpec,ustring sDesc,INT flags,string &sign,INT &sigLen") 
+    	
+    	sign = function(keySpec = 2/*_AT_SIGNATURE*/,sDescription,flags=0){
+			var r,sOut,size = CryptSignHash( this.handle,keySpec,sDescription,flags,0,0) ;
+			if( r && size ) r,sOut,size = CryptSignHash( this.handle,keySpec,sDescription,flags,size,size) ;
+			if( r ) return sOut;
+		};
+		
+		
+		CryptSignHashA (hHash, #AT_KEYEXCHANGE, #NULL, #NULL, 取变量数据地址_字节集 (_result), pdwDataLen)
+		
+		1/*_AT_KEYEXCHANGE*/
+		
+    	
+    ***/
+    var sign =  hash.sign(1/*_AT_KEYEXCHANGE*/);
+    
+    /*
+    SHA256WithRSA:00RG2AeI5LEsFiwdgI5RK5fJKHIUZlFabdTHi1aM2G/Cmdtis9/ZZBNe6dE9RGyuw65qHOwSieOuzOgsTMLehq8i/GEgdhJOeRw3OE4blZ9V/Ogigt5lC0Ru6R+r6YHx5RuPMqBWYl8FYJCv9ofS52Kub4/NRw2xV6deSFI5/BQ=
+
+    */
+        
+    if(sign){
+		console.log( crypt.encodeBin(sign) );	
+	}
+    
+}
+
+rsa_sign_sha256()
+
+
+console.pause(true);

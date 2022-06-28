@@ -1,0 +1,30 @@
+import console;
+import web.rest.client;
+
+var http = web.rest.client();
+var id = http.api("http://2018bm.wlxsyyey.com/h4gyjk5gfdf.php",,"id_card(\w+)").get();
+
+http.beforeStringifyRequestParameters = function(params) {
+    return table.map(params,function(v,k,result){
+        result[k++id] = v;
+    })
+}
+
+var result = http.post("http://2018bm.wlxsyyey.com/retinfo.php",{
+     name = "张平";
+     sex = "m" ;
+     id_card = "320821201501012718";
+     year ="2015";
+     month = "01";
+     day = "01";
+     home_addr = 11;
+     father = "张平爸";
+     father_workspace = "江苏省";
+     father_phone = "13936390850";
+     mother = "张平妈";
+     mother_workspace = "湖北省";
+     mother_phone = "13936390785";
+})
+
+console.log(result);
+console.pause(true);

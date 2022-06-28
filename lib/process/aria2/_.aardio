@@ -1,0 +1,240 @@
+﻿import fsys;
+import process.popen;
+import wsock;
+import wsock.tcp.server;
+import wsock.tcp.client;
+import wsock.udp.client;
+import web.socket.jsonClient;
+import sys.upnp.nat;
+import string.intSegments;
+
+namespace process;
+
+class aria2{
+	ctor(rpcPort){{
+		this.downloadDir = "/download/aria2";
+		this.rpcPort = rpcPort : ..wsock.getFreePort();
+		this.rpcToken = ..string.random(10);
+		this.$readyCallbacks = {};
+		
+		//https://aria2.github.io/manual/en/html/aria2c.html
+		this.defaultArguments = {"--quiet";"--rpc-allow-origin-all";"--enable-dht";
+			"--enable-rpc";"--bt-enable-lpd";"--enable-peer-exchange"};
+			
+		this.listenPort = "6881-6999";
+		this.dhtListenPort = "6881-6999";
+	}}; 
+	isReady = function(){
+		var jsonClient = this["(jsonClient)"]; 
+		return( jsonClient && jsonClient.rpc.isConnected() );
+	};
+	ready = function(proc){
+		if(this.isReady()){proc();}
+		else {..table.push(this.$readyCallbacks,proc);} 
+	};
+	addArguments = function(...){
+		if( !this.arguments )this.arguments ={};
+		if( type(...) == type.table ) ..table.append(this.arguments,...)
+		else ..table.push( this.arguments,... );
+	};
+	startServer = function(...){
+		if(this.rpcUrl){
+			return this.rpcUrl; 
+		}
+		
+		var args = ..table.concat(this.defaultArguments,{...});
+		if( this.rpcListenAll ){
+			..table.push(args,"--rpc-listen-all");
+		}
+		
+		..table.push(args,`--dir="` + ..io.createDir(this.downloadDir) + '"' );
+		..table.push(args,`--rpc-listen-port=` + this.rpcPort);
+
+		if(this.rpcToken){
+			..table.push(args,`--rpc-secret=` + this.rpcToken);
+		}
+		
+		if(this.rpcMaxRequestSize){
+			..table.push(args,`--rpc-max-request-size=` + this.rpcMaxRequestSize);
+		}
+		 
+		if(this.userAgent){
+			..table.push(args,`--user-agent=` + this.userAgent);
+		}
+		
+		var trackerList = this.trackerList;
+		if(!trackerList) trackerList = "https://raw.githubusercontent.com/ngosang/trackerslist/master/trackers_best.txt";
+		if(!..string.indexAny(trackerList,'\n,')  && ..string.endWith(trackerList,".txt",true)){
+			trackerList = ..thread.invokeAndWait(
+				function(trackerList){
+					import web.rest.github;
+					
+					var txt;
+					
+					if(..string.indexOf(trackerList,"githubusercontent.com") ){
+						txt = web.rest.github.getContent(trackerList); 
+					} 
+					else{
+						var http = inet.http();
+						txt = http.get(trackerList);
+						http.close();
+					}
+						
+					return txt;
+					
+				} ,trackerList
+			) 	
+		}
+		
+		if(!trackerList) trackerList = defaultTrackerList;
+		
+		var tracker = {}
+		for(line in ..string.lines(trackerList,"<\r*\n>|\r|,")){
+			line = ..string.trim(line);
+			if(#line){
+				..table.push(tracker,line);
+			}
+		} 
+		
+		if(#tracker){
+			..table.push(args,`--bt-tracker=` + ..string.join(tracker,",") );
+		}
+		
+		var natUpnp = ..sys.upnp.nat();
+		var listenPorts = ..string.intSegments(this.listenPort:"6881-6999");
+		var localIp = ..wsock.tcp.client.getLocalIp();
+		var isPortAvailable = ..wsock.tcp.server.isFreePort;
+		for i,port in ..table.eachIndex(listenPorts){ 
+			if( isPortAvailable(port,localIp)){  
+				if(natUpnp.add(port,"TCP",port,localIp)){
+					..table.push(args,`--listen-port=` + port);
+					break;
+				}
+			}
+		}
+		
+		var listenPorts = ..string.intSegments(this.dhtListenPort:"6881-6999"); 
+		var isPortAvailable = ..wsock.udp.client.testBindPort;
+		for i,port in ..table.eachIndex(listenPorts){
+			if( isPortAvailable(port,localIp)){   
+				if(natUpnp.add(port,"UDP",port,localIp)){
+					..table.push(args,`--dht-listen-port=` + port);
+					break;
+				}
+			} 
+		}
+ 	
+		if(this.arguments){
+			table.append(args,this.arguments);
+		}
+		
+		this.server = ..process.popen(aria2path,args)
+		this.server.codepage = 65001;
+		this.rpcUrl = "ws://127.0.0.1:" + this.rpcPort + "/jsonrpc";
+		
+		if(this.server){
+			var jsonClient = ..web.socket.jsonClient();
+			jsonClient.rpc.heartbeatInterval = -1;
+			
+			jsonClient.on("open",function(){
+				var $readyCallbacks = this.$readyCallbacks;
+				for(i=1;#$readyCallbacks;1){
+					var p = $readyCallbacks[i]
+					p();
+				}
+				this.$readyCallbacks = {};		
+			})
+			
+			jsonClient.on("error",function(err){
+				if(this.onRpcError){
+					this.onRpcError(err);	
+				}	
+			})
+			
+			jsonClient.rpc.url = this.rpcUrl;
+			jsonClient.connect(this.rpcUrl);
+			
+			if(this.rpcToken){
+				jsonClient.rpc.beforeRequest = function(reqData){
+					..table.insert(reqData.params,"token:" + this.rpcToken);
+					return reqData;
+				}
+			}
+			
+			this["(jsonClient)"] = jsonClient;	
+		}
+		return this.rpcUrl;
+	};
+	stop = function(){
+		if(!this.server) return;
+		
+		var jsonClient = this["(jsonClient)"]; 
+		if( jsonClient && jsonClient.rpc.isConnected() ){
+			jsonClient.aria2.shutdown();
+			this.rpcUrl = null;
+			this["(jsonClient)"] = null;
+			this.server.close(); 
+		}
+		else {
+			this.server.terminate();  
+		}
+	};
+	jsonClient = function(){ 
+		//https://aria2.github.io/manual/en/html/aria2c.html#rpc-interface
+		if(!this["(jsonClient)"]) this.startServer();
+		return this["(jsonClient)"];
+	};
+}
+
+namespace aria2{
+	aria2path = ..io.appData("/aardio/std/aria2/1.36/aria2c.exe"
+		,$"~\lib\process\aria2\.res\aria2c.exe")
+		
+	defaultTrackerList  = "http://p4p.arenabg.com:1337/announce
+udp://tracker.opentrackr.org:1337/announce
+udp://9.rarbg.com:2810/announce
+udp://tracker.openbittorrent.com:6969/announce
+http://tracker.openbittorrent.com:80/announce
+http://openbittorrent.com:80/announce
+udp://retracker.lanta-net.ru:2710/announce
+udp://open.stealth.si:80/announce
+udp://exodus.desync.com:6969/announce
+udp://www.torrent.eu.org:451/announce
+udp://tracker1.bt.moack.co.kr:80/announce
+udp://tracker.zerobytes.xyz:1337/announce
+udp://tracker.tvunderground.org.ru:3218/announce
+udp://tracker.torrent.eu.org:451/announce
+udp://tracker.moeking.me:6969/announce
+udp://tracker.lelux.fi:6969/announce
+udp://tracker.army:6969/announce
+udp://retracker.sevstar.net:2710/announce
+udp://retracker.netbynet.ru:2710/announce
+udp://opentor.org:2710/announce"
+}
+
+/**intellisense()
+process.aria2 = 用于创建 aria2 服务进程\n注意BT下载速度慢可能是路由器等未开放端口，默认临听端口为6881-6999
+process.aria2() = 创建 aria2 对象\n!stdprocessaria2.
+process.aria2.defaultTrackerList = 默认 Tracker 服务器列表,\n当获取用户指定的 Tracker 服务器列表失败时使用此值,\nTracker 服务器必须以逗号换换行符分隔,\n这里不能指定 获取 Tracker 服务器列表的网址
+end intellisense**/
+
+/**intellisense(!stdprocessaria2)
+defaultArguments = 字符串数组,用于指定 aria 的默认启动参数,\n已指定的默认参数请参考库源码
+trackerList = 指定 Tracker 服务器列表，可以逗号或换行符分隔多个Tracker 服务器,\n也可以指定一个获取 Tracker 服务器列表的网址,该网址必须以 .txt 结尾,\n不指定则使用默认值 https://raw.githubusercontent.com/ngosang/trackerslist/master/trackers_best.txt \n也可以指定为 https://trackerslist.com/best_aria2.txt
+isReady() = aria2已启动，并且 jsonClient 已连接时返回true
+ready(proc) = @.ready(\n	function(){\n		var jsonClient = ??.jsonClient();\n		__/*aria2已启动，并且jsonClient已连接时执行此函数*/\n	}\n)
+addArguments(__) = 使用一个或多个参数指定 aria2 启动参数,应在 startRpcUrl 之前调用
+startServer() = 启动aria2服务服务进程\n可选使用一个或多个参数指定aria2启动参数
+jsonClient() = 启动并返回 JSON-RPC 客户端\n成功返回 web.socket.jsonClient 对象,\n如果服务端未启动,则启用服务进程\n!stdwebsocketjsonClient.
+rpcMaxRequestSize = 最大请求数\n如果自定义此属性，将在调用 startServer 函数时生效
+rpcToken = RPC密钥\n如果自定义此属性，将在调用 startServer 函数时生效
+rpcUrl = RPC地址\n如果自定义此属性，将在调用 startServer 函数时生效
+rpcPort = RPC端口\n不指定时自动分配空闲端口\n如果自定义此属性，将在调用 startServer 函数时生效
+userAgent =  指定下载客户端特征字符串,\n不指定则使用默认值  aria2/version
+rpcListenAll = 是否允许外部网络使用RPC调用aria2接口,默认为false\n如果自定义此属性，将在调用startServer函数时生效
+listenPort = 监听端口,默认为 "6881-6999";
+dhtListenPort = DHT 监听端口,默认为 "6881-6999";
+downloadDir = 自定义下载目录,默认为"/downloads/aria2"\n如果自定义此属性，将在调用startServer函数时生效
+server = 服务进程\n!process_popen.
+stop() = 关闭aria2
+end intellisense**/

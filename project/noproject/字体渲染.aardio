@@ -1,0 +1,70 @@
+import console; 
+
+
+/*
+
+https://stackoverflow.com/questions/5750887/python-use-windows-api-to-render-text-using-a-ttf-font
+
+self.font = win32ui.CreateFont({
+            'name': name, 'height': height,
+            'weight': weight, 'italic': italic, 'underline': underline})
+
+        #create a compatible DC we can use to draw:
+        self.desktopHwnd = win32gui.GetDesktopWindow()
+        // win.getDesktop();
+        
+        
+        self.desktopDC = win32gui.GetWindowDC(self.desktopHwnd)
+        
+        
+        
+        self.mfcDC = win32ui.CreateDCFromHandle(self.desktopDC) 
+        
+        
+        
+        // var graphics = gdip.graphics(  winform )  
+        // win.getDesktop()
+                
+        self.drawDC = self.mfcDC.CreateCompatibleDC()
+
+        #initialize it
+        self.drawDC.SelectObject(self.font)
+        
+        -----------------------------------------
+        self.drawDC.SetTextColor(RGB(255,0,0))
+
+        #create the compatible bitmap:
+        w,h = self.drawDC.GetTextExtent(text)
+        
+        saveBitMap = win32ui.CreateBitmap()
+        saveBitMap.CreateCompatibleBitmap(self.mfcDC, w, h)        
+        self.drawDC.SelectObject(saveBitMap)
+
+        #draw it
+        self.drawDC.DrawText(text, (0, 0, w, h), win32con.DT_LEFT)
+
+        #convert to PIL image
+        im = native_bmp_to_pil(self.drawDC.GetSafeHdc(), saveBitMap.GetHandle(), w, h)
+
+        #clean-up
+        win32gui.DeleteObject(saveBitMap.GetHandle())
+        
+        
+*/
+
+import gdip;
+var family = gdip.family("宋体");
+var curFont = family.createFont(  15,2/*_GdipFontStyleItalic*/, 2/*_GdipUnitPixel*/);
+var desktopHwnd = win.getDesktop();
+var hdc = ::GetWindowDC(desktopHwnd);
+
+var hdc = ::GetDC( form.hwnd );
+hMemDc = ::CreateCompatibleDC(hdc);
+
+
+gdi.drawText(hdc,this.font,this.text,rc,flags);
+::DrawText(hdc, scOwner.innerText, -1, rc, 0x20/*_DT_SINGLELINE*/ | 
+		0x0/*_DT_LEFT*/ | 0x4/*_DT_VCENTER*/ | 0x4000/*_DT_PATH_ELLIPSIS*/ | 0x800/*_DT_NOPREFIX*/);
+
+
+console.pause(true);

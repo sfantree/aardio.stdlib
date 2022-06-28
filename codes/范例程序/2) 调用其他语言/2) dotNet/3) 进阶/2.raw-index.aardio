@@ -1,0 +1,22 @@
+//扩展 .Net 对象
+import console;
+import dotNet;
+
+//引入 .Net 类（这里也可以直接改为 import System）
+dotNet.import("System"); 
+
+//创建 .Net 对象
+var uri = System.Uri("https://www.aardio.com/test?q=aardio")
+
+/*
+在 aardio 中读写 .Net 对象的成员默认会由该对象的元方法自动转换为 .Net 调用。
+如果使用下面的直接下标 [[]] 就可以读写该对象的直接成员，不会触发元方法也不会被解析为 .Net 调用。
+使用直接下标就可以自由修改、扩展 aardio 中的 .Net 对象。
+*/
+uri[["getHostAndHashCode"]] = function(){
+	return owner.Host,owner.GetHashCode();
+}
+
+//调用 .Net 对象实例的成员函数
+console.log( uri.getHostAndHashCode() );
+console.pause();

@@ -1,0 +1,122 @@
+﻿//token 权限令牌
+import process;
+namespace process;
+
+class token{
+	ctor( processHandle,access ){
+		if(!processHandle[["token"]]){
+			if(!processHandle) processHandle = ::Kernel32.GetCurrentProcessP();
+
+			if(type.isString(processHandle)) {
+				processHandle = ..process.find(processHandle); 
+				if(!processHandle) return;
+			}
+
+			this.processHandle = processHandle;
+			
+			var token = {ptr handle}
+			if(::Advapi32.OpenProcessToken(processHandle,access : 8/*_TOKEN_QUERY*/,token)){
+				this.tokenHandle = token.handle
+			}
+			else {
+				return null;
+			} 
+			
+			..table.gc(this,"close");
+		}
+		else{
+			this.tokenHandle = processHandle[["token"]]
+			if(processHandle[["gc"]]) ..table.gc(this,"close");
+		}
+	};
+	duplicate = function(level=2/*SecurityImpersonation*/){
+		var newToken = {ptr handle}
+		if( ::Advapi32.DuplicateToken(this.tokenHandle,level,newToken) ) return newToken.handle;
+	};
+	info = function(infClass,info){ 
+		if ( this.tokenHandle ) { 
+			var size ={INT v } 
+			var res = ::Advapi32.GetTokenInformation(this.tokenHandle,infClass,null,0,size); 
+			if(!res && !size.v ){  
+				return false
+			} 
+		
+			var buf = ..raw.buffer(size.v); 
+			var ok = ::Advapi32.GetTokenInformation(this.tokenHandle,infClass,buf,#buf,size);
+			if(ok){
+				..raw.convert(buf,info); 
+				info["($safe-buffer)"] = buf; 
+				return info;
+			} 
+		}
+	};
+	user = function(){ 
+		var info,buf = this.info(1/*_TokenUser*/,{ ptr sid;INT attributes;})
+		//避免buf无引用时释放内存( info.sid实际上是指向buf去掉头部8个字节的内存 )
+		var size = ::Advapi32.GetLengthSid(info.sid);
+		info.sid = ..raw.buffer(size,info.sid);
+		return info;
+	};
+	sid = function(){
+		return this.user()[["sid"]]; 
+	};
+	elevation = function(){ 
+		return _WINXP || !! this.info(20/*TokenElevation*/,{ INT TokenIsElevated })[["TokenIsElevated"]];
+	};
+	close = function(){
+		if(this.tokenHandle){
+			..raw.closehandle(this.tokenHandle)
+			this.tokenHandle = null;
+		} 
+	};
+	@{_topointer = lambda() this.tokenHandle}  
+}
+
+namespace token{
+
+    ::Advapi32 := ..raw.loadDll("Advapi32.dll");
+    
+	sid = function(process){
+		var token = ..process.token(process);
+		var sid = token.sid();
+		token.close();
+		return sid;
+	} 
+}
+ 
+
+/**intellisense()
+process.token(.(process,access) = 打开进程令牌,\n@process 参数指定 process 进程对象、句柄、或已执行文件名，省略时取当前进程句柄,\naccess指定访问权限,省略时默认值为 _TOKEN_QUERY\n返回对象在回收时默认自动调用close函数
+process.token(.({token=tokenHandle}) = 绑定参数表中 tokenHandle 属性指定的进程令牌句柄,\n可选用 gc 属性指定是否允许对象回收时自动释放 token
+process.token() = !processToken.
+end intellisense**/
+
+/**intellisense(process.token)
+sid(.(process) = 返回运行进程的用户SID,返回值为buffer类型指针,\n@process 参数指定进程对象、句柄、或已执行文件名，省略时取当前进程句柄
+end intellisense**/
+
+/**intellisense(!processToken)
+user() = 获取进程令牌的用户信息,\n返回TokenUser结构体，返回值不需要手动释放
+sid() = 返回运行进程的用户SID指针句柄,\n返回值不需要手动释放,标准库 sys.acl提供操作转换sid的函数
+info(.(infClass,info) = 获取令牌信息\n@infClass参数使用枚举数值标明要获取的类型,\n@info参数为要获取的结构体,\n成功返回info参数
+elevation() = 当前进程是否使用管理员权限启动
+duplicate(.(level,tokenType,access,tokenAttributes) = 复制 token 并返回 token 句柄，\n打开进程时请指定 4/*_TOKEN_IMPERSONATE*/|2/*_TOKEN_DUPLICATE*/ 权限，\n所有参数可选，用法请参考源码
+close() = 关闭对象
+end intellisense**/
+
+ /**intellisense()
+_TOKEN_ADJUST_SESSIONID=@0x100/*_TOKEN_ADJUST_SESSIONID*/
+_TOKEN_SOURCE_LENGTH=@8/*_TOKEN_SOURCE_LENGTH*/
+_TOKEN_ADJUST_DEFAULT=@0x80/*_TOKEN_ADJUST_DEFAULT*/
+_TOKEN_ADJUST_GROUPS=@0x40/*_TOKEN_ADJUST_GROUPS*/
+_TOKEN_ADJUST_PRIVILEGES=@0x20/*_TOKEN_ADJUST_PRIVILEGES*/
+_TOKEN_ALL_ACCESS=@0xF00FF/*_TOKEN_ALL_ACCESS*/
+_TOKEN_ASSIGN_PRIMARY=@1/*_TOKEN_ASSIGN_PRIMARY*/
+_TOKEN_DUPLICATE=@2/*_TOKEN_DUPLICATE*/
+_TOKEN_EXECUTE=@0x20000/*_TOKEN_EXECUTE*/
+_TOKEN_IMPERSONATE=@4/*_TOKEN_IMPERSONATE*/
+_TOKEN_QUERY=@8/*_TOKEN_QUERY*/
+_TOKEN_QUERY_SOURCE=@0x10/*_TOKEN_QUERY_SOURCE*/
+_TOKEN_READ=@0x20008/*_TOKEN_READ*/
+_TOKEN_WRITE=@0x200E0/*_TOKEN_WRITE*/
+end intellisense**/

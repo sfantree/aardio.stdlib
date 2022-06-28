@@ -1,0 +1,17 @@
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form( bottom=399;parent=...;text="aardio Form";right=599 )
+winform.add(
+picturebox={ bottom=370;right=566;left=34;top=22;z=1;notify=1;cls="picturebox" }
+)
+/*}}*/
+
+import process
+import com.picture;
+
+var pic = com.picture.snap()//抓屏
+
+
+winform.picturebox.setImage( pic.CopyHandle() )
+winform.show()
+win.loopMessage();

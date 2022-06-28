@@ -1,0 +1,100 @@
+﻿//font 字体
+import util.metaProperty;
+namespace xcgui;
+
+class font{
+	ctor( hFont,size,style ){{
+		var t  = type(hFont);
+		if( t = "table"){
+			this.color = hFont.color;
+			if( hFont.pFont ){
+				//hFont  = ::Xcgui.XFont_CreateFromFont(hFont);
+			}
+			else{
+				if(!hFont[["_struct"]] ){ 
+					hFont = ..table.mixin( ::LOGFONT() ,hFont);
+				} 
+				if(hFont.name = "FontAwesome"){
+					if(!..xcgui.fontAwesome) error("未导入 xcgui.fontAwesome",2);
+					return ..xcgui.fontAwesome.create(..math.abs(hFont.h),style);
+				}
+				var logfont = hFont;
+				hFont = ::Xcgui.XFont_CreateFromHFONT( logfont.createIndirect() );
+				logfont.deleteIndirect();
+			}
+		}
+		elseif(t = "string"){
+			if(font = "FontAwesome"){
+				if(!..xcgui.fontAwesome) error("未导入 xcgui.fontAwesome",2);
+				return ..xcgui.fontAwesome.create(size,style);
+			}
+			if(!size) size = 12;
+			
+			if( ..io.exist(hFont) )
+				hFont = ::Xcgui.XFont_CreateFromFile (hFont,size,style);
+			else {
+				hFont = ::Xcgui.XFont_Create2(hFont,size,style)
+			}
+		}
+		elseif(t = "null"){
+			hFont = ::Xcgui.XFont_Create(size:9)
+		}
+		elseif(t != "pointer"){
+			error("参数类型错误",2)
+		}
+		this.handle = topointer(hFont);
+		if(!this.handle)return;
+		
+		::Xcgui.XFont_AddRef (this.handle);
+		..table.gc(this,"release");
+	} };
+	@_metaProperty
+}
+
+namespace font{
+	_metaProperty = ..util.metaProperty(
+
+		gdip = function(){
+			var info  = owner.info();
+			var family = ..gdip.family(info.name);
+			var f = family.createFont( info.pt,info.style,3/*_UnitPoint*/);
+			family.delete();
+			return f;
+		};
+		info = function(){
+			var info = {
+				int   pt; 
+				int   style;
+				WORD name[32]; 
+			};
+
+			::Xcgui.XFont_GetFontInfo(owner.handle,info);
+			return info;
+		};
+		release = function(){
+			if(owner.handle){
+				::Xcgui.XFont_Release(owner.handle);
+				owner.handle = null;
+			}
+		};
+		setDefault = function(){
+			return !!::Xcgui.XC_SetDefaultFont(owner);
+		}
+		enableAutoDestroy = function(v){
+			::Xcgui.XFont_EnableAutoDestroy(owner,v);
+		}
+		_topointer = function(){
+			return owner.handle;
+		}
+	)
+}
+
+/**intellisense()
+xcgui.font(.(LOGFONT对象) = 创建字体
+xcgui.font(.(字体名,字体大小,样式) = 创建字体
+xcgui.font(.(字体指针) = 创建字体
+xcgui.font() = !stdxcfont.
+!stdxcfont.release() = 释放对象
+!stdxcfont.info() = 获取字体信息
+!stdxcfont.gdip() = 转换为GDI+字体
+end intellisense**/

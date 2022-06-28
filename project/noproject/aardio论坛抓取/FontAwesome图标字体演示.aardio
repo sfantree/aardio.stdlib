@@ -1,0 +1,23 @@
+import win.ui;
+import gdip.fontAwesome;
+/*DSG{{*/
+var winform = win.form(text="FontAwesome图标字体演示";right=455;bottom=286)
+winform.add(
+plus={cls="plus";text='\uF1f7'/*_FA_BELL_SLASH_O*/;left=64;top=75;right=109;bottom=117;color=32768;font=LOGFONT(name='FontAwesome';h=-35);transparent=1;z=1};
+plus2={cls="plus";text='\uF25a'/*_FA_HAND_POINTER_O*/;left=154;top=77;right=199;bottom=119;color=32768;font=LOGFONT(name='FontAwesome';h=-35);transparent=1;z=2};
+plus3={cls="plus";text= '\uF1d6 点这里联系我们'/*_FA_QQ*/;left=248;top=76;right=420;bottom=118;color=32768;font=LOGFONT(name='FontAwesome';h=-16);transparent=1;z=3}
+)
+/*}}*/
+
+var hyperlink = {
+     color = {
+        hover = 0xFFFF0000; //鼠标移上去的颜色
+        active = 0xFF00FF00; //鼠标按下去的颜色
+    }
+}
+winform.plus.skin(hyperlink)
+winform.plus2.skin(hyperlink)
+winform.plus3.skin(hyperlink)
+
+winform.show()
+win.loopMessage();

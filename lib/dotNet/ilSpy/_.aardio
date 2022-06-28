@@ -1,0 +1,38 @@
+﻿import process;
+import string.cmdline;
+
+namespace dotNet;
+
+class ilSpy{
+	ctor( path,... ){
+		var args = ..string.cmdline.arguments(...);
+		..table.unshift(args,..io.localpath(path):path); 
+		return ..process(_ilSpyExePath,args);
+	};
+}
+
+namespace ilSpy{
+
+	_ilSpyExePath = ..io.appData("aardio/std/dotNet/ilSpy/ILSpy.exe"); 
+	
+	if(!(  ..io.exist(_ilSpyExePath))){
+		import sevenZip.lzma.tar;
+		sevenZip.lzma.tar($"~\lib\dotNet\ilSpy\.res\ILSpy.tar.lzma",..io.appData("aardio/std/dotNet/"))
+	}
+}
+ 
+/**intellisense()
+dotNet.ilSpy = 用于启动 ILSpy 反编译 .Net 程序
+dotNet.ilSpy(.(path,->->->) = 启动 ILSpy 反编译 .Net 程序,所有参数可省略,\n参数 @path 指定 .Net 程序或程序集路径,\n可添加一个或多个启动参数,\n\n可用参数请参考:\n https://github.com/icsharpcode/ILSpy/blob/master/doc/Command%20Line.txt
+end intellisense**/
+
+/**details(说明)
+
+ILSpy
+https://github.com/icsharpcode/ILSpy
+
+dnSpy
+https://github.com/dnSpy/dnSpy
+
+end details**/
+

@@ -1,0 +1,33 @@
+import web.form;
+import win;
+/*DSG{{*/
+var mainForm = win.form(text="Web Form";right=648;bottom=361 )
+/*}}*/
+
+//创建web窗体
+wb = web.form( mainForm );
+
+//写入网页HTML   
+wb.html = /*
+    <script type="text/javascript">
+        var pageVar = 123;                ////这个变量可以读出来
+        function test(){
+                var myVar = 456;                        //这个变量读不出来
+                return myVar;
+        }
+    </script>
+*/
+
+var pageVar = wb.script.getpageVar();     //正常
+win.msgbox("pageVar:" + pageVar);                //
+
+//var myVar = wb.script.test().myVar;        //成员变量没读出来 ？
+//var myVar = wb.doScript("test()");                //error
+//var myVar = wb.document.script.test(0)                //error
+//var myVar = wb.getScript.execScript("test").myVar;                //error
+//win.msgbox("myVar:"+myVar)
+
+var myVar = wb.eval("test()");
+win.msgbox("myVar:" + myVar); 
+
+win.loopMessage();

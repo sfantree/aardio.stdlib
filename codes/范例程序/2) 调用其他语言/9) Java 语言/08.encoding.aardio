@@ -1,0 +1,38 @@
+//Java乱码问题
+import console;
+import java;
+
+/*
+Java 的编码和乱码问题是有些坑的。
+Java 在 Windows 上默认使用 ANSI 编码，ANSI 编码已经属于淘汰的东西了。
+
+aardio 内核编码是 UTF-8(兼容 UTF-16),
+如果用 ANSI 与 Java 交互这就很麻烦，所以在 aardio 中
+Java 已经被默认设置为了 UTF-8 编码（这在 Java 里应该也是主流的选择） 
+*/
+java.encoding = "utf-8" //修改 Java 默认编码, 默认已设为 "utf-8" 
+
+/* 
+如果 aardio 与 Java 双方都使用 UTF-8 编码，一般就没有什么问题。
+但这里有一个坑要注意一下，即使 Java 的编码设为 UTF-8 了，
+如果在 Java 代码里往控制台输出，他仍然是使用 ANSI编码，这样中文就会出现乱码。
+
+aardio 在 Windows 10 以及之后的系统，控制台是默认编码都是 UTF-8，
+可以用下面的代码让 aardio 控制台切换到 ANSI 编码： 
+*/
+console.utf8 = false;//一定要在打开控制台以前执行
+//无论控制台是不是启用 UTF-8，aardio 代码都可以自动兼容自动进行编码转换。
+
+/*
+如果在创建 Java 虚拟机以后 aardio 再打开控制台,
+那么 Java 的控制台输出默认是看不到的,需要调用下面的函数才行
+*/
+var jvm = java();
+jvm.reopen("setErr","conerr$");
+jvm.reopen("setOut","conout$");
+/*
+如果在创建 Java 虚拟机以前控制台已经打开,
+那上面这些代码就不用写了.
+*/
+console.pause();
+ 

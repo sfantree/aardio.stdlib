@@ -1,0 +1,42 @@
+﻿//cmdline 获取启动参数
+import process;
+namespace process;
+
+class cmdline{
+	ctor( pid ){
+		if(!pid) return;
+		
+		var prcs = ..process(pid,0x10/*_PROCESS_VM_READ*/
+			| 0x400/*_PROCESS_QUERY_INFORMATION*/|0x1000/*_PROCESS_QUERY_LIMITED_INFORMATION*/);
+			
+		if(!prcs) return;
+		
+		var pebAddr = prcs.getInfo().pebBaseAddress;
+		var cmdline;
+		
+		if(prcs.isX64()){ 
+			var param  = prcs.readStruct(pebAddr+0x20,{LONG addr})
+			cmdline  = prcs.readStruct(param.addr + 0x70,{WORD length;WORD maxLength;LONG buffer;})	
+		}
+		else {  
+			var param  = prcs.readStruct(pebAddr+0x10,{INT addr})
+			cmdline  = prcs.readStruct(param.addr + 0x40,{WORD length;WORD maxLength;INT buffer;})	
+		}
+		
+		var str;
+		if(cmdline.length){
+			str = prcs.readStringUtf16(cmdline.buffer,cmdline.length/2) 
+		}
+		else {
+			str = prcs.getPath();
+			if(#str) str = `"` + str  + `"`;
+		}
+		
+		prcs.free();
+		return str;
+	}; 
+}
+
+/**intellisense()
+process.cmdline(__) = 参数指定进程ID,返回进程的启动命令行,\n用 process.wmi(pid).CommandLine 也可以获得启动参数,\n但是在无法获取启动命令行时 process.cmdline 会以返回启动文件路径,\n如果目标进程以管理权限启动但当前进程没有管理权限会失败,\n此函数失败返回 null,\n不指定参数或参数为0直接返回 null
+end intellisense**/

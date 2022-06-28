@@ -1,0 +1,838 @@
+import util.metaProperty; 
+import thread.shareHandle; 
+
+namespace curl;
+var dll = ..raw.loadDll($"~\lib\curl\.res\libcurl.dll","libcurl.dll","cdecl")
+
+class list{
+	ctor( s ){
+		this.handle = curl_slist_append(null,s : "")
+		var nextHandle = this.handle;
+		..table.add_gc( this,"free");
+	};
+	append = function(s,...) {
+	
+		if( !s )return this;
+		if( type(s) == "table" ){
+			for(i=1;#s;1){
+				nextHandle = curl_slist_append( nextHandle,s[i] ); 
+				if(!nextHandle) return;
+			}
+			return this;
+		}
+		
+		nextHandle = curl_slist_append( nextHandle,s );
+		if(!...)return this;
+		this.append(...);
+		return this;
+	}
+	free = function(){
+		if( this.handle ){
+			curl_slist_free_all(this.handle)
+			this.handle = null;
+			nextHandle = null;
+		}
+	} 
+	@_meta;
+}
+namespace list{
+	_meta = { _topointer = function(){ return owner.handle;	} }
+	curl_slist_append = dll.api("curl_slist_append","pointer(pointer list,string s)" )
+	curl_slist_free_all = dll.api("curl_slist_free_all","void(POINTER list)" )
+}
+var list = list;
+
+
+class form{
+	ctor( ){
+		..table.add_gc( this,"free");
+	};
+	add = function(forms,...){
+		if(!forms)return this;
+		if(...){
+			ret,this.postHandle,this.lastHandle = curl_formadd(this.postHandle,this.lastHandle,forms,... )
+			if( ret != 0 ){ 
+				return null,"构建表单出错,错误代码:" + ret;
+			}
+		}
+		
+		var ret,valOption;
+		for(k,v in forms){
+			v = tostring(v);
+			valOption = 4/*_CURLFORM_COPYCONTENTS*/;
+			if( v[1] == '@'#){
+				valOption = 0xA/*_CURLFORM_FILE*/
+				var path = ..io.exist( ..string.right(v,-2),4 );
+				if( !path ) error("文件不可读:" + v,2);
+				v = ..string.fromto(path);
+			}
+			else {
+				v = tostring(v);
+			}
+			
+			ret,this.postHandle,this.lastHandle = curl_formadd(this.postHandle,this.lastHandle,1/*_CURLFORM_COPYNAME*/,k,valOption,v,0x11/*_CURLFORM_END*/)
+		 
+			if( ret != 0 ){ 
+				return null,"构建表单出错,错误代码:" + ret;
+			}
+		} 
+		return  this; 
+	} 
+	free = function(){
+		if( this.postHandle ){
+			curl_formfree(this.postHandle)
+			this.postHandle = null; 
+		}
+	} 
+	@_meta;
+}
+namespace form{
+	_meta = { _topointer = function(){ return owner.postHandle;	} }
+	curl_formadd = dll.api("curl_formadd","int(pointer &post,pointer &last,int optKey,string key,int optVal,pointer value,int optEnd)" )
+	curl_formfree = dll.api("curl_formfree","void(pointer post)" );
+}
+var form = form;
+
+class easy {
+
+	ctor( hSession ){
+		if( type(hSession) != type.pointer ){
+			this.session = curl_easy_init(); 
+			this.listCache = {};
+		}
+		else {
+			this.session = curl_easy_duphandle(hSession);
+		}
+		
+		dll.curl_easy_setopt( this.session, 0x40/*_CURLOPT_SSL_VERIFYPEER*/ , false)
+		dll.curl_easy_setopt( this.session, 0x51/*_CURLOPT_SSL_VERIFYHOST*/ , false) 
+		..table.add_gc(this,"close")
+	};
+	//避免与_metaProperty.get冲突
+	get = function( url,headers,referer,accept ){
+		return this.post( url,null,headers,referer,accept  ); 
+	};
+	@_metaProperty;
+}
+
+curl_global_cleanup = dll.api("curl_global_cleanup","void()" )
+var thread_global_init = function(flags){
+	if( dll.curl_global_init(flags) == 0 ) return true;
+} 
+var ok = ..thread.shareHandle.create("CURL.GLOBAL.INIT{EBABE1E6-20E5-4640-9D57-A74532C829FB}",thread_global_init,3/*_CURL_GLOBAL_ALL*/ )
+..table.add_gc(self,function(){
+	..thread.shareHandle.delete("CURL.GLOBAL.INIT{EBABE1E6-20E5-4640-9D57-A74532C829FB}",function(){ } );
+} );
+
+import inet.url;
+namespace easy {
+
+	var protectOpt = {
+		[0x2751/*_CURLOPT_CAINFO*/] = "setCaInfo";
+		[0x272F/*_CURLOPT_COOKIEFILE*/] = "setCookieFile";
+		[0x2727/*_CURLOPT_HTTPHEADER*/] = "setHttpHeader";
+		[0x2728/*_CURLOPT_HTTPPOST*/] = "setPostForm";
+	}
+	
+	var optPath = {
+		[0x2751/*_CURLOPT_CAINFO*/] = 1;
+		[0x272F/*_CURLOPT_COOKIEFILE*/] = 1;
+		[0x2767/*_CURLOPT_SSLKEY*/ ] = 1;
+		[0x2729/*_CURLOPT_SSLCERT*/ ] = 1;
+	}
+	
+	strerr = function(code){
+		code = tonumber(code) : self.lastErrorCode;
+		return ..raw.str( dll.curl_easy_strerrorP(code) ); 
+	} 
+	
+	_metaProperty = ..util.metaProperty(
+	
+		setOpt = function(k,v){
+			if( protectOpt[k] ) error("请使用函数 ." + protectOpt[k] + "() 置该选项",2);
+			
+			if(optPath[k]) v = ..string.fromto(..io.fullpath(v)); 
+			var ret = dll.curl_easy_setopt(owner.session,k,v);
+			if( ret == 0 ) return true;
+			
+			self.lastErrorCode = ret;
+			return null,ret;
+		}
+		setOptRaw = function(k,v){ 
+			if(optPath[k]) v = ..string.fromto(..io.fullpath(v)); 
+			var ret = dll.curl_easy_setopt(owner.session,k,v);
+			if( ret == 0 ) return true; 
+			
+			self.lastErrorCode = ret;
+			return null,ret;
+		}
+		setCaInfo = function(path){
+			if( !path ){
+				path = "~\lib\curl\.res\ca-bundle.crt"; //http://curl.haxx.se/ca/cacert.pem
+			}
+			path = ..io.fullpath(path)
+			
+			return owner.setOptRaw(0x2751/*_CURLOPT_CAINFO*/,path); 
+		}
+		setCookieFile = function(path){
+			return owner.setOptRaw(0x272F/*_CURLOPT_COOKIEFILE*/ ,#path?..io.fullpath( path ) : "" );
+		} 
+		setHttpHeader = function(header,...){
+			if(owner.headerList) owner.headerList.free();
+			owner.headerList = list(header).append(...);
+			return owner.setOptRaw(0x2727/*_CURLOPT_HTTPHEADER*/,owner.headerList);
+		} 
+		setPostForm = function(data){ 
+			if(owner.postForms) owner.postForms.free();
+			owner.postForms,err = form().add(data);
+			if(!owner.postForms) return null,"构建表单出错,错误代码:" + err;
+			return owner.setOptRaw( 0x2728/*_CURLOPT_HTTPPOST*/,owner.postForms);
+		};
+		setPostFields = function(data,utf8){
+			var data = ..inet.url.stringifyParameters(data,utf8);
+			return owner.setOptRaw( 0x271F/*_CURLOPT_POSTFIELDS*/,data);
+		};
+		setPostData = function(data){ 
+			return owner.setOptRaw( 0x271F/*_CURLOPT_POSTFIELDS*/,data);
+		}; 
+		setReferer = function(url){ 
+			return owner.setOptRaw( 0x2720/*_CURLOPT_REFERER*/,url);
+		};
+		setVerbose = function(v){ 
+			return owner.setOptRaw( 0x29/*_CURLOPT_VERBOSE*/,v);
+		}; 
+		post = function(url,postdata,headers,referer,accept){
+			if( accept ){
+				headers = ..string.concat(headers,"Accept:" + accept);
+			}
+			if( !url || ( ! owner.setOptRaw(0x2712/*_CURLOPT_URL*/,url) ) )
+				return null,"URL参数错误";
+				
+			if( headers ? ( !owner.setHttpHeader(headers) ) )
+				return null,"HTTP头参数错误"
+				
+			if( referer ? ( !owner.setReferer(referer) ) )
+				return null,"HTTP头参数错误"
+			
+			if(postdata){
+				if( type(postdata) == type.table ){
+					var uploadFile;
+					for(k,v in postdata){
+						if( ( type(v)== type.string ) &&  v[1]=='@'#){
+							owner.setPostForm(postdata);
+							uploadFile = true;
+							break;
+						} 
+					}
+					if( !uploadFile) {
+						owner.setPostFields(postdata);
+					}
+				}
+				else{
+					owner.setPostData(postdata); 
+					owner.setOptRaw(0x2F/*_CURLOPT_POST*/,true);
+				}
+			}
+			else {
+				owner.setOptRaw(0x2F/*_CURLOPT_POST*/,false);
+			}
+			
+	
+			if(!owner.writeCallback_c){
+				owner.setOptRaw(0x4E2B/*_CURLOPT_WRITEFUNCTION*/,_default_writeCallback_c)
+			}
+			
+			owner.setOptRaw(0x2A/*_CURLOPT_HEADER*/, 0);   
+			var ok,err = owner.exec();
+			if( ok ){
+				if(!owner.writeCallback_c){
+					ok = ..string.join(_default_receiveTable);
+					for(k,v in _default_receiveTable){
+						_default_receiveTable[k] = null;
+					}
+				}
+				return ok;
+				
+			}
+			return null,err; 
+		};
+		followLocation = function(f){
+			return owner.setOpt(0x34/*_CURLOPT_FOLLOWLOCATION*/,f?1:0);
+		};
+		getInfo = function(k,info){
+			if( k ){ 
+				var ret = curl_easy_getinfo(owner.session,k,info)
+				if( ret == 0 ) return info;
+				
+				self.lastErrorCode = ret;
+				return null,ret;
+			}
+			else { 
+				return {
+					url = owner.getInfo( 0x100001/*_CURLINFO_EFFECTIVE_URL*/ ,{string v} )[["v"]];
+					redirectUrl = owner.getInfo( 0x10001F/*_CURLINFO_REDIRECT_URL*/ ,{string v} )[["v"]];
+					contentType = owner.getInfo( 0x100012/*_CURLINFO_CONTENT_TYPE*/,{string v} )[["v"]];
+					httpCode = owner.getInfo( 0x200016/*_CURLINFO_HTTP_CONNECTCODE*/ ,{INT v} )[["v"]];
+					responseCode = owner.getInfo( 0x200002/*_CURLINFO_RESPONSE_CODE*/ ,{INT v} )[["v"]];
+					headerSize = owner.getInfo( 0x20000B/*_CURLINFO_HEADER_SIZE*/ ,{INT v} )[["v"]];
+					requestSize = owner.getInfo( 0x20000C/*_CURLINFO_REQUEST_SIZE*/ ,{INT v} )[["v"]];
+					filetime = owner.getInfo( 0x20000E/*_CURLINFO_FILETIME*/ ,{INT v} )[["v"]];
+					sslVerifyResult = owner.getInfo( 0x20000D/*_CURLINFO_SSL_VERIFYRESULT*/ ,{int v} )[["v"]];
+					redirectCount = owner.getInfo( 0x200014/*_CURLINFO_REDIRECT_COUNT*/ ,{int v} )[["v"]];
+					totalTime = owner.getInfo( 0x300003/*_CURLINFO_TOTAL_TIME*/ ,{double v} )[["v"]];
+					namelookupTime = owner.getInfo( 0x300004/*_CURLINFO_NAMELOOKUP_TIME*/ ,{double v} )[["v"]];
+					connectTime = owner.getInfo( 0x300005/*_CURLINFO_CONNECT_TIME*/ ,{double v} )[["v"]];
+					pretransferTime = owner.getInfo( 0x300006/*_CURLINFO_PRETRANSFER_TIME*/ ,{double v} )[["v"]];
+					sizeUpload = owner.getInfo( 0x300007/*_CURLINFO_SIZE_UPLOAD*/ ,{double v} )[["v"]];
+					sizeDownload = owner.getInfo( 0x300008/*_CURLINFO_SIZE_DOWNLOAD*/ ,{double v} )[["v"]];
+					speedDownload = owner.getInfo( 0x300009/*_CURLINFO_SPEED_DOWNLOAD*/ ,{double v} )[["v"]];
+					speedUpload = owner.getInfo( 0x300007/*_CURLINFO_SIZE_UPLOAD*/ ,{double v} )[["v"]];
+					downloadContentLength = owner.getInfo( 0x30000F/*_CURLINFO_CONTENT_LENGTH_DOWNLOAD*/ ,{double v} )[["v"]];
+					uploadContentLength = owner.getInfo( 0x300010/*_CURLINFO_CONTENT_LENGTH_UPLOAD*/ ,{double v} )[["v"]]; 
+					starttransferTime = owner.getInfo( 0x300011/*_CURLINFO_STARTTRANSFER_TIME*/ ,{double v} )[["v"]];
+					redirectTime = owner.getInfo( 0x300013/*_CURLINFO_REDIRECT_TIME*/ ,{double v} )[["v"]];
+				}
+			}
+			
+		}
+		reset = function(){
+			curl_easy_reset(owner.session);
+		} 
+		close = function(){
+			if( owner.session ){
+				curl_easy_cleanup(owner.session)
+				owner.session = null;
+				if(owner.headerList) owner.headerList.free();
+				if(owner.postForms) owner.postForms.free();
+				owner.headerList = null;
+				owner.postForms = null;
+			}
+		}
+		exec = function(){
+			var ret =  curl_easy_perform( owner.session )
+			if( ret == 0 ) return true;
+			
+			self.lastErrorCode = ret;
+			return null,ret;
+		} 
+		onReceive = { 
+			_set = function( value ){
+				if(!value){ 
+					owner.setOptRaw(0x4E2B/*_CURLOPT_WRITEFUNCTION*/,null)
+					owner.writeCallback_c=null;
+					return; 
+				}
+				owner.writeCallback_c  = ..raw.tocdecl( value,"INT(pointer buffer,INT size,INT nmemb,pointer userp)",owner); 
+				var ret,err = owner.setOptRaw(0x4E2B/*_CURLOPT_WRITEFUNCTION*/,owner.writeCallback_c)
+				if( !ret ) error("设置回调函数出错:" + strerr(err) ,2)
+			}  
+		};
+		onSend = { 
+			_set = function( value ){
+				if(!value){ 
+					owner.setOptRaw(0x4E2C/*_CURLOPT_READFUNCTION*/,null)
+					owner.readCallback_c=null;
+					return; 
+				}
+				owner.readCallback_c  = ..raw.tocdecl( value,"INT(poiter ptr,INT size,INT nmemb,pointer stream)",owner);
+				var ret = owner.setOptRaw(0x4E2C/*_CURLOPT_READFUNCTION*/,owner.readCallback_c)
+				if( !ret ) error("设置回调函数出错:" + strerr(err) ,2)
+			}  
+		}; 
+		onProgress = { 
+			_set = function( value ){
+				if(!value){ 
+					owner.setOptRaw(0x4E58/*_CURLOPT_PROGRESSFUNCTION*/,null)
+					owner.ProgressCallback_c=null;
+					owner.setOptRaw(0x2B/*_CURLOPT_NOPROGRESS*/,true);
+					return; 
+				}
+				owner.setOptRaw(0x2B/*_CURLOPT_NOPROGRESS*/,false);
+				owner.ProgressCallback_c = ..raw.tocdecl( value,"INT(poiter buffer,double downloadTotal, double downloadNow, double uploadTotal, double uploadNow)",owner);
+				var ret = owner.setOptRaw(0x4E58/*_CURLOPT_PROGRESSFUNCTION*/,owner.ProgressCallback_c)
+				if( !ret ) error("设置回调函数出错:" + strerr(err) ,2)
+			}  
+		}; 
+	)
+	_metaProperty.onRecive = onReceive;
+	
+	curl_easy_init = dll.api("curl_easy_init","pointer()" )
+	curl_easy_cleanup = dll.api("curl_easy_cleanup","void(POINTER curl)" ) 
+	curl_easy_perform = dll.api("curl_easy_perform","int(POINTER curl)" ) 
+	curl_easy_reset = dll.api("curl_easy_reset","void(POINTER curl)" )
+	curl_easy_duphandle = dll.api("curl_easy_duphandle","pointer(POINTER curl)" ) 
+	curl_easy_getinfo = dll.api("curl_easy_getinfo","int(POINTER curl,int info,struct &any)" ) 
+	
+	_default_receiveTable = {};
+	_default_writeCallback_c = ..raw.tocdecl( 
+		function(buffer,size,nmemb){
+			..table.push(_default_receiveTable , ..raw.tostring(buffer,1,nmemb) );
+			return nmemb
+		}
+		
+	,"INT(pointer buffer,INT size,INT nmemb,pointer userp)");
+}
+
+class multi{
+	ctor( ){
+		this.handle = curl_multi_init();
+		this.__running = ..raw.malloc({INT active});
+		this._tasks = {};
+		..table.add_gc(this,"close");
+	};
+	add = function(hSession){
+		var hSession = hSession[["session"]] : hSession ;
+		var ret  = curl_multi_add_handle( this.handle,hSession );
+		if( ret == 0 ){
+			this._tasks[hSession] = true;
+		 	return true;
+		}
+		return null,ret;
+	}
+	remove = function(hSession){
+		var hSession = hSession[["session"]] : hSession ;
+		var ret  = curl_multi_remove_handle( this.handle,hSession );
+		if( ret == 0 ){
+			this._tasks[hSession] = null;
+		 	return true;
+		};
+		return null,ret;
+	} 
+	exec = function(){
+		return curl_multi_perform( this.handle,0); 
+	} 
+	lasterr = function(){
+		return curl_multi_strerror( this.handle ); 
+	}
+	readInfo = function(t=1){
+		var p,len = curl_multi_info_read(this.handle,0)
+		if( p ){
+			return ..raw.convert(p,{
+  				int msg;  
+  				pointer easy_handle;  
+  				int result;
+				}
+			),len;
+		}
+	} 
+	["select"] = function(timeout,usec){
+		if(!owner.fdRead){
+			owner.fdRead = fd_set();
+			owner.fdWrite = fd_set();
+			owner.fdExcept = fd_set(); 
+		}
+		if( timeout === null ){
+			timeout = {};
+		}
+		else {
+			timeout = {
+  				int tv_sec = timeout;
+  				int tv_usec = usec;
+			} 
+		}
+
+		var ret,_,_,_,maxfd = curl_multi_fdset(this.handle,owner.fdRead,owner.fdWrite,owner.fdExcept,-1);
+		var ret = _select( maxfd+1, owner.fdRead,owner.fdWrite, owner.fdExcept,timeout);
+		return ret;
+	}
+	
+	close = function(){
+		if( this.handle ){
+			for( hSession in this._tasks){
+				curl_multi_remove_handle( this.handle,hSession )
+			}
+			
+			curl_multi_cleanup(this.handle)
+			this.handle = null;
+		}
+	}
+}
+namespace multi{
+	curl_multi_init = dll.api("curl_multi_init","pointer()" )
+	curl_multi_cleanup = dll.api("curl_multi_cleanup","int(POINTER mulit_handle)" )
+	
+	curl_multi_add_handle = dll.api("curl_multi_add_handle","int(POINTER mulit_handle,POINTER curl_handle)" )
+	curl_multi_remove_handle = dll.api("curl_multi_remove_handle","int(POINTER mulit_handle,POINTER curl_handle)" ) 
+	curl_multi_perform = dll.api("curl_multi_perform","int(POINTER mulit_handle,INT& running_handles)" ) 
+	curl_multi_strerror = dll.api("curl_multi_strerror","string(POINTER mulit_handle)" ) 
+	curl_multi_info_read = dll.api("curl_multi_info_read","pointer(POINTER mulit_handle,int &msgs_in_queue)" )
+	
+	curl_multi_fdset = dll.api("curl_multi_fdset","int(POINTER mulit_handle,struct &read_fd_set,struct &write_fd_set,struct &exc_fd_set,int &max_fde)" )
+	
+	var $wsock32_dll =  ..raw.loadDll("wsock32.dll")
+	_select = $wsock32_dll.api("select","word(int nfds, struct& readfds, struct& writefds, struct& exceptfds, struct timeout)")
+	
+	class fd_set {
+  		INT fd_count;
+  		pointer fd_array[0x40/*_FD_SETSIZE*/];
+	} 
+
+	strerr = function(code){
+		code = tonumber(code);
+		return ..raw.str( dll.curl_multi_strerrorP(code) ); 
+	} 
+}
+
+curl_getdate = dll.api("curl_getdate","int(string p,int &unused)" ) 
+getDate = function(s){
+	var t = curl_getdate(s, 0);
+	return ..time(t,"!%a, %d %b %Y %H:%M:%S %Z");
+}
+
+/**intellisense()
+curl.easy() = 创建CURL客户端\n!curl_easy. 
+curl.multi() = 创建CURL批量任务管理器\n!curl_multi. 
+curl.easy.strerr(__) = 根据错误代码返回错误信息\n所有curl扩展库的函数如果未加特别说明，\n出错时默认都是第一个返回值为null，第二个返回值为错误代码
+curl.multi.strerr(__) = 根据错误代码返回错误信息\n所有curl扩展库的函数如果未加特别说明，\n出错时默认都是第一个返回值为null，第二个返回值为错误代码
+curl.getDate(.(字符串) = 解析字符串并返回GMT时间,\n支持格式参考 http://curl.haxx.se/libcurl/c/curl_getdate.html
+curl.list() = 创建字符串列表,可选指定一个字符串参数\n!curl_list.
+!curl_list.append(.(字符串) = 添加字符串,可添加任意多个字符串参数\n该函数返回对象自身
+!curl_list.free() = 释放对象,该函数在内存回收时自动触发
+curl.form() = 创建字符串列表,可选指定一个字符串参数\n!curl_form.
+!curl_form.add(.(上传表单) = n参数一为指定上传表单多个键值对的table对象\n该函数成功返回对象自身,失败返回null,错误信息
+!curl_form.add(.(1/*_CURLFORM_COPYNAME*/,"键名",4/*_CURLFORM_COPYCONTENTS*/,"值",0x11/*_CURLFORM_END*/) = 添加到表单
+!curl_form.free() = 释放对象,该函数在内存回收时自动触发
+end intellisense**/
+
+/**intellisense(!curl_multi)
+add(.(CURL客户端) = 添加一个客户端
+remove(.(CURL客户端) = 移除一个客户端
+lasterr() = 读取错误信息
+select(.(超时秒,超时微秒) = 当一个套接字或一组套接字有信号时返回\n返回值为-1/*_SOCKET_ERROR*/表示出错\n所有参数可选,\n不指定超时则一直等待,\n超时为0则立即返回
+exec() =  @var mrc,active\ndo { \n	do {  \n		mrc,active = ??.exec();  \n		sleep(100)\n	} while ( mrc= -1/*_CURLM_CALL_MULTI_PERFORM*/)  \n			\n	if( manage.select(0) == -1/*_SOCKET_ERROR*/ )\n		break;\n}while( mrc==0 && active) 
+readInfo() = 读取消息队列,\n返回消息结构体,剩余消息数
+readInfo() = !curl_msginfo.
+close() = 移除所有任务并关闭对象
+end intellisense**/
+
+/**intellisense(curl_msginfo)
+msg = 消息ID
+easy_handle = 客户端对话会话句柄
+result = 返回代码,0为成功
+end intellisense**/
+
+/**intellisense(!curl_easy)
+reset() = 重置会话,清空所有状态
+setOpt( _CURLOPT___ ,) = 修改设置 
+setHttpHeader(.(HTTP头) = 设置HTTP头,可添加任意个参数,\n每个参数为使用冒号分隔键值的字符串
+setPostFields(.(表参数,是否UTF8) = 参数一为指定上传表单多个键值对的table对象,\n参数2为可选参数
+setPostData(.(上传数据) = 参数为指定上传数据的字符串\n多个键使用&&符号分隔
+setPostForm(.(上传表单) = 指定以multipart/form-data方式上传文件\n参数一为指定上传表单多个键值对的table对象,\n文件路径前请添加"@"字符表示文件路径,例如\nfile="@\test.jpg"
+setCookieFile(.(Cookies目录) = 参数为可选参数,\n可以指定不存在的目录
+getInfo(.() = 返回HTTP信息
+getInfo(.(ID,结构体) = 参数一为 _CURLINFO_ 前缀的常量,\n参数2必须是对应的静态结构体
+getInfo() = !curl_info.
+setCaInfo(.("CA证书路径") == CA根证书路径,\n无参数则设置为"~\lib\curl\.res\ca-bundle.crt"
+setVerbose(true) = 显示调试信息，\n需要在import curl之前打开控制台
+get(.(url,http头,引用网址,MIME) = GET方法下载网页\n除URL外,其他为可选参数\n出错返回值为:null,错误代码\n成功返回字符串对象.
+post(.(url,post数据,http头,引用网址,MIME) = POST方法下载网页\npost数据可以是字符串,也可以是指定表单键值对的table对象\n除URL与post数据以外,其他为可选参数\n出错返回值为:null,错误代码\n成功返回字符串对象.
+exec() = 执行请求
+onReceive = @.onReceive = function(buffer,size,nmemb){
+	..io.print( ..raw.tostring(buffer,1,nmemb) )__
+	return nmemb;
+}
+onSend = @.onSend = function(buffer,size,nmemb){
+	..io.print( ..raw.tostring(buffer,1,nmemb) )__
+	return nmemb;
+}
+onProgress = @.onProgress = function(buffer,downloadTotal,downloadNow,uploadTotal,uploadNow){
+	..io.print( downloadTotal,downloadNow)__ 
+}
+
+close() = 关闭对象
+end intellisense**/
+
+/**intellisense(curl_info)
+url=资源网络地址
+redirectUrl=重定向URL
+contentType=内容编码
+httpCode=代理服务器响应代码
+responseCode=服务器响应代码\n可用于获取HTTP状态码
+headerSize=header的大小
+requestSize=请求的大小
+filetime=文件创建时间
+sslVerifyResult=SSL验证结果
+redirectCount=跳转技术  
+totalTime=总耗时
+namelookupTime=DNS查询耗时
+connectTime=等待连接耗时
+pretransferTime=传输前准备耗时
+sizeUpload=上传数据的大小
+sizeDownload=下载数据的大小
+speedDownload=下载速度
+speedUpload=上传速度
+downloadContentLength”//下载内容的长度
+upload_contentLength=上传内容的长度  
+starttransferTime=开始传输的时间
+redirectTime=重定向耗时
+end intellisense**/
+
+
+ /**intellisense()
+ _CURLM_CALL_MULTI_PERFORM=@-1/*_CURLM_CALL_MULTI_PERFORM*/
+_CURLM_OK=@0/*_CURLM_OK*/
+_CURLOPT_PROXYPORT=@0x3B/*_CURLOPT_PROXYPORT*/
+_CURLOPT_SSLKEYTYPE=@0x2768/*_CURLOPT_SSLKEYTYPE*/
+_CURLOPT_NOSIGNAL=@0x63/*_CURLOPT_NOSIGNAL*/
+_CURLOPT_CONNECTTIMEOUT=@0x4E/*_CURLOPT_CONNECTTIMEOUT*/
+_CURLOPT_PREQUOTE=@0x276D/*_CURLOPT_PREQUOTE*/
+_CURLOPT_USERAGENT=@0x2722/*_CURLOPT_USERAGENT*/
+_CURLOPT_CONNECT_ONLY=@0x8D/*_CURLOPT_CONNECT_ONLY*/
+_CURLOPT_POSTFIELDSIZE_LARGE=@0x75A8/*_CURLOPT_POSTFIELDSIZE_LARGE*/
+_CURLOPT_DNS_CACHE_TIMEOUT=@0x5C/*_CURLOPT_DNS_CACHE_TIMEOUT*/
+_CURLOPT_CLOSESOCKETDATA=@0x27E1/*_CURLOPT_CLOSESOCKETDATA*/
+_CURLOPT_CAPATH=@0x2771/*_CURLOPT_CAPATH*/
+_CURLOPT_FAILONERROR=@0x2D/*_CURLOPT_FAILONERROR*/
+_CURLOPT_MAXFILESIZE_LARGE=@0x75A5/*_CURLOPT_MAXFILESIZE_LARGE*/
+_CURLOPT_SSLCERTTYPE=@0x2766/*_CURLOPT_SSLCERTTYPE*/
+_CURLOPT_DNS_USE_GLOBAL_CACHE=@0x5B/*_CURLOPT_DNS_USE_GLOBAL_CACHE*/
+_CURLOPT_PROGRESSFUNCTION=@0x4E58/*_CURLOPT_PROGRESSFUNCTION*/
+_CURLOPT_TCP_KEEPIDLE=@0xD6/*_CURLOPT_TCP_KEEPIDLE*/
+_CURLOPT_MAXCONNECTS=@0x47/*_CURLOPT_MAXCONNECTS*/
+_CURLOPT_COPYPOSTFIELDS=@0x27B5/*_CURLOPT_COPYPOSTFIELDS*/
+_CURLOPT_PROXY=@0x2714/*_CURLOPT_PROXY*/
+_CURLOPT_DEBUGDATA=@0x276F/*_CURLOPT_DEBUGDATA*/
+_CURLOPT_INTERLEAVEDATA=@0x27D3/*_CURLOPT_INTERLEAVEDATA*/
+_CURLOPT_FTP_CREATE_MISSING_DIRS=@0x6E/*_CURLOPT_FTP_CREATE_MISSING_DIRS*/
+_CURLOPT_WRITEFUNCTION=@0x4E2B/*_CURLOPT_WRITEFUNCTION*/
+_CURLOPT_POST=@0x2F/*_CURLOPT_POST*/
+_CURLOPT_HTTPAUTH=@0x6B/*_CURLOPT_HTTPAUTH*/
+_CURLOPT_PROXYUSERNAME=@0x27BF/*_CURLOPT_PROXYUSERNAME*/
+_CURLOPT_NETRC_FILE=@0x2786/*_CURLOPT_NETRC_FILE*/
+_CURLOPT_USERNAME=@0x27BD/*_CURLOPT_USERNAME*/
+_CURLOPT_CRLFILE=@0x27B9/*_CURLOPT_CRLFILE*/
+_CURLOPT_FTPPORT=@0x2721/*_CURLOPT_FTPPORT*/
+_CURLOPT_TLSAUTH_USERNAME=@0x27DC/*_CURLOPT_TLSAUTH_USERNAME*/
+_CURLOPT_SOCKOPTDATA=@0x27A5/*_CURLOPT_SOCKOPTDATA*/
+_CURLOPT_AUTOREFERER=@0x3A/*_CURLOPT_AUTOREFERER*/
+_CURLOPT_REFERER=@0x2720/*_CURLOPT_REFERER*/
+_CURLOPT_NOPROXY=@0x27C1/*_CURLOPT_NOPROXY*/
+_CURLOPT_FTP_RESPONSE_TIMEOUT=@0x70/*_CURLOPT_FTP_RESPONSE_TIMEOUT*/
+_CURLOPT_LOCALPORT=@0x8B/*_CURLOPT_LOCALPORT*/
+_CURLOPT_SSH_PUBLIC_KEYFILE=@0x27A8/*_CURLOPT_SSH_PUBLIC_KEYFILE*/
+_CURLOPT_USERPWD=@0x2715/*_CURLOPT_USERPWD*/
+_CURLOPT_SEEKFUNCTION=@0x4EC7/*_CURLOPT_SEEKFUNCTION*/
+_CURLOPT_SSLENGINE_DEFAULT=@0x5A/*_CURLOPT_SSLENGINE_DEFAULT*/
+_CURLOPT_NOBODY=@0x2C/*_CURLOPT_NOBODY*/
+_CURLOPT_CUSTOMREQUEST=@0x2734/*_CURLOPT_CUSTOMREQUEST*/
+_CURLOPT_SOCKOPTFUNCTION=@0x4EB4/*_CURLOPT_SOCKOPTFUNCTION*/
+_CURLOPT_RESOLVE=@0x27DB/*_CURLOPT_RESOLVE*/
+_CURLOPT_CONV_FROM_UTF8_FUNCTION=@0x4EB0/*_CURLOPT_CONV_FROM_UTF8_FUNCTION*/
+_CURLOPT_TELNETOPTIONS=@0x2756/*_CURLOPT_TELNETOPTIONS*/
+_CURLOPT_TCP_NODELAY=@0x79/*_CURLOPT_TCP_NODELAY*/
+_CURLOPT_RESUME_FROM=@0x15/*_CURLOPT_RESUME_FROM*/
+_CURLOPT_COOKIE=@0x2726/*_CURLOPT_COOKIE*/
+_CURLOPT_LOW_SPEED_TIME=@0x14/*_CURLOPT_LOW_SPEED_TIME*/
+_CURLOPT_SSL_OPTIONS=@0xD8/*_CURLOPT_SSL_OPTIONS*/
+_CURLOPT_SSL_CTX_FUNCTION=@0x4E8C/*_CURLOPT_SSL_CTX_FUNCTION*/
+_CURLOPT_COOKIEJAR=@0x2762/*_CURLOPT_COOKIEJAR*/
+_CURLOPT_POSTFIELDSIZE=@0x3C/*_CURLOPT_POSTFIELDSIZE*/
+_CURLOPT_NEW_DIRECTORY_PERMS=@0xA0/*_CURLOPT_NEW_DIRECTORY_PERMS*/
+_CURLOPT_MAIL_AUTH=@0x27E9/*_CURLOPT_MAIL_AUTH*/
+_CURLOPT_POSTQUOTE=@0x2737/*_CURLOPT_POSTQUOTE*/
+_CURLOPT_CONV_FROM_NETWORK_FUNCTION=@0x4EAE/*_CURLOPT_CONV_FROM_NETWORK_FUNCTION*/
+_CURLOPT_TCP_KEEPINTVL=@0xD7/*_CURLOPT_TCP_KEEPINTVL*/
+_CURLOPT_DNS_SERVERS=@0x27E3/*_CURLOPT_DNS_SERVERS*/
+_CURLOPT_USE_SSL=@0x77/*_CURLOPT_USE_SSL*/
+_CURLOPT_TCP_KEEPALIVE=@0xD5/*_CURLOPT_TCP_KEEPALIVE*/
+_CURLOPT_EGDSOCKET=@0x275D/*_CURLOPT_EGDSOCKET*/
+_CURLOPT_IPRESOLVE=@0x71/*_CURLOPT_IPRESOLVE*/
+_CURLOPT_MAX_RECV_SPEED_LARGE=@0x75C2/*_CURLOPT_MAX_RECV_SPEED_LARGE*/
+_CURLOPT_FTPSSLAUTH=@0x81/*_CURLOPT_FTPSSLAUTH*/
+_CURLOPT_REDIR_PROTOCOLS=@0xB6/*_CURLOPT_REDIR_PROTOCOLS*/
+_CURLOPT_TRANSFER_ENCODING=@0xCF/*_CURLOPT_TRANSFER_ENCODING*/
+_CURLOPT_TLSAUTH_TYPE=@0x27DE/*_CURLOPT_TLSAUTH_TYPE*/
+_CURLOPT_HTTP200ALIASES=@0x2778/*_CURLOPT_HTTP200ALIASES*/
+_CURLOPT_TLSAUTH_PASSWORD=@0x27DD/*_CURLOPT_TLSAUTH_PASSWORD*/
+_CURLOPT_COOKIESESSION=@0x60/*_CURLOPT_COOKIESESSION*/
+_CURLOPT_HTTPHEADER=@0x2727/*_CURLOPT_HTTPHEADER*/
+_CURLOPT_QUOTE=@0x272C/*_CURLOPT_QUOTE*/
+_CURLOPT_FILETIME=@0x45/*_CURLOPT_FILETIME*/
+_CURLOPT_FNMATCH_DATA=@0x27DA/*_CURLOPT_FNMATCH_DATA*/
+_CURLOPT_HTTP_VERSION=@0x54/*_CURLOPT_HTTP_VERSION*/
+_CURLOPT_FTP_SSL_CCC=@0x9A/*_CURLOPT_FTP_SSL_CCC*/
+_CURLOPT_FTP_USE_PRET=@0xBC/*_CURLOPT_FTP_USE_PRET*/
+_CURLOPT_FTP_USE_EPSV=@0x55/*_CURLOPT_FTP_USE_EPSV*/
+_CURLOPT_CHUNK_END_FUNCTION=@0x4EE7/*_CURLOPT_CHUNK_END_FUNCTION*/
+_CURLOPT_CHUNK_BGN_FUNCTION=@0x4EE6/*_CURLOPT_CHUNK_BGN_FUNCTION*/
+_CURLOPT_OPENSOCKETFUNCTION=@0x4EC3/*_CURLOPT_OPENSOCKETFUNCTION*/
+_CURLOPT_PASSWORD=@0x27BE/*_CURLOPT_PASSWORD*/
+_CURLOPT_RTSP_STREAM_URI=@0x27CF/*_CURLOPT_RTSP_STREAM_URI*/
+_CURLOPT_HTTPPROXYTUNNEL=@0x3D/*_CURLOPT_HTTPPROXYTUNNEL*/
+_CURLOPT_CERTINFO=@0xAC/*_CURLOPT_CERTINFO*/
+_CURLOPT_SSLVERSION=@0x20/*_CURLOPT_SSLVERSION*/
+_CURLOPT_POSTFIELDS=@0x271F/*_CURLOPT_POSTFIELDS*/
+_CURLOPT_PROXYPASSWORD=@0x27C0/*_CURLOPT_PROXYPASSWORD*/
+_CURLOPT_OPENSOCKETDATA=@0x27B4/*_CURLOPT_OPENSOCKETDATA*/
+_CURLOPT_RTSP_SERVER_CSEQ=@0xC2/*_CURLOPT_RTSP_SERVER_CSEQ*/
+_CURLOPT_RTSP_CLIENT_CSEQ=@0xC1/*_CURLOPT_RTSP_CLIENT_CSEQ*/
+_CURLOPT_HEADER=@0x2A/*_CURLOPT_HEADER*/
+_CURLOPT_RTSP_TRANSPORT=@0x27D0/*_CURLOPT_RTSP_TRANSPORT*/
+_CURLOPT_RTSP_SESSION_ID=@0x27CE/*_CURLOPT_RTSP_SESSION_ID*/
+_CURLOPT_RTSP_REQUEST=@0xBD/*_CURLOPT_RTSP_REQUEST*/
+_CURLOPT_FTP_SKIP_PASV_IP=@0x89/*_CURLOPT_FTP_SKIP_PASV_IP*/
+_CURLOPT_FNMATCH_FUNCTION=@0x4EE8/*_CURLOPT_FNMATCH_FUNCTION*/
+_CURLOPT_MAIL_RCPT=@0x27CB/*_CURLOPT_MAIL_RCPT*/
+_CURLOPT_MAIL_FROM=@0x27CA/*_CURLOPT_MAIL_FROM*/
+_CURLOPT_TIMEOUT=@0xD/*_CURLOPT_TIMEOUT*/
+_CURLOPT_CONV_TO_NETWORK_FUNCTION=@0x4EAF/*_CURLOPT_CONV_TO_NETWORK_FUNCTION*/
+_CURLOPT_INFILESIZE_LARGE=@0x75A3/*_CURLOPT_INFILESIZE_LARGE*/
+_CURLOPT_SSH_KEYFUNCTION=@0x4ED8/*_CURLOPT_SSH_KEYFUNCTION*/
+_CURLOPT_RANDOM_FILE=@0x275C/*_CURLOPT_RANDOM_FILE*/
+_CURLOPT_TIMEVALUE=@0x22/*_CURLOPT_TIMEVALUE*/
+_CURLOPT_SSH_KNOWNHOSTS=@0x27C7/*_CURLOPT_SSH_KNOWNHOSTS*/
+_CURLOPT_FTP_ACCOUNT=@0x2796/*_CURLOPT_FTP_ACCOUNT*/
+_CURLOPT_SSL_CTX_DATA=@0x277D/*_CURLOPT_SSL_CTX_DATA*/
+_CURLOPT_MAXFILESIZE=@0x72/*_CURLOPT_MAXFILESIZE*/
+_CURLOPT_SSH_KEYDATA=@0x27C9/*_CURLOPT_SSH_KEYDATA*/
+_CURLOPT_READFUNCTION=@0x4E2C/*_CURLOPT_READFUNCTION*/
+_CURLOPT_SEEKDATA=@0x27B8/*_CURLOPT_SEEKDATA*/
+_CURLOPT_SOCKS5_GSSAPI_NEC=@0xB4/*_CURLOPT_SOCKS5_GSSAPI_NEC*/
+_CURLOPT_SOCKS5_GSSAPI_SERVICE=@0x27C3/*_CURLOPT_SOCKS5_GSSAPI_SERVICE*/
+_CURLOPT_TFTP_BLKSIZE=@0xB2/*_CURLOPT_TFTP_BLKSIZE*/
+_CURLOPT_WILDCARDMATCH=@0xC5/*_CURLOPT_WILDCARDMATCH*/
+_CURLOPT_INTERLEAVEFUNCTION=@0x4EE4/*_CURLOPT_INTERLEAVEFUNCTION*/
+_CURLOPT_HEADERFUNCTION=@0x4E6F/*_CURLOPT_HEADERFUNCTION*/
+_CURLOPT_NETRC=@0x33/*_CURLOPT_NETRC*/
+_CURLOPT_INFILE=@0x2719/*_CURLOPT_INFILE*/
+_CURLOPT_RESUME_FROM_LARGE=@0x75A4/*_CURLOPT_RESUME_FROM_LARGE*/
+_CURLOPT_ADDRESS_SCOPE=@0xAB/*_CURLOPT_ADDRESS_SCOPE*/
+_CURLOPT_FTP_ALTERNATIVE_TO_USER=@0x27A3/*_CURLOPT_FTP_ALTERNATIVE_TO_USER*/
+_CURLOPT_SHARE=@0x2774/*_CURLOPT_SHARE*/
+_CURLOPT_TRANSFERTEXT=@0x35/*_CURLOPT_TRANSFERTEXT*/
+_CURLOPT_PROXYAUTH=@0x6F/*_CURLOPT_PROXYAUTH*/
+_CURLOPT_PRIVATE=@0x2777/*_CURLOPT_PRIVATE*/
+_CURLOPT_FOLLOWLOCATION=@0x34/*_CURLOPT_FOLLOWLOCATION*/
+_CURLOPT_SSLENGINE=@0x2769/*_CURLOPT_SSLENGINE*/
+_CURLOPT_NOPROGRESS=@0x2B/*_CURLOPT_NOPROGRESS*/
+_CURLOPT_SSL_SESSIONID_CACHE=@0x96/*_CURLOPT_SSL_SESSIONID_CACHE*/
+_CURLOPT_HTTPPOST=@0x2728/*_CURLOPT_HTTPPOST*/
+_CURLOPT_MAXREDIRS=@0x44/*_CURLOPT_MAXREDIRS*/
+_CURLOPT_ISSUERCERT=@0x27BA/*_CURLOPT_ISSUERCERT*/
+_CURLOPT_FORBID_REUSE=@0x4B/*_CURLOPT_FORBID_REUSE*/
+_CURLOPT_PROXY_TRANSFER_MODE=@0xA6/*_CURLOPT_PROXY_TRANSFER_MODE*/
+_CURLOPT_SSH_HOST_PUBLIC_KEY_MD5=@0x27B2/*_CURLOPT_SSH_HOST_PUBLIC_KEY_MD5*/
+_CURLOPT_KEYPASSWD=@0x272A/*_CURLOPT_KEYPASSWD*/
+_CURLOPT_IGNORE_CONTENT_LENGTH=@0x88/*_CURLOPT_IGNORE_CONTENT_LENGTH*/
+_CURLOPT_DIRLISTONLY=@0x30/*_CURLOPT_DIRLISTONLY*/
+_CURLOPT_NEW_FILE_PERMS=@0x9F/*_CURLOPT_NEW_FILE_PERMS*/
+_CURLOPT_HTTP_CONTENT_DECODING=@0x9E/*_CURLOPT_HTTP_CONTENT_DECODING*/
+_CURLOPT_SSL_VERIFYHOST=@0x51/*_CURLOPT_SSL_VERIFYHOST*/
+_CURLOPT_HTTP_TRANSFER_DECODING=@0x9D/*_CURLOPT_HTTP_TRANSFER_DECODING*/
+_CURLOPT_PORT=@3/*_CURLOPT_PORT*/
+_CURLOPT_COOKIEFILE=@0x272F/*_CURLOPT_COOKIEFILE*/
+_CURLOPT_POSTREDIR=@0xA1/*_CURLOPT_POSTREDIR*/
+_CURLOPT_WRITEINFO=@0x2738/*_CURLOPT_WRITEINFO*/
+_CURLOPT_TIMEOUT_MS=@0x9B/*_CURLOPT_TIMEOUT_MS*/
+_CURLOPT_CHUNK_DATA=@0x27D9/*_CURLOPT_CHUNK_DATA*/
+_CURLOPT_SSH_PRIVATE_KEYFILE=@0x27A9/*_CURLOPT_SSH_PRIVATE_KEYFILE*/
+_CURLOPT_IOCTLFUNCTION=@0x4EA2/*_CURLOPT_IOCTLFUNCTION*/
+_CURLOPT_INTERFACE=@0x274E/*_CURLOPT_INTERFACE*/
+_CURLOPT_DEBUGFUNCTION=@0x4E7E/*_CURLOPT_DEBUGFUNCTION*/
+_CURLOPT_SSH_AUTH_TYPES=@0x97/*_CURLOPT_SSH_AUTH_TYPES*/
+_CURLOPT_LOW_SPEED_LIMIT=@0x13/*_CURLOPT_LOW_SPEED_LIMIT*/
+_CURLOPT_CLOSESOCKETFUNCTION=@0x4EF0/*_CURLOPT_CLOSESOCKETFUNCTION*/
+_CURLOPT_STDERR=@0x2735/*_CURLOPT_STDERR*/
+_CURLOPT_MAX_SEND_SPEED_LARGE=@0x75C1/*_CURLOPT_MAX_SEND_SPEED_LARGE*/
+_CURLOPT_PROGRESSDATA=@0x2749/*_CURLOPT_PROGRESSDATA*/
+_CURLOPT_CONNECTTIMEOUT_MS=@0x9C/*_CURLOPT_CONNECTTIMEOUT_MS*/
+_CURLOPT_IOCTLDATA=@0x2793/*_CURLOPT_IOCTLDATA*/
+_CURLOPT_FTP_FILEMETHOD=@0x8A/*_CURLOPT_FTP_FILEMETHOD*/
+_CURLOPT_KRBLEVEL=@0x274F/*_CURLOPT_KRBLEVEL*/
+_CURLOPT_LOCALPORTRANGE=@0x8C/*_CURLOPT_LOCALPORTRANGE*/
+_CURLOPT_CRLF=@0x1B/*_CURLOPT_CRLF*/
+_CURLOPT_BUFFERSIZE=@0x62/*_CURLOPT_BUFFERSIZE*/
+_CURLOPT_SSLKEY=@0x2767/*_CURLOPT_SSLKEY*/
+_CURLOPT_HTTPGET=@0x50/*_CURLOPT_HTTPGET*/
+_CURLOPT_FTP_USE_EPRT=@0x6A/*_CURLOPT_FTP_USE_EPRT*/
+_CURLOPT_SSL_CIPHER_LIST=@0x2763/*_CURLOPT_SSL_CIPHER_LIST*/
+_CURLOPT_COOKIELIST=@0x2797/*_CURLOPT_COOKIELIST*/
+_CURLOPT_ACCEPT_ENCODING=@0x2776/*_CURLOPT_ACCEPT_ENCODING*/
+_CURLOPT_SSLCERT=@0x2729/*_CURLOPT_SSLCERT*/
+_CURLOPT_UPLOAD=@0x2E/*_CURLOPT_UPLOAD*/
+_CURLOPT_FRESH_CONNECT=@0x4A/*_CURLOPT_FRESH_CONNECT*/
+_CURLOPT_VERBOSE=@0x29/*_CURLOPT_VERBOSE*/
+_CURLOPT_SSL_VERIFYPEER=@0x40/*_CURLOPT_SSL_VERIFYPEER*/
+_CURLOPT_RANGE=@0x2717/*_CURLOPT_RANGE*/
+_CURLOPT_PUT=@0x36/*_CURLOPT_PUT*/
+_CURLOPT_ERRORBUFFER=@0x271A/*_CURLOPT_ERRORBUFFER*/
+_CURLOPT_UNRESTRICTED_AUTH=@0x69/*_CURLOPT_UNRESTRICTED_AUTH*/
+_CURLOPT_PROXYUSERPWD=@0x2716/*_CURLOPT_PROXYUSERPWD*/
+_CURLOPT_GSSAPI_DELEGATION=@0xD2/*_CURLOPT_GSSAPI_DELEGATION*/
+_CURLOPT_URL=@0x2712/*_CURLOPT_URL*/
+_CURLOPT_INFILESIZE=@0xE/*_CURLOPT_INFILESIZE*/
+_CURLOPT_WRITEHEADER=@0x272D/*_CURLOPT_WRITEHEADER*/
+_CURLOPT_PROXYTYPE=@0x65/*_CURLOPT_PROXYTYPE*/
+_CURLOPT_TIMECONDITION=@0x21/*_CURLOPT_TIMECONDITION*/
+_CURLOPT_ACCEPTTIMEOUT_MS=@0xD4/*_CURLOPT_ACCEPTTIMEOUT_MS*/
+_CURLOPT_APPEND=@0x32/*_CURLOPT_APPEND*/
+_CURLOPT_FILE=@0x2711/*_CURLOPT_FILE*/
+_CURLOPT_CAINFO=@0x2751/*_CURLOPT_CAINFO*/
+_CURLOPT_PROTOCOLS=@0xB5/*_CURLOPT_PROTOCOLS*/
+_CURLOPT_CLOSEPOLICY=@0x48/*_CURLOPT_CLOSEPOLICY*/
+
+_CURLINFO_NONE=@0/*_CURLINFO_NONE*/
+_CURLINFO_EFFECTIVE_URL=@0x100001/*_CURLINFO_EFFECTIVE_URL*/
+_CURLINFO_RESPONSE_CODE=@0x200002/*_CURLINFO_RESPONSE_CODE*/
+_CURLINFO_TOTAL_TIME=@0x300003/*_CURLINFO_TOTAL_TIME*/
+_CURLINFO_NAMELOOKUP_TIME=@0x300004/*_CURLINFO_NAMELOOKUP_TIME*/
+_CURLINFO_CONNECT_TIME=@0x300005/*_CURLINFO_CONNECT_TIME*/
+_CURLINFO_PRETRANSFER_TIME=@0x300006/*_CURLINFO_PRETRANSFER_TIME*/
+_CURLINFO_SIZE_UPLOAD=@0x300007/*_CURLINFO_SIZE_UPLOAD*/
+_CURLINFO_SIZE_DOWNLOAD=@0x300008/*_CURLINFO_SIZE_DOWNLOAD*/
+_CURLINFO_SPEED_DOWNLOAD=@0x300009/*_CURLINFO_SPEED_DOWNLOAD*/
+_CURLINFO_SPEED_UPLOAD=@0x30000A/*_CURLINFO_SPEED_UPLOAD*/
+_CURLINFO_HEADER_SIZE=@0x20000B/*_CURLINFO_HEADER_SIZE*/
+_CURLINFO_REQUEST_SIZE=@0x20000C/*_CURLINFO_REQUEST_SIZE*/
+_CURLINFO_SSL_VERIFYRESULT=@0x20000D/*_CURLINFO_SSL_VERIFYRESULT*/
+_CURLINFO_FILETIME=@0x20000E/*_CURLINFO_FILETIME*/
+_CURLINFO_CONTENT_LENGTH_DOWNLOAD=@0x30000F/*_CURLINFO_CONTENT_LENGTH_DOWNLOAD*/
+_CURLINFO_CONTENT_LENGTH_UPLOAD=@0x300010/*_CURLINFO_CONTENT_LENGTH_UPLOAD*/
+_CURLINFO_STARTTRANSFER_TIME=@0x300011/*_CURLINFO_STARTTRANSFER_TIME*/
+_CURLINFO_CONTENT_TYPE=@0x100012/*_CURLINFO_CONTENT_TYPE*/
+_CURLINFO_REDIRECT_TIME=@0x300013/*_CURLINFO_REDIRECT_TIME*/
+_CURLINFO_REDIRECT_COUNT=@0x200014/*_CURLINFO_REDIRECT_COUNT*/
+_CURLINFO_PRIVATE=@0x100015/*_CURLINFO_PRIVATE*/
+_CURLINFO_HTTP_CONNECTCODE=@0x200016/*_CURLINFO_HTTP_CONNECTCODE*/
+_CURLINFO_HTTPAUTH_AVAIL=@0x200017/*_CURLINFO_HTTPAUTH_AVAIL*/
+_CURLINFO_PROXYAUTH_AVAIL=@0x200018/*_CURLINFO_PROXYAUTH_AVAIL*/
+_CURLINFO_OS_ERRNO=@0x200019/*_CURLINFO_OS_ERRNO*/
+_CURLINFO_NUM_CONNECTS=@0x20001A/*_CURLINFO_NUM_CONNECTS*/
+_CURLINFO_SSL_ENGINES=@0x40001B/*_CURLINFO_SSL_ENGINES*/
+_CURLINFO_COOKIELIST=@0x40001C/*_CURLINFO_COOKIELIST*/
+_CURLINFO_LASTSOCKET=@0x20001D/*_CURLINFO_LASTSOCKET*/
+_CURLINFO_FTP_ENTRY_PATH=@0x10001E/*_CURLINFO_FTP_ENTRY_PATH*/
+_CURLINFO_REDIRECT_URL=@0x10001F/*_CURLINFO_REDIRECT_URL*/
+_CURLINFO_PRIMARY_IP=@0x100020/*_CURLINFO_PRIMARY_IP*/
+_CURLINFO_APPCONNECT_TIME=@0x300021/*_CURLINFO_APPCONNECT_TIME*/
+_CURLINFO_CERTINFO=@0x400022/*_CURLINFO_CERTINFO*/
+_CURLINFO_CONDITION_UNMET=@0x200023/*_CURLINFO_CONDITION_UNMET*/
+_CURLINFO_RTSP_SESSION_ID=@0x100024/*_CURLINFO_RTSP_SESSION_ID*/
+_CURLINFO_RTSP_CLIENT_CSEQ=@0x200025/*_CURLINFO_RTSP_CLIENT_CSEQ*/
+_CURLINFO_RTSP_SERVER_CSEQ=@0x200026/*_CURLINFO_RTSP_SERVER_CSEQ*/
+_CURLINFO_RTSP_CSEQ_RECV=@0x200027/*_CURLINFO_RTSP_CSEQ_RECV*/
+_CURLINFO_PRIMARY_PORT=@0x200028/*_CURLINFO_PRIMARY_PORT*/
+_CURLINFO_LOCAL_IP=@0x100029/*_CURLINFO_LOCAL_IP*/
+_CURLINFO_LOCAL_PORT=@0x20002A/*_CURLINFO_LOCAL_PORT*/
+_CURLINFO_LASTONE=@0x2A/*_CURLINFO_LASTONE*/
+
+_CURLFORM_COPYNAME=@1/*_CURLFORM_COPYNAME*/
+_CURLFORM_PTRNAME=@2/*_CURLFORM_PTRNAME*/
+_CURLFORM_NAMELENGTH=@3/*_CURLFORM_NAMELENGTH*/
+_CURLFORM_COPYCONTENTS=@4/*_CURLFORM_COPYCONTENTS*/
+_CURLFORM_PTRCONTENTS=@5/*_CURLFORM_PTRCONTENTS*/
+_CURLFORM_CONTENTSLENGTH=@6/*_CURLFORM_CONTENTSLENGTH*/
+_CURLFORM_FILECONTENT=@7/*_CURLFORM_FILECONTENT*/
+_CURLFORM_ARRAY=@8/*_CURLFORM_ARRAY*/
+_CURLFORM_OBSOLETE=@9/*_CURLFORM_OBSOLETE*/
+_CURLFORM_FILE=@0xA/*_CURLFORM_FILE*/
+_CURLFORM_BUFFER=@0xB/*_CURLFORM_BUFFER*/
+_CURLFORM_BUFFERPTR=@0xC/*_CURLFORM_BUFFERPTR*/
+_CURLFORM_BUFFERLENGTH=@0xD/*_CURLFORM_BUFFERLENGTH*/
+_CURLFORM_CONTENTTYPE=@0xE/*_CURLFORM_CONTENTTYPE*/
+_CURLFORM_CONTENTHEADER=@0xF/*_CURLFORM_CONTENTHEADER*/
+_CURLFORM_FILENAME=@0x10/*_CURLFORM_FILENAME*/
+_CURLFORM_END=@0x11/*_CURLFORM_END*/
+_CURLFORM_OBSOLETE2=@0x12/*_CURLFORM_OBSOLETE2*/
+_CURLFORM_STREAM=@0x13/*_CURLFORM_STREAM*/
+end intellisense**/

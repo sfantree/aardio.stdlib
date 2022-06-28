@@ -1,0 +1,51 @@
+﻿
+namespace douyu.message;
+	
+escape = function(s){
+	s = ..string.replace(s, "\@","@A")
+	return ..string.replace(s, "\/","@S"); 
+};
+
+unescape = function(s){
+	s = ..string.replace(s,"\@S", "/");
+	return ..string.replace(s,"\@A", "@");		
+};
+
+stringify = function(param){ 
+	if( type(param) != "table" ) return param;
+	
+	var lst = {};
+	if(#param){
+		for(i=1;#param;1){
+			..table.push( lst,escape(param[i]));
+		} 	
+	}
+	else{
+		for(k,v in ..table.eachName(param) ){
+			..table.push( lst,escape(k) + "@=" + ( escape(tostring(v)) ) )
+		}
+	}
+	return ..string.join(lst, '/') + "/"; 
+};
+
+parse = function(param){ 
+    if(!param) return null;
+    
+	var list,k,v = {};
+	for line in ..string.lines(param,"/") { 
+		var nv = ..string.split(line,"<@=>",2);
+		if(#nv==2) {
+			list[ unescape(nv[1]) ] = unescape( nv[2] );
+		}
+		else {
+			..table.push(list,unescape(nv[1]));
+		}
+		
+	}
+	return list; 
+};
+
+/**intellisense(douyu.message)
+parse(__) = 字符串解析为表
+stringify(__) = 表参数转换为字符串
+end intellisense**/

@@ -1,0 +1,36 @@
+//入门
+import console;
+//console.open() 如果要在 Python 中使用 print 函数,请在导入 py3 库以前打开控制台，
+
+import py3;
+
+//导入 Python 模块,添加 第三方 Python 模块时也应使用相同版本运行时下安装的兼容版本。
+var itertools = py3.import("itertools");
+
+//调用 Python 函数，支持纯 aardio 类型参数
+var permutations = itertools.permutations({"a","b","c"});
+var pyList = py3.list(permutations);
+
+/*
+所有 Python 返回的对象（pyObject）在aardio 中都基于 py3.object 构建,
+pyObject 用 parseValue() 可转换为纯 aardio 对象。
+*/
+console.dump( pyList.parseValue() )
+
+//提供 each 迭代器
+for( item in pyList.each() ){
+	console.log(item)
+}
+
+//支持 table.eachIndex 创建的迭代器
+for i,v in table.eachIndex(pyList){
+	console.log(i,v)
+}
+
+//支持 web.json 
+console.log( web.json.stringify(pyList) )
+
+//支持 tostring() 等函数，注意 console.log() 已默认调用 tostring() 转换参数
+console.log( tostring(pyList) )
+
+console.pause()

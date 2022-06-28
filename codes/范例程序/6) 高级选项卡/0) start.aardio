@@ -1,0 +1,103 @@
+//入门
+import fonts.fontAwesome;
+import win.ui;
+/*DSG{{*/
+mainForm = win.form(text="动态选项卡";right=1040;bottom=642;bgcolor=16777215;border="none")
+mainForm.add(
+caption={cls="bkplus";text="选项卡演示";left=35;top=12;right=160;bottom=30;color=15780518;dl=1;dt=1;font=LOGFONT(h=-16);z=5};
+custom={cls="custom";left=0;top=40;right=1040;bottom=643;bgcolor=16777215;db=1;dl=1;dr=1;dt=1;z=1};
+logo={cls="bkplus";text='\uF0AD';left=6;top=9;right=35;bottom=34;color=15780518;dl=1;dt=1;font=LOGFONT(h=-18;name='FontAwesome');z=4};
+nav1={cls="plus";text="测试1";left=166;top=5;right=267;bottom=40;align="left";color=16777215;dl=1;dt=1;font=LOGFONT(h=-16);iconStyle={align="left";font=LOGFONT(h=-19;name='FontAwesome');padding={left=12;top=4}};iconText='\uF00A';notify=1;paddingLeft=1;paddingRight=1;paddingTop=3;textPadding={left=39;bottom=1};x=0.5;y=0.2;z=3};
+nav2={cls="plus";text="测试2";left=270;top=5;right=369;bottom=40;align="left";color=16777215;dl=1;dt=1;font=LOGFONT(h=-16);iconStyle={align="left";font=LOGFONT(h=-19;name='FontAwesome');padding={left=12;top=4}};iconText='\uF11C ';notify=1;paddingLeft=1;paddingRight=1;paddingTop=3;textPadding={left=39;bottom=1};x=0.5;y=0.2;z=6};
+titleBar={cls="bkplus";left=0;top=0;right=1042;bottom=41;bgcolor=14977280;dl=1;dr=1;dt=1;z=2}
+)
+/*}}*/
+
+//导入高级选项卡
+import win.ui.tabs;
+
+/*
+指定选项卡模板，至少要指定 2 个 plus 控件，
+模板控件用于确定选项卡的默认外观、间距、排列方向等。
+*/
+var tbs = win.ui.tabs(mainForm.nav1,mainForm.nav2);
+
+//指定选项卡右侧预留的空白边距（用于显示下拉菜单，以及其他需要放置的控件）
+tbs.margin = 150;
+
+//批量指定所有选项卡外，用法与 plus 控件相同
+tbs.skin({
+	foreground={
+		active=0xFFFFFFFF;
+		default=0x00FFFFFF;
+		hover=0x38FFFFFF
+	};
+	color={
+		default=0xFFFFFFFF; 
+	};
+	checked={
+		foreground={default=0xFFFFFFFF;}; 
+		color={default=0xFF42A875;};
+	}
+})
+//控件样式参数建议写到用户库里，改为 tbs.skin( styles.tabs ) 会更好。
+
+//动态添加更多选项卡
+for(i=3;10;1){
+	//参数可指定创建选项卡控件的属性(也就是 plus 控件的设计时属性)
+	tbs.add({
+		text="测试"+i;
+		iconText='\uF0AD';
+		hasCloseButton = true;
+	})
+}
+
+/*
+//可选加载指定的子窗口并绑定指定的选项卡索引
+tbs.loadForm(1,"\dlg\first.aardio" );  
+tbs.loadForm(2,"\dlg\hotkey.aardio" );  
+tbs.loadForm(3,"\dlg\setting.aardio" ); 
+tbs.loadForm(4,"\dlg\help.aardio" ); 	
+*/
+
+//切换选项卡触发下面的事件
+//idx 为选项卡当前索引, strip 参数为当前点击的选项卡, form 为当前选项卡绑定的子窗口 
+tbs.onSelchange = function(idx,strip,form){
+	
+}
+
+
+/*
+//选项卡调整位置会触发下面的函数
+tbs.adjust = function(){
+	var x,y,cx,cy = owner.getPos(); //获取选项卡的x,y 坐标,cx为宽度,cy 为高度
+}
+*/
+
+//设置当前选项卡
+tbs.selIndex = 1; 
+
+//也可以用下面的代码自定义关闭按钮的外观样式
+tbs.closeButton.skin(
+    background = {
+        hover = 0xFFe35c51;
+        active = 0xFF8f241b;
+        default = 0x99FFCC66;
+    }
+    color = {
+        hover = 0xFFFFFFFF;
+        active = 0xFFEEEEEE;
+        default = 0xCCFFFFFF;
+    }
+)
+
+//可以自定义关闭按钮在选项卡上的显示位
+tbs.beforeShowCloseButton = function(strip,rcStrip,rcCloseButton,dpiScaleX){ 
+    return rcStrip.right - 10 * dpiScaleX, rcStrip.top -2* dpiScaleX;
+}
+
+import win.ui.simpleWindow;
+win.ui.simpleWindow( mainForm );
+
+mainForm.show();
+return win.loopMessage(); 

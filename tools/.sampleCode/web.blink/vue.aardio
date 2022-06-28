@@ -1,0 +1,58 @@
+import win.ui;
+/*DSG{{*/
+mainForm = win.form(text="vue/element-ui 简单例子";right=959;bottom=591;bgcolor=16777215)
+mainForm.add()
+/*}}*/
+
+import web.blink.form;
+var wb = web.blink.form(mainForm);
+
+wb.external = {
+	vueAppMounted = function(app){
+		//在aardio中控制vue组件
+		app.visible = true;
+	}
+};
+
+wb.html = /**
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <!-- 引入样式 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-ui@2.15.6/lib/theme-chalk/index.min.css"> 
+</head>
+<body>
+  <div id="app">
+    <el-button @click="visible = true">按钮</el-button>
+    <el-dialog :visible.sync="visible" title="Hello world">
+      <p>node.js+webpack构建vue项目（可自动预编译vue模板）以后页面加载比这个快，
+      不会看到明显的渲染过程,注意在vue脚手架创建的项目中，package.json中必须指定目标浏览器环境如下（可编译出最大优化的代码）：     
+<pre> 
+"browserslist": [
+    "chrome >= 49"
+]
+<pre>
+	</p>
+    </el-dialog>
+  </div>
+</body>
+  <!-- 先引入 Vue -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
+  <!-- 引入组件库 -->
+  <script src="https://cdn.jsdelivr.net/npm/element-ui@2.15.6/lib/index.min.js"></script>
+  <script>
+    new Vue({
+      el: '#app',
+      data: function() {
+        return { visible: false }
+      },mounted: function () {
+    	external.vueAppMounted(this)
+  	  }
+    })
+  </script>
+</html>
+**/ 
+
+mainForm.show();
+return win.loopMessage();

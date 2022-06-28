@@ -1,0 +1,222 @@
+import raw.interface;
+namespace inet;
+
+class smtp{
+	ctor( ){ {
+		var handle = topointer( _dll.CreateSmtp() );
+		if(!handle ) return;
+		 
+		this = ..raw.interface( handle,"
+			void addRecipient(string email, string name);
+			void addBCCRecipient(string email, string name);
+			void addCCRecipient(string email, string name);    
+			void addAttachment2(string path);   
+			void addMsgLine(string text);
+			void clearMessage(); 
+			void delRecipients();
+			void delBCCRecipients();
+			void delCCRecipients();
+			void delAttachments();
+			void delMsgLines();
+			void delMsgLine(INT line);
+			void modMsgLine(INT line,string text);
+			INT getBCCRecipientCount();    
+			INT getCCRecipientCount();
+			INT getRecipientCount();    
+			string getLocalHostName();
+			string getMsgLineText(INT line);
+			INT getMsgLines();
+			string getReplyTo();
+			string getMailFrom();
+			string getSenderName();
+			string getSubject();
+			string getXMailer();
+			int getXPriority(); 
+			void setCharSet(string sCharSet);
+			void setLocalHostName(string sLocalHostName);
+			void setSubject(string);
+			void setSenderName(string);
+			void setSenderMail(string);
+			void setReplyTo(string);
+			void setReadReceipt(bool requestReceipt);
+			void setXMailer(string);
+			void setLogin(string);
+			void setPassword(string);
+			void setXPriority(int);
+			void setSMTPServer(string server, WORD port=0, bool authenticate);
+			void setHtmlFormat(bool html);
+			void send();
+			int getErrorNum();
+			string getErrorText();
+			string getLastRequest(void); 
+			string getLastResponseA(void); 
+			int getLastResponseCode(void); 
+			int getSecurityType(); 
+			void setSecurityType(int type);
+    		","thiscall" //"注意调用约定为thiscall
+		);
+ 
+ 		this.setSecurityTypeTLS = function(){
+ 			return this.setSecurityType(1/*_INETSMTP_SECURITY_USE_TLS*/); 
+ 		}
+ 		this.setSecurityTypeSSL = function(){
+ 			return this.setSecurityType(2/*_INETSMTP_SECURITY_USE_SSL*/); 	
+ 		}
+ 		this.addAttachment = function(path){
+ 			return this.addAttachment2(..io.localpath(path) : path );
+ 		} 
+ 		this.setBodyText = function(str){
+ 			this.delMsgLines();
+ 			this.setHtmlFormat(false);
+ 			for line in ..string.lines(str) { 
+ 				this.addMsgLine(line);
+ 			}
+ 		}
+ 		this.setBodyHtml = function(str){ 
+ 			this.delMsgLines();
+ 			this.setHtmlFormat(true);
+ 			for line in ..string.lines(str) { 
+ 				this.addMsgLine(line);
+ 			}
+ 		}
+ 		 
+		this.close = function(){ 
+			_dll.DeleteSmtp(this);
+			for name,value in ..table.eachName(this){
+				if(name[1]!='_'#) this[name] = null;
+			}
+			this.close = null; 
+		}
+		
+		this.getLastResponse = function(){
+			var s = this.getLastResponseA();
+			if(#s){
+				if(! ..string.isUtf8(s) ) return ..string.fromto(s,0,65001);
+				return s;
+			}
+		}
+		
+		this.setCharSet("utf-8")
+		..table.gc(this,"close");
+	} }; 
+}
+
+namespace smtp{
+	
+	_dllPath = ..io.appData("aardio/std/CSmtp.dll",$"~\lib\inet\smtp\.res\CSmtp.dll") 
+	_dll = ..raw.loadDll(_dllPath,"inet.smtp.dll","cdecl");
+}
+
+/**intellisense()
+inet.smtp = 邮件发送支持库
+inet.smtp() = 创建邮件发送对象\n!stdinetsmtp.
+!stdinetsmtp.addRecipient(.(email,name) = 添加收件地址
+!stdinetsmtp.addBCCRecipient(.(email, name) = 添加密件抄送地址\nBCC是blind carbon copy的缩写,意指收件人看不到其他收件人
+!stdinetsmtp.addCCRecipient(.(email, name) = 添加密件抄送地址\nCC是carbon copy的缩写
+!stdinetsmtp.addAttachment(.(path) =  添加附件
+!stdinetsmtp.addMsgLine(.(text) = 添加待发送文本行 
+!stdinetsmtp.clearMessage() = 清空邮件待发送文本、附件、收件地址等等
+!stdinetsmtp.delRecipients() = 清空收件人
+!stdinetsmtp.delBCCRecipients() = 清空密件抄送地址
+!stdinetsmtp.delCCRecipients() = 清空抄送地址
+!stdinetsmtp.delAttachments() = 清空附件
+!stdinetsmtp.delMsgLines() = 清空所有待发送文本行 
+!stdinetsmtp.delMsgLine(.(行号) = 删除待发送文本行,参数为数值行号
+!stdinetsmtp.modMsgLine(.(行号,文本内容) = 修改指定行的待发送文本
+!stdinetsmtp.getBCCRecipientCount() =  密送地址总数
+!stdinetsmtp.getCCRecipientCount() = 抄送地址总数
+!stdinetsmtp.getRecipientCount() = 收件地址总数     
+!stdinetsmtp.getLocalHostName() = 获取EHLO主机名
+!stdinetsmtp.getMsgLineText(.(行号) = 获取指定行待发送文本
+!stdinetsmtp.getMsgLines() = 获取待发送文本总行数
+!stdinetsmtp.getReplyTo() = getReplyTo
+!stdinetsmtp.getMailFrom() = 发件人地址
+!stdinetsmtp.getSenderName() = 发件人名字
+!stdinetsmtp.getSubject() = 邮件标题
+!stdinetsmtp.getXMailer() = 邮件发送程序名 
+!stdinetsmtp.getXPriority() = 邮件优先级
+!stdinetsmtp.send() = 发送邮件
+!stdinetsmtp.setCharSet(.("gbk") = 编码
+!stdinetsmtp.setLocalHostName(.(localHostName) = 设置EHLO主机名
+!stdinetsmtp.setSubject(.(string) = 设置邮件标题
+!stdinetsmtp.setSenderName(.(string) = 设置
+!stdinetsmtp.setSenderMail(.(string) = 设置
+!stdinetsmtp.setReplyTo(.(string) = 设置
+!stdinetsmtp.setReadReceipt(.(true) = 要求发送已读回执
+!stdinetsmtp.setXMailer(.("邮件发送程序名") = 邮件发送程序名 
+!stdinetsmtp.setLogin(.("用户名") = 设置邮件服务器登录用户名
+!stdinetsmtp.setPassword(.("密码") = 设置邮件服务器登录密码
+!stdinetsmtp.setXPriority(_INETSMTP_XPRIORITY__) = 设置优先级
+!stdinetsmtp.setSMTPServer(.("主机名",端口,是否认证) = 设置邮件服务器\n端口一般为25,SSL端口为465
+!stdinetsmtp.getSecurityType() =  获取安全协议类型
+!stdinetsmtp.setSecurityType(_INETSMTP_SECURITY__) = 设置安全协议类型
+!stdinetsmtp.setSecurityTypeTLS() = 使用SSL加密协议
+!stdinetsmtp.setSecurityTypeSSL() = 使用TLS加密协议
+!stdinetsmtp.setHtmlFormat(true) = 邮件使用HTML格式
+!stdinetsmtp.setBodyText(.(文本) = 重新设置文本格式邮件内容
+!stdinetsmtp.setBodyHtml(.(HTML) = 重新设置HTML格式邮件内容
+!stdinetsmtp.getErrorNum() = 返回错误代码
+!stdinetsmtp.getErrorText() = 返回错误描述
+!stdinetsmtp.getLastResponse() = 返回服务器最后返回的文本
+!stdinetsmtp.getLastRequest() = 返回最后发送的请求文本
+!stdinetsmtp.getLastResponseCode() = 返回服务器最后响应代码
+
+_INETSMTP_SECURITY_NO_SECURITY=@0/*_INETSMTP_SECURITY_NO_SECURITY*/
+_INETSMTP_SECURITY_USE_TLS=@1/*_INETSMTP_SECURITY_USE_TLS*/
+_INETSMTP_SECURITY_USE_SSL=@2/*_INETSMTP_SECURITY_USE_SSL*/
+_INETSMTP_SECURITY_DO_NOT_SET=@3/*_INETSMTP_SECURITY_DO_NOT_SET*/ 
+_INETSMTP_XPRIORITY_HIGH=@2/*_INETSMTP_XPRIORITY_HIGH*/
+_INETSMTP_XPRIORITY_NORMAL=@3/*_INETSMTP_XPRIORITY_NORMAL*/
+_INETSMTP_XPRIORITY_LOW=@4/*_INETSMTP_XPRIORITY_LOW*/
+_INETSMTPE_CSMTP_NO_ERROR=@0/*_INETSMTPE_CSMTP_NO_ERROR*/
+_INETSMTPE_WSA_STARTUP=@0x64/*_INETSMTPE_WSA_STARTUP*/
+_INETSMTPE_WSA_VER=@0x65/*_INETSMTPE_WSA_VER*/
+_INETSMTPE_WSA_SEND=@0x66/*_INETSMTPE_WSA_SEND*/
+_INETSMTPE_WSA_RECV=@0x67/*_INETSMTPE_WSA_RECV*/
+_INETSMTPE_WSA_CONNECT=@0x68/*_INETSMTPE_WSA_CONNECT*/
+_INETSMTPE_WSA_GETHOSTBY_NAME_ADDR=@0x69/*_INETSMTPE_WSA_GETHOSTBY_NAME_ADDR*/
+_INETSMTPE_WSA_INVALID_SOCKET=@0x6A/*_INETSMTPE_WSA_INVALID_SOCKET*/
+_INETSMTPE_WSA_HOSTNAME=@0x6B/*_INETSMTPE_WSA_HOSTNAME*/
+_INETSMTPE_WSA_IOCTLSOCKET=@0x6C/*_INETSMTPE_WSA_IOCTLSOCKET*/
+_INETSMTPE_WSA_SELECT=@0x6D/*_INETSMTPE_WSA_SELECT*/
+_INETSMTPE_BAD_IPV4_ADDR=@0x6E/*_INETSMTPE_BAD_IPV4_ADDR*/
+_INETSMTPE_UNDEF_MSG_HEADER=@0xC8/*_INETSMTPE_UNDEF_MSG_HEADER*/
+_INETSMTPE_UNDEF_MAIL_FROM=@0xC9/*_INETSMTPE_UNDEF_MAIL_FROM*/
+_INETSMTPE_UNDEF_SUBJECT=@0xCA/*_INETSMTPE_UNDEF_SUBJECT*/
+_INETSMTPE_UNDEF_RECIPIENTS=@0xCB/*_INETSMTPE_UNDEF_RECIPIENTS*/
+_INETSMTPE_UNDEF_LOGIN=@0xCC/*_INETSMTPE_UNDEF_LOGIN*/
+_INETSMTPE_UNDEF_PASSWORD=@0xCD/*_INETSMTPE_UNDEF_PASSWORD*/
+_INETSMTPE_BAD_LOGIN_PASSWORD=@0xCE/*_INETSMTPE_BAD_LOGIN_PASSWORD*/
+_INETSMTPE_BAD_DIGEST_RESPONSE=@0xCF/*_INETSMTPE_BAD_DIGEST_RESPONSE*/
+_INETSMTPE_BAD_SERVER_NAME=@0xD0/*_INETSMTPE_BAD_SERVER_NAME*/
+_INETSMTPE_UNDEF_RECIPIENT_MAIL=@0xD1/*_INETSMTPE_UNDEF_RECIPIENT_MAIL*/
+_INETSMTPE_COMMAND_MAIL_FROM=@0x12C/*_INETSMTPE_COMMAND_MAIL_FROM*/
+_INETSMTPE_COMMAND_EHLO=@0x12D/*_INETSMTPE_COMMAND_EHLO*/
+_INETSMTPE_COMMAND_AUTH_PLAIN=@0x12E/*_INETSMTPE_COMMAND_AUTH_PLAIN*/
+_INETSMTPE_COMMAND_AUTH_LOGIN=@0x12F/*_INETSMTPE_COMMAND_AUTH_LOGIN*/
+_INETSMTPE_COMMAND_AUTH_CRAMMD5=@0x130/*_INETSMTPE_COMMAND_AUTH_CRAMMD5*/
+_INETSMTPE_COMMAND_AUTH_DIGESTMD5=@0x131/*_INETSMTPE_COMMAND_AUTH_DIGESTMD5*/
+_INETSMTPE_COMMAND_DIGESTMD5=@0x132/*_INETSMTPE_COMMAND_DIGESTMD5*/
+_INETSMTPE_COMMAND_DATA=@0x133/*_INETSMTPE_COMMAND_DATA*/
+_INETSMTPE_COMMAND_QUIT=@0x134/*_INETSMTPE_COMMAND_QUIT*/
+_INETSMTPE_COMMAND_RCPT_TO=@0x135/*_INETSMTPE_COMMAND_RCPT_TO*/
+_INETSMTPE_MSG_BODY_ERROR=@0x136/*_INETSMTPE_MSG_BODY_ERROR*/
+_INETSMTPE_CONNECTION_CLOSED=@0x190/*_INETSMTPE_CONNECTION_CLOSED*/
+_INETSMTPE_SERVER_NOT_READY=@0x191/*_INETSMTPE_SERVER_NOT_READY*/
+_INETSMTPE_SERVER_NOT_RESPONDING=@0x192/*_INETSMTPE_SERVER_NOT_RESPONDING*/
+_INETSMTPE_SELECT_TIMEOUT=@0x193/*_INETSMTPE_SELECT_TIMEOUT*/
+_INETSMTPE_FILE_NOT_EXIST=@0x194/*_INETSMTPE_FILE_NOT_EXIST*/
+_INETSMTPE_MSG_TOO_BIG=@0x195/*_INETSMTPE_MSG_TOO_BIG*/
+_INETSMTPE_BAD_LOGIN_PASS=@0x196/*_INETSMTPE_BAD_LOGIN_PASS*/
+_INETSMTPE_UNDEF_XYZ_RESPONSE=@0x197/*_INETSMTPE_UNDEF_XYZ_RESPONSE*/
+_INETSMTPE_LACK_OF_MEMORY=@0x198/*_INETSMTPE_LACK_OF_MEMORY*/
+_INETSMTPE_TIME_ERROR=@0x199/*_INETSMTPE_TIME_ERROR*/
+_INETSMTPE_RECVBUF_IS_EMPTY=@0x19A/*_INETSMTPE_RECVBUF_IS_EMPTY*/
+_INETSMTPE_SENDBUF_IS_EMPTY=@0x19B/*_INETSMTPE_SENDBUF_IS_EMPTY*/
+_INETSMTPE_OUT_OF_MSG_RANGE=@0x19C/*_INETSMTPE_OUT_OF_MSG_RANGE*/
+_INETSMTPE_COMMAND_EHLO_STARTTLS=@0x19D/*_INETSMTPE_COMMAND_EHLO_STARTTLS*/
+_INETSMTPE_SSL_PROBLEM=@0x19E/*_INETSMTPE_SSL_PROBLEM*/
+_INETSMTPE_COMMAND_DATABLOCK=@0x19F/*_INETSMTPE_COMMAND_DATABLOCK*/
+_INETSMTPE_STARTTLS_NOT_SUPPORTED=@0x1A0/*_INETSMTPE_STARTTLS_NOT_SUPPORTED*/
+_INETSMTPE_LOGIN_NOT_SUPPORTED=@0x1A1/*_INETSMTPE_LOGIN_NOT_SUPPORTED*/
+end intellisense**/

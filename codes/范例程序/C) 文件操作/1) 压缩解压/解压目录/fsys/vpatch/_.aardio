@@ -1,0 +1,174 @@
+//默认库 源代码  
+//VPatch Runtime For Aardio
+//VPatch WebSite:http://www.tibed.net/vpatch 
+
+import fsys.file; 
+import util.metaProperty; 
+import fsys.time;
+namespace fsys;
+
+var dll = ..raw.loadDll($"~/lib/fsys/vpatch/.res/vpatch.dll","vpatch.dll")    
+
+class vpatch{
+	ctor(path){
+		var filePat,err = ..fsys.file(path,"rbR",0x1/*_FILE_SHARE_READ*/)
+		if(!filePat) error(err,2);
+	}; 
+	apply = function(src,dst){
+		  
+		var fileSrc,err  = ..fsys.file(src,"rbR")
+		if(!fileSrc)error(err,2);
+		
+		var fileDst,err  = ..fsys.file(dst,"w+b")
+		if(!fileDst)error(err,2);
+		 
+		var ret = vpatchfile(filePat.handle,fileSrc.handle,fileDst.handle,this.beginPatch_c,this.stepPatch_c,this.endPatch_c)
+		fileSrc.close();
+		fileDst.close();
+		
+		return  ret; 
+	};
+	valid = function(){
+		filePat.seek("set"); 
+		if( _magicNumber != filePat.read( {int n } )[["n"]]  ){
+			filePat.seek("end",-4);
+			var pos = filePat.read( {int p } )[["p"]];;
+			if( !pos )  return;
+			
+			filePat.seek("set",pos );
+			if( _magicNumber != filePat.read( {int n } )[["n"]] )return;
+		}
+		return true;
+	};
+	eachPatch = function(){ 
+		if( ! this.valid() ) return function(){};
+		var patches = filePat.read( {int c } )[["c"]]
+		 
+		var md5Mode = false;
+		if(patches & 0x80000000) md5Mode = true; 
+		patches = patches & 0x00FFFFFF;
+		var ind = 0;
+		var nextPos = filePat.seek();
+		
+		return function(){
+			if( ind < patches  ){ 
+				filePat.seek("set",nextPos);
+				var blocks = filePat.read( {int l } )[["l"]]
+				var chksum,dstChksum
+    			if(!md5Mode) {
+    				checksum = filePat.read( {int crc } )[["crc"]]
+    				dstChksum = filePat.read( {int crc } )[["crc"]] 
+    			} 
+    			else { 
+    				chksum = filePat.read( 16 ) 
+    				dstChksum = filePat.read( 16 ) 
+    				
+    				if( chksum && dstChksum ){
+    					with ..string {
+    						chksum = replace(chksum,".", function(c){ return format("%02X", c[1] ) } ) 
+							dstChksum = replace(dstChksum,".", function(c){ return format("%02X", c[1] ) } ) 
+    					}
+    				}
+				}
+				 
+				var size = filePat.read( {int l } )[["l"]]; 
+				nextPos = filePat.seek() + size;
+				
+				ind++;
+				return ind,md5Mode,chksum,dstChksum,blocks,size;
+			}
+		}  
+	};
+	close = function(){
+		if( filePat ){
+			filePat.close();
+			filePat = null;
+			return true;
+		}
+	};
+	@_metaProperty;
+};
+
+namespace vpatch{
+	_magicNumber = 0x54415056;
+	
+	vpatchfile = dll.api("vpatchfile","int(POINTER hPatch, POINTER hSource, POINTER hDest,pointer begin,pointer step,pointer end)" );
+	fileCrc32 = dll.api("fileCrc32","int(POINTER hPatch, int& crc)" );
+	fileMd5 = dll.api("fileMd5","int(POINTER hFile,str & buffer,INT bufferSize)" );
+	
+	_metaProperty = ..util.metaProperty(
+		beginPatch = { 
+			_set = function( value ){
+				owner.beginPatch_c = ..raw.tocdecl(value,"void(INT size,INT step)"); 
+			} 	
+		};
+		stepPatch = { 
+			_set = function( value ){
+				owner.stepPatch_c = ..raw.tocdecl(value,"void()"); 
+			} 	
+		}; 
+		endPatch = { 
+			_set = function( value ){
+				owner.endPatch_c = ..raw.tocdecl(value,"void(string md5,int crc32,INT lowFileTime,INT highFileTime)"); 
+			} 	
+		}; 
+	)
+	
+	md5 = function(path){
+		var file = ..fsys.file(path,"rb")
+		if(!file)error(err,2);
+		var ok,md5  = fileMd5(file.handle,33,33);
+		file.close();
+		
+		if( ok ) return md5;
+	}
+	crc32 = function(path){
+		var file = ..fsys.file(path,"rb")
+		if(!file)error(err,2);
+		var ok,crc  = fileCrc32(file.handle,0);
+		file.close();
+		
+		if( ok ) return crc;
+	}
+} 
+
+/**intellisense()
+fsys.vpatch._magicNumber = 0x54415056
+fsys.vpatch.md5(.("文件路径") = 获取文件MD5(大写32位)
+fsys.vpatch.crc32(.("文件路径") = 获取文件CRC32
+fsys.vpatch.genPat = 扩展库，用于生成vpatch补丁
+fsys.vpatch =  vpatch支持库
+fsys.vpatch() = !vpatch.
+fsys.vpatch("__/*补丁文件路径*/") = 创建vpatch对象
+!vpatch.beginPatch = @.beginPatch = function(blockSize,stepSize){
+	__/*开始应用补丁,blockSize为补丁块总数*/
+}
+!vpatch.endPatch = @.endPatch = function(md5,crc32,dwLowDateTime,dwHighDateTime){ 
+	var tmFile = fsys.time();
+	tmFile.dwLowDateTime = dwLowDateTime;
+	tmFile.dwHighDateTime = dwHighDateTime;
+	
+	if( #md5 ){
+		..io.print("目标文件MD5",md5)
+	}
+}
+!vpatch.stepPatch = @.stepPatch = function(){
+	__/*应用一个补丁块*/	
+} 
+
+!vpatch.apply(.("源文件路径","目标文件路径") = 应用补丁文件\n返回值为 _VPATCH_ 前缀的常量,如下:\n\n_VPATCH_SUCCESS 成功\n_VPATCH_UPTODATE 文件已经是最新,不需要更新\n_VPATCH_NOMATCH 在补丁文件中没有找到哈希匹配的文件\n_VPATCH_ERROR 发生错误\n_VPATCH_CORRUPT 补丁文件错误
+!vpatch.valid() = 该补丁是否有效补丁文件
+!vpatch.close() = 关闭补丁文件
+!vpatch.eachPatch() = @for( ind,md5Mode,chksum,dstChksum,blocks,size in ??.eachPatch() ){ 
+	io.print( ind,md5Mode,chksum,dstChksum,blocks,size );__
+}
+_VPATCH_SUCCESS=@0/*_VPATCH_SUCCESS*/
+_VPATCH_ERROR=@1/*_VPATCH_ERROR*/
+_VPATCH_CORRUPT=@2/*_VPATCH_CORRUPT*/
+_VPATCH_NOMATCH=@3/*_VPATCH_NOMATCH*/
+_VPATCH_UPTODATE=@4/*_VPATCH_UPTODATE*/
+_VPATCH_FILE_ERR_PATCH=@5/*_VPATCH_FILE_ERR_PATCH*/
+_VPATCH_FILE_ERR_SOURCE=@6/*_VPATCH_FILE_ERR_SOURCE*/
+_VPATCH_FILE_ERR_DEST=@7/*_VPATCH_FILE_ERR_DEST*/
+end intellisense**/
+ 

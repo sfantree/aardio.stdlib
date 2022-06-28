@@ -1,0 +1,167 @@
+﻿//menu 菜单
+import util.metaProperty;
+
+namespace xcgui;
+
+class menu{
+	ctor( hMenu ){
+		if(!hMenu) {
+			this.hMenu = topointer( ::Xcgui.XMenu_Create() );
+			::Xcgui.XMenu_SetAutoDestroy(this.hMenu,false);
+			..table.gc(this,"destroy");
+		}
+		else{
+			this.hMenu = topointer(hMenu);
+			this.destroy = function(){}
+		}	
+	}; 
+	@_metaProperty;
+}
+
+namespace menu{
+
+	_metaProperty = ..util.metaProperty(
+		popup = function(hwnd,x,y,position){
+			var hParentEle,hParentWnd;
+			hwnd = hwnd[["hwnd"]] :hwnd;
+			if( type(hwnd)!= type.number ){
+				hParentWnd = hwnd;
+				var t = ..xcgui.getGetObjectType(hParentWnd);
+				if(t == 1/*_XC_WINDOW*/ || t == 3/*_XC_FRAMEWND*/ || t == 2/*_XC_MODALWINDOW*/ ){
+				
+				}
+				else {
+					hParentEle = hParentWnd;
+					hParentWnd =  ::Xcgui.XEle_GetHWINDOW(hParentEle);
+					if(!hParentWnd) error("参数指定的控件对象错误",2)
+				} 
+				hwnd = ::Xcgui.XWnd_GetHWND (hParentWnd);
+			}
+			var x,y = ..win.toScreen(hwnd,x,y)
+			return ::Xcgui.XMenu_Popup(owner.hMenu,hwnd,x,y,hParentEle,position);
+		}
+		add = function(id,text,parentId,flags){
+			return ::Xcgui.XMenu_AddItem(owner.hMenu,id,text,parentId,flags);
+		}
+		addIcon = function(text,hIcon,id,parentId,flags){
+			return ::Xcgui.XMenu_AddItemIcon(owner.hMenu,id,text,parentId,hIcon,flags);
+		}
+		insert = function(id,text,flags,insertID){
+			return ::Xcgui.XMenu_InsertItem(owner.hMenu,id,text,flags,insertID);
+		}
+		insertIcon = function(id,text,hIcon,flags,insertID){
+			return ::Xcgui.XMenu_InsertItemIcon(owner.hMenu,id,text,hIcon,flags,insertID);
+		}
+		enableDrawBackground = function(bEnable){
+			return ::Xcgui.XMenu_EnableDrawBackground(owner.hMenu,bEnable);
+		}
+		enableDrawItem = function(bEnable){
+			return ::Xcgui.XMenu_EnableDrawItem(owner.hMenu,bEnable);
+		}
+		destroy = function(){
+			if(owner.hMenu){
+				return ::Xcgui.XMenu_DestroyMenu(owner.hMenu);
+				owner.hMenu = null;
+			}
+		}
+		close = function(){
+			return ::Xcgui.XMenu_CloseMenu(owner.hMenu);
+		}
+		bkImage = {
+			_set = function(image){
+				owner.setImage(image); 
+			}
+		};
+		setImage = function(image,repeat,left,top,right,bottom){
+			if(bottom===null) repeat,top,right,bottom = owner.bkLeft,owner.bkTop,owner.bkRight,owner.bkBottom
+			if(type(image) == type.string) image = ..xcgui.image(image,repeat,left,top,right,bottom);
+			return ::Xcgui.XMenu_SetBkImage(owner.hMenu,image);
+		};
+		setItemText = function(id,text){ 
+			return ::Xcgui.XMenu_SetItemText(owner.hMenu,id,text);
+		}
+		getItemText = function(id){
+			var len = ::Xcgui.XMenu_GetItemTextLength(owner.hMenu,id);
+			if(!len) return;
+			
+			var sb = ..string.builder(len*2)  
+			::Xcgui.XMenu_GetItemText(owner.hMenu,id,sb,len+1);
+			return  sb.fromUnicode() ; 
+		}
+		getItemTextLength = function(id){
+			return ::Xcgui.XMenu_GetItemTextLength(owner.hMenu,id);
+		}
+		setItemIcon = function(id,hIcon){
+			return ::Xcgui.XMenu_SetItemIcon(owner.hMenu,id,hIcon);
+		}
+		setItemFlags = function(id,uFlags){
+			return ::Xcgui.XMenu_SetItemFlags(owner.hMenu,id,uFlags);
+		}
+		setItemHeight = function(height){
+			return ::Xcgui.XMenu_SetItemHeight(owner.hMenu,height);
+		}
+		getItemHeight = function(){
+			return ::Xcgui.XMenu_GetItemHeight(owner.hMenu);
+		}
+		setBorderColor = function(crColor,alpha){
+			return ::Xcgui.XMenu_SetBorderColor(owner.hMenu,crColor,alpha);
+		}
+		getLeftWidth = function(){
+			return ::Xcgui.XMenu_GetLeftWidth(owner.hMenu);
+		}
+		getLeftSpaceText = function(){
+			return ::Xcgui.XMenu_GetLeftSpaceText(owner.hMenu);
+		}
+		count = function(){
+			return ::Xcgui.XMenu_GetItemCount(owner.hMenu);
+		}
+		setItemCheck = function(id,bCheck){
+			return ::Xcgui.XMenu_SetItemCheck(owner.hMenu,id,bCheck);
+		}
+		isItemCheck = function(id){
+			return ::Xcgui.XMenu_IsItemCheck(owner.hMenu,id);
+		}
+		_topointer = function(){
+			return owner.hMenu;
+		}
+		
+	)
+}
+
+/**intellisense()
+xcgui.menu = 弹出菜单
+xcgui.menu() = 创建弹出建菜单,对象负责自动释放\n!stdxcpopmenu.
+xcgui.menu(__) = 绑定菜单句柄,不负责自动释放
+end intellisense**/
+
+/**intellisense(!stdxcpopmenu)
+add(.(id,text,parentId,flags) = 添加菜单项
+addIcon(.(id,text,parentId,hIcon,flags) = 添加菜单项
+insert(.(id,text,flags,insertID) = 插入菜单项
+insertIcon(.(id,text,hIcon,flags,insertID) = 插入菜单项
+enableDrawBackground(__) = 是否有用户绘制菜单背景,如果启用XWM_MENU_DRAW_BACKGROUND和XE_MENU_DRAW_BACKGROUND事件有效
+enableDrawItem(__) = 是否有用户绘制菜单项,如果启用XWM_MENU_DRAWITEM和XE_MENU_DRAWITEM事件有效
+popup(.(target,x,y,position) = 弹出菜单\n参数@1用于指定接收菜单事件的窗口,\n参数@1可以是窗口句柄,aardio窗口对象,炫彩窗口对象,或炫彩控件对象\nposition可以省略
+destroyMenu() = 销毁菜单
+closeMenu() = 关闭菜单
+setImage( = 设置菜单背景图片\n注意相同路径的图像会自动缓存,不会重复创建相同图像\n所以不应在参数@2中应传入文件路径,而非文件数据
+setImage(.(图像) = 设置菜单背景图片,参数为xcgui.image对象,也可以直接指定图片路径\n如果控件在设计器中指定了九宫格参数,则应用九宫格拉伸
+setImage(.(文件路径,是否拉伸) = 设置菜单背景图片,支持资源路径,拉伸参数可选 - 默认值为true
+setImage(.(文件路径,"expand",左,上,右,下) = 设置菜单背景图片,支持资源路径\n九宫格贴图
+setImage(.(文件路径,是否位伸,左,上,宽,高) = 设置菜单背景图片\n加载图片上指定的部分
+setItemText(.(id,text) = 设置项文本
+getItemText(.(id,pOut,nOutLen) = 获取项文本
+getItemTextLength(__) = 获取项文本长度,不包含字符串空终止符
+setItemIcon(.(id,hIcon) = 设置菜单项图标
+setItemFlags(.(id,uFlags) = 设置项标识
+setItemHeight(__) = 设置项高度
+getItemHeight() = 获取项高度
+setBorderColor(.(crColor,alpha) = 设置菜单边框颜色
+getLeftWidth() = 获取左侧区域宽度
+getLeftSpaceText() = 获取菜单项文本左间隔
+count() = 获取菜单项数量,包含子菜单项
+setItemCheck(.(id,bCheck) = 设置菜单项勾选状态
+isItemCheck(__) = 判断菜单项是否勾选
+end intellisense**/
+
+

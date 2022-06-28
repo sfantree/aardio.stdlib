@@ -1,0 +1,13 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="Flexbox playground";right=1190;bottom=767)
+winform.add()
+/*}}*/
+
+import web.blink.form;
+var mb = web.blink.form(winform);
+mb.go("https://codepen.io/enxaneta/full/adLPwv")
+
+winform.show(3/*_SW_SHOWMAXIMIZED*/);
+win.loopMessage();
+return winform;

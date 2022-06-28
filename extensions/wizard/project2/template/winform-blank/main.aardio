@@ -1,0 +1,14 @@
+import win.ui;
+/*DSG{{*/
+mainForm = win.form(text="${PROJECTNAME}";right=959;bottom=591)
+mainForm.add(
+edit={cls="edit";left=12;top=520;right=949;bottom=579;db=1;dl=1;dr=1;dt=1;edge=1;multiline=1;z=1}
+)
+/*}}*/
+
+if(_ARGV.opt){
+	mainForm.edit.print(_ARGV.opt,_ARGV[#_ARGV]);
+}
+
+mainForm.show();
+return win.loopMessage();

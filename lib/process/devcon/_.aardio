@@ -1,0 +1,57 @@
+﻿import process.wow64;
+import process.popen;
+import string.cmdline;
+
+namespace process;
+
+class devcon{
+	ctor(...){
+		if(..process().isWow64()){
+			this = ..process.popen.wow64(self.path,...);
+		}
+		else{
+			this = ..process.popen(self.path,...);
+		}
+	};
+}
+
+namespace devcon{
+    
+ 	if(..process().isWow64()){
+		path = ..io.appData("aardio/std/devconX64.exe",$"~\lib\process\devcon\.res\devconX64.exe")
+	}
+	else{
+    	path = ..io.appData("aardio/std/devconX86.exe",$"~\lib\process\devcon\.res\devconX86.exe")
+	}   
+	
+	executeAs = function(...){
+    	var args = ..string.cmdline.arguments(...);
+    	
+		if(..process().isWow64()){
+			return ..process.wow64.executeWait(path,args,"runas");
+		}
+		else{
+			return ..process.executeWait(path,args,"runas");
+		}	
+	}
+	
+	enable = function(...){
+		return ..process.devcon("enable",...).read(-1);
+	}
+	
+	disable = function(...){
+		return ..process.devcon("disable",...).read(-1);
+	}	
+}
+
+
+/**intellisense()
+process.devcon = 调用 devcon.exe\n参数用法请参考 https://docs.microsoft.com/zh-cn/windows-hardware/drivers/devtest/devcon
+process.devcon(.(命令行参数,STARTUPINFO) = 运行 devcon.exe 并创建子进程,并支持管道读写\n命令行参数可以是一个数组、一个或多个字符串参数,\n\n数组或多个命令行参数调用 process.joinArguments 合并,\n不在双引号内、且包含空白或需要转义的参数转义处理后首尾添加双引号
+process.devcon.executeAs(.(命令行参数,更多命令行参数,->->->) = 以管理权限运行 devcon.exe 并等待返回,\n命令行参数可以是一个数组、一个或多个字符串参数,\n\n数组或多个命令行参数调用 process.joinArguments 合并,\n不在双引号内、且包含空白或需要转义的参数转义处理后首尾添加双引号
+process.devcon() = !process_popen.
+process.devcon.enable( =  启用设备
+process.devcon.disable( =  禁用设备
+process.devcon.enable(.(->->->) =  启用设备，\n可传入一个或多个文本参数，参数调用 process.joinArguments 合并，\n参数@1 可指定设备 ID 或 设备实例ID，设备实例 ID前要加@字符\n\n可使用 sys.device 获取设备 ID，\n网卡设备 ID 可用 sys.networkCards 获取
+process.devcon.disable(.(->->->) =  禁用设备，\n可传入一个或多个文本参数，参数调用 process.joinArguments 合并，\n参数@1 可指定设备 ID 或 设备实例ID，设备实例 ID前要加@字符\n\n可使用 sys.device 获取设备 ID，\n\n网卡设备 ID 可用 sys.networkCards 获取
+end intellisense**/

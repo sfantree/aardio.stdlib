@@ -1,0 +1,30 @@
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form( scroll=1;bottom=399;parent=...;text="aardio Form";right=599 )
+winform.add(  )
+/*}}*/
+
+import web.form;
+var wb = web.form( winform  );
+
+import com
+saveMht = function(url,path){
+    if(!path) path = ..io.tmpname(true) + ".mht";
+    var msg = ..com.CreateObject("CDO.Message");
+    msg.CreateMHTMLBody(url,msg.cdoSuppressNone )   
+    var stream =  msg.GetStream();
+    stream.SaveToFile( io.fullpath(path) ,stream.adSaveCreateOverWrite )
+    return path;
+}
+
+//将网页存为MHT文件
+var path = saveMht( "http://www.baidu.com" );
+
+wb.go( path )
+wb.wait()
+
+//打开MHT文件以后删除
+io.remove(path)
+
+winform.show()
+win.loopMessage();

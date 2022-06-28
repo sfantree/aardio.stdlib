@@ -1,0 +1,37 @@
+//external 接口
+//请务必更新 web.sciter 扩展库到最新版
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="external 接口";right=1014;bottom=523)
+winform.add()
+/*}}*/
+
+import web.sciter;
+var wbSciter = web.sciter( winform );
+ 
+//下面定义的 external 对象在 JavaScript 中可直接使用
+wbSciter.external = {
+    func = function(str){ 
+         return "Hello, "+str+"!"; 
+    }
+}
+
+wbSciter.html = /**
+<body> 
+<button id="my-button">JavaSript 调用 aardio 函数 external.func("Sciter") </button> 
+<script>
+
+var button = document.getElementById("my-button");
+button.addEventListener('click', () => { 
+    
+    //https://github.com/c-smile/sciter-js-sdk/blob/main/docs/md/Window.md
+    //https://sciter.com/tutorials/reactor-jsx
+    Window.this.modal(<info>{ external.func("Sciter")}</info>);
+})
+
+</script>
+</body>
+**/
+
+winform.show();	
+win.loopMessage();

@@ -1,0 +1,50 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=479;bottom=159)
+winform.add(
+button={cls="button";text="开始";left=216;top=48;right=320;bottom=96;z=1};
+button3={cls="button";text="停止";left=344;top=48;right=432;bottom=96;z=3};
+edit1={cls="edit";text="edit";left=96;top=56;right=176;bottom=96;edge=1;z=2}
+)
+/*}}*/
+
+import thread.command;
+//创建对象
+var cmm = thread.command()
+//创建自定义方法
+cmm.add = function(){
+        for(i=1;100;1){
+                winform.edit1.text = i       
+                win.delay(100)
+        }       
+       
+}
+
+
+
+winform.button.oncommand = function(id,event){
+        	    //创建多线程
+        	thrdHandle = thread.create(function(){
+        		//引入库
+        		import thread.command;
+        		//调用方法
+        		thread.command.add()
+		}       
+	)
+}
+
+
+
+
+winform.button3.oncommand = function(id,event){
+//等待线程结束
+thread.waitOne(thrdHandle)
+//获取退出码
+thread.getExitCode(thrdHandle)
+//释放线程句柄
+raw.closehandle(thrdHandle)
+       
+}
+
+winform.show()
+win.loopMessage();

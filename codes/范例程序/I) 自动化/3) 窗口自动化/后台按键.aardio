@@ -1,0 +1,26 @@
+import winex.key;
+import process;
+
+//运行记录本
+process.executeWaitInput("notepad.exe");
+
+//查找并等待激活的窗口
+var hwnd,hCtrl = winex.waitActive( , ,"Notepad","Edit",15 );
+
+//win.setFocus,winex.key.combine 等必须要绑定到目标输入线程
+winex.attach(hwnd,function(){
+	
+	//设置焦点
+	win.setFocus(hCtrl)
+	
+	//输入一些内容 (你知道aardio发送文本的方式共有多少种吗?)
+	winex.key.send(hCtrl,"Test" )
+	thread.delay(100)
+	
+	//后台发送CTRL+A组合键 
+	winex.key.combine(hwnd,"CTRL","A")
+	
+	//后台发送ALT+F组合键
+	winex.key.altClick(hwnd,"F" )
+})
+

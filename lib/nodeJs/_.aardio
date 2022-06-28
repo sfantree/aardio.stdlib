@@ -1,0 +1,593 @@
+﻿import win;
+import win.path;
+import wsock;
+import process.popen; 
+import zlib.httpFile;
+import inet.installer;
+import string.cmdline;
+import web.json;
+import fsys;
+import fsys.lnk;
+import process.job.limitKill;
+
+namespace nodeJs;
+
+nodeDir = null;
+nodeExePath = null;
+npmCliJsPath = null;
+nodeModulesPath = null;
+version = null;
+	
+getInstallPath = function(){
+	var path = ..string.getenv("NODE_EXE");
+    if(!#path){path = ..win.path.search("node.exe");}
+    if(..io.exist("C:\Program Files\nodejs\node.exe")) return "C:\Program Files\nodejs\node.exe";
+    if(..io.exist("D:\Program Files\nodejs\node.exe")) return "D:\Program Files\nodejs\node.exe";
+    if(!#path){path = ..fsys.lnk.search("node.exe");}
+    return ..io.exist(path);
+}
+
+install = function(portable){
+    if(nodeExePath && npmCliJsPath){
+    	return true;
+    }
+     
+    if(!portable){
+    	nodeExePath = getInstallPath();
+    }
+
+    if( ..io.exist(nodeExePath) ){
+    	nodeDir = ..fsys.getParentDir(nodeExePath);
+    	npmCliJsPath  = ..fsys.joinpath(nodeDir,"\node_modules\npm\bin\npm-cli.js");
+    	
+    	nodeDir = ..fsys.shortpath(nodeDir);
+		nodeExePath = ..fsys.shortpath(nodeExePath);
+		npmCliJsPath = ..fsys.shortpath(npmCliJsPath);
+		 
+		var gnpm = npmget(`prefix -g`); 
+		if(..io.exist(gnpm) ){
+			var cli = ..fsys.shortpath(  ..io.joinpath(gnpm,"\node_modules\npm\bin\npm-cli.js") );
+			if(#cli){
+				npmCliJsPath = cli;
+			}
+		}
+		
+		version = pget("-v");
+		if(version){
+			if(version[1] == 'v'#){
+				version = ..string.right(version,-2);
+			}
+		}
+    }
+    else { 
+		var nodeDownloadDir = "~\lib\nodeJs\.node\";
+		if( _WIN7_LATER ){
+			version = _WIN10_LATER ? "14.18.1" : "13.14.0" //WIN7 低于 13.14.0 则 require 会报错。
+			if(type(portable)==type.string){
+				version = portable;//可以自定义版本
+			}
+			
+			nodeExePath = ..io.fullpath( 
+				..io.joinpath( nodeDownloadDir,"\node-v" + version + "-win-x86\node-v" + version + "-win-x86\node.exe" ) 
+				);
+				
+			if(! ..io.exist(nodeExePath) ){ 
+				
+				if(!portable){
+    				if(!..inet.installer("Node.js",{
+						//"https://nodejs.org/dist/v"
+						x64 = "https://cdn.npmmirror.com/binaries/node/v" + version + "/node-v" + version + "-x64.msi";
+						x86 = "https://cdn.npmmirror.com/binaries/node/v" + version + "/node-v" + version + "-x86.msi";
+					} )	){
+						return;
+					}
+					else { 
+    					if(!getInstallPath()){ return; } 
+    					return install();
+					} 
+    			}
+				
+				//http://nodejs.org/dist/v11.9.0/node-v11.9.0-win-x86.zip 
+				..zlib.httpFile.download("https://cdn.npmmirror.com/binaries/node/v" 
+					+ version + "/node-v" + version + "-win-x86.zip","正在下载本程序必须的组件(node.js)"
+					,nodeDownloadDir); 
+			}
+		}
+		else { 
+			//Node.js 到 6.x 才支持大多数 ES6语法，并且同时放弃支持 XP
+			error("Node.js 已不支持 XP 系统！",2);
+		}
+		
+		if( ..io.exist(nodeExePath) ) {
+			nodeDir = ..fsys.getParentDir(nodeExePath);
+			npmCliJsPath  = ..fsys.joinpath(nodeDir,"\node_modules\npm\bin\npm-cli.js");
+			
+			nodeDir = ..fsys.shortpath(nodeDir);
+			nodeExePath = ..fsys.shortpath(nodeExePath);
+			npmCliJsPath = ..fsys.shortpath(npmCliJsPath);
+			
+			..string.setenv("NPM_CONFIG_PREFIX",nodeDir );
+			
+			var npmrc = ..io.fullpath( ..io.joinpath(nodeDir,".npmrc") );
+			..string.save(npmrc,"" )
+			..string.setenv("NPM_CONFIG_USERCONFIG",..fsys.shortpath(npmrc) );
+		}
+    }
+    
+    if( ..io.exist(nodeExePath) && ..io.exist(nodeDir) ) {
+        if(version) majorVersion = ..string.match(version,"^\d+");
+        majorVersion = majorVersion ? tonumber(majorVersion)  : 14;
+        
+		..win.path.add(nodeDir);  
+		..string.setenv("NODE_EXE",nodeExePath);
+		..string.setenv("NPM_CLI_JS",npmCliJsPath);
+		..string.setenv("NODE_SKIP_PLATFORM_CHECK","1");
+	
+		var path =  ..io.joinpath(prefix(),"node_modules");
+		if(path){
+			..win.path.add(path);
+			..string.setenv("NODE_PATH",path);	
+			nodeModulesPath = path;
+		}
+		
+		startEnviron({});
+		return true;
+	}
+}
+
+workDir = ..io.fullpath("/");
+
+cmd = function(filename,param,...){
+    if(!install())return;
+    
+	if(param){
+		param = ..string.cmdline.arguments(param,...);
+	}
+	elseif(filename) {
+		var cmdline = ..string.cmdline(filename);
+		if(cmdline[0]){
+			filename = cmdline[0];
+			cmdline[0] = null;
+			
+			param = cmdline;
+		}
+		else {
+			error("参数错误",2)
+		}
+	}
+	else {
+		error("参数错误",2)
+	}
+		
+	var cmd =  ..io.exist( ..io.joinpath(nodePath,filename + ".cmd" )) : ..fsys.shortpath( filename + ".cmd" ) :  filename;
+	var prcs,err = ..process( cmd ,param,{workDir=..io.fullpath(self.workDir)});
+	if(prcs){
+		prcs.wait();
+		return true;
+	}
+	
+	return null,err; 
+}
+
+execFile = function(path,param,...){
+    if(!install())return;
+    
+    param = ..string.cmdline.arguments(param,...); 
+	..table.unshift(param, (..fsys.shortpath(path)));
+	var prcs,err = ..process.popen(nodeExePath,param,{workDir=..io.fullpath(self.workDir)})
+	if(prcs){
+		prcs.codepage = 65001;
+		return prcs;	
+	};
+	
+	return null,err;
+}
+
+exec = function(code,param,...){
+    if(!install())return;
+    
+    if(code && majorVersion && majorVersion<8){
+		var path = ..io.tmpname() ;
+		..string.save(path,code);
+		var prcs,err = execFile(path,param,...);
+		if(prcs){
+			prcs.beforeClose = function(){
+				..io.remove(path);
+			}	
+		}
+
+		return prcs,err;
+    }
+    
+    param = ..string.cmdline.arguments("-",param,...);  
+	var prcs,err = ..process.popen(nodeExePath,param,{workDir=..io.fullpath(self.workDir)})
+	if(prcs){
+		prcs.codepage = 65001;
+		
+		if(code){
+			prcs.write(code);
+			prcs.writeClose();			
+		}
+		
+		return prcs; 
+	}
+	
+	return null,err;
+}
+
+execLimit = function(...){
+	var prcs = exec(...);
+	if(prcs) prcs.assignToJobObject(..process.job.limitKill);
+	return prcs;
+}
+
+self.eval = function(js){
+    if(!install())return;
+    
+    var prcs,err = ..process.popen(nodeExePath,{"-p";"JSON.stringify("+js+")"},{workDir=..io.fullpath(self.workDir)});
+    
+	if(prcs){ 
+		prcs.codepage = 65001; 
+		var str  = prcs.read(-1) 
+		var ret =  ..web.json.tryParse( str );
+		
+		var err = prcs.readErr(-1);
+		prcs.close();
+		
+		if(err && ret === null ){
+			return null,err;
+		}
+		return ret;
+	}	
+	
+	
+	return null,err;
+}
+
+requireResolve =  function(module){
+	if(..string.indexOf(module,'@',2) ) {
+		module = ..string.match(module,".[^@]+");
+	}
+	return self.eval(`require.resolve("`+module+`")`)
+}
+
+require = function(module,...){ 
+    if(!install())return;
+     
+    var modules = {module,...}
+    for(i=1;#modules;1){
+    	var m = modules[i]
+    	if(!requireResolve(m) ){
+    		cnpm("install","-g",m);
+    		if(m == 'aardio') cnpm("install","-g","ws");
+    	}
+    }
+}
+
+prequire = function(echo,module,...){ 
+    if(!install())return; 
+    if(!type.isString(module)) error("参数@2必须指定模块名",2);
+     
+    var modules = {module,...}
+    for(i=1;#modules;1){
+    	var m = modules[i]
+    	if(!requireResolve(m) ){
+    		pcnpm(echo,"install","-g",m); 
+    		if(m == 'aardio') pcnpm(echo,"install","-g","ws"); 
+    	}
+    }
+}
+
+requireByJs = function(js){
+	if(!install())return;
+
+	for m in ..string.gmatch(js,`require\(\s*['"]([^'"\s``]+)`) { 
+	   if(m=="startEnviron") continue;
+	   if(!requireResolve(m) ){
+	   	 cnpm("install","-g",m);
+	   	 if(m == 'aardio') cnpm("install","-g","ws");
+	   } 	
+	}
+}
+
+prequireByJs = function(echo,js){
+	if(!install())return;
+	if(!type.isString(js)) error("参数@2必须是指定 JavaScript 代码的字符串",2);
+	
+	for m in ..string.gmatch(js,`require\(\s*['"]([^'"\s``]+)`) { 
+		if(m=="startEnviron") continue;
+	    if(!requireResolve(m) ) {
+	    	pcnpm(echo,"install","-g",m);
+	    	if(m == 'aardio') pcnpm(echo,"install","-g","ws"); 
+	    }
+	}
+}
+
+config  = function(k,v){
+    if(!install())return;
+    
+    if(k && v)
+    	param = {"config";"set";k;v; }
+    elseif(k) 
+    	param = {"config";"get";k;}
+    else{
+    	param = {"config";"edit";}
+    }
+    
+    ..table.unshift(param,npmCliJsPath);
+    var prcs,err = ..process.popen(nodeExePath,param,{workDir=..io.fullpath(self.workDir)})
+	if(prcs){
+		prcs.codepage = 65001;
+		var ret = prcs.read(-1);
+		prcs.close();
+		return ..string.trim(ret);
+	}
+	
+	return null,err;
+}
+
+prefix = function(){
+    if(!install())return;
+    
+	return config("prefix") : nodeDir;
+}
+
+cnpm = function(param,...){ 
+    if(!install())return;
+	if(..console) ..console.open();
+	
+	if( !requireResolve("cnpm") ){
+		npm("install",,"--force","-g","cnpm","--registry=https://registry.npmmirror.com");
+	}
+	
+	param = ..string.cmdline.arguments(param,...);
+	..table.unshift(param, (..fsys.shortpath( prefix()+"\node_modules\cnpm\bin\cnpm")) : "cnpm");
+	var prcs = ..process( ..fsys.shortpath( nodeExePath ) ,param,{workDir=..io.fullpath(self.workDir)});
+	prcs.waitOne();
+	return prcs;
+}
+
+npm = function(param,...){
+    if(!install())return;
+	if(..console) ..console.open();
+
+	param = ..string.cmdline.arguments(param,...); 
+	..table.unshift(param, npmCliJsPath);
+	var prcs = ..process( nodeExePath,param,{workDir=..io.fullpath(self.workDir)});
+	prcs.waitOne();
+	return prcs;
+}
+
+pnpm = function(echo,param,...){
+    if(!install())return;
+    
+    param = ..string.cmdline.arguments(param,...); 
+	..table.unshift(param, npmCliJsPath);
+	var prcs,err = ..process.popen( nodeExePath,param,{workDir=..io.fullpath(self.workDir)});
+	 
+	if(prcs){  
+		prcs.codepage = 65001;
+		prcs.logResponse(echo);
+		prcs.writeClose();
+		prcs.waitOne();
+		return true;
+	}
+	
+	return null,err;
+}
+
+cnpmSync = function(module){
+	return cnpm ("sync",module);
+}
+
+pcnpm = function(echo,param,...){
+    if(!install())return;
+    
+    if( !requireResolve("cnpm" ) ){
+		pnpm(echo,"install","-g","--force","cnpm","--registry=https://registry.npmmirror.com");
+	}
+	
+	param = ..string.cmdline.arguments(param,...);
+	..table.unshift(param, (..fsys.shortpath( prefix()+"\node_modules\cnpm\bin\cnpm")) : "cnpm")
+	
+	var prcs,err = ..process.popen( nodeExePath,param,{workDir=..io.fullpath(self.workDir)});
+	if(prcs){  
+		prcs.codepage = 65001;
+		prcs.logResponse(echo);
+		prcs.writeClose();
+		prcs.waitOne();
+		return true; 
+	}
+		
+	return null,err;
+}
+
+npmget = function(param,...){
+    if(!install())return;
+    
+    param = ..string.cmdline.arguments(param,...); 
+	..table.unshift(param, npmCliJsPath);
+	var prcs,err = ..process.popen( nodeExePath,param,{workDir=..io.fullpath(self.workDir)});
+	 
+	if(prcs){  
+		prcs.codepage = 65001;
+		var ret = prcs.read(-1);
+		var err = prcs.readErr(-1);
+		prcs.close();
+		
+		if(ret) ret = ..string.trim(ret); 
+		if(err && ret === null ){
+			return null,err;
+		}
+		return ret;
+	}	
+	
+	return null,err;
+}
+
+pcmd = function(filename,param,...){
+    if(!install())return; 
+		
+	if(param){
+		param = ..string.cmdline.arguments(param,...);
+	}
+	elseif(filename)  {
+		var cmdline = ..string.cmdline(filename);
+		if(cmdline[0]){
+			filename = cmdline[0];
+			cmdline[0] = null;
+			
+			param = cmdline;
+		}
+		else {
+			error("参数错误",2)
+		}
+	}
+	else {
+		error("参数错误",2)
+	}
+		
+	var cmd =  ..io.exist( ..io.joinpath(nodePath,filename + ".cmd" )) : ..fsys.shortpath( filename + ".cmd" ) :  filename;
+	var prcs,err = ..process.popen( cmd ,param,{workDir=..io.fullpath(self.workDir)});
+ 
+	if(prcs){
+		prcs.codepage = 65001; 
+		return prcs;
+	}
+	
+	return null,err;	
+}
+
+cmdget = function(filename,param,...){
+    prcs = pcmd(filename,param,...); 
+	if(prcs){
+		prcs.codepage = 65001;
+		
+		var ret = prcs.read(-1);
+		var err = prcs.readErr(-1);
+		prcs.close();
+		
+		if(ret) ret = ..string.trim(ret); 
+		if(err && ret === null ){
+			return null,err;
+		}
+		return ret;
+	}
+	
+	return null,err;	
+}
+
+popen = function(param,...){
+    if(!install())return; 
+	param = ..string.cmdline.arguments(param,...); 
+	var prcs,err =  ..process.popen( nodeExePath ,param,{workDir=..io.fullpath(self.workDir)});
+ 
+	if(prcs){  
+		prcs.codepage = 65001;
+		return prcs;
+	}	
+	
+	return null,err;
+}
+
+pget = function(param,...){
+    if(!install())return; 
+	param = ..string.cmdline.arguments(param,...); 
+	var prcs,err = ..process.popen( nodeExePath ,param,{workDir=..io.fullpath(self.workDir)});
+ 
+	if(prcs){  
+		prcs.codepage = 65001;
+		
+		var ret = prcs.read(-1);
+		var err = prcs.readErr(-1);
+		prcs.close();
+		
+		if(ret) ret = ..string.trim(ret); 
+		if(err && ret === null ){
+			return null,err;
+		}
+		return ret;
+	}	
+	
+	return null,err;
+}
+
+freePort = function(){ 
+	self.port = ..wsock.getFreePort();
+	..string.setenv("PORT",tostring(self.port)); 
+	return self.port;
+}
+
+startEnviron = function(environ){
+    if(!install())return; 
+    
+    if( type(environ)!= type.table ) error("参数必须指定一个表对象",2);
+    environ.port = freePort();
+    
+    var aarStartEnviron = ..string.getenv("aarStartEnviron");
+    if(aarStartEnviron){
+    	aarStartEnviron = ..web.json.tryParse(aarStartEnviron);
+    	if(aarStartEnviron){
+    		environ = ..table.assign(aarStartEnviron,environ);
+    	}
+    } 
+    
+	..string.setenv("aarStartEnviron",..web.json.stringify(environ));
+	var path = ..io.joinpath(nodeModulesPath,"\startEnviron.js");
+	..string.save(path,`module.exports = JSON.parse(process.env.aarStartEnviron)` );
+	return environ;
+} 
+
+freePort();
+
+/**intellisense(nodeJs)
+workDir = 设置node.js的应用程序工作目录\n默认已设置为 io.fullpath("/")
+getInstallPath() = 如果系统已安装 Node.js,返回 node.exe 路径
+install(.(portable) = 检测并安装node环境\n如果portable为true或指定node版本号，则忽略系统安装的node.exe\n否则优先使用系统安装的node.exe\n也可以在调用此函数以前在环境变量中使用NODE_EXE设置node.exe的路径\n此函数会在执行其他node命令前自动调用
+exec(__/*JS代码*/) = 运行JS代码，返回 process.popen 对象,\n如果参数@1不为空,则返回进程对象会关闭目标进程的输入流
+execLimit(__/*JS代码*/) = 运行JS代码，返回 process.popen 对象,\n返回进程绑定 process.job.limitKill 在退出时自动关闭,\n如果参数@1不为空,则返回进程对象会关闭目标进程的输入流
+execFile(.(JS代码文件,其他命令行参数->->->) = 运行JS代码文件,返回process.popen对象,\n\n第一个参数指定JS代码文件,可选自第二个参数开始指定命令行参数\n多个命令行参数则调用 process.joinArguments 合并,\n不在双引号内、且包含空白或需要转义的参数转义处理后首尾添加双引号
+eval(js) = @.eval(`\n(function(){\n	return process.config;__/*执行JS表达式并返回结果,\n返回值如果是字符串,必须放到对象或数组中返回*/\n})()\n`) 
+npm(__) = 执行npm命令,\n此函数会打开控制台,\n\n多个命令行参数则调用 process.joinArguments 合并,\n不在双引号内、且包含空白或需要转义的参数转义处理后首尾添加双引号
+cnpm(__) = 使用淘宝镜像执行npm命令,\n此函数会打开控制台,\n\n多个命令行参数则调用 process.joinArguments 合并,\n不在双引号内、且包含空白或需要转义的参数转义处理后首尾添加双引号
+cnpmSync(__) = 参数指定包名,\n淘宝镜像同步指定 Node.js 包到最新版本
+pnpm(.(echo,->->->) = 执行npm命令,\n此函数不打开控制台,使用echo指定的回调函数输出控制台回显信息,\n\n多个命令行参数则调用 process.joinArguments 合并,\n不在双引号内、且包含空白或需要转义的参数转义处理后首尾添加双引号
+pcnpm(.(echo,->->->)  = 执行npm命令,\n此函数不打开控制台,使用echo指定的回调函数输出控制台回显信息,\n\n多个命令行参数则调用 process.joinArguments 合并,\n不在双引号内、且包含空白或需要转义的参数转义处理后首尾添加双引号
+npmget(__) = 执行npm命令并获取输出字符串,\n默认工作目录为 nodeJs.workDir\n此函数不会打开控制台,\n\n多个命令行参数则调用 process.joinArguments 合并,\n不在双引号内、且包含空白或需要转义的参数转义处理后首尾添加双引号
+cmd(.("命令文件名",其他命令行参数->->->) = 运行node命令,\n此函数会打开控制台,\n\n第一个参数指定cmd命令,可选自第二个参数开始指定命令行参数\n多个命令行参数则调用 process.joinArguments 合并,\n不在双引号内、且包含空白或需要转义的参数转义处理后首尾添加双引号
+pcmd(.("命令文件名",其他命令行参数->->->) = 创建进程管道运行node命令,返回 process.popen 对象,\n默认工作目录为 nodeJs.workDir\n此函数会打开控制台,\n\n第一个参数指定cmd命令,可选自第二个参数开始指定命令行参数\n多个命令行参数则调用 process.joinArguments 合并,\n不在双引号内、且包含空白或需要转义的参数转义处理后首尾添加双引号
+cmdget(.("命令文件名",其他命令行参数->->->) = 运行node命令并获取输出字符串,n此函数不会打开控制台,\n\n第一个参数指定cmd命令,可选自第二个参数开始指定命令行参数\n多个命令行参数则调用 process.joinArguments 合并,\n不在双引号内、且包含空白或需要转义的参数转义处理后首尾添加双引号
+requireResolve(__) = 参数输入 Node.js 模块名,\n查找并返回该模块安装路径
+require(__) = 参数输入一个或多个 Node.js 模块名,\n如果参数指定的模块不存在，全局安装该模块名,\n如果系统已安装了node，可能会安装到系统目录\n使用nodeJs.prefix函数获取全局模块安装路径
+prequire(.(echo,moduleName,->->->) = 如果 @moduleName 参数指定的 Node.js  模块不存在，全局安装该模块,\n可添加多个 Node.js 模块名参数,\n如果系统已安装了node，可能会安装到系统目录\n使用nodeJs.prefix函数获取全局模块安装路径\n此函数会使用 process.popen 创建管理进程,\n可使用 @echo 参数自定义回显函数或回显控件,\n回显函数接受一个输出文本参数,\n回显控件必须拥有名为 log 的回显函数
+requireByJs(__) = 自动分析输入JS代码中的 require 语句,\n如果 require 的模块不存在，全局安装该模块\n如果系统已安装了node，可能会安装到系统目录\n使用nodeJs.prefix函数获取全局模块安装路径
+prequireByJs(.(echo,javaScript) = 自动分析 @javaScript 参数指定的 JS 代码中的 require 语句,\n如果 require 的模块不存在，全局安装该模\n如果系统已安装了node，可能会安装到系统目录\n使用nodeJs.prefix函数获取全局模块安装路径,\n可使用 @echo 参数自定义回显函数或回显控件,\n回显函数接受一个输出文本参数,\n回显控件必须拥有名为 log 的回显函数
+freePort() = 分配新的服务端可用端口\n在node.js中可使用process.env.PORT获取分配的端口号
+popen(__) = 以管道方式打开node进程,\n支持不定个数启动参数,也可以在一个字符串参数中写多个参数
+pget(__) = 以管道方式打开node进程,并返回输出值,\n支持不定个数启动参数,也可以在一个字符串参数中写多个参数
+exec() = !process_popen.
+execLimit() = !process_popen.
+execFile() = !process_popen.
+popen() = !process_popen.
+pcmd() = !process_popen.
+startEnviron(环境变量表) = @.startEnviron(\n	appPath = io.fullpath("/");\n	__/*在这里设置的启动参数对象，在node.js中使用 require('startEnviron')导入*/\n)
+startEnviron() = !nodeJsStartEnviron.
+port = aardio 为 Node.js 自动分配的空闲端口\n调用 nodeJs.startEnviron 会自动设置此函数,\n nodeJs.install 首次执行会自动调用  nodeJs.startEnviron,\n几乎所有 nodeJs 库函数都会自动调用 nodeJs.install
+version = node.js 运行时版本
+config(.(key,value) = npm config set设置值
+config(.(key) = npm config get获取值
+config(.() = npm config edit编辑值
+prefix() = 获取全局模块安装路径
+nodeDir = node.exe所在目录\n只有执行 nodeJs.install 函数以后才会设置此属性,\n几乎所有 nodeJs 库函数执行前都会调用 nodeJs.install
+nodeExePath = node.exe完整路径\n只有执行 nodeJs.install 函数以后才会设置此属性,\n几乎所有 nodeJs 库函数执行前都会调用 nodeJs.install
+npmCliJsPath = npm 位置\n只有执行 nodeJs.install 函数以后才会设置此属性,\n几乎所有 nodeJs 库函数执行前都会调用 nodeJs.install
+nodeModulesPath = 全局模块安装目录\n只有执行 nodeJs.install 函数以后才会设置此属性,\n几乎所有 nodeJs 库函数执行前都会调用 nodeJs.install
+majorVersion = 主版本号,数值\n只有执行 nodeJs.install 函数以后才会设置此属性,\n几乎所有 nodeJs 库函数执行前都会调用 nodeJs.install
+version = 版本号,字符串值\n只有执行 nodeJs.install 函数以后才会设置此属性,\n几乎所有 nodeJs 库函数执行前都会调用 nodeJs.install
+end intellisense**/
+
+/**intellisense()
+nodeJs = Node.js 支持库,\n可选使用 nodeJs.install 函数安装独立便携的 Node.js 环境,\n默认优先使用系统安装的 Node.js 环境\n\n此支持库可支持 web.rpc.externalServer 创建的 RPC 服务端
+!nodeJsStartEnviron.port = 自动分配的端口号
+!nodeJsStartEnviron.? = startEnviron 启动参数
+end intellisense**/

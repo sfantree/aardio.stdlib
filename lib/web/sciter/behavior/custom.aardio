@@ -1,0 +1,15 @@
+﻿//custom 自定义控件
+namespace web.sciter.behavior.custom;
+
+onAttach = function( scOwner ){
+	scOwner.addCtrl(); //不会重复创建控件,支持 cls 属性, data-table 属性
+};
+
+onDetach = function( scOwner ){
+	scOwner.delCtrl(); //Sciter behavior名字不支持~语法
+};
+
+onSize = function (scOwner) {
+	scOwner.adjustCtrl(); 
+} 
+		

@@ -1,0 +1,17 @@
+import console;
+import com.soap;
+
+//创建SOAP客户端
+var soapClient = com.soap.client() 
+
+//初始化 Web Service
+soapClient.MsSoapInit("http://fy.webxml.com.cn/webservices/EnglishChinese.asmx?WSDL")
+
+//调用远程 Web Service 提供的远程函数 
+var transArray =  soapClient.TranslatorString("hello");
+
+//显示返回值
+console.dumpJson( transArray ) ;
+
+//按任意键继续
+console.pause();

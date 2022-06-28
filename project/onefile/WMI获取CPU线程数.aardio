@@ -1,0 +1,11 @@
+import console; 
+import com;
+var wmi = com.GetObject("winmgmts:{impersonationLevel=Impersonate}!\\")
+var cpus=wmi.instancesof("win32_processor")
+for index, cpu in com.each(cpus) {
+	// https://blog.csdn.net/sinat_38068807/article/details/89947559
+	console.log("CPU核心数", cpu.NumberOfCores);
+	console.log("线程数", cpu.NumberOfLogicalProcessors);
+}
+ 
+console.pause()

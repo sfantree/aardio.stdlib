@@ -1,0 +1,41 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(parent=...; bottom=249;scroll=1;text="aardio Form";right=349 )
+winform.add(  )
+/*}}*/
+
+import web.form;
+
+//创建web窗体
+var wb = web.form( winform )
+
+html = /**
+    <div id="idTest" class="style2">
+    测试文本
+    </div>
+   
+    <div id="idTest2" class="style2">
+    测试文本
+    </div>
+**/
+wb.write(html)
+
+winform.show();
+
+jele = wb.jQuery("#idTest"); //根据id取单个节点
+winform.msgbox( jele.text() )
+jele.text("Query有意思的是可以使用CSS的语法匹配一个节点的集合
+并将他们封装为一个组合,操作组合里所有对象一如操作一个对象,由jQuery自动完成循环操作")
+
+jele = wb.jQuery(".style2") //根据css样式取节点的集合
+jele.css("font-size","15pt")
+
+jele = wb.jQuery("div") //根据html tag取节点的集合
+jele.css("color","red")
+
+winform.msgbox( "点确定隐藏指定节点" )
+jele.hide();
+
+//进入消息循环
+win.loopMessage();
+return winform,wb;

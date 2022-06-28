@@ -1,0 +1,41 @@
+import console; 
+
+import odisasm;
+
+
+var ELangStatement = /*
+置入代码  ({ 137, 109, 252 })
+*/
+
+var pattern =  "\d+"
+// '\x81\x05\xE0\x5A\x47\x00\x01\x00\x00\x00'
+var bufferHex = "";
+var t = {};
+for s in string.gmatch( ELangStatement, pattern ){
+	table.push(t, tostring(s));
+}
+bufferHex = string.pack(t);
+
+//console.log(  )
+var asm = odisasm.dasm( bufferHex )
+console.log( asm )
+console.pause(true);
+
+/*
+PUSH ESI
+MOV ESI,F
+LEA ECX,[EBP+8]
+LEA ECX,[ECX+ESI*8-4]
+MOV EAX,[ECX+4]
+TEST EAX,EAX
+JE SHORT 00400004
+PUSH DWORD PTR [ECX]
+DEC ESI
+SUB ECX,8
+TEST ESI,ESI
+JNZ SHORT 003FFFF1
+CALL [EBP+8]
+POP ESI
+LEAVE
+RETN 7C
+*/

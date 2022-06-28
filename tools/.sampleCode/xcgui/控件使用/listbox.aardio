@@ -1,0 +1,44 @@
+/*
+使用import xcgui; 替换原来的 import win.ui;
+修改标准库的 win.form 指向 xcgui.window, 并保留 win.form的所有功能。
+在窗体设计器上添加自定义控件，类名修改为 "xc" + "炫彩控件类名",
+例如 xcgui.ctrl.listbox, 类名为 "xclistbox"
+*/
+import xcgui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469;bgcolor=15245824)
+winform.add(
+closebutton={cls="xcclosebutton";text="r";left=725;top=2;right=749;bottom=28;dr=1;dt=1;font=LOGFONT(name='Marlett');transparent=1;z=1};
+edit={cls="xcedit";left=353;top=42;right=736;bottom=454;db=1;dr=1;dt=1;edge=1;z=4};
+listbox={cls="xclistbox";text=" ";left=16;top=42;right=300;bottom=454;db=1;dl=1;dr=1;dt=1;edge=1;z=2};
+static={cls="xctext";text="   ";left=27;top=12;right=693;bottom=31;dl=1;dr=1;dt=1;z=3}
+)
+/*}}*/
+
+winform.listbox.addField("name")
+winform.listbox.addField("name2")
+winform.listbox.addField("name3")
+
+var image = xcgui.image("\控件使用\image\111.jpg");
+for(i=1;20;1){
+	var item = winform.listbox.addFieldString("name",string.format("item-%d",i ));
+	winform.listbox.setFieldString(item,"name2",string.format("item-1-%d",i ));
+	winform.listbox.setFieldString(item,"name3",string.format("item-2-%d",i ));
+}
+
+winform.edit.multiline = true;
+
+//输入winform.listbox.onSelect 按回车就可以生成下面的代码
+winform.listbox.on("listboxSelect",function(iItem){
+	winform.edit.clear();
+	
+	var arr = winform.listbox.getSelections();
+	for(i=1;#arr;1){
+		winform.edit.print(  winform.listbox.getFieldString(arr[i],"name2") )
+	}
+	winform.edit.redraw();
+})
+
+winform.show();
+win.loopMessage();
+return winform;

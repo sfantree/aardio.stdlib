@@ -1,0 +1,46 @@
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form( scroll=1;bottom=399;parent=...;text="knockout.js测试";right=599 )
+winform.add(  )
+/*}}*/
+
+import web.form;
+var wb = web.form( winform  );
+
+wb.html = /**
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+        <meta http-equiv="Content-Type" content="text/html;charset=UTF-8" />
+        <title></title>
+        <script src="http://ajax.aspnetcdn.com/ajax/knockout/knockout-2.2.0.js"></script>
+
+</head>
+<body>
+        
+        <p>First name: <input data-bind="value: firstName"/></p>
+        <p>Last name: <input data-bind="value: lastName"/></p>
+        <h2>Hello, <span data-bind="text: fullName"> </span>!</h2>
+
+        <script>
+                var viewModel = {
+                        firstName: ko.observable("Planet"),
+                        lastName: ko.observable("Earth")
+                };
+
+                viewModel.fullName = ko.dependentObservable(function () {
+                        // Knockout tracks dependencies automatically.
+                        //It knows that fullName depends on firstName and lastName,           
+                        //because these get called when evaluating fullName.
+                        return viewModel.firstName() + " " + viewModel.lastName();
+                });
+
+                ko.applyBindings(viewModel); // This makes Knockout get to work
+        </script>
+        
+</body>
+</html>
+**/
+
+winform.show();  
+win.loopMessage();

@@ -1,0 +1,99 @@
+//batch 批量处理
+import fsys;
+import fsys.codepage;
+namespace fsys;
+ 
+class batch{
+	ctor( dir,wildcard="*.*",charset){
+		this.dir = dir;
+		this.wildcard = wildcard;
+		this.charset = charset
+	};
+	
+	enumBinary = function( proc,pattern ){
+		if( type(proc) != type.function ){
+			error("请先指定proc回调函数",2);
+		};
+		
+		..fsys.enum(  this.dir,this.wildcard, 
+			function(dir,file,fullpath,findData){ 
+				if(file){ 
+					if( pattern ?  ( ! ..string.find(fullpath,pattern) ) )
+						return;
+						
+		           	var content = ..string.load(fullpath);
+		           	if(content){
+		           		content = proc(content,fullpath,dir,file,findData)
+		           		if(type(content)==type.string)
+		           			..string.save(fullpath,content) 
+		           		else
+		           			return content;
+		           	}
+				} 
+			} 
+		);	
+	};
+	
+	enumText = function( proc,pattern,charset ){
+		if(charset===null){
+			charset = this.charset
+		}
+
+		if( type(proc) != type.function ){
+			error("请先指定proc回调函数",2);
+		};
+		
+		..fsys.enum(  this.dir,this.wildcard, 
+			function(dir,file,fullpath,findData){ 
+				if(file){ 
+					if( pattern ?  ( ! ..string.find(fullpath,pattern) ) )
+						return;
+
+		           	var text,codepage = ..fsys.codepage.load(fullpath,charset);
+		           	if(text){
+		           		text,codepage = proc(text,codepage,fullpath,dir,file,findData)
+		           		if(type(text)==type.string)
+		           			 ..fsys.codepage.save(fullpath,text,codepage) 
+		           		else
+		           			return text;
+		           	}
+				} 
+			} 
+		);	
+	};
+	
+	enumTo = function(proc,targetDir,pattern ){
+		if( type(proc) != type.function ){
+			error("请先指定proc回调函数",2);
+		};
+		targetDir = ..io.fullpath(targetDir);
+		..fsys.createDir(targetDir);
+		
+		..fsys.enum(  this.dir,this.wildcard, 
+			function(dirname,filename,fullpath,findData){ 
+				if(filename){  
+					if( pattern ?  ( ! ..string.find(fullpath,pattern) ) )
+						return;
+					
+					var targetPath = ..fsys.path.replaceDir(fullpath,this.dir,targetDir); 
+		           	return  proc( targetPath,fullpath,dirname,filename,findData  )
+				} 
+			}
+			,function(fullpath,name) { 
+				var path = ..fsys.path.replaceDir(fullpath,compressPath,rootFtpPath);  
+				return ..fsys.createDir(path);
+			}
+		);	
+	};
+}
+
+/**intellisense()
+fsys.batch = 批量替换文件数据
+fsys.batch(批处理目录,后缀名,文本编码) = @.batch("__/*目录*/","*.*","utf-8");
+fsys.batch() = !fsysBatch.
+!fsysBatch.dir = 设置批处理目录
+!fsysBatch.wildcard = 设置批处理文件名掩码\n默认为"*.*"
+!fsysBatch.enumBinary(回调函数,路径模式匹配串) = @.enumBinary(\n	function(content,fullpath){ \n		return __/*返回 string 类型数据新文件,返回false 终止,返回空忽略*/; \n	} \n	/*,可选指定路径模式匹配串,可选指定编码*/\n)
+!fsysBatch.enumText(回调函数,路径模式匹配串,文本编码)  = @.enumText(\n	function(text,codepage,fullpath){ \n		var text,count = string.replace(text,"@查找字符串","替换字符串");\n		if(count){\n			return text,codepage;__/*返回文本与 codepage 以指定内码更新文件,\n仅返回文本以 UTF-8 编码更新文件,\n返回 false 终止,返回空忽略*/\n		} \n	} \n)
+!fsysBatch.enumTo(回调函数,目标目录,路径模式匹配串) = @.enumTo(\n	function(dstPath,srcPath){\n		fsys.copy(srcPath,dstPath);\n		return __/*srcPath 为源文件路径,\ndstPath 为目标文件路径,\n此函数根据源目录生成目标目录下相同结构的路径,\n自动在目标目录下建立相同的子目录结构,\n得不会复制或删除文件文件\n返回 false 终止*/  \n	},"/目标目录"\n)
+end intellisense**/

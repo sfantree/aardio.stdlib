@@ -1,0 +1,32 @@
+﻿import crypt;
+import web.rest.jsonLiteClient;
+namespace douyu;
+
+class restClient{
+	ctor(...){
+		this = ..web.rest.jsonLiteClient(...);
+		this.appKey = "Y237pxTx2In5ayGz";
+		
+		this.beforeStringifyRequestParameters = function(param){
+			param = ..table.mix(param,{
+				aid="androidhd1";
+				cdn="ws";
+				client_sys="android";
+			});
+		
+			param.time = tonumber(..time());
+			param.auth = ..crypt.md5( ..string.match(this.lastRequestUrl,"/(room/\d+)") 
+				+ "?" + ..inet.url.stringifyParameters(param) ++ this.appKey,false);
+			return param;
+		} 
+	}; 
+}
+
+/**intellisense()
+douyu.restClient = REST客户端\n仅返回数据使用JSON格式
+douyu.restClient() = 创建REST客户端,\n!web_restClient.
+end intellisense**/ 
+
+
+
+ 

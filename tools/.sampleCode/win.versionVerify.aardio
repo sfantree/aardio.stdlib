@@ -1,0 +1,12 @@
+import console
+import win.versionVerify;
+
+/*
+推荐使用 win.version 获取系统版本，
+或使用 aardio 提供的全局常量 _WINXP _WIN7_LATER _WIN10_LATER _WINE 判断系统版本。
+一般不必要使用 win.versionVerify。
+*/
+console.log( win.versionVerify("major >=10 && minor >=0 ") );
+console.log(win.versionVerify.isWin7Later())
+
+console.pause()

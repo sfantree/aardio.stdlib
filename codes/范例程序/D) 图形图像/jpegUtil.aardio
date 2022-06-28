@@ -1,0 +1,152 @@
+//JPEG 压缩转换
+import win.ui;
+import win.dlg.message;
+import fonts.fontAwesome;
+/*DSG{{*/
+var winform = win.form(text="JPEG 压缩转换工具 - 复制图像自动加载";right=1151;bottom=661)
+winform.add(
+btnChangeJpegExtension={cls="plus";text="更改";left=334;top=604;right=431;bottom=634;align="left";color=3947580;db=1;dl=1;font=LOGFONT(h=-13);iconStyle={align="left";font=LOGFONT(h=-13;name='FontAwesome');padding={left=8}};iconText='\uF0C7';notify=1;textPadding={left=25};z=11};
+btnClipboard={cls="plus";text="自剪贴板加载图像";left=606;top=608;right=765;bottom=638;align="left";color=3947580;db=1;dr=1;font=LOGFONT(h=-13);iconStyle={align="left";font=LOGFONT(h=-13;name='FontAwesome');padding={left=8}};iconText='\uF0EA';notify=1;textPadding={left=25};z=8};
+btnOpen={cls="plus";text="加载图像";left=784;top=608;right=881;bottom=638;align="left";color=3947580;db=1;dr=1;font=LOGFONT(h=-13);iconStyle={align="left";font=LOGFONT(h=-13;name='FontAwesome');padding={left=8}};iconText='\uF03E';notify=1;textPadding={left=25};z=6};
+btnSave={cls="plus";text="保存图像";left=910;top=606;right=1007;bottom=636;align="left";color=3947580;db=1;dr=1;font=LOGFONT(h=-13);iconStyle={align="left";font=LOGFONT(h=-13;name='FontAwesome');padding={left=8}};iconText='\uF0C7';notify=1;textPadding={left=25};z=7};
+editJpegExtension={cls="plus";left=242;top=602;right=324;bottom=628;align="right";border={bottom=1;color=-6908266};db=1;dl=1;editable=1;font=LOGFONT(h=-13);textPadding={top=6;bottom=2};z=10};
+lbSize={cls="static";left=1058;top=551;right=1146;bottom=575;db=1;dr=1;transparent=1;z=5};
+plus={cls="plus";left=0;top=0;right=568;bottom=515;db=1;dl=1;dt=1;repeat="scale";z=1};
+plus2={cls="plus";left=600;top=0;right=1168;bottom=515;db=1;dr=1;dt=1;repeat="scale";z=2};
+static={cls="static";text="输出质量:";left=101;top=559;right=221;bottom=583;align="right";db=1;dl=1;transparent=1;z=4};
+static2={cls="static";text="系统保存JPEG文件使用的默认后缀:";left=30;top=611;right=235;bottom=634;align="right";db=1;dl=1;transparent=1;z=9};
+trackbar={cls="trackbar";left=267;top=550;right=1048;bottom=580;db=1;dl=1;dr=1;max=100;min=0;z=3}
+)
+/*}}*/
+
+var preview = function(quality){
+    if(!winform.plus.backgroundBitmap) return;
+    
+	var buf = winform.plus.backgroundBitmap.saveToBuffer("*.jpg",quality);
+	winform.plus2.background = buf;
+	
+	winform.lbSize.text = math.size64(#buf).format();	
+}
+
+
+winform.trackbar.pos = 80;
+winform.trackbar.oncommand = function(id,event,pos){
+	if( event == 8/*_SB_ENDSCROLL*/ ){
+		preview(winform.trackbar.pos)
+	}
+}
+
+import fsys.dlg;
+winform.btnOpen.oncommand = function(id,event){
+	var path = fsys.dlg.open("图像文件|*.jpg,*.jpeg,*,jfif,*.bmp,*.gif,*.png,*.tif,*.tiff||",,,winform)
+	if(path){
+		winform.plus.background = path; 
+		winform.plus.backgroundBitmap = gdip.bitmap(path);
+		preview(winform.trackbar.pos);
+	}
+}
+
+winform.btnSave.oncommand = function(id,event){
+	if(winform.plus.backgroundBitmap){
+		var path = fsys.dlg.save("*.jpg|*.jpg|*.jpeg|*.jpeg|*.jfif|*.jfif|*.png|*.png||",,,winform)	
+		if(path){
+			var buf = winform.plus.backgroundBitmap.save(path,winform.trackbar.pos); 
+		} 	
+	} 
+	else {
+		winform.msgErr("请先加载图像")
+	} 
+}
+
+winform.onDropFiles = function(files){
+	var path = files[1]
+	if(path){
+		winform.plus.backgroundBitmap = gdip.bitmap(path);
+		if(winform.plus.backgroundBitmap){
+			winform.plus.background = path; 
+			preview(winform.trackbar.pos);
+		} 
+	}
+}
+
+import win.clip;
+winform.btnClipboard.oncommand = function(id,event){
+	var hbmp = win.clip.readBitmap()
+	if(hbmp){
+		var bmp = gdip.bitmap(hbmp);
+		if(bmp){
+			winform.plus.backgroundBitmap = bmp;
+			winform.plus.background = bmp;
+			preview(winform.trackbar.pos);
+		}
+		
+		::DeleteObject(hbmp);
+	}
+}
+
+import win.reg;
+var reg = win.reg("HKEY_CURRENT_USER\SOFTWARE\Classes\MIME\Database\Content Type\image/jpeg")
+if(reg){
+	winform.editJpegExtension.text = reg.queryValue("Extension")
+	reg.close()
+}
+
+if(!#winform.editJpegExtension.text){
+	var reg = win.reg("HKEY_CLASSES_ROOT\MIME\Database\Content Type\image/jpeg")
+	if(reg){
+		winform.editJpegExtension.text = reg.queryValue("Extension")
+		reg.close()
+	}	
+}
+
+winform.btnChangeJpegExtension.oncommand = function(id,event){
+	var reg = win.reg("HKEY_CURRENT_USER\SOFTWARE\Classes\MIME\Database\Content Type\image/jpeg")
+	if(reg){
+		reg.setSzValue("Extension",winform.editJpegExtension.text)
+		winform.msgOk("已修改 JPEG 默认后缀名")
+	}
+}
+
+winform.btnClipboard.skin({
+	color={
+		active=0xFF00FF00;
+		default=0xFF3C3C3C;
+		disabled=0xFF6D6D6D;
+		hover=0xFFFF0000
+	}
+})
+
+winform.btnSave.skin({
+	color={
+		active=0xFF00FF00;
+		default=0xFF3C3C3C;
+		disabled=0xFF6D6D6D;
+		hover=0xFFFF0000
+	}
+})
+
+winform.btnOpen.skin({
+	color={
+		active=0xFF00FF00;
+		default=0xFF3C3C3C;
+		disabled=0xFF6D6D6D;
+		hover=0xFFFF0000
+	}
+})
+winform.btnChangeJpegExtension.skin({
+	color={
+		active=0xFF00FF00;
+		default=0xFF3C3C3C;
+		disabled=0xFF6D6D6D;
+		hover=0xFFFF0000
+	}
+})
+
+import win.clip.viewer;
+winform.clipViewer = win.clip.viewer(winform);
+winform.clipViewer.onDrawClipboard = function(){
+	winform.btnClipboard.oncommand();
+}
+
+winform.show()
+win.loopMessage();

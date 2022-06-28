@@ -1,0 +1,14 @@
+import console; 
+import com;
+
+// https://docs.microsoft.com/zh-cn/windows/win32/winhttp/iwinhttprequest-open
+
+var oHTTP = com.TryCreateObject("WinHttp.WinHttpRequest.5.1")
+oHTTP.Open("GET","http://www.example.com", false)
+oHTTP.Send()
+var HTMLSource = oHTTP.Responsetext() 
+
+console.log(HTMLSource)
+
+//console.log("您输入的是" ,num );
+console.pause(true);

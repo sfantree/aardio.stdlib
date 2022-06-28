@@ -1,0 +1,33 @@
+//C)函数
+import console;
+import py3;
+
+/*
+注意 Python 函数定义开始、条件分支语句开始都有一个冒号，
+要特别注意同一语句块中使用的缩进空白字符、与空白字符数目必须相同，制表符与空格是不一样的。
+*/
+py3.exec(`
+#定义普通函数
+def fibonacci(n, a = 0, b = 1):
+	if(not n): return a;
+	else: return fibonacci(n-1, b, a+b);
+
+#定义 lambda 函数，lambda 函数是省略 return 并返回一个表达式的匿名函数
+fibonacci  = lambda n, a = 0, b = 1 :  a if not n else fibonacci(n-1, b, a+b);
+`)
+
+var v = py3.main.fibonacci(32); //斐波那契数
+console.log( tonumber(v) );
+
+//定义普通函数
+var fibonacci; //外部局部变量要写在函数定义之前 —— 才能在函数内使用
+fibonacci = function (n, a = 0, b = 1){ 
+	if(not n) return a; 
+	else return fibonacci(n-1, b, a+b);
+}
+
+//定义 lambda 函数，lambda 函数是省略 return 并返回一个表达式的匿名函数。
+fibonacci = lambda (n, a = 0, b = 1)  (!n) ? a : fibonacci(n-1, b, a+b); 
+console.log( fibonacci(32) ); //斐波那契数
+
+console.pause();

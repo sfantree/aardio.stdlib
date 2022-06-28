@@ -1,0 +1,68 @@
+﻿//versionVerify 检测版本
+namespace win;
+	
+class versionVerify{
+	ctor( conditionString ){
+		conditionString = ..string.replace(conditionString,"/(*+)[^*].+?(\1)/","");
+		
+		var opMap = {["=="] = 1;[">"] = 2;[">="] = 3;["<"] = 4;["<="] = 5;["&"] = 6;["|"] = 7}
+		var condMap ={build = 4;major = 2;minor = 1;platformId = 8;productType = 0x80;
+			servicePackMajor = 0x20;servicePackMinor = 0x10;suiteMask = 0x40;}
+		
+		var osvi = {  
+			INT osVersionInfoSize = 284; 
+			INT major; 
+			INT minor; 
+			INT build; 
+			INT platformId; 
+			WORD csdVersion[128];
+			WORD servicePackMajor;
+			WORD servicePackMinor;
+			WORD suiteMask;
+			BYTE productType;
+			BYTE reserved;
+		} 
+		
+		var conditionMask = ..math.size64(0);
+		var typeMask = 0;
+			
+		for line in  ..string.lines(conditionString,"<\&\&>"){
+			var cond,op,value = ..string.match(line,"\s*(\w+)\s*(\p+)\s*(\d+)"); 
+			var c = cond && condMap[cond];
+			var o = op && opMap[op];
+			
+			if(c!==null && o!==null){
+				conditionMask = ::Kernel32.VerSetConditionMaskL(conditionMask,c,o);
+				osvi[cond] = tonumber(value);
+				typeMask = typeMask | c;
+			}
+		}
+	
+		return !!::Kernel32.VerifyVersionInfo( osvi, typeMask, conditionMask);
+	}; 
+}
+
+versionVerify.isServer = lambda() !versionVerify("productType==1")
+versionVerify.isWin10Later = lambda() versionVerify("major>=10 && minor>=0")	
+versionVerify.isWin7Later = lambda() versionVerify("major>=6 && minor>=1")
+versionVerify.isWin11Later = lambda() versionVerify("major>=10 && build>=21996")
+versionVerify.isWinXp = lambda() versionVerify("major<6")
+
+/**details(条件表达式语法)
+支持用 && 逻辑运算法连接多个条件表达式。
+支持用 ==, <, <=, >, >= 等关系运算符判断版本号，
+支持用 &, | 等按位运算符判断 suiteMask，
+不支持其他操作符。
+
+一般建议用 >= 或 <= , 而非 > 或 <,
+用 > 或 < 可能实际检测用的是>= 或 <=。 
+end details**/
+
+/**intellisense()
+win.versionVerify("major >= 10 && minor >=0 ") = 用于验证操作系统版本\n参数中指定条件表达式,可支持的操作符和变量请查看源代码\n\n建议使用标准库 win.version 获取系统版本,\n或使用 aardio 提供的全局常量:\n _WINXP _WIN7_LATER _WIN10_LATER _WINE \n快速判断操作系统版本
+win.versionVerify.isServer() = 操作系统版本是否服务器版本
+win.versionVerify.isWin10Later() = 是否 Windows 10 以及 Windows 10 以后的系统,\n建议直接用全局常量 _WIN10_LATER 判断更快更快方便
+win.versionVerify.isWin7Later() = 是否 Windows 7 以及 Windows 7 以后的系统,\n建议直接用全局常量 _WIN7_LATER 判断更快更快方便
+win.versionVerify.isWinXp() = 是否 Windows XP 系统
+win.versionVerify.isWin11Later() = 是否 Windows 11 以及 Windows 11 以后的系统
+end intellisense**/

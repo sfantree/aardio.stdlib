@@ -1,0 +1,27 @@
+//HTTP的POST 用法示例 
+import console;  
+import inet.http;
+
+function post(usename, password){
+	var http = inet.http();
+	var html,err,errCode = http.post( "http://47.92.27.98:28056/login.php" 
+		,"username=" + usename + "&password=" + password + "&login=" + "true" );
+		
+	/*
+	username: cosin1213
+password: 2
+login: 登录
+	*/	
+	http.close();
+	
+	if( html ){ 
+		console.log(html)
+		
+	    
+	}
+	
+}
+
+post("zc_zhuang", "123456qwerty")
+
+console.pause(true);

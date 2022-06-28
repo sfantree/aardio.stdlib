@@ -1,0 +1,122 @@
+//壁纸查看器
+import fonts.fontAwesome;
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=1110;bottom=649;bgcolor=16777215;border="none")
+winform.add(
+bk={cls="bk";left=-10;top=-4;right=1113;bottom=39;bgcolor=16777215;dl=1;dr=1;dt=1;forecolor=12632256;linearGradient=0;z=1};
+btnExplorer={cls="plus";text="在资源管理器中查看";left=415;top=614;right=607;bottom=644;align="left";color=3947580;db=1;dr=1;font=LOGFONT(h=-13);iconStyle={align="left";font=LOGFONT(h=-13;name='FontAwesome');padding={left=8}};iconText='\uF0C9';notify=1;textPadding={left=25};z=14};
+btnFullScreen={cls="plus";text="全屏查看图像";left=613;top=614;right=742;bottom=644;align="left";color=3947580;db=1;dr=1;font=LOGFONT(h=-13);iconStyle={align="left";font=LOGFONT(h=-13;name='FontAwesome');padding={left=8}};iconText='\uF109';notify=1;textPadding={left=25};z=11};
+btnOpen={cls="plus";text="选择新图像";left=509;top=10;right=621;bottom=40;align="left";color=3947580;dl=1;dr=1;dt=1;font=LOGFONT(h=-13);iconStyle={align="left";font=LOGFONT(h=-13;name='FontAwesome');padding={left=8}};iconText='\uF115';notify=1;textPadding={left=25};z=13};
+btnSetCurrent={cls="plus";text="设为桌面";left=622;top=10;right=733;bottom=40;align="left";color=3947580;dr=1;dt=1;font=LOGFONT(h=-13);iconStyle={align="left";font=LOGFONT(h=-13;name='FontAwesome');padding={left=8}};iconText='\uF108';notify=1;textPadding={left=25};z=10};
+btnSetting={cls="plus";text="系统设置";left=934;top=614;right=1046;bottom=644;align="left";color=3947580;db=1;dr=1;font=LOGFONT(h=-13);iconStyle={align="left";font=LOGFONT(h=-13;name='FontAwesome');padding={left=8}};iconText='\uF013';notify=1;textPadding={left=25};z=15};
+btnView={cls="plus";text="打开图像";left=748;top=614;right=860;bottom=644;align="left";color=3947580;db=1;dr=1;font=LOGFONT(h=-13);iconStyle={align="left";font=LOGFONT(h=-13;name='FontAwesome');padding={left=8}};iconText='\uF045';notify=1;textPadding={left=25};z=12};
+editPath={cls="plus";left=14;top=9;right=506;bottom=35;align="right";border={bottom=1;color=-6908266};dl=1;dt=1;editable=1;font=LOGFONT(h=-13);textPadding={top=6;bottom=2};z=9};
+groupbox={cls="groupbox";text="历史记录";left=911;top=43;right=1076;bottom=610;db=1;dr=1;dt=1;edge=1;z=2};
+imgHistory1={cls="plus";left=930;top=76;right=1056;bottom=158;dr=1;dt=1;edge=1;notify=1;z=4};
+imgHistory2={cls="plus";left=930;top=179;right=1056;bottom=261;dr=1;dt=1;edge=1;z=5};
+imgHistory3={cls="plus";left=930;top=282;right=1056;bottom=364;dr=1;dt=1;edge=1;z=6};
+imgHistory4={cls="plus";left=930;top=385;right=1056;bottom=467;dr=1;dt=1;edge=1;z=7};
+imgHistory5={cls="plus";left=930;top=489;right=1056;bottom=571;dr=1;dt=1;edge=1;z=8};
+imgWallpaper={cls="custom";left=9;top=46;right=901;bottom=609;bgcolor=16777215;db=1;dl=1;dr=1;dt=1;repeat="stretch";z=3}
+)
+/*}}*/
+
+var styles = {
+	button = {
+		color={
+			active=0xFF00FF00;
+			default=0xFF3C3C3C;
+			disabled=0xFF6D6D6D;
+			hover=0xFFFF0000
+		}
+	}
+	history = {
+		foreground={ 
+			default=0x00FFA07A;
+			active=0xAAFFA07A;
+			hover=0x66FFA07A
+		}
+	}
+}
+
+for(name,ctrl in winform.eachControl("plus","^btn\w+") ){
+	ctrl.skin(styles.button)
+}
+
+for(name,ctrl in winform.eachControl("plus","^imgHistory\w+") ){
+	ctrl.skin(styles.history)
+}
+
+import sys.wallpaper;
+var reloadHistory = function(){
+	var history = sys.wallpaper.getHistory();
+	
+	for(i=1;5;1){
+		winform["imgHistory"+i].background = history[i];
+		winform["imgHistory"+i].backgroundPath = history[i]
+	}
+	
+	winform.editPath.text = history[1];
+	winform.imgWallpaper.image = history[1];
+	winform.imgWallpaper.redrawBackground();
+}
+reloadHistory();
+
+import fsys.dlg;
+winform.btnOpen.oncommand = function(id,event){
+	var path = fsys.dlg.open("*.jpg|*.jpg","请选择图像");
+	if(path){
+		winform.editPath.text = path;
+		winform.imgWallpaper.image = path;
+		winform.imgWallpaper.redrawBackground();
+	}
+}
+
+for(name,ctrl in winform.eachControl("plus","^imgHistory\w+") ){
+	ctrl.oncommand = function(id,event){
+		winform.editPath.text = ctrl.backgroundPath;
+		winform.imgWallpaper.image = ctrl.backgroundPath;
+		winform.imgWallpaper.redrawBackground();
+	}
+}
+
+winform.btnSetCurrent.oncommand = function(id,event){
+	if(io.exist(winform.editPath.text)){
+		sys.wallpaper.setCurrent(winform.editPath.text);
+		winform.setTimeout( 
+			function(){
+				reloadHistory();
+			},500
+		)	
+	}
+	else {
+		winform.editPath.editBox.showWarningTip("请指定正确的图像图像");
+	}
+}
+
+winform.btnExplorer.oncommand = function(id,event){
+	import process;
+	process.exploreSelect(winform.editPath.text)
+}
+
+winform.btnView.oncommand = function(id,event){
+	import process.imageView;
+	process.imageView(winform.editPath.text);
+}
+
+winform.btnFullScreen.oncommand = function(id,event){
+	//用 custom 控件显示图像,主要是因为 custom 控件自带全屏功能
+	winform.imgWallpaper.fullscreen(true);
+}
+
+winform.btnSetting.oncommand = function(id,event){
+	import process.wow64
+	process.wow64.execute("explorer","shell:::{ED834ED6-4B5A-4bfe-8F11-A626DCB6A921} -Microsoft.Personalization\pageWallpaper")
+}
+
+import win.ui.simpleWindow;
+win.ui.simpleWindow(winform);
+
+winform.show();
+win.loopMessage();

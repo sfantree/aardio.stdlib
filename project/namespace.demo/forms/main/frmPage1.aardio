@@ -1,0 +1,40 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469;bgcolor=16777215)
+winform.add(
+button={cls="button";text="Button";left=272;top=40;right=368;bottom=72;z=4};
+edit2={cls="edit";left=32;top=40;right=136;bottom=72;edge=1;z=1};
+edit3={cls="edit";left=152;top=40;right=256;bottom=72;edge=1;z=2};
+edit4={cls="edit";left=32;top=88;right=368;bottom=208;edge=1;multiline=1;z=3}
+)
+/*}}*/
+
+import utils;
+
+winform.button.oncommand = function(id,event){
+	var a = winform.edit2.text;
+	var b = winform.edit3.text;
+	if(a and  b) {
+	    a = tonumber(a);
+	    b = tonumber(b);
+	    var c = getMinNumber(a, b);
+	    winform.edit4.text = tostring(c);
+	}
+	
+}
+
+winform.edit2.oncommand = function(id,event){
+	
+}
+
+winform.edit3.oncommand = function(id,event){
+	
+}
+
+winform.edit4.oncommand = function(id,event){
+	
+}
+
+winform.show();
+win.loopMessage();
+return winform;

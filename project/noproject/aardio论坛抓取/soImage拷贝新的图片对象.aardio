@@ -1,0 +1,10 @@
+import soImage;
+
+var img = soImage();
+var img2 = soImage();
+
+img.capture()
+img2.setBytes( img.getBytes() );
+
+img2.resize(100,100);
+img2.paint()

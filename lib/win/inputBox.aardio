@@ -1,0 +1,66 @@
+﻿//inputBox 输入框
+import win.ui;
+import win.ui.ctrl.edit;
+import win.ui.ctrl.button;
+import win.ui.ctrl.static;
+
+namespace win;  
+
+class  inputBox{
+	ctor(parent,password){  
+			
+		this = ..win._form(cls="";text="aardio form";right=442;bottom=137;border="dialog frame";exmode="none";max=false;min=false;mode="popup";parent=parent)
+		this.add(
+			btnCancel={cls="button";text="取消";left=298;top=87;right=372;bottom=115;db=1;dr=1;z=2};
+			btnOk={cls="button";text="确定";left=205;top=87;right=279;bottom=115;db=1;dr=1;style=1;z=1};
+			info={cls="static";text="请输入";left=20;top=20;right=350;bottom=38;dl=1;dt=1;notify=1;transparent=1;z=4};
+			input={cls="edit";left=20;top=46;right=423;bottom=71;dl=1;dt=1;edge=1;password=password;z=3}
+		)
+		
+		this.onInitDialog = function(hwnd,message,wParam,lParam){
+			this.input.setFocus();
+		};
+		
+		this.btnCancel.oncommand = function(id,event){
+			this.endModal();
+		};
+		
+		this.btnOk.oncommand = function(id,event){ 
+			this.endModal( this.input.text );
+		};  
+		
+		this.onOk = function(){
+	    	this.endModal( this.input.text );
+		}; 
+		
+		this.onCancel = function(){
+	    	this.endModal();
+		}; 
+	} 
+}
+ 
+/***intellisense()
+win.inputBox = 输入对话框 
+win.inputBox( = 创建一个输入对话框
+win.inputBox(.(父窗口,密码模式） =  创建一个输入对话框,所有参数可选\n设置密码模式输入框输入内容显示为星号
+win.inputBox() = !wininputBox.
+end intellisense***/
+
+/***intellisense(!wininputBox)
+doModal() = 弹出输入对话框\n该函数返回用户输入的值\n取消则返回null空值
+onInitDialog = @.onInitDialog = function(hwnd,message,wParam,lParam){\n	??.center()__/*输入框初始化完成触发该函数*/\n}
+center() = 居中显示
+info = !edit.
+input = !edit.
+text = 输入框标题
+setPos(.(x,y,宽,高,插入位置,参数) = 调整窗口位置或排序\n所有参数可选 
+getPos() = 返回相对坐标,宽,高 
+topmost()=窗体始终最前
+topmost(false)=取消窗体始终最前
+modifyStyle(.(remove,add,swpFlags) = 修改窗口样式,所有参数都是可选参数,\n@remove 用数值指定要移除的样式,可使用 _WS_ 前缀的常量\n@add 用数值指定要添加的样式,可使用 _WS_ 前缀的常量\n@swpFlags 可选用数值指定调整窗口选项,可使用 _SWP_ 前缀的常量\n如果指定了 @swpFlag ,则使用该参数调用::SetWindowPos\n细节请参考 win.modifyStyle 函数源码 
+modifyStyleEx(.(remove,add,swpFlags) = 修改窗口扩展样式,所有参数都是可选参数,\n@remove 用数值指定要移除的样式,可使用 _WS_EX_ 前缀的常量\n@add 用数值指定要添加的样式,可使用 _WS_EX_ 前缀的常量\n@swpFlags 可选用数值指定调整窗口选项,可使用 _SWP_ 前缀的常量\n如果指定了 @swpFlag ,则使用该参数调用::SetWindowPos\n细节请参考 win.modifyStyle 函数源码  
+setInterval(回调函数,延时毫秒数,->->->) = @.setInterval( \n	function(){\n		__/*参数@1指定执行函数,参数@2指定执行间隔，\n可选指定一个或多个回调参数，不指定回调参数则默认为:\n hwnd,message,timerId,tick,\n\n如果在定时器中执行了win.delay等继续消息循环的代码，\n在定时器退出前不会再触发同一定时器（重入）。\n\n定时器回调函数返回数值可修改时间间隔,\n返回false取消该定时器*/\n	},1000 \n)
+clearInterval(__/*请输入ID*/) = 删除定时器
+changeInterval(__/*请输入ID*/,1000) = 重新设定定时器的延时时间
+setTimeout(.(函数名,延时,其他参数) = 延时执行函数
+end intellisense***/

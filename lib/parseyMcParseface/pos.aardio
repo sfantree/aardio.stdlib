@@ -1,0 +1,126 @@
+﻿//pos Part-of-Speech
+namespace parseyMcParseface.pos;
+
+label = {
+    en = {
+		ADJ = {"Adjective";""};
+		ADP = {"Adposition";""};
+		ADV = {"Adverb";""};
+		AUX = {"Auxiliary verb";""};
+		CONJ = {"Coordinating conjunction";""};
+		DET = {"Determiner";""};
+		INTJ = {"Interjection";""};
+		NOUN = {"Noun";""};
+		NUM = {"Numeral";""};
+		PART = {"Particle";""};
+		PRON = {"Pronoun";""};
+		PROPN = {"Proper noun";""};
+		PUNCT = {"Punctuation";""};
+		SCONJ = {"Subordinating conjunction";""};
+		SYM = {"Symbol";""};
+		VERB = {"Verb";""};
+		PRT = {"Phrasal verb particle";""};
+		X= {"Other";""}; 	
+    };
+    zh = {
+		ADJ = {"形容词";""};
+		ADP = {"介词";""};
+		ADV = {"副词";""};
+		AUX = {"助动词";"非主要动词和助词，如BE,HAVE SHOULD/COULD等"};
+		CONJ = {"并列连词";""};
+		DET = {"限定词";""};
+		INTJ = {"感叹词";""};
+		NOUN = {"名词";""};
+		NUM = {"数字";""};
+		PART = {"分词";""};
+		PRON = {"代词";""};
+		PROPN = {"专有名词";""};
+		PUNCT = {"标点符号";""};
+		SCONJ = {"从属连词";""};
+		SYM = {"符号";""};
+		VERB = {"动词";""};
+		PRT = {"动词短语";""};
+		X= {"其他";""};
+    } 
+}
+
+tag = {
+	en = {
+		CC = {"Coordinating conjunction";""};
+		CD = {"Cardinal number";""};
+		DT = {"Determiner";""};
+		EX = {"Existential there";""};
+		FW = {"Foreign word";""};
+		IN = {"Preposition or subordinating conjunction";""};
+		JJ = {"Adjective";""};
+		JJR = {"Adjective, comparative";""};
+		JJS = {"Adjective, superlative";""};
+		LS = {"List item marker";""};
+		MD = {"Modal";""};
+		NN = {"Noun, singular or mass";""};
+		NNS = {"Noun, plural";""};
+		NNP = {"Proper noun, singular";""};
+		NNPS = {"Proper noun, plural";""};
+		PDT = {"Predeterminer";""};
+		POS = {"Possessive ending";""};
+		PRP = {"Personal pronoun";""};
+		PRP$ = {"Possessive pronoun";""};
+		RB = {"Adverb";""};
+		RBR = {"Adverb, comparative";""};
+		RBS = {"Adverb, superlative";""};
+		RP = {"Particle";""};
+		SYM = {"Symbol";""};
+		TO = {"to";""};
+		UH = {"Interjection";""};
+		VB = {"Verb, base form";""};
+		VBD = {"Verb, past tense";""};
+		VBG = {"Verb, gerund or present participle";""};
+		VBN = {"Verb, past participle";""};
+		VBP = {"Verb, non-3rd person singular present";""};
+		VBZ = {"Verb, 3rd person singular present";""};
+		WDT = {"Wh-determiner";""};
+		WP = {"Wh-pronoun";"who whose which"};
+		WP$ = {"Possessive wh-pronoun";""};
+		WRB = {"Wh-adverb";"how where when"};
+	};
+	zh = {
+		CC = {"连接词";"如and,but等"};
+		CD = {"基数";""};
+		DT = {"限定词";"如this,that,these,those,such，不定限定词：no,some,any,each,every,enough,either,neither,all,both,half,several,many,much,(a) few,(a) little,other,another"};
+		EX = {"存在副词there";"there be语句中的there"};
+		FW = {"外来词";""};
+		IN = {"介词或从属连词";""};
+		JJ = {"形容词或序数词";""};
+		JJR = {"形容词:比较级";""};
+		JJS = {"形容词:最高级";""};
+		LS = {"列表标示";""};
+		MD = {"情态助动词";""};
+		NN = {"常用名词:单数形式";""};
+		NNS = {"常用名词:复数形式";""};
+		NNP = {"专有名词:单数形式";""};
+		NNPS = {"专有名词:复数形式";""};
+		PDT = {"前位限定词";""};
+		POS = {"所有格结束词";""};
+		PRP = {"人称代词";""};
+		PRP$ = {"所有格代名词";""};
+		RB = {"副词";""};
+		RBR = {"副词:比较级";""};
+		RBS = {"副词:最高级";""};
+		RP = {"分词";""};
+		SYM = {"符号";""};
+		TO = {"不定式";""};
+		UH = {"感叹词";""};
+		VB = {"动词:基本形式";""};
+		VBD = {"动词:过去时";""};
+		VBG = {"动词:动名词或现在分词";""};
+		VBN = {"动词:过去分词";""};
+		VBP = {"动词:非第三人称单数";""};
+		VBZ = {"动词:第三人称单数";""};
+		WDT = {"Wh-前缀限定词";"如关系限定词：whose,which.疑问限定词：what,which,whose."};
+		WP = {"Wh-前缀代词";"who whose which"};
+		WP$ = {"所有格代名词";""};
+		WRB = {"疑问代词";"how where when"};
+	};
+}
+
+// https://universaldependencies.org/docs/en/pos/

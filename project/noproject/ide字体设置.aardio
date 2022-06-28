@@ -1,0 +1,61 @@
+//IDE设置
+import ide;
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="IDE设置";right=319;bottom=135;border="dialog frame";max=false)
+winform.add(
+btnCancel={cls="button";text="取消";left=176;top=96;right=260;bottom=128;z=5};
+btnChangeFont={cls="button";text="更改(&C)...";left=224;top=48;right=296;bottom=72;ah=1;z=2};
+btnOk={cls="button";text="确定";left=64;top=96;right=146;bottom=128;z=4};
+groupbox={cls="groupbox";text="显示字体";left=16;top=16;right=304;bottom=88;edge=1;z=1};
+staticPreview={cls="static";text="Sample 示例";left=24;top=40;right=216;bottom=80;align="center";bgcolor=16777215;center=1;z=3}
+)
+/*}}*/
+
+var px2pt = function(pxsize){
+        import math;
+        return math.abs(math.round(pxsize * 3 / 4));
+}
+
+var pt2px = function(ptsize){
+        import math;
+        return math.round(ptsize * 4 / 3 * -1);
+}
+
+winform.btnOk.oncommand = function(id,event){
+        ide.setConfig("editor_font_name",editor_font_name);
+        ide.setConfig("editor_font_size",editor_font_size);
+        winform.msgbox('设置成功，重新打开aardio文档字体立即生效，重启IDE大小生效\n' ++ "字体:"+editor_font_name ++ " 大小:" ++ editor_font_size);
+        winform.close();
+}
+
+
+winform.btnCancel.oncommand = function(id,event){
+        winform.close();
+}
+
+//read config
+editor_font_name = ide.getConfig("editor_font_name");
+editor_font_size = ide.getConfig("editor_font_size");
+
+//set preview
+winform.staticPreview.setFont(point=editor_font_size;name=editor_font_name);
+
+winform.btnChangeFont.oncommand = function(id,event){
+        import win.dlg;
+        var dlgFont = win.dlg.font(winform,{
+                flags = 0x12143 | 0x40/*_CF_INITTOLOGFONTSTRUCT*/ | 0x100/*_CF_EFFECTS*/;
+        logFont = LOGFONT( h=pt2px(editor_font_size);name=editor_font_name );}
+    );
+        var font = dlgFont.chooseFont();
+        try{
+                winform.staticPreview.setFont(font);
+                winform.staticPreview.redraw();
+                editor_font_name = font.name;
+                editor_font_size = px2pt(font.h);
+                return;
+        }
+}
+
+winform.show() 
+win.loopMessage();

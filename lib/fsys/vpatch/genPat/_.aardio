@@ -1,0 +1,59 @@
+//genPat 源代码
+import fsys.vpatch;
+namespace fsys.vpatch;
+
+var dll = ..raw.loadDll( ..io.appData("aardio\std\vpatch\GenPat.dll",$"~\lib\fsys\vpatch\genPat\.res\GenPat.dll") );  
+var genPatFile = dll.api("genPatFile","int(STRING srcFilename,STRING dstFilename,STRING patFilename,int blockSize,int maxMatches 
+	,bool beVerbose,bool existanceIsError,pointer beginProcess,pointer stepProcess )" )
+	
+class genPat{
+	ctor(existanceIsError=true,maxMatches=500,beVerbose){
+	
+	};
+	create = function(srcFilename,dstFilename,patFilename,blockSize=64 ){
+		srcFilename = ..io.exist(srcFilename);
+		dstFilename = ..io.exist(dstFilename);
+		patFilename = ..io.fullpath(patFilename);
+		
+		if( ! (srcFilename && dstFilename ) ){
+			error("参数指定的路径错误",2)
+		}
+		return genPatFile(..string.fromto(srcFilename)
+			,..string.fromto(dstFilename),..string.fromto(patFilename),blockSize,maxMatches,beVerbose,existanceIsError);
+	}
+	append = function(exefile,padfile){
+		if(!..io.exist(exefile) )
+			error("参数一指定的执行文件路径错误",2)
+		if(!..io.exist(padfile) )
+			error("参数二指定的补丁文件路径错误",2)
+		
+		var fileExe  = ..io.open(exefile,"a+b");
+		var filePad = ..io.open(padfile,"rb");
+		var bufsize = 1024 * 1024 * 10;
+		var pos = fileExe.seek();
+		
+		data = filePad.read(bufsize)
+		while ( data ){   
+			fileExe.write(data)
+			data = filePad.read(bufsize)
+		};
+		fileExe.write({INT pos = pos});
+		fileExe.close();
+		filePad.close();
+	}
+}
+ 
+ /**intellisense()
+fsys.vpatch.genPat = 用于创建VPATCH补丁
+fsys.vpatch.genPat(.(是否允许更新补丁,最大匹配次数) = 创建VPATCH补丁生成器.\n所有参数都是可选参数
+fsys.vpatch.genPat() = !patch_genpat.
+!patch_genpat.create(.("旧版源文件","新版目标文件","更新补丁文件路径",块大小) = 创建或更新补丁文件,\n块大小为可选参数(默认为64),块越小生成的文件越小,所需时间也越长.\n返回值为_VPATH_GEN_开头的常量,\n_VPATCH_GEN_OK 表示成功\n_VPATCH_GEN_SAME 表示文件相同,不需要创建补丁\n_VPATCH_GEN_EXIST 表示补丁已存在,但不允许更新\n_VPATCH_GEN_ERROR 发生错误
+!patch_genpat.append(.("执行文件路径","补丁文件路径") = 将补丁文件附加到EXE文件尾
+fsys.vpatch.genPat.create
+_VPATCH_GEN_OK=@0/*_VPATCH_GEN_OK*/
+_VPATCH_GEN_ARGUMENTS_MISSING=@1/*_VPATCH_GEN_ARGUMENTS_MISSING*/
+_VPATCH_GEN_ERROR=@2/*_VPATCH_GEN_ERROR*/
+_VPATCH_GEN_EXIST=@3/*_VPATCH_GEN_EXIST*/
+_VPATCH_GEN_SAME=@-1/*_VPATCH_GEN_SAME*/
+end intellisense**/
+

@@ -1,0 +1,25 @@
+var code = /** 
+	#include <windows.h> 
+	typedef struct { char proto[128];HWND hwnd; } THREAD_CALLBACK_USERDATA;
+	__declspec(dllexport) void libVclEventRouter( void * event,THREAD_CALLBACK_USERDATA * userdata ) 
+	{     
+		SendMessage(
+			userdata->hwnd,0xACCE/*_WM_THREAD_CALLBACK*/, 
+			userdata->proto, 
+			event 
+		);
+		return 0;
+	}  
+**/
+ 
+import tcc; 
+vm = tcc( );//创建TCC编译器 
+
+vm.addLib( 
+	"user32",
+	"kernel32",
+	"gdi32"
+) 
+
+vm.output( "~\lib\libvlc\.res\eventRouter.dll", code )  
+vm.close();  

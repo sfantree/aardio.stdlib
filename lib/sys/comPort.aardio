@@ -1,0 +1,56 @@
+﻿//comPort 串口
+import sys.device;
+import sys.volume;
+
+namespace sys.comPort;
+
+list = function(){
+	var devInfo = ..sys.device("{86E0D1E0-8089-11D0-9CE4-08003E301F73}"
+	,,0x10/*_DIGCF_DEVICEINTERFACE*/|2/*_DIGCF_PRESENT*/);
+	
+	var result = {}
+	for( index,portName,friendlyName,deviceDesc,classGuid in devInfo.each( 
+    	"PortName",  0xC/*_SPDRP_FRIENDLYNAME*/,  0/*_SPDRP_DEVICEDESC*/,  8/*_SPDRP_CLASSGUID*/ ) 
+		){
+			var len,deviceName = ..sys.volume.QueryDosDevice(portName,5000,5000);
+			..table.push(result,{
+				index = index;
+				portName = portName;
+				friendlyName = friendlyName;
+				deviceName = len ? ..string.str(deviceName) : null;
+				description = deviceDesc;
+				classGuid = classGuid;
+				@{_tostring = portName }
+			} )
+	}
+	
+	devInfo.destroy();
+	return result;
+}
+
+find = function(kw){
+	var portInfos = list();
+	if(portInfos){
+		for(i,pi in portInfos){
+			if( (pi.description ? ..string.find(pi.description,kw) ) 
+					|| (pi.friendlyName ? ..string.find(pi.friendlyName,kw))){
+				return pi;
+			} 
+		}
+	}
+}
+
+/**intellisense(sys.comPort)
+list() = 获取串口列表
+find(.(关键字) = 在 COM 端口描述以及设备友好名称中搜索指定的关键字,\n返回找到的 COM 端口信息
+find() = !sysComPort.
+end intellisense**/
+
+/**intellisense(!sysComPort)
+portName = 端口名，例如 COM1, COM2
+friendlyName =  设备友好名称
+deviceName = 设备名
+description = 设备描述
+classGuid = 设备 GUID
+index = 在list函数返回的串口数组中的索引值
+end intellisense**/

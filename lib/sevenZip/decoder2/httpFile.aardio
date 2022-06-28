@@ -1,0 +1,102 @@
+﻿//httpFile 网络安装包
+import inet.http;
+import inet.downBox;
+import sevenZip.decoder2; 
+
+namespace sevenZip.decoder2.httpFile;
+
+download = function(url,title="下载",saveDir,extraDir,saveName,parentForm){
+	var tUrl = ..inet.url.split(url);
+	if(!tUrl){
+		error("错误的URL参数",2)
+	}
+	var tPath = ..io.splitpath(tUrl.path)
+	
+	saveDir = ..io.fullpath(saveDir : "~\download\" )
+	..io.createDir(saveDir);
+	
+	if(!saveName){
+		saveName = tPath.file;
+	}
+	
+	var savePath = ..io.joinpath(saveDir,saveName)
+	if(!extraDir){
+		var tpath = ..io.splitpath(savePath);
+		if(tpath.ext){
+			tpath.ext = ""
+		}
+		else {
+			tpath.ext = ".uncompress"
+		}
+		
+		extraDir = tostring(tpath);
+	}
+	else {
+		extraDir = ..io.fullpath(extraDir);
+	} 
+	
+	var downBox = ..inet.downBox(parentForm:..win.getActive(),title,false) 
+	downBox.headers = self.headers;
+	downBox.referer = self.referer;
+	downBox.userAgent = self.userAgent; 
+	
+	downBox.endProc = function(){ 
+		
+		var archive = ..sevenZip.decoder2();
+		archive.printError = function(name,message){
+        	downBox.labInfo.text = ..string.concat(name,message);
+		}
+		
+		archive.extractSetCompleted = function(lowSize,hiSize,percent){
+        	downBox.progress.progressPos = percent;  
+		}
+		
+		archive.extractPrepareOperation = function(askExtractMode,itemIndex,filepath,isDir){
+    		downBox.labProgress.text = filepath; 
+		}
+		
+		downBox.text = "正在解压缩: " + saveName;
+		if( !archive.open( savePath ) ){
+        	downBox.labInfo.text = "打开压缩包出错";
+        	return;
+		}
+		
+		downBox.progress.hide = false;
+		downBox.progress.setProgressRange(1,100);  
+ 		downBox.onClose = function(){ 
+			return false;
+		}
+	
+		downBox.labProgress.text = " "; 
+		downBox.labInfo.text = "正在解压缩 ……";
+		if( archive.extract( extraDir ) ){
+			downBox.onClose = null;
+        	downBox.endModal(); 
+		}
+		else {
+			downBox.onClose = null;
+        	downBox.text = "解压缩遇到错误"
+        	downBox.complete = false;
+		} 
+		archive.close();
+	}
+	downBox.download(url,savePath,null,null,"" ) 
+	
+	if(!downBox.complete){ 
+		return;
+	} 
+	
+	if( ! ..io.exist(savePath,4) ){  
+		return false; 
+	} 
+ 
+	return extraDir; 		
+}
+
+/**intellisense(sevenZip.decoder2)
+httpFile = 网络安装包
+httpFile.headers =下载时添加的HTTP请求头
+httpFile.referer = 下载时的HTTP引用页
+httpFile.userAgent =  下载时用到的User Agent
+httpFile.download(.(URL,对话框标题,下载目录,解压目录,存储文件名,父窗口) = 下载zip文件,除url以外,其他所有参数可选\n成功返回 解压目录,失败返回 null
+end intellisense**/

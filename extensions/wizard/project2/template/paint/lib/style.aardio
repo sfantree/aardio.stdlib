@@ -1,0 +1,46 @@
+﻿
+namespace style;
+
+pen = {
+	background={
+		default=0xFFA34949;
+		hover=0xFFCC5C5C
+	};
+	color={
+		default=0xFFFFFFFF;
+		hover=0xFFFFFFFF
+	};
+	checked={
+		background={
+			default=0xFFA1A1A1;
+			hover=0xFF2D7BA1
+		}
+	};
+	group = "pen";
+}
+
+hyperlink = {
+	color={
+		hover=0xFFFF9A00
+	}	
+}
+
+color = {
+	border={
+		active={color=0xFF00AEFF;width=1};hover={color=0xFFFFC000;width=2}
+	}
+}
+
+trackbar = {
+	background={
+		default=0xFFA18D2D
+	};
+	foreground={
+		default=0xFF2D7BA1;
+		hover=0xFFFFC000
+	};
+	color={
+		default=0xFFB5474C;
+		hover=0xFF00AEFF
+	}
+}

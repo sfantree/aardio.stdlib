@@ -1,0 +1,67 @@
+//自绘动画
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="自定义动画演示";right=63;bottom=63)
+winform.add(
+plus={cls="plus";left=0;top=0;right=64;bottom=64;background="G:\Program Files\DropIt\Images\Big_Default.png";notify=1;z=1}
+)
+/*}}*/
+
+import debug;
+import console;
+import wsock.udp.asynClient;
+
+// udp远程日志输出
+Logd2 = function(...){
+	return;
+    import time;
+    var args = {...};
+    var tm = time.now();
+    tm.format = "[%Y/%m/%d %H:%M:%S] ";
+    var debugInfo = debug.queryinfo(2, "select source,function,upvars,name,currentline,activelines") ;
+    var output = string.concat(tostring(tm), "line: ", debugInfo[['currentline']], " ", string.join(args,' '));
+    
+    var udpClient = wsock.udp.client();
+    udpClient.setBroadcast(true);
+    udpClient.sendto(output, "255.255.255.255", 1000);
+}
+
+import fsys.config;
+import win.ui.menu;
+import win.util.savePosition;
+
+cfg = fsys.config("/config/");
+
+win.util.savePosition((winform));
+winform.bindConfig( cfg.winform,{
+	
+});
+
+winform.popmenu = win.ui.popmenu(winform);//创建弹出菜单 
+winform.popmenu.add('退出',function(id){ winform.close() })
+
+//悬浮控件窗口
+
+winform.plus.wndproc = function(hwnd,message,wParam,lParam){
+	//无返回值则继续调用默认回调函数
+	select(message) {
+		case 0x201/*_WM_LBUTTONDOWN 鼠标按下*/{
+			winform.hitCaption();
+		}
+		case 0x204/*_WM_RBUTTONDOWN*/{   
+			winform.popmenu.popup( win.getMessagePos(lParam) );//弹出菜单
+		} 
+	} 
+}
+
+winform.onClose = function(hwnd,message,wParam,lParam){
+    
+}
+
+win.setTopmost(winform.plus.hwnd);
+
+winform.plus.orphanWindow(true);
+winform.transparent(true);
+
+winform.show() 
+win.loopMessage();

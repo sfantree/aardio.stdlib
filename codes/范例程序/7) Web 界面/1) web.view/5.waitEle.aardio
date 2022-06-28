@@ -1,0 +1,33 @@
+//waitEle 用法演示
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="Edge 浏览器控件 - web.view";right=759;bottom=469;bgcolor=16777215)
+winform.add()
+/*}}*/
+
+import web.view;
+var wb = web.view(winform);
+ 
+wb.go("http://www.baidu.com");
+
+//用法一：异步等待参数@1指定CSS选择器的节点，回调 aardio 函数
+/*
+wb.waitEle("#kw",function(ok,err){
+	wb.doScript("document.querySelector('#kw').value='aardio'")
+})
+*/
+
+//用法二：同步等待参数@1指定CSS选择器的节点
+/*
+wb.waitEle("#kw")
+wb.doScript("document.querySelector('#kw').value='aardio'")
+*/
+
+//用法三：异步等待参数@1指定CSS选择器的节点，回调 Javascript 代码
+wb.waitEle("#kw",`
+//注意在JS代码中,this为找到的节点
+this.value = "aardio";
+`)
+
+winform.show();
+win.loopMessage();

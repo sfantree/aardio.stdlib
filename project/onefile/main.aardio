@@ -1,0 +1,569 @@
+// @Author  : popy32
+// @Contact : 74o5o27o8#qq.com
+// @File    : 
+// @Comment : Word文档翻译工具
+
+// v1.1 
+// 初步定稿 增加延时相应窗口消息
+// 修改 判断段落是否有文字 放入try catch中 
+
+import debug;
+import console;
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="Word文档翻译工具";right=759;bottom=469)
+winform.add(
+button={cls="button";text="日志测试1";left=0;top=0;right=128;bottom=32;z=2};
+button2={cls="button";text="另存为";left=0;top=32;right=128;bottom=64;z=3};
+button3={cls="button";text="遍历每个段落";left=0;top=64;right=128;bottom=96;z=5};
+button4={cls="button";text="插入";left=0;top=96;right=128;bottom=128;z=6};
+button5={cls="button";text="停止";left=0;top=128;right=128;bottom=160;z=7};
+edit={cls="edit";left=0;top=240;right=760;bottom=472;autohscroll=false;bgcolor=0;color=16777215;edge=1;multiline=1;z=1};
+listbox={cls="listbox";left=128;top=0;right=760;bottom=240;edge=1;items={};z=4}
+)
+/*}}*/
+
+import console;
+import debug;
+import com;
+import win.dlg.message;
+import win.timer;
+import fsys.file;
+import web.rest.jsonCaiYun;
+import win.dlg.message;
+
+// 关闭日志
+_DISABLE_DEBUG_INFO = false;
+
+winDlgMessage = ..win.dlg.message(winform);
+
+// console.open();
+//timer = win.timer( winform );
+
+// 日志输出
+Logd = function(...){
+	if( (not _STUDIO_INVOKED) or (_DISABLE_DEBUG_INFO) ) {
+	    //return ;
+	}
+	
+    import time;
+    var args = {...};
+    var tm = time.now();
+    
+    tm.format = "[%Y/%m/%d %H:%M:%S] ";
+    //
+    var debugInfo = debug.queryinfo(2, "select source,function,upvars,name,currentline,activelines") ;
+    winform.edit.log(tostring(tm), "line: ", debugInfo[['currentline']], " ", ..string.join(args,' '),'\r\n');
+    // 滚动条随光标滚动
+    winform.edit.scrollCaret();
+}
+
+
+
+// 测试当前目录
+winform.button.oncommand = function(id,event){
+    import fsys;
+    import fsys.path;
+    Logd("winform.button.oncommand", "fsys.getCurDir()", fsys.getCurDir());
+    Logd("winform.button.oncommand", "io._exepath", io._exepath);
+    Logd("winform.button.oncommand", 'io.fullpath("/")', io.fullpath("/") );
+    Logd("winform.button.oncommand", 'io.fullpath("~")', io.fullpath("~") );
+    // path = ..io.tmpname(,path)
+    Logd("winform.button.oncommand", 'io.tmpname(,".docx")', io.tmpname(,".docx") );
+}
+
+m_oWord = null;
+
+// m_oWord = com.TryGetObject("Word.Application");
+
+refreshOpenDocList = function(){
+	// 获取
+	Logd("refreshOpenDocList");
+	
+	m_oWord = null;
+	collectgarbage("collect");
+	
+	if(not m_oWord) {
+		Logd("refreshOpenDocList", "not m_oWord");
+    	m_oWord = com.TryGetObject("Word.Application");
+	}
+	
+	//
+	com.IsObject(m_oWord);
+	
+	if(m_oWord) {
+		Logd("refreshOpenDocList", "m_oWord");
+	    var openDocList = getOpenDocList(m_oWord);
+	    showOpenDocList(openDocList);
+	} else {
+		// 刷新
+	    showOpenDocList({});
+	}
+}
+
+getOpenDocList = function(m_oWord){
+	Logd("getOpenDocList", "start");
+	var openDocList = {};
+	if(not m_oWord) {
+		Logd("getOpenDocList", "not m_oWord");
+	    return openDocList;
+	}
+	Logd("getOpenDocList", "start2");
+	var document_number = -1;
+	try{
+		document_number = m_oWord.Documents.count;
+	}
+	catch(e){}
+	Logd("getOpenDocList", "document_number", document_number);
+	if(document_number > 0) {
+	    try{
+	        for(i=1;document_number;1){
+	            Logd("getOpenDocList", "Print Doc Name", i, m_oWord.Documents[i].Name);
+	        	table.push(openDocList, m_oWord.Documents[i].Name);
+	        }
+	    }
+		catch(e){}
+	} 
+	
+	return openDocList;
+}
+
+showOpenDocList = function(openDocList){
+	//var 
+	winform.listbox.clear();
+	for(i=1;#openDocList;1){
+	    Logd("showOpenDocList", openDocList[i]);
+	    
+	    winform.listbox.add(openDocList[i]);
+	    
+	}
+	if(#openDocList > 0) {
+		Logd("showOpenDocList", "#openDocList > 0");
+	    winform.listbox.selIndex = #openDocList;
+	}
+	winform.redraw();
+}
+
+//refreshOpenDocList();
+
+//timer.onTimer = function(hwnd,msg,id,tick){
+//	refreshOpenDocList();
+//} 
+//timer.setInterval(1000)
+//timer.disable();
+
+
+winform.onActivateApp = function(activated,threadId){
+	if(activated){
+	    refreshOpenDocList();
+	}
+}
+
+// 从选中的listbox获取document对象
+getDocObjFromSel = function(){
+	
+	//  是否 选中 listbox
+	var select_doc_name = winform.listbox.selText;
+	Logd("getDocObjFromSel", 'select_doc_name', select_doc_name);
+	
+	var document_number = -1;
+	var target_doc = null;
+	
+	if(select_doc_name != null and #select_doc_name > 0) {
+		// 遍历打开的word doc
+		try{
+			document_number = m_oWord.Documents.count;
+		}
+		catch(e){}
+		//Logd("getOpenDocList", "document_number", document_number);
+		if(document_number > 0) {
+	    	try{
+	        	for(i=1;document_number;1){
+	            	//Logd("getOpenDocList", "Print Doc Name", i, m_oWord.Documents[i].Name);
+	        		//table.push(openDocList, m_oWord.Documents[i].Name);
+	        		if(m_oWord.Documents[i].Name == select_doc_name) {
+	        		    target_doc = m_oWord.Documents[i];
+	        		    //Logd("getDocObjFromSel", 'm_oWord.Documents[i].Name', m_oWord.Documents[i].Name);
+	        		    //m_oWord.Documents[i].Name
+	        		    break;
+	        		}
+	        	}
+	    	}
+			catch(e){}
+		} 
+	}
+	
+	return target_doc;
+}
+
+
+// 另存为备份
+// 不改变已经打开的文档
+// 先保存 直接复制文件
+winform.button2.oncommand = function(id,event){
+	
+	var target_doc = null;
+	target_doc = getDocObjFromSel();
+	
+	if( target_doc != null) {
+	    //fsys.path.
+	    //..io.tm
+	    
+	    Logd("winform.button2.oncommand", 'target_doc.path', target_doc.path);
+	    Logd("winform.button2.oncommand", 'target_doc.name', target_doc.name);
+	    
+	    // https://docs.microsoft.com/en-us/office/vba/api/word.document.path
+	    var current_path = ..fsys.joinpath(target_doc.path, target_doc.name);
+	    
+	    var path = ..io.tmpname(,".docx");
+	    var ext =  ..string.match(path,"[^.]+$");
+	    Logd("winform.button2.oncommand", 'savepath', path);
+	    // https://docs.microsoft.com/en-us/office/vba/api/word.wdsaveformat
+	    if( ext ){
+			format = ( {
+				doc = 0/*_wdFormatDocument97*/;
+				docx = 16/*_wdFormatDocumentDefault*/;
+				rtf = 6/*_wdFormatRTF*/;
+				pdf = 17/*_wdFormatPDF*/;
+			} ) [..string.lower(ext)];
+		}; 
+		
+	    try{
+	        //Logd("winform.button2.oncommand", 'target_doc.path', target_doc.path);
+	        target_doc.SaveAs2( ,format);
+	        ..fsys.copy(current_path, path);
+	    }
+		catch(e){}
+	}
+}
+
+// 遍历段落
+winform.button3.oncommand = function(id,event){
+	//var o_Undo = m_oWord.UndoRecord;
+	//o_Undo.StartCustomRecord ("Undo Stack Display Text");
+	var target_doc = null;
+	target_doc = getDocObjFromSel();
+	var paragraph_number = -1;
+	if( target_doc != null) {
+	    try{
+			paragraph_number = target_doc.Paragraphs.count;
+		}
+		catch(e){}
+		Logd("winform.button3.oncommand", "paragraph_number", paragraph_number);
+		m_doc_content = {};
+		
+		m_stopRun = false;
+		
+		if(paragraph_number > 0) {
+	    	try{
+	        	for(i=1;paragraph_number;1) {
+	        	    
+	        	    if(m_stopRun == true) {
+	        	        return;
+	        	    }
+	        	    
+	            	//var eachParagraphObj = target_doc.Paragraphs[i];
+	            	//var t = eachParagraphObj.Range.Text;
+	            	
+	            	//Logd("winform.button3.oncommand", 
+	            	//    ..string.format("paragraph[%d]: %s", i, t) );
+	            	    
+	            	   // 20220327 18:00 已修复
+	            	   var eachParagraphObj = target_doc.Paragraphs[i];
+			           var pos = eachParagraphObj.Range.Start;
+                       var pos2 = eachParagraphObj.Range.End;
+                       var t = eachParagraphObj.Range.Text;
+                          //Logd("w");
+                       //console.log(pos, pos2 );
+                       //Logd("winform.button3.oncommand", 
+	            	   // ..string.format("paragraph[%d]: [%d %d] [%s]", i, pos, pos2,  t));
+	            	    
+	            	   Logd("winform.button3.oncommand", 
+	            	    ..string.format("paragraph[%d]: [%d %d]", i, pos, pos2)); 
+	            	    
+	            	    // rngRange.InsertAfter _  " This is now the last sentence in paragraph one."
+	            	   // eachParagraphObj.Range.InsertAfter("111\n\r111");
+	            	    
+	            	    ..table.push( m_doc_content, {pos; pos2; t} ); 
+	            	    //..win.peekMessage();
+	            	    // 处理消息
+	            	    win.delay(10);
+	            	
+	        	}
+	    	}
+			catch(e){}
+			
+			  
+                          
+                       //Logd("winform.button3.oncommand", 
+	            	   // ..string.format("paragraph[%d]: [%d %d]", i, (pos), (pos2) ) );
+/*
+			var pos = target_doc.Paragraphs[i].Range.Start() ;
+            var pos2 = target_doc.Paragraphs[i].Range.End() ;
+                    Logd("winform.button3.oncommand", 
+	            	    ..string.format("paragraph[%d]: [%d %d]", pos, pos2) );
+*/
+			
+		} 
+	    
+	}
+	//o_Undo.EndCustomRecord();
+	
+	if(#m_doc_content > 0) {
+	    winDlgMessage.ok("成功读取word段落数据", 1000);
+	    return ;
+	}
+	
+}
+
+getAllCountInDocument = function(){
+	// Set myRange = Documents("Changes.doc").Content 
+	var target_doc = null;
+	target_doc = getDocObjFromSel();
+	if(target_doc == null) {
+	    Logd("winform.button4.oncommand",  "target_doc == null");
+	    return ;
+	}
+	
+	var ContentRange = target_doc.Content;
+	var pos = ContentRange.Start;
+    var pos2 = ContentRange.End;
+	return (pos2 - pos)
+}
+
+TranslateEn2Zh = function(){
+	var http = web.rest.jsonCaiYun("3975l6lr5pcbvidl6jl2")
+	caiyun = http.api();
+	var result = caiyun.translator(
+		source = {"Lingocloud is the best translation service.","彩云小译は最高の翻訳サービスです"};
+		trans_type = "auto2zh";
+		request_id = "demo";
+		detect = true;
+	)
+
+//import console;
+//console.dumpJson(result[["target"]]);
+//console.pause();
+}
+
+import web.script;
+jsBaiduFanyi = /**
+	var i = null;
+	var window = {};
+	
+	function n(r, o) {
+    	for (var t = 0; t < o.length - 2; t += 3) {
+        	var a = o.charAt(t + 2);
+        	a = a >= "a" ? a.charCodeAt(0) - 87 : Number(a),
+            	a = "+" === o.charAt(t + 1) ? r >>> a : r << a,
+            	r = "+" === o.charAt(t) ? r + a & 4294967295 : r ^ a
+    	}
+    	return r
+	}
+	
+	function e(r) {
+    	var o = r.match(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g);
+    	if (null === o) {
+        	var t = r.length;
+        	t > 30 && (r = "" + r.substr(0, 10) + r.substr(Math.floor(t / 2) - 5, 10) + r.substring(r.length - 10))
+    	} else {
+        	for (var e = r.split(/[\uD800-\uDBFF][\uDC00-\uDFFF]/), C = 0, h = e.length, f = []; h > C; C++)
+            	"" !== e[C] && f.push.apply(f, a(e[C].split(""))),
+            	C !== h - 1 && f.push(o[C]);
+        	var g = f.length;
+        	g > 30 && (r = f.slice(0, 10).join("") + f.slice(Math.floor(g / 2) - 5, Math.floor(g / 2) + 5).join("") + f.slice(-10).join(""))
+    	}
+    	var u = void 0,
+        	l = "" + String.fromCharCode(103) + String.fromCharCode(116) + String.fromCharCode(107);
+    	u = null !== i ? i : (i = window[l] || "") || "";
+    	u = '320305.131321201';
+    	for (var d = u.split("."), m = Number(d[0]) || 0, s = Number(d[1]) || 0, S = [], c = 0, v = 0; v < r.length; v++) {
+        	var A = r.charCodeAt(v);
+	
+        	128 > A ? S[c++] = A : (2048 > A ? S[c++] = A >> 6 | 192 : (55296 === (64512 & A) && v + 1 < r.length && 56320 === (64512 & r.charCodeAt(v + 1)) ? (A = 65536 + ((1023 & A) << 10) + (1023 & r.charCodeAt(++v)),
+                    	S[c++] = A >> 18 | 240,
+                    	S[c++] = A >> 12 & 63 | 128) : S[c++] = A >> 12 | 224,
+                	S[c++] = A >> 6 & 63 | 128),
+            	S[c++] = 63 & A | 128)
+    	}
+    	for (var p = m, F = "" + String.fromCharCode(43) + String.fromCharCode(45) + String.fromCharCode(97) + ("" + String.fromCharCode(94) + String.fromCharCode(43) + String.fromCharCode(54)), D = "" + String.fromCharCode(43) + String.fromCharCode(45) + String.fromCharCode(51) + ("" + String.fromCharCode(94) + String.fromCharCode(43) + String.fromCharCode(98)) + ("" + String.fromCharCode(43) + String.fromCharCode(45) + String.fromCharCode(102)), b = 0; b < S.length; b++)
+        	p += S[b],
+        	p = n(p, F);
+    	return p = n(p, D),
+        	p ^= s,
+        	0 > p && (p = (2147483647 & p) + 2147483648),
+        	p %= 1e6,
+        	p.toString() + "." + (p ^ m)
+	}
+**/
+
+vm = web.script("JScript");
+vm.doScript(jsBaiduFanyi);
+
+// 逐行翻译
+BaiduFanyiLine = function(source){
+	var oHttp = inet.http();
+	var response;
+	oHttp.head("https://www.baidu.com");
+	response = oHttp.get("http://fanyi.baidu.com/translate");
+	//Logd("response", response);
+	var pattern =  "token\: '(.*?)'";
+	var token;
+	for s in ..string.gmatch( response, pattern ){
+		 token = s;
+	}
+	
+	var sign = vm.xcall("e", source);
+	//Logd("BaiduFanyi", "token:", token, "sign:", sign);
+	
+	/*
+	https://fanyi.baidu.com/v2transapi?from=en&to=zh&query=good&transtype=translang&
+	simple_means_flag=3&sign=262931.57378&token=163d24277319e8b7b8b191c65dc174ce
+	*/
+	
+	//source = inet.url.encode(source);
+	//var url = "https://fanyi.baidu.com/v2transapi?from=en&to=zh&query=" ++ source ++
+	// "&transtype=translang&simple_means_flag=3&sign=" ++ sign ++ "&token="++ token;
+	
+	//var url = "http://httpbin.org/anything";
+	var url = "https://fanyi.baidu.com/v2transapi";
+	
+	var postdata = "from=en&to=zh&query=" ++ source ++
+	 "&transtype=translang&simple_means_flag=3&sign=" ++ sign ++ "&token="++ token;
+	response = oHttp.post(url, postdata);
+	//console.dump(response);
+	
+	var t = ..web.json.tryParse(response);
+	//console.dump(t);
+	var t1 = (t[["trans_result"]][["data"]]);
+	//console.dump(t1)
+	var res = "";
+	if(t1) {
+		for(i=1;#t1;1){
+			if(t1[[i]][["dst"]]) {
+			    res = res ++ t1[[i]][["dst"]];
+			}
+			
+		}
+	}
+	return res;
+}
+
+// 翻译
+BaiduFanyi = function(source){
+    //source = string.fromto(source,65001,0) 
+    
+    var lines  = ..string.splitEx(source, '\r\n');
+    var res = "";
+    var count = #lines;
+    for(i=1; count; 1){
+    	var line = lines[i];
+    	line = string.trim(line);
+    	if (line and #line > 0) {
+    	    res = res ++ BaiduFanyiLine(line) ;
+    	    if(i < count) {
+    	        res = res ++ '\r\n';
+    	    }
+    	}
+    }
+    return res;
+}
+
+/*
+winform.button2.oncommand = function(id,event){
+    var txt = winform.edit2.text;
+	if(#txt) {
+	    //var res = BaiduFanyiLine(txt);
+	    var res = BaiduFanyi(txt);
+	    Logd("翻译结果:", '\r\n', res);
+	}
+}
+*/
+
+
+winform.button4.oncommand = function(id,event){
+	// {pos; pos2; t} {pos; pos2; t}
+	if(#m_doc_content == 0) {
+		winDlgMessage.info("未导出段落数据", 1000);
+	    Logd("winform.button4.oncommand",  "#m_doc_content == 0");
+	    return ;
+	}
+	
+	var target_doc = null;
+	target_doc = getDocObjFromSel();
+	if(target_doc == null) {
+	    Logd("winform.button4.oncommand",  "target_doc == null");
+	    return ;
+	}
+	
+	m_stopRun = false;
+
+	
+	// 加入撤销快照
+	var o_Undo = m_oWord.UndoRecord;
+	o_Undo.StartCustomRecord ("Undo Stack Display Text");
+	
+	var offset = 0;
+	var before = 0;
+	var after = 0;
+	for(i=1;#m_doc_content;1){
+		
+		if(m_stopRun == true) {
+			return;
+		}
+
+		
+		var e = m_doc_content[i];
+	    //pos = pos + offset;
+	   // pos2 = pos2 + offset;
+	   var pos = e[1];
+	   var pos2 = e[2];
+	   
+	    pos = pos + offset;
+	   pos2 = pos2 + offset;
+	   
+	    //console.dump(pos);
+	    var eachParagraphRange = target_doc.Range(pos, pos2);
+	    
+	    before = getAllCountInDocument();
+	    
+	    var txt;
+	    
+	    var fanyi_res;
+	    
+	    try{
+	        txt = eachParagraphRange.Text;
+	        fanyi_res = BaiduFanyi(txt);
+	    	eachParagraphRange.InsertAfter( fanyi_res );
+	        eachParagraphRange.InsertAfter( '\n' );
+	    }
+	    catch(e){
+	    	
+	    }
+	    //eachParagraphObj.Range.InsertAfter("111\n\r111");
+	    
+	    after = getAllCountInDocument();
+	    
+	    offset = offset + (after - before);
+	    
+	    //win.peekMessage();
+	    win.delay(10);
+	    
+	}
+	
+	o_Undo.EndCustomRecord();
+	Logd("winform.button4.oncommand",  "插入完毕");
+	
+	winDlgMessage.ok("翻译完毕", 1000);
+}
+
+winform.button5.oncommand = function(id,event){
+	m_stopRun = true;
+}
+
+winform.onClose = function(hwnd,message,wParam,lParam){
+    m_stopRun = true;
+}
+
+winform.show();
+win.loopMessage();

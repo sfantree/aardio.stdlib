@@ -1,0 +1,9 @@
+import console; 
+import com;
+
+var oShell = com.TryCreateObject("Shell.Application.1")
+oShell.MinimizeAll()
+
+
+//console.log("您输入的是" ,num );
+console.pause(true);

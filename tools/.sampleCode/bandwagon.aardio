@@ -1,0 +1,209 @@
+import win.ui;
+import fonts.fontAwesome;
+/*DSG{{*/
+var winform = win.form(text="搬瓦﻿工管理﻿工具";right=743;bottom=664;border="dialog frame";max=false)
+winform.add(
+btnLogin={cls="button";text="登录";left=311;top=150;right=398;bottom=179;font=LOGFONT(name='FontAwesome');hide=1;z=18};
+btnMigrate={cls="button";text="迁移";left=456;top=570;right=642;bottom=599;disabled=1;font=LOGFONT(name='FontAwesome');z=2};
+btnReload={cls="button";text="刷新";left=578;top=617;right=693;bottom=646;font=LOGFONT(name='FontAwesome');z=14};
+btnResetRootPassword={cls="button";text="重置root密码";left=569;top=150;right=692;bottom=179;disabled=1;font=LOGFONT(name='FontAwesome');z=16};
+editApiKey={cls="edit";left=346;top=623;right=568;bottom=644;edge=1;password=1;z=11};
+editIp={cls="edit";left=210;top=572;right=440;bottom=597;edge=1;multiline=1;z=3};
+editPwd={cls="edit";left=399;top=153;right=568;bottom=178;edge=1;hide=1;multiline=1;z=17};
+editVeid={cls="edit";left=101;top=625;right=256;bottom=646;edge=1;z=10};
+lbDataNextReset={cls="static";text="下次流量重置时间：";left=36;top=72;right=401;bottom=94;transparent=1;z=7};
+lbDataTransfer={cls="static";text="已使用流量：";left=36;top=43;right=401;bottom=65;transparent=1;z=6};
+lbIp={cls="static";text="IP:";left=53;top=576;right=206;bottom=599;align="right";transparent=1;z=4};
+lbMessage={cls="static";left=41;top=10;right=692;bottom=42;font=LOGFONT(h=-16);transparent=1;z=5};
+lbOs={cls="static";text="操作系统：";left=36;top=157;right=320;bottom=179;transparent=1;z=15};
+lbPlanDisk={cls="static";text="硬盘：";left=36;top=129;right=401;bottom=151;transparent=1;z=9};
+lbPlanRam={cls="static";text="内存：";left=36;top=100;right=401;bottom=122;transparent=1;z=8};
+lvLocations={cls="listview";left=36;top=182;right=692;bottom=565;edge=1;fullRow=1;hscroll=1;vscroll=1;z=1};
+static={cls="static";text="VEID:";left=37;top=628;right=96;bottom=646;align="right";transparent=1;z=12};
+static2={cls="static";text="API Key:";left=271;top=625;right=330;bottom=643;align="right";transparent=1;z=13}
+)
+/*}}*/
+
+winform.lvLocations.insertColumn("机房",100) 
+winform.lvLocations.insertColumn("状态",100) 
+winform.lvLocations.insertColumn("月流量限额",100) 
+winform.lvLocations.insertColumn("描述",-1) 
+
+winform.lvLocations.reload = function(winform){
+	import bandwagon;
+	import fsys.size;
+	
+	if(!#winform.editVeid.text){
+		winform.lbMessage.text = "搬瓦﻿工管理﻿工具 - 请先指定VEID,API Key";
+		winform.text = "搬瓦﻿工管理﻿工具 - 请先指定VEID,API Key";
+		return;
+	}
+	
+	winform.btnReload.disabledText = {'\uF254';'\uF251';'\uF252';'\uF253';'\uF250'} 
+	var bwh = bandwagon(winform.editVeid.text,winform.editApiKey.text)
+	var srvInfo = bwh.getServiceInfo();	
+	if(!srvInfo || srvInfo.error){
+		winform.text = "搬瓦﻿工管理﻿工具" 
+		if( srvInfo[["error"]] == 700005 ){
+			srvInfo[["message"]] = "登录失败, 请在源码中设置正确的VEID,API KEY"
+		}
+		winform.lbMessage.text = srvInfo[["message"]] : "网络错误";
+		winform.btnReload.disabledText = null;
+		return;
+	}
+	
+	var migrating = bwh.migrate.getLocations();
+	
+	winform.lvLocations.clear();
+	for i,v in table.eachIndex(migrating.locations){
+		var size,unit,uname = fsys.size.format(srvInfo.plan_monthly_data * migrating.dataTransferMultipliers[v])
+		
+		winform.lvLocations.addItem({
+			v;  
+			srvInfo.node_location_id == v ? "当前使用" : "";
+			size +" "+ uname;  
+			migrating.descriptions[v];
+		});
+	}
+		
+	winform.lbDataTransfer.text = string.format("已使用流量：%s/%s",
+		..math.size64(srvInfo.data_counter).format(),
+		..math.size64(srvInfo.plan_monthly_data * srvInfo.monthly_data_multiplier ).format()
+	);
+	
+	winform.lbDataNextReset.text = "下次流量重置时间：" + tostring(time(srvInfo.data_next_reset));
+	winform.lbPlanRam.text = "内存：" ++ ..math.size64(srvInfo.plan_ram).format();
+	winform.lbPlanDisk.text = "硬盘：" ++ ..math.size64(srvInfo.plan_ram).format();
+	winform.lbOs.text = "操作系统：" ++ srvInfo.os;
+	winform.editIp.text = string.join(srvInfo.ip_addresses,","); 
+	winform.btnReload.disabledText = null;
+	winform.btnResetRootPassword.disabled = false;
+	winform.text = "搬瓦﻿工管理﻿工具";
+} 
+
+winform.lvLocations.onnotify = function(id,code,ptr){ 
+	
+	select(code) {
+		case  0xFFFFFF9B/*_LVN_ITEMCHANGED*/ {
+			var nm = winform.lvLocations.getNotifyMessage(code,ptr)
+			if(winform.lvLocations.selIndex){
+				if(!winform.btnMigrate.disabledText) winform.btnMigrate.disabled = false;
+			}
+		} 
+	} 
+}
+
+migrate = function(location,winform){
+	import bandwagon;
+	import fsys.size;
+	
+	winform.btnMigrate.disabledText = {'\uF254';'\uF251';'\uF252';'\uF253';'\uF250'} 
+	
+	var bwh = bandwagon(winform.editVeid.text,winform.editApiKey.text)
+	var srvInfo = bwh.getServiceInfo();	
+	var result = bwh.migrate.start(location=location)
+	if(result[["error"]]){
+		winform.msgboxErr(result.message)
+	}
+	elseif(result[["newIps"]]){
+		winform.editIp.text = string.join(result[["newIps"]],",");
+		winform.lbIp.text = "新的IP:"
+		
+		winform.lbMessage.text = "新的IP已分配,正在迁移中,可能需要几分钟..."
+		while( var srvInfo = bwh.getServiceInfo()  ) {
+			if(srvInfo[["error"]]!==788888){
+				break;
+			}
+			sleep(10000);
+		}
+		
+		winform.lvLocations.reload(winform);
+		winform.lbMessage.text = "迁移已完成"
+	} 
+	else {
+		winform.msgboxErr("网络错误")
+	}
+	
+
+	winform.btnMigrate.disabledText = null;
+}
+
+winform.btnMigrate.oncommand = function(id,event){
+	
+	var location = winform.lvLocations.getItemText( winform.lvLocations.selIndex,1 );
+	if(!#location) return winform.msgboxErr("请选择机房");
+		
+	thread.invoke(migrate,location,winform) 
+}
+
+import fsys.config;
+config = fsys.config( fsys.appdata("/aardio/ext/demo/bandwagon") ); 
+if(config.auth.bwhVeid){
+	winform.editVeid.text = config.auth.bwhVeid;
+	winform.editApiKey.text = config.auth.bwhApiKey;
+}
+winform.beforeDestroy = function(){
+	config.auth.bwhVeid = winform.editVeid.text;
+	config.auth.bwhApiKey = winform.editApiKey.text;
+}
+
+winform.text = "搬瓦﻿工管理﻿工具 - 加载主机信息中,请稍候..."
+
+winform.btnReload.oncommand = function(id,event){
+	winform.lbMessage.text = "";
+	thread.invoke(winform.lvLocations.reload,winform);
+}
+
+winform.btnResetRootPassword.oncommand = function(id,event){
+	thread.invoke( 
+		function(winform){
+			winform.btnResetRootPassword.disabledText = {'\uF254';'\uF251';'\uF252';'\uF253';'\uF250'} 
+			
+			import bandwagon;
+			var bwh = bandwagon(winform.editVeid.text,winform.editApiKey.text)
+			var result = bwh.resetRootPassword();
+			winform.btnResetRootPassword.disabledText = null;
+			
+			if(result[["password"]]){
+				winform.editPwd.hide = false;
+				winform.editPwd.text = result[["password"]];
+				winform.btnLogin.hide = false;
+			}	
+			else {
+				winform.editPwd.hide = true;
+				winform.msgboxErr(result[["message"]]:"网络错误")
+			} 
+		},winform
+	)
+}
+
+
+winform.btnLogin.oncommand = function(id,event){
+	import process.putty;
+	if(  #winform.editPwd.text){
+		thread.invoke( 
+			function(winform){
+				winform.btnLogin.disabledText = {'\uF254';'\uF251';'\uF252';'\uF253';'\uF250'} 
+				
+				import bandwagon;
+				var bwh = bandwagon(winform.editVeid.text,winform.editApiKey.text)
+				var srvInfo = bwh.getLiveServiceInfo();
+				
+				winform.btnLogin.disabledText = null;
+				
+				if(srvInfo.ip_addresses && srvInfo.ssh_port){
+					import process.putty;
+					var putty = process.putty(srvInfo.ip_addresses[1],winform.editPwd.text,"root",,srvInfo.ssh_port)
+				}
+				else {
+					winform.msgboxErr("登录失败")
+				}
+			},winform
+		) 
+	} 
+}
+
+thread.invoke(winform.lvLocations.reload,winform);
+	
+winform.show(); 
+win.loopMessage();

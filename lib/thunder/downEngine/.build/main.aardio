@@ -1,0 +1,12 @@
+import ide;
+import fsys;
+
+var publisDir = ide.getPublisDir();
+if(!#publisDir)return; 
+
+var thunderPubDir =  fsys.joinpath(publisDir,"\lib\thunder\downEngine" ); 
+if( ! io.exist(thunderPubDir) ){ 
+	..fsys.createDir(thunderPubDir);
+	var libPath,libDir = io.libpath("thunder.downEngine") 
+	..fsys.copy( fsys.joinpath(libDir,"\.res") ,thunderPubDir,0x10/*_FOF_NOCONFIRMATION*/  | 0x200/*_FOF_NOCONFIRMMKDIR*/); 
+}

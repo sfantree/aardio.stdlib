@@ -1,0 +1,305 @@
+﻿//tab 选项卡
+import xcgui.ctrl.metaProperty;
+namespace xcgui.ctrl;
+
+class tab{
+
+	ctor(hParentPointer,tParam){ 
+		if(! (hParentPointer || tParam) ) return null;
+		if(type(tParam)!=type.table){
+			this.hPointer = topointer( hParentPointer);
+		}
+		else {
+			if( tParam.resource ) ..xcgui.res.load(tParam.resource);
+			if(tParam.layout){
+				var hEle = ..xcgui.loadLayout(tParam.layout,hParentPointer);
+				if( ::Xcgui.XC_IsHELE (hEle) ){ 
+					if( ::Xcgui.XEle_GetType(hEle) != 0x28/*_XC_TABBAR*/ ) return null; 
+					::Xcgui.XEle_AdjustLayoutObject(hEle);
+					this.hPointer = topointer(hEle);
+				}
+				else {
+					return null;
+				}
+			}
+			else{
+				this.hPointer = topointer( ::Xcgui.XTabBar_Create(tParam.left,tParam.top,tParam.right-tParam.left,tParam.bottom-tParam.top,hParentPointer) ); 
+			}
+		}
+	};
+	
+	@_metaProperty;
+	
+}
+
+tab._metaProperty = metaProperty(
+	count = function(){
+		return ::Xcgui.XTabBar_GetLabelCount (owner.hPointer);
+	}
+	add = function(name){
+		return ::Xcgui.XTabBar_AddLabel(owner.hPointer,name);
+	}
+	insert = function(idx,name){
+		return ::Xcgui.XTabBar_InsertLabel (owner.hPointer,idx-1,name);
+	}
+	delete = function(idx){
+		return ::Xcgui.XTabBar_DeleteLabel (owner.hPointer,idx-1);
+	}
+	indexOf = function(ele){
+		return ::Xcgui.XTabBar_GetindexByEle (owner.hPointer,ele)+1;
+	}
+	selected = {
+		_get = function(){ 
+			return  ::Xcgui.XTabBar_GetSelect(owner.hPointer)+1;
+		}
+		_set = function( v ){
+			return ::Xcgui.XTabBar_SetSelect(owner.hPointer,v-1);
+		} 	
+	};
+	showItem = function(idx,show){
+		return ::Xcgui.XTabBar_ShowLabel (owner.hPointer,idx-1,show);
+	}
+	getItem = function(idx){
+		return ..xcgui.ctrl.button( topointer(::Xcgui.XTabBar_GetLabel(owner.hPointer,idx-1)) );
+	}
+	getCloseButton = function(idx){
+		return ..xcgui.ctrl.button( topointer(::Xcgui.XTabBar_GetLabelClose(owner.hPointer,idx-1)) );
+	}
+	getLeftButton = function(){
+		return ..xcgui.ctrl.button( topointer(::Xcgui.XTabBar_GetButtonLeft(owner.hPointer)) );
+	}
+	getRightButton = function(){
+		return ..xcgui.ctrl.button( topointer(::Xcgui.XTabBar_GetButtonRight(owner.hPointer)) );
+	}
+	setUp = function(){
+		return ::Xcgui.XTabBar_SetUp (owner.hPointer);
+	}
+	setDown = function(){
+		return ::Xcgui.XTabBar_SetDown (owner.hPointer);
+	}
+	setPadding = function(left,top,right,bottom){
+		return ::Xcgui.XTabBar_SetPadding (owner.hPointer,left,top,right,bottom);
+	}
+	ItemSpacing = {
+		_get = function(){ 
+			return  ::Xcgui.XTabBar_GetLabelSpacing(owner.hPointer);
+		}
+		_set = function( v ){
+			return ::Xcgui.XTabBar_SetLabelSpacing(owner.hPointer,v);
+		} 	
+	};
+	setItemWidth = function(idx,v){
+		return ::Xcgui.XTabBar_SetLabelWidth (owner.hPointer,idx-1,v);
+	}
+	setTurnButtonSize = function(idx,cx,cy){
+		return ::Xcgui.XTabBar_SetTurnButtonSize (owner.hPointer,{int cx=cx;int cy=cy});
+	}
+	setCloseSize = function(idx,cx,cy){
+		return ::Xcgui.XTabBar_SetCloseSize (owner.hPointer,{int cx=cx;int cy=cy});
+	}
+	enableClose = function(idx,v){
+		return ::Xcgui.XTabBar_EnableClose (owner.hPointer,v);
+	}
+	enableTile = function(idx,v){
+		return ::Xcgui.XTabBar_EnableTile (owner.hPointer,v);
+	}
+	
+)
+
+
+/**intellisense()
+xcgui.ctrl.tab(.(父窗口,参数表) = 创建一个选项卡
+xcgui.ctrl.tab() = !stdxctab.
+win.ui.ctrl.xctab() = !stdxctab.
+end intellisense**/
+
+/**intellisense(!stdxctab)
+count() = 选项卡按钮总数
+add("__") = 添加选项卡按钮
+insert(.(索引,"__") = 插入选项卡按钮\n第一个选项卡索引为1
+delete(__) = 删除选项卡按钮
+indexOf(.(ele) = 返回选项卡按钮对象的索引
+selected = 选中索引\n第一个选项卡索引为1
+showItem(.(索引,true) = 显示指定索引选项卡按钮\n第一个选项卡索引为1
+getItem(__) = 获取指定索引的选项卡按钮\n第一个选项卡索引为1
+getCloseButton(__) = 获取指定索引的关闭按钮\n第一个选项卡索引为1
+getLeftButton() = 获取获取左滚动按钮\n第一个选项卡索引为1
+getRightButton() = 获取获取右滚动按钮\n第一个选项卡索引为1
+setUp() = 左按钮滚动
+setDown() = 右按钮滚动
+setPadding(.(左,上,右,下) =  设置内容与边框的间隔
+ItemSpacing = 设置标签间距, 0没有间距
+setItemWidth(.(索引,宽度) = 设置指定标签为固定宽度\n第一个选项卡索引为1
+setTurnButtonSize(.(索引,cx,cy) = 设置翻滚按钮大小\n第一个选项卡索引为1
+setCloseSize(.(索引,cx,cy) = 设置关闭按钮大小\n第一个选项卡索引为1
+enableClose(.(索引,true) = 启用关闭按钮\n第一个选项卡索引为1
+enableTile(.(索引,true) = 平铺标签,每个标签显示相同大小\n第一个选项卡索引为1
+background = 获取控件的背景管理器\n!stdxcbkmanager.
+bkAddFill(.("状态",图像,颜色数值或RGB分量) = 设置控件填充颜色\n可用的背景状态请查看xcgui.state
+bkAddImage(.("状态",图像) = 设置窗口顶部图像\n图像可直接指定路径或资源路径,也可使用xcgui.image对象
+bkAddBorder(.("状态",线宽,透明度,RGB颜色) = 添加背景边框\n状态可以是字符串或数值,可用值参考xucgui.state
+id = ID值
+z = Z序
+topmost(true) = Z序置顶
+getWindow() = 返回父窗体\n!stdxcwnd
+hitEle(.(x,y) = 根据指定的坐标获取子节点\n!stdxcele
+getParent() = 获取父节点\n!stdxcele
+getParentHandle() = 获取父节点句柄
+getParentType() = 获取父节点类型
+getObjectType() = 获取节点类型
+addEle(__) = 添加子节点
+insertEle(.(child,index) = 在index指定的位置插入子节点child 
+remove() = 移除元素,但不销毁.
+disabled = 是否禁用
+hide = 是否隐藏;
+pointerEvents = 是否触发鼠标事件\n值设为false可实现鼠标穿透效果
+transparent = 是否支持背景透明\n透明PNG图像需要设置此属性为true
+alpha = 透明度
+color = 字体颜色
+border = 设置是否允许显示边框\n只写属性
+focusBorderColor = 焦点边框颜色
+enableDrawFocus = 是否允许绘制焦点
+focusBorder = 是否启用焦点
+scrollView = 是否允许显示滚动
+tabstop = 是否允许键盘切换焦点
+tooltip = 提示文本
+css("__") = 修改CSS样式名\n无参数时返回CSS样式名
+popupToolTip(.(x,y) = 在指定坐标弹出提示
+getFont() = 获取字体\n!stdxcfont.
+setFont(.(字体名,字体大小,样式) = 创建字体
+setFont(.(字体名） = 设置字体
+setFont(.(name="字体"） = 设置字体\n参数为LOGFONT对象，或指定部分LOGFONT属性的表
+setFont(.(句柄） = 设置字体\n参数为字体句柄
+getClientRect() = 返回客户区区块,::RECT对象\n!rect. 
+getRect = 返回控件区块,::RECT对象\n!rect. 
+setRect(.(rect,是否重绘) = 设置区块,参数@1为::RECT对象
+getLogicRect = 返回控件逻辑区块,::RECT对象\n!rect. 
+setLogicRect(.(rect,是否重绘) = 设置控件逻辑区块,参数@1为::RECT对象
+setPos(.(x坐标,y坐标,宽,高) = 调整控件位置或排序,所有参数可选\n同时指定x,y坐标则移动位置\n同时指定宽高则改变大小
+getPos() = 返回相对坐标,宽,高,返回4个值：x,y,cx,cy
+autoResize = 是否允许aardio窗口自动调整控件位置\n只有在窗口设计器中添加的控件,并是aardio窗口对象的成员时此属性才有效
+getWidth() = 获取宽度
+getHeight() = 获取高度
+layoutObject = 获取或绑定布局对象\n获取布局对象时如果布局对象不存在则自动创建\n!stdxclayoutObj.
+getParentLayoutObject() = 获取父布局对象
+adjustLayoutObject() = 调整布局对象
+adjustLayout() = 调整布局
+setLayoutHeight(.(宽度,选项) = 设置布局宽度
+setLayoutWidth(.(高度,选项) = 设置布局高度 
+cursor = 鼠标指针
+redraw() = 重绘
+redrawRect(__) = 重绘区块,参数为::RECT对象
+close() = 销毁控件
+post("click__",wParam,lParam) = 发送消息,不获取返回值\n参数@1可使用任何字符串自定义新的控件消息
+send("click__",wParam,lParam) = 发送消息,获取消息处理函数的返回值\n任何一个事件回调函数返回非null值都会结束当次事件并返回该值,\n参数@1可使用任何字符串自定义新的控件消息
+.onMessage= @.on("message",function(message,wParam,lParam){
+	if( message == "自定义消息" ) return __/*返回非null值结束本次回调*/;
+})
+.onSelect = @.on("tabSelect",function(iItem){
+	__
+})
+.onDelete = @.on("tabDelete",function(iItem){
+	__
+})
+.onPaint = @.on("paint",function(hDraw){
+	__
+})
+.onPaintEnd = @.on("paintEnd",function(hDraw){
+	__
+})
+.onPaintScrollView = @.on("paintScrollView",function(hDraw){
+
+})
+.onMove = @.on("move",function(nFlags,pt){
+	
+	__
+})
+.onEnter = @.on("enter",function(){
+
+})
+.onHover = @.on("hover",function(nFlags, pt){
+	
+	__
+})
+.onLeave = @.on("leave",function(hEleHover){
+
+})
+.onWheel = @.on("wheel",function(nFlags,pt){
+	
+	__
+})
+.onLbuttonDown = @.on("lbuttonDown",function(nFlags, pt){
+	
+	__
+})
+.onLbuttonUp = @.on("lbuttonUp",function(nFlags, pt){
+	
+	__
+})
+.onRbuttonDown = @.on("rbuttonDown",function(nFlags, pt){
+	
+	__
+})
+.onRbuttonUp = @.on("rbuttonUp",function(nFlags, pt){
+	
+	__
+})
+.onDblclick = @.on("dblclick",function(nFlags, pt){
+	
+	__
+})
+.onFocus = @.on("focus",function(){
+	__
+})
+.onKillFocus = @.on("killFocus",function(){
+	__
+})
+.onDestroy = @.on("destroy",function(){
+	__
+})
+.onSize = @.on("size",function(){
+	__
+})
+.onShow = @.on("show",function(shown){
+	__
+})
+.onSetFont = @.on("font",function(){
+	__
+})
+.onKeyDown = @.on("keyDown",function(wParam,lParam){
+	__
+})
+.onChar = @.on("char",function(wParam,lParam){
+	__
+})
+.onSetCapture = @.on("setCapture",function(){
+	__
+})
+.onKillCapture = @.on("killCapture",function(){
+	__
+})
+.onCursor = @.on("cursor",function(wParam,lParam){
+	__
+})
+.onDropfiles = @.on("dropfiles",function(wParam){
+	var files = ..win.getDropFile(wParam) __
+})
+.onMenuPopup = @.on("menuPopup",function(hMenu){
+	__
+})
+.onMenuPopupWnd = @.on("menuPopupWnd",function(hMenu,pInfo){
+	__
+})
+.onMenuSelect = @.on("menuSelect",function(id){
+	__
+})
+.onMenuDrawBackground = @.on("menuDrawBackground",function(hDraw,pInfo){
+	__
+})
+.onMenuDrawitem = @.on("menuDrawitem",function(hDraw,pInfo){
+	__
+})
+.onMenuExit = @.on("menuExit",function(){
+	__
+})
+end intellisense**/

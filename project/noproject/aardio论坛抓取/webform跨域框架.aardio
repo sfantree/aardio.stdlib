@@ -1,0 +1,33 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(parent=...; bottom=486;scroll=1;right=665;text="aardio Form" )
+winform.add(  )
+/*}}*/
+
+import web.form.util;
+
+//创建web窗体
+var wb = web.form( winform
+    ,//可输入_UIFLAG_ 前缀的常量自定义外观
+    ,0x40000000/*_DLCTL_SILENT*/
+    );
+
+
+//打开目标网站
+wb.go("http://www.bianmin114.com/")
+//显示窗体
+winform.show()  
+wb.wait("");//等待指定网址,可以使用模式匹配语法
+
+//只要调用下面这句代码，webform所有框架有关的函数自动支持跨域
+web.form.util.crossDomain()
+
+//遍历所有框架
+for(i=1;wb.document.frames.length ){
+    var wbFrame = wb.getWebForm(i-1); //将框架转换为web.form对象
+    wbFrame.body.innerHTML = "跨域写入HTML"
+}
+
+//进入消息循环
+win.loopMessage();
+return winform,wb;

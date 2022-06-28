@@ -1,0 +1,228 @@
+//vlist 虚表控件
+import win.ui.ctrl.listview;
+namespace win.ui.ctrl;
+
+class vlist {
+	ctor (parent,tParam) {
+		tParam.style |= 0x1000/*_LVS_OWNERDATA*/; 
+		this = ..win.ui.ctrl.listview(parent,tParam);
+	};
+	createAdapter = function(dataSource,...){
+		return classAdapter(this, dataSource,...).update(); 
+	}
+	createTableAdapter = function(dataSource,...){
+		return tableAdapter(this, dataSource,...).update(); 
+	}
+	createAdoAdapter = function(dataSource,...){
+		return adoAdapter(this, dataSource,...).update(); 
+	}
+	createSqliteAdapter = function(dataSource,...){
+		return sqliteAdapter(this, dataSource,...).update();
+	}
+	_prenotify = function(id, code, ptr) {
+		if (code === 0xFFFFFF4F/*_LVN_GETDISPINFOW*/) { 
+			var di = ptr ? this.getNotifyDispInfo(code, ptr); 
+			if( di ) {
+				var item = this.dataAdapter.getItem(di.item.iItem,di.item.iSubItem); 
+				if( type(item)=="table" ) ..table.mixin(di.item, item)
+				else di.item.text = item;
+				
+				owner.setNotifyDispInfo(ptr,di);
+				return true;
+			}
+		}
+	}
+	_onDestroy = function () {
+		if( this.dataAdapter ) {
+			this.dataAdapter._close(); 
+		};
+	} 
+}
+
+namespace vlist {
+
+	class baseAdapter {
+		ctor (listview,dataSource) {
+			this._listview = listview;
+			this._dataSource = dataSource;
+			if( listview.dataAdapter ) listview.dataAdapter._close();
+			listview.dataAdapter = this; 
+		}
+		update = function(){
+			::SendMessageInt(listview.hwnd, 0x102F/*_LVM_SETITEMCOUNT*/,this.count(), 0x2/*_LVSICF_NOSCROLL*/);
+			return this;
+		}
+		_close = function(){ this._listview.dataAdapter = null; if( this.close )  this.close() };
+	}
+	var baseAdapter = baseAdapter;
+	
+	class classAdapter {
+		ctor (listview,dataSource,columns, ...) {
+			this = baseAdapter(listview,dataSource,columns);
+			var instance = this._dataSource(columns,...);
+		};
+		count = function () {
+			return instance.count();
+		};
+		getItem = function (row, col) {
+			return instance.getItem(row, col);
+		}
+	}
+	
+	class tableAdapter {
+		ctor (listview,dataSource,columns, ...) {
+			this = baseAdapter(listview,dataSource);
+			this._columns = columns;
+		};
+		count = function () {
+			return #(dataSource);
+		};
+		getItem = function (row, col) {
+			if (columns) return dataSource[row][columns[col]];
+			else return dataSource[row][col];
+		}
+	}
+	
+	class adoAdapter {
+		ctor (listview,dataSource, ...) {
+			this = baseAdapter(listview,dataSource);
+		};
+		count = function () {
+			var count = dataSource.getRecordCount();
+			if (count === -1) error("请以静态方式打开记录集。",3);
+			return count;
+		};
+		getItem = function (row, col) {
+			dataSource.Move(row - 1, 1/*_adBookmarkFirst*/); 
+			return dataSource(col - 1).value;
+		}
+		close = function(){ if(dataSource) { dataSource.close(); dataSource = null; } };
+	}
+
+	class sqliteAdapter {
+		ctor (listview,dataSource,sql) { 
+			this = baseAdapter(listview,dataSource,columns);
+			this.rowIdx = null; 
+		};
+		count = function () { 
+			var row = dataSource.stepQuery( ..string.replace(sql,"^\s*<@@SELECT@>.+?<@@FROM@>\s+","SELECT COUNT(*) FROM ",1), )
+			if(!row) error("sql必须是SELECT ... FROM 语句",3); 
+			return row["COUNT(*)"];
+		};
+		getItem = function (row, col) {
+			if( this.rowIdx == row ){ 
+				return this.row[col] 
+			} 
+	
+			var stmt = dataSource.prepare( sql + " Limit 1 Offset " + row-1);
+			this.row = stmt.stepResult()
+			stmt.finalize();;
+			
+			this.rowIdx = row;
+			return this.row[col];
+		}
+	}
+}
+
+// http://bbs.aardio.com/forum.php?mod=viewthread&tid=11729
+/**intellisense()
+?win.ui.ctrl.vlist = !ctrl_vlist.
+!ctrl_vlist.getColumn() = !lvcolumn.
+!ctrl_vlist.getColumn(.(列参数表,列序号) = 参数一可以为空,或是指定LVCOLUMN结构体成员键值的参数表,\n返回LVCOLUMN结构体
+!ctrl_vlist.setColumn(.({cx=100},列序号) = 改变列宽
+!ctrl_vlist.setColumn(.(列参数表,列序号) = 参数一指定LVCOLUMN结构体成员键值的参数表,\n也可以是LVCOLUMN结构体对象,自动设置掩码参数.
+!ctrl_vlist.getEditControl() = 开始编辑时返回编辑控件,\n此控件在完成编辑后会自动销毁,不必手动销毁\n取消发送_WM_CANCELMODE消息即可\n!edit.
+!ctrl_vlist.editLable(.(行序号) = 编辑指定项,无参数则编辑选定项\n此函数成功返回编辑文本框句柄\n返则返回0
+!ctrl_vlist.setItemPos(__/*项索引*/,x,y) = 设置图标项坐标
+!ctrl_vlist.count = 项目总数
+!ctrl_vlist.insertColumn(.(列名,列宽,位置,样式) = 第一个参数可以是标题字符串,图像索引,\n或者指定LVCOLUMN结构体成员的table对象,\n\n其他参数都是可选参数,\n样式使用_LVCFMT_前缀的常量指定,\n例如_LVCFMT_LEFT为文本左对齐,\n如果列宽为-1,则自动调用fillParent(ind)函数填充剩余空间
+!ctrl_vlist.setColumnText(.(位置,文本) = 设置指定列文本
+!ctrl_vlist.getColumnText(__) = 取指定列文本
+!ctrl_vlist.delColumn(__) = 删除指定列
+!ctrl_vlist.columnCount = 列总数
+!ctrl_vlist.clear() = 清空所有项
+!ctrl_vlist.getNextItem(.(起始索引,选项) = 参数二为一个或多个 _LVNI_ 前缀的常量合并\n默认为 _LVNI_ALL \n起始索引默认为0 
+!ctrl_vlist.getFocused() = 获取当前焦点项位置,返回数值,\n不存在焦点项则返回0
+!ctrl_vlist.getSelection(.(起始索引)  = 获取选中项,返回数值,\n不存在选中项则返回0\n可选指定起始索引,默认为0		
+!ctrl_vlist.addItem(.(文本,位置,图像索引) = 位置参数可省略,默认为count值\n图像索引可省略,默认为-1\n文本可以是一个指定多列文本的table数组\n返回新增项行号
+!ctrl_vlist.addItem(.(LVITEM对象,位置) = 参数一可以是指定一个或多个LVITEM对象成员的table对象\ntext成员指定项目文件,也可以是一个指定多列文本的数组\n位置参数可省略,默认为count值
+!ctrl_vlist.setItemText(.(文本,行,列) = 设置项目指定列文本,\n参数一也可是指定多列文本的数组(table对象),\n其他参数可选
+!ctrl_vlist.getItemText(.(行,列,缓冲区长度) = 列默认值为1,缓冲区最大字符数默认为100
+!ctrl_vlist.getItemRect(.(行,列,RECT,选项) = 返回表示项目表示项目区块的RECT结构体,\n除第一个参数以外,其他参数为可选参数,\n如果不指定列则返回所在行区块,\n使用_LVIR_前缀常量指定选项
+!ctrl_vlist.getItemRect() = !rect.
+!ctrl_vlist.hitTest(.(x坐标,y坐标,是否屏幕坐标) = 该函数返回指定坐标的行号,参数三可省略,默认为false.\n如果不指定任何参数，则自动调用 win.getMessagePos() 获取消息坐标\n该函数有第二、第三个返回值并可能为0
+!ctrl_vlist.setSelected(__/*项索引*/) = 选中项
+!ctrl_vlist.setSelected(__/*项索引*/,false) = 取消选中项
+!ctrl_vlist.getSelected(__/*项索引*/) = 指定项是否选中状态
+!ctrl_vlist.getChecked(__) = 返回指定索引项是否选中
+!ctrl_vlist.setChecked(__) = 选定指定索引项
+!ctrl_vlist.setItemState(.(项索引,状态位,掩码) = 设置状态,参数三如果省略则使用参数二的值.
+!ctrl_vlist.getItemState(.(项索引,状掩码 ) = 读取状态值
+!ctrl_vlist.selIndex = 当前选定项索引
+!ctrl_vlist.fullRow = 是否选中整行
+!ctrl_vlist.hwnd = 控件句柄
+!ctrl_vlist.id = 控件ID
+!ctrl_vlist._parentForm = 控件所在的父窗口(指win.form对象)\n!winform.
+!ctrl_vlist.getParent() = 返回父窗口\n!static.
+!ctrl_vlist.setParent(__/*控件对象*/) = 改变父窗口 
+!ctrl_vlist.disabled = 是否禁用
+!ctrl_vlist.left = 左侧坐标
+!ctrl_vlist.right = 右侧坐标
+!ctrl_vlist.top = 顶部坐标
+!ctrl_vlist.bottom = 底部坐标 
+!ctrl_vlist.width = 宽度
+!ctrl_vlist.height = 高度
+!ctrl_vlist.redraw() = 刷新
+!ctrl_vlist.setRedraw(false) = 禁止重绘
+!ctrl_vlist.setRedraw(true) = 恢复重绘
+!ctrl_vlist.show(true__) = 显示控件
+!ctrl_vlist.getRect() = 控件区块位置(::RECT结构体)
+!ctrl_vlist.getRect(true) = 控件屏幕区块位置(::RECT结构体)  
+!ctrl_vlist.setRect(rc) = 设置控件区块位置(::RECT结构体)  
+!ctrl_vlist.setRect(rc,true) = 设置控件屏幕区块位置(::RECT结构体)
+!ctrl_vlist.getClientRect() =  控件客户区块位置(::RECT结构体)\n!rect.
+!ctrl_vlist.getFont() = 控件字体(::LOGFONT结构体)\n!logfont.
+!ctrl_vlist.setFont(__/*指定字体*/) = 指定LOGFONT字体对象,或逻辑字体句柄 
+!ctrl_vlist.setFont(混入字体属性) = @.setFont(point=10;name="宋体");
+!ctrl_vlist.clientRect =  获取控件客户区块位置(::RECT结构体)
+!ctrl_vlist.theme = 外观主题,例如\nwinform.button.theme = "Explorer"\nwinform.button.theme = false
+!ctrl_vlist.delItem(__) = 参数为数值，移除指定索引的项目
+!ctrl_vlist.items = 列表项集合(第一列)\ntable对象 
+!ctrl_vlist.modifyStyle(.(remove,add) = 如果指定第三个参数，则使用此参数调用::SetWidnowPos 
+!ctrl_vlist.modifyStyleEx(.(remove,add) = 如果指定第三个参数，则使用此参数调用::SetWidnowPos
+!ctrl_vlist.capture = 是否捕获全局鼠标消息
+!ctrl_vlist.close() = 关闭控件窗口
+!ctrl_vlist.setExtended(_LVS_EX__) = 启用树视图指定扩展样式
+!ctrl_vlist.setExtended(_LVS_EX__,false) = 取消树视图指定扩展样式
+!ctrl_vlist.getExtended() = 获取树视图扩展样式
+!ctrl_vlist.getExtended(_LVS_EX__) = 获取树视图指定扩展样式
+!ctrl_vlist.gridLines = 是否显示网格线
+!ctrl_vlist.setFocus() = 设置焦点 
+!ctrl_vlist.setPos(.(x坐标,y坐标,宽,高,插入位置,参数) = 调整窗口位置或排序,所有参数可选\n同时指定x,y坐标则移动位置\n同时指定宽高则改变大小\n指定插入位置(句柄或_HWND前缀常量)则调整Z序
+!ctrl_vlist.getPos() = 返回相对坐标,宽,高\nx,y,cx,cy=win.getPos(hwnd)
+!ctrl_vlist.getTileViewInfo() = 返回排列显示相关属性
+!ctrl_vlist.setTileViewInfo() = 设置排列显示相关属性
+!ctrl_vlist.ensureVisible() = 保证显示选中项
+!ctrl_vlist.ensureVisible(__) = 保证显示指定项
+!ctrl_vlist.getImageList( _LVSIL__ ) = 获取指定图像列表,\n可选使用 _LVSIL_ 前缀常量指定类型
+!ctrl_vlist.setImageList( imageList,_LVSIL__ ) = 获取指定图像列表,\n可选使用 _LVSIL_ 前缀常量指定类型
+!ctrl_vlist.fillParent(.(列序号) = 使指定列自适应父窗口宽度,\n如果不指定列默认调整最后一列
+!ctrl_vlist.adjust = @.adjust = function(cx,cy){
+	winform.listview.fillParent(/*列序号*/);
+}
+!ctrl_vlist.findItem(.(查找文本,起始位置,是否部份匹配,是否返回查询) = 使用文本查找匹配项,\n除第一个参数外,所有参数可选,默认支持部份匹配,并查找所有项
+!ctrl_vlist.addCtrl = @.addCtrl(\n	edit ={ cls="edit";left=0;top=0;right=50;bottom=50;autoResize=false ;hide=1;edge=1;  }\n)
+!ctrl_vlist.createAdoAdapter(__/*ADO数据源*/) = 设置数据源\nSQL查询语句必须显示的指定要显示的字段以及顺序
+!ctrl_vlist.createAdapter( 类对象 ) = @.createAdapter( class {\n    count = function () {\n        return 10;\n    }  \n    getItem = function (row, col) {\n        return ..string.random(3);\n    }\n    close = function () {\n        \n    }\n});
+!ctrl_vlist.createTableAdapter(.(table对象,列名数组) = 设置数据源,参数@2可选
+!ctrl_vlist.createSqliteAdapter(.(sqlite连接对象,sql语句) = 设置数据源\nsql必须使用SELECT 显示的字段列表 FROM开始 
+!ctrl_vlist.createAdapter() = !ctrl_vlist_adapte.
+!ctrl_vlist.createTableAdapter() = !ctrl_vlist_adapte.
+!ctrl_vlist.createAdoAdapter() = !ctrl_vlist_adapte.
+!ctrl_vlist.createSqliteAdapter() = !ctrl_vlist_adapte.
+!ctrl_vlist.dataAdapter = 数据源适配器\n!ctrl_vlist_adapte.
+!ctrl_vlist_adapte.update() = 更新数据源
+!ctrl_vlist_adapte.close = @.close = function(){
+	__/*自定义数据连接关闭操作*/
+}
+end intellisense**/

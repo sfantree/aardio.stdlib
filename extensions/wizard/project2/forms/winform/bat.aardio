@@ -1,0 +1,46 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio + bat";right=759;bottom=469;parent=...)
+winform.add()
+/*}}*/
+
+import web.form;
+var wb = web.form( winform,5/*_UIFLAG_DIALOG*/|4/*_UIFLAG_NO3DBORDER*/ | 8/*_UIFLAG_SCROLL_NO*/,,,true);
+wb.noScriptErr = true;
+
+wb.html = /** 
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />  
+    <title>批处理</title> 
+	<style>body { font-family: "Segoe UI", sans-serif;  }</style>
+</head>
+<body style="white-space:pre;font-size:12pt;word-wrap: break-word;word-break: normal;overflow:hidden">
+可以直接使用 *.aardio 源码文件嵌入批处理代码到 EXE 文件内，
+使用 aardio 标准库提供的 process.batch 加载执行。
+
+批处理代码中aardio代码必须置于 &lt;? ..... ?&gt; 内部，类似PHP的模板语法,
+但是要注意与PHP的区别是，aardio规定开始标记  &lt;? 必须独立不能紧跟英文字母，
+例如 &lt;?xml.....  不是合法的aardio代码段开始标记(aardio会认为这是一个XML标记)。 
+另外，aardio总是忽略?&gt;后面或文件开始的空白字符（包含空格、制表符，换行）。
+	
+aardio将&lt;? ..... ?&gt; 之外的部分解析为： print("批处理代码") 以调用全局函数print输出批处理代码。
+print允许接收多个参数，并且对每个参数调用tostring()转换为字符串。
+
+可以使用 &lt;?=表达式?&gt; 输出文本，该代码的作用类似于 print( 表达式 ) , 下面的写法也是允许的
+&lt;?
+= 表达式
+?&gt;
+
+批处理文件应当并且建议以UTF-8编码保存，process.batch 会自动转换为 ANSI 编码执行。
+**/
+
+winform.getTemplatePath = function(){
+	return io.fullpath("/template/bat/") 
+}
+
+winform.show(true);
+win.loopMessage();
+return winform;

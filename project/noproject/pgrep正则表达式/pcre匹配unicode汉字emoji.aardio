@@ -1,0 +1,100 @@
+import console;
+import preg;
+
+{
+	var pRegex1 = preg("/<title>(.*?)<\/title>/mi");
+	var testString1 = /*
+	<html><head><title>The Dormouse's story</title></head>
+	<body>
+	<p class="title"><b>The Dormouse's story</b></p>
+	
+	<p class="story">Once upon a time there were three little sisters; and their names were
+	<a href="http://example.com/elsie" class="sister" id="link1">Elsie</a>,
+	<a href="http://example.com/lacie" class="sister" id="link2">Lacie</a> and
+	<a href="http://example.com/tillie" class="sister" id="link3">Tillie</a>;
+	and they lived at the bottom of a well.</p>
+	
+	<p class="story">...</p>
+	*/
+	var titleName = pRegex1.match(testString1);
+	pRegex1.free()
+	console.dump(titleName);
+}
+
+{
+	//var regexString2 = "/[\u{1f300}-\u{1f5ff}\u{1f900}-\u{1f9ff}\u{1f600}-\u{1f64f}\u{1f680}-\u{1f6ff}\u{2600}-\u{26ff}\u{2700}-\u{27bf}\u{1f1e6}-\u{1f1ff}\u{1f191}-\u{1f251}\u{1f004}\u{1f0cf}\u{1f170}-\u{1f171}\u{1f17e}-\u{1f17f}\u{1f18e}\u{3030}\u{2b50}\u{2b55}\u{2934}-\u{2935}\u{2b05}-\u{2b07}\u{2b1b}-\u{2b1c}\u{3297}\u{3299}\u{303d}\u{00a9}\u{00ae}\u{2122}\u{23f3}\u{24c2}\u{23e9}-\u{23ef}\u{25b6}\u{23f8}-\u{23fa}]/ug";
+	var regexString2 = "/[\x{4e00}-\x{9fa5}]/u";
+	var pRegex2 = preg(regexString2);
+	//var pRegex2 = preg(regexString2);
+	//console.dump(pRegex2)
+	var testString2 = /*
+	这是主分类😂 笑脸和情感的表情符号列表页面。它包括15个子分类，例如：😄 笑脸, 😍 表情脸, 😛 吐舌脸, 🤔 帯手脸, 🤐 中性脸-怀疑脸, 😴 睡脸, 🤧 病脸, 🤠 带帽脸, 😎 眼镜脸, 😞 担忧脸, 😠 消极脸, 💩 装扮脸, 😸 猫咪脸, 🙈 猴子脸, 💋 情感。您可以单击下面的链接查看详细信息并复制表情符号。
+	*/
+	
+	
+/*
+	var pattern =  "11"
+	for s in string.gmatch( str, pattern ){
+		
+	}
+*/
+	// 匹配汉字
+	for s in pRegex2.gmatch(testString2) {
+	    //console.log(s);
+	}
+}
+
+{
+	var regexString3 = "/[\x{1f300}-\x{1f5ff}\x{1f900}-\x{1f9ff}\x{1f600}-\x{1f64f}\x{1f680}-\x{1f6ff}\x{2600}-\x{26ff}\x{2700}-\x{27bf}\x{1f1e6}-\x{1f1ff}\x{1f191}-\x{1f251}\x{1f004}\x{1f0cf}\x{1f170}-\x{1f171}\x{1f17e}-\x{1f17f}\x{1f18e}\x{3030}\x{2b50}\x{2b55}\x{2934}-\x{2935}\x{2b05}-\x{2b07}\x{2b1b}-\x{2b1c}\x{3297}\x{3299}\x{303d}\x{00a9}\x{00ae}\x{2122}\x{23f3}\x{24c2}\x{23e9}-\x{23ef}\x{25b6}\x{23f8}-\x{23fa}]/ug";
+		//var regexString2 = "/[\x{4e00}-\x{9fa5}]/u";
+	var pRegex3 = preg(regexString3);
+	//var pRegex2 = preg(regexString2);
+	//console.dump(pRegex2)
+	var testString3 = /*
+	这是主分类😂 笑脸和情感的表情符号列表页面。它包括15个子分类，例如：😄 笑脸, 😍 表情脸, 😛 吐舌脸, 🤔 帯手脸, 🤐 中性脸-怀疑脸, 😴 睡脸, 🤧 病脸, 🤠 带帽脸, 😎 眼镜脸, 😞 担忧脸, 😠 消极脸, 💩 装扮脸, 😸 猫咪脸, 🙈 猴子脸, 💋 情感。您可以单击下面的链接查看详细信息并复制表情符号。
+	*/
+	
+	
+/*
+	var pattern =  "11"
+	for s in string.gmatch( str, pattern ){
+		
+	}
+*/
+	// 匹配汉字
+	// https://stackoverflow.com/a/55579386
+	//console.log(type(emoji));
+	for emoji in pRegex3.gmatch(testString3) {
+	    console.log(emoji);
+	    //console.log(type(emoji))
+	}
+	//console.log(type(emoji))
+}
+
+{
+	var regexString4 = "/[\x{1f300}-\x{1f5ff}\x{1f900}-\x{1f9ff}\x{1f600}-\x{1f64f}\x{1f680}-\x{1f6ff}\x{2600}-\x{26ff}\x{2700}-\x{27bf}\x{1f1e6}-\x{1f1ff}\x{1f191}-\x{1f251}\x{1f004}\x{1f0cf}\x{1f170}-\x{1f171}\x{1f17e}-\x{1f17f}\x{1f18e}\x{3030}\x{2b50}\x{2b55}\x{2934}-\x{2935}\x{2b05}-\x{2b07}\x{2b1b}-\x{2b1c}\x{3297}\x{3299}\x{303d}\x{00a9}\x{00ae}\x{2122}\x{23f3}\x{24c2}\x{23e9}-\x{23ef}\x{25b6}\x{23f8}-\x{23fa}]/ug";
+		//var regexString2 = "/[\x{4e00}-\x{9fa5}]/u";
+	var pRegex4 = preg(regexString4);
+	//var pRegex2 = preg(regexString2);
+	//console.dump(pRegex2)
+	var testString4 = /*
+	这是主分类😂 笑脸和情感的表情符号列表页面。它包括15个子分类，例如：😄 笑脸, 😍 表情脸, 😛 吐舌脸, 🤔 帯手脸, 🤐 中性脸-怀疑脸, 😴 睡脸, 🤧 病脸, 🤠 带帽脸, 😎 眼镜脸, 😞 担忧脸, 😠 消极脸, 💩 装扮脸, 😸 猫咪脸, 🙈 猴子脸, 💋 情感。您可以单击下面的链接查看详细信息并复制表情符号。
+	*/
+	
+	
+/*
+	var pattern =  "11"
+	for s in string.gmatch( str, pattern ){
+		
+	}
+*/
+	// 替换emoji
+	//console.log(type(emoji));
+	// pRegex.replace(.(匹配字符串,替换字符串,起始位置,替换次数,选项)
+	var testString4r = pRegex4.replace(testString4, "", );
+	console.log(testString4r);
+	    //console.log(type(emoji))
+	//console.log(type(emoji))
+}
+
+console.pause();

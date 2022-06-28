@@ -1,0 +1,255 @@
+﻿import web.json;
+import win.ui;
+
+namespace ahk;
+/*
+官方提供的 AutoHotkey.dll 有时会莫名其妙地崩溃。
+之前只要调用 AHK 函数 reload 就崩溃，查了一下是 AHK 在释放了指针以后忘记将变量设备为 null ，
+在 reload 重启以后又因为判断语句错误使用了已释放的指针导致崩溃。
+
+这个补丁我已经提交给官方，但作者似乎无法理解释放的指针要设为 null，
+所以官方提供的 AutoHotkey.dll 仍然有这个问题。
+
+之后又发现 AHK 还有其他导致崩溃的问题，这里要说明一下：
+aardio 支持十几种语言，各种类型的都有，像 AHK 这么不稳定的我从来没见过。
+这些问题经过查证这些并不是 aardio 的锅。
+
+此扩展库提供的 AutoHotkey.dll 已修复 reload 崩溃的问题。
+但我们不再处理类似问题。
+
+纯 aardio 代码实现热键的一些方法：
+1、标准库 key.hotkey 实现的超级热键。
+2、使用标准库 key.hook, mouse.hook 可创建键盘、鼠标钩子。
+3、使用标准库 win.ui.accelerator 可实现窗口快捷键。
+4、使用 winform.reghotkey 可创建系统热键。
+4、使用窗口和控件的 translateAccelerator 事件可以自定义快捷键。
+*/
+	
+var dll  = ..raw.loadDll($"~\lib\ahk\.res\AutoHotkey.dll","autohotkey.dll","cdecl,unicode")
+findFunc = dll.api("ahkFindFunc","int(ustring funcname)") ;
+findLabel = dll.api("ahkFindLabel","bool(ustring aLabelName)");
+executeLine = dll.api("ahkExecuteLine","INT(INT line,INT aMode,bool wait)");
+label = dll.api("ahkLabel","int(ustring aLabelName,bool nowait)");
+exec = dll.api("ahkExec","bool(ustring script)"); 
+ready = dll.api("ahkReady","bool()"); 
+pause = dll.api("ahkPause","int(ustring aChangeTo)");
+
+reload = function(timeout){
+	if(ready()) {
+		dll.ahkReload(timeout);
+		wait(true);	
+		return true;	
+	}
+}
+
+terminate = function(timeout){
+	if(ready()){
+		dll.ahkTerminate(timeout); 
+		return true; 
+	}
+}
+
+wait = function(running){
+	while(ready()!=running){
+		..thread.delay(500)
+	} 
+}
+
+..subscribe("beforeUnload",function(){ 
+	dll.ahkTerminate(1000) //退出 ahk 脚本
+} );
+
+run = function(file,argv="",argc=""){
+	::Kernel32.SetCurrentDirectory( ..io.fullpath("/") );//%A_WorkingDir%
+	
+	var ret;
+	if(..io.exist(file) && !..io.localpath(file)){
+		ret = dll.ahkdllP(file,argv,argc)
+	}
+	else {
+		file = #file<0x104/*_MAX_PATH*/ ? ..string.load(file) : file;
+		
+		if(file){
+			file	= ..string.loadcode("?>" + 	file);	
+		}
+		ret = dll.ahktextdllP(file,argv,argc) 
+	} 
+
+	return ret;
+} 
+
+addFile = function(fileName,waitExecute){
+	if(..io.exist(fileName) ){
+		dll.addFile(..io.exist(fileName),waitExecute)
+	} 
+} 
+
+addScript = function(script,aReplace){ 
+	file = #file<0x410/*_MAX_PATH_U8*/ ? ..string.load(script) : script;
+	dll.addScriptW(script,!!aReplace)  
+} 
+
+getGlobal = function(k,getVar){
+	return dll.ahkgetvarP(k,getVar===null?true:!!getVar)
+}
+
+setGlobal = function(k,v){
+	return dll.ahkassign(k,tostring(v));
+}
+
+postCall = function(func, param1 = "", param2 = "", param3 = "", param4 = "", param5 = "", param6 = "", param7 = "", param8 = "", param9 = "", param10){
+	return 0 == dll.ahkPostFunction(func,  
+		tostring(param1), tostring(param2), tostring(param3), 
+		tostring(param4), tostring(param5), tostring(param6), tostring(param7), 
+		tostring(param8), tostring(param9), tostring(param10)
+	)	
+}
+
+sendCall = function(func, param1 = "", param2 = "", param3 = "", param4 = "", param5 = "", param6 = "", param7 = "", param8 = "", param9 = "", param10){
+	var p = dll.ahkFunctionP(func, 
+		tostring(param1), tostring(param2), tostring(param3), 
+		tostring(param4), tostring(param5), tostring(param6), tostring(param7), 
+		tostring(param8), tostring(param9), tostring(param10)
+	)
+		
+	if(p){
+		return ..string.fromUnicode(p,,-1); 
+	}
+}
+
+jsonCall = function(func,param){
+	return ..web.json.tryParse( 
+		sendCall(func,..web.json.stringify(param)) 
+	)
+} 
+
+self.call = function(func,...){
+	
+	if( !findFunc("__aardioInvoke___") ){
+		wait(true);
+		
+		addScript(`
+		__aardioInvoke___(methodName,jsonParam){  
+			params := JSON.load(jsonParam) 
+			If IsFunc(methodName){   
+				ret := %methodName%(params*)
+				return JSON.dump(ret)
+			}  
+		} 
+		`,true);
+	} 
+	
+	var ret = sendCall("__aardioInvoke___"
+		,func,..web.json.stringify({@{_type="array"};...}));
+			
+	return ret !== null ? ..web.json.parse(ret);
+}
+
+external = ..win._form().messageOnly();
+external.onThreadCallBackReturn = function(result){ 
+	if(type(result)=="function"){
+		external.setTimeout(result,1);
+		return 0;
+	}
+	
+	setGlobal("AARDIO_AHK_EXTERNAL_RESULT",..web.json.stringify(result)); 
+	return -1;
+} 
+
+..win.setenv("AARDIO_AHK_EXTERNAL_INFO",..web.json.stringify({
+	hwnd = external.hwnd;
+}))
+
+self.import = function(libPath){ 
+	var path = "/AutoHotkey/Lib/" + libPath + ".ahk"
+	var code = ..string.load(path);
+	if(!code){
+		error(`未找到该文件 "` + path + `"`,2)		
+	}
+	
+	..string.save( ..io.getSpecial(0x5 /*_CSIDL_MYDOCUMENTS*/,path) ,code);
+}
+
+self@ ={
+	_get = function(key,ownerCall){
+		if(ownerCall){
+			if( key == "thread" ) error("请导入 ahk.thread",2);
+			
+			return function(...){
+				return self.call(key,...);
+			} 
+		}
+		
+		if(type(key)===type.string && (..string.left(key,2) == "on") ){
+			return self.external[key];
+		}
+	};
+	_set = function(key,value){
+		if(type(value)===type.function){
+			if(type(key)===type.string && (..string.left(key,2) == "on") ){
+				self.external[key] = value;
+			}
+		}
+		else {
+			self[[key]] = value;
+		}
+		
+	}; 
+}
+
+/**details(说明)
+aardio 中路径以斜杆开始表示应用程序根目录，
+应用程序根目录在开发时指工程目录或工程外独立启动的文件所在目录，
+发布后指 EXE 所在目录。
+
+当我们用 aardio + AHK 开发时，可以在应用程序根目录下的 /AutoHotkey/Lib/ 目录下面放 AHK 的用户库文件。
+如果创建了 aardio 工程，可以将这个 /AutoHotkey/ 目录设为内嵌资源目录（可生成独立 EXE 文件）。
+
+如果在 aardio中 调用 ahk.import("libName") ，
+aardio 会自动加载 /AutoHotkey/Lib/libName.ahk 的代码，
+并转存到 AHK 加载该用户库的路径 %A_MyDocuments%\AutoHotkey\Lib\*.ahk 。
+然后在 AHK 中可以用 #include <libName> 加载这个库,注意库名是放在 < ... > 这对尖括号中间。
+这个虽然叫用户库目录，其实是所有 AHK 程序公用的，所以最好放在子目录里，例如 ahk.import("aardio/libName") 
+
+在调用 ahk.run() 启动 AHK 脚本线程时，也会将应用程序根目录设为 AHK 设为 AHK 中的 %A_WorkingDir% 目录。
+也就是可以在 AHK 中用　#include path/name.ahk 的代码导入 AHK 文件，这时要写文件后缀名，不能加 < ... > 这种尖括号。
+end details**/
+
+/**intellisense()
+ahk = Autohokey v1.x H 版扩展库,\n AHK v2.x 请改用 ahk.thread 扩展库。\n请注意 AHK 使用的是 GPL 许可证,注意 GPL 有传染性。\n[Autohokey_H]( https://github.com/HotKeyIt/ahkdll/ )
+end intellisense**/
+
+/**intellisense(ahk)
+import("__") = 导入 "/AutoHotkey/Lib/" 目录下的 AHK 库文件\n例如 ahk.import("libName") 将会转换为加载 /AutoHotkey/Lib/Libname.ahk\naardio 会加载该文件并存为 AHK 支持的 %A_MyDocuments%\AutoHotkey\Lib\Libname.ahk\n在 AHK 代码中可直接使用 #include <Libname> 加载。\n\n/AutoHotkey/Lib/ 可以是 aardio 工程内的内嵌资源文件，\n以方便生成独立 EXE 文件。\n\n注意 aardio 中路径以斜杆开始表示应用程序根目录，\n应用程序根目录在开发时指工程目录或工程外独立启动的文件所在目录，\n发布后指 EXE 所在目录。
+ready() = 是否正在运行ahk脚本
+terminate() = 停止 AHK 脚本线程,\n可选用参数@1指定超时,以毫秒为单位,\n执行成功返回 true, 脚本未运行返回 false 或 null
+reload() = 重载启动 AHK 脚本线程,并等待启动完成,\n可选用参数@1指定超时,以毫秒为单位,\n执行成功返回 true, 脚本未运行返回 false 或 null
+wait(true) = 等待 AHK 脚本启动运行,\n只能在启动 AHK 脚本线程后调用,\n否则会一直等待无法返回。\n\n调用 reload 函数重启后必须调用此函数，否则后续调用会出现异常
+wait(false) = 等待 AHK 脚本运行结束
+run( = 启动 AHK 脚本线程,调用其他函数以后应当先调用此函数\n默认会将应用程序根目录设为 AHK 中的 %A_WorkingDir%\n\naardio 中路径以斜杆开始表示应用程序根目录，\n应用程序根目录在开发时指工程目录或工程外独立启动的文件所在目录，\n发布后指 EXE 所在目录。
+run(.(脚本,"/Debug",其他参数) = 启动 AHK 脚本线程,参数@2、参数@3 可省略\n参数@! 可以是脚本代码,也可以是脚本文件路径\n如果参数是脚本代码或单个斜杠（反斜杆）开始的应用内路径，\n则支持用 aardio 模板语法在 AHK 代码中嵌入 aardio 代码。\n返回线程句柄\n\n注意 AHK 并不支持真的多线徎，创建线程为当前线程，\n其他 AHK 创建的线程会停掉
+addFile(.(脚本文件,是否允许重复加载,是否忽略错误) = 添加文件到正在运行的 AHK 脚本线程,\n第三个参数可选0,1,2,1为忽略错误,2为忽略并移除加载的代码
+addScript(.(脚本代码,false) = 添加文件到正在运行的 AHK 脚本线程,不等待脚本运行完成\n调用此函数前必须先调用 run 函数启动 AHK 脚本线程,\n否则不执行任何操作
+addScript(.(脚本代码,true) = 添加文件到正在运行的 AHK 脚本线程,等待脚本运行完成\n调用此函数前必须先调用 run 函数启动 AHK 脚本线程,\n否则不执行任何操作
+exec("__/*脚本代码*/") = 运行脚本代码,成功返回true,失败返回false\n调用此函数前必须先调用 run 函数启动 AHK 脚本线程,\n否则不执行任何操作
+findLabel(.("标签名") =  查找标签,返回标签指针
+sendCall(.("函数名__",) = 运行指定的函数\n可选添加一到十个参数,返回文本值
+postCall(.("函数名__",) = 运行指定的函数\n可选添加一到十个参数,返回文本值\n该函数立即返回不会等待函数执行完成\n0为成功,-1为找不到函数
+jsonCall(.("函数名__",) = 运行指定的函数\n使用JSON传递参数并返回值，\n在 AHK 中必须使用 #include <aardio>加载 aardio,json 模块
+setGlobal() = 对 AHK 中的全局变量赋值,\n运行 AHK 脚本线程后才能调用此函数
+setGlobal(.("变量名","值") = 对 AHK 中的全局变量赋值,\n返回0表示成功,返回-1表示找不到变量,\n注意应当在 AHK 中先用 global name := value 声明全局变量,\n运行 AHK 脚本线程后才能调用此函数
+getGlobal( = 返回 AHK 中全局变量的值或指针,\n注意应当在 AHK 中先用 global name := value 声明全局变量,\n运行 AHK 脚本线程后才能调用此函数
+getGlobal(.("变量名") = 返回 AHK 中全局变量的指针
+getGlobal(.("变量名",false) = 返回 AHK 中全局变量的值
+findFunc(.("函数名__") = 查找函数,返回函数指针
+pause("On") = 暂停
+pause("Off") = 取消暂停
+label( =用来运行脚本中的 Goto/GoSub 子程序
+label(.(标签名,不等待执行结束) = 用来运行脚本中的 Goto/GoSub 子程序
+executeLine( = 用来执行之前通过 ahk.addScript 或 ahk.addFile 追加的脚本行
+executeLine(.(行号,0) = 不运行,返回行号
+executeLine(.(行号,1) = 运行到返回,返回行号\n可选添加第三个参数为true,等待执行完成
+executeLine(.(行号,2) = 运行到块结束,返回行号\n可选添加第三个参数为true,等待执行完成
+executeLine(.(行号,3) = 仅运行一行,返回行号\n可选添加第三个参数为true,等待执行完成 
+? = on 前缀的函数可在 AHK 内通过 aardio.函数名 调用。\n如果 on 前缀的回调函数返回值为函数对象，则异步执行该函数，\n其他返回值返回给 AHK 调用代码\n\n在 AHK v1 中必须使用 #include <aardio>加载 aardio 模块。
+end intellisense**/

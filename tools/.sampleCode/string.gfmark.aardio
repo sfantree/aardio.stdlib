@@ -1,0 +1,12 @@
+import console; 
+
+var md  = /*
+paragraph**这里是中文直接支持 UTF8 编码，省多少事！！！**  
+*/
+
+import string.gfmark; 
+var html = string.gfmark.render(md);
+
+console.log(html);
+console.pause(true);
+ 

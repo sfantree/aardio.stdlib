@@ -1,0 +1,32 @@
+﻿//provParam 提供程序参数
+import crypt;
+
+namespace crypt;
+
+class provParam{
+	ctor( cryptContent ){
+		this.cryptContent = cryptContent;
+	};
+	get = function(dwParam,data,flags){
+		var size = {INT value}
+		if(dwParam!=0x26/*_PP_USE_HARDWARE_RNG*/){
+			if(!data){
+				if(!::Advapi32.CryptGetProvParam(this.cryptContent.hCryptProv,dwParam,null,size,flags))return;
+				data = ..raw.buffer(size.value);
+			}
+			else {
+				size.value = data[["_struct"]] ?  ..raw.sizeof(data) : #data ;
+			} 
+		} 
+		
+		if( ::Advapi32.CryptGetProvParam(this.cryptContent.hCryptProv,dwParam,data,size,flags) ){
+			return data || true;
+		}
+	};
+}
+
+/**intellisense()
+crypt.provParam(.(cryptObject) = 参数指定 crypt 对象
+crypt.provParam() = !cryptProvParam.
+!cryptProvParam.get(.(dwParam,data,flags) = @dwParam 使用数值指定获取参数,\n@data 可指定 struct,buffer 或 null 值,\n成功返回获取数据。\n用法参考源码以及 ::Advapi32.CryptGetProvParam 文档
+end intellisense**/

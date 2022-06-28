@@ -1,0 +1,17 @@
+
+
+var _tthreads ={}
+thread.limit = function(h,max = 10){
+    if( h){
+        ..table.push( _tthreads,h);
+        if( #_tthreads > max){
+            var re = thread.waitOne(_tthreads);
+            if( _tthreads[re] )
+                table.remove(_tthreads,re );
+        }
+    }
+}
+
+//限制线程数目
+hthread,tid = thread.create ( threadFunc );
+thread.limit( hthread );

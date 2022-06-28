@@ -1,0 +1,14 @@
+import console; 
+import icmp.ping;
+{
+	var icmp_ping = icmp.ping();
+	icmp_ping.perform("223.5.5.5");
+	console.dump("223.5.5.5:" ,icmp_ping.echoReply.roundTripTime );
+}
+
+{
+	var icmp_ping = icmp.ping();
+	icmp_ping.perform("223.5.5.5");
+	console.dump("223.5.5.5:" ,icmp_ping.echoReply.roundTripTime );
+}
+console.pause(true);

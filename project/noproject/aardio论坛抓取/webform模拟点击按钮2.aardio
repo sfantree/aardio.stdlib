@@ -1,0 +1,25 @@
+import win.ui;
+import web.form;
+/*DSG{{*/
+var winform = ..win.form(text="aardio form";right=599;bottom=399)
+winform.add(
+button={cls="button";text="查询";left=208;top=360;right=304;bottom=392;z=2};
+static={cls="static";text="static";left=16;top=8;right=584;bottom=344;transparent=1;z=1}
+)
+/*}}*/
+
+var wb = web.form( winform.static );
+wb.noScriptErr=true;
+wb.go("http://www.dce.com.cn/PublicWeb/MainServlet?action=Pu00011_search");
+wb.wait();
+
+winform.button.oncommand = function(id,event){
+        var ele = wb.getEle("Submit");
+        if(ele){
+                ele.focus();
+                ele.click();
+        }
+}
+
+winform.show()
+win.loopMessage();

@@ -1,0 +1,23 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="miniblink - JS直接调用WinAPI";right=1123;bottom=570)
+winform.add()
+/*}}*/
+
+import web.blink.form; //导入miniblink支持库
+var mb = web.blink.form(winform); //创建miniblink浏览器窗口
+
+web.blink.export( 
+	user32 = ::User32;//导出DLL对象为JS全局变量
+	form = winform; //窗口对象也可以导出为JS变量
+	blink = mb; //mb自己也可以导出为JS变量
+); 
+ 
+mb.html = /** 
+	<a href='javascript:
+ 	user32.MessageBox(0,"JS直接调用WinAPI","user32.MessageBox",0)
+	'>JS直接调用WinAPI函数试一下</a> 
+**/  
+
+winform.show() 
+win.loopMessage();

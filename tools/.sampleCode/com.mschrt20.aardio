@@ -1,0 +1,104 @@
+/*
+本人对此控件用法不熟悉，仅提供接口，请自行网上搜索mschrt20控件相关资料
+*/
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form(text="aardio form";right=599;bottom=399)
+winform.add()
+/*}}*/
+
+import com.mschrt20; 
+var mschart = com.mschrt20(winform);
+
+//初始化图表：
+mschart.plot.Axis(1,chart_var).ValueScale.MajorDivision = 100;//轴刻度10等分 
+mschart.plot.Axis(1,chart_var).ValueScale.MinorDivision = 0.1;//每刻度一个刻度线 
+mschart.columnCount = 2; //2个项，2条曲线 
+mschart.titleText = "用户消费情况折线图统计";//设置标题栏 
+mschart.columnLabel = "本地话费";//设置第j列标签
+mschart.column = 2;
+mschart.columnLabel = "长途话费";
+mschart.plot.Axis(0,chart_var).AxisTitle.Text = "消费日期";  //X轴名称 
+mschart.showLegend = true;
+mschart.plot.SeriesCollection.Item(1).Pen.VtColor.Set(0, 0, 255);//线色，蓝色曲线
+mschart.plot.SeriesCollection.Item(1).Pen.Width = 1;//线宽
+mschart.plot.SeriesCollection.Item(2).Pen.VtColor.Set(255, 0, 0);//红色
+mschart.plot.SeriesCollection.Item(2).Pen.Width = 1;//线宽
+mschart.backdrop.Fill.Style = 1;
+mschart.backdrop.Fill.Brush.FillColor.Set(255, 255, 255);//白色背景
+
+//初始化曲线值
+for(i=1;5;1){
+	mschart.dataGrid.setData(i, 1, 0, 0);//设置第一条曲线的第row个点
+	mschart.dataGrid.setData(i, 2, 0, 0);//设置第二条曲线的第row个点	 
+}
+
+//画图
+mschart.rowCount = 20;
+for(j=1;20;1){ 
+	mschart.dataGrid.setData(j, 1, math.random(1,10), 0);//设置第一条曲线的第j+1个点
+	mschart.dataGrid.SetData(j, 2, math.random(1,10), 0);//设置第一条曲线的第j+1个点
+	mschart.row = j;
+	mschart.rowLabel = j;//设置第i行标签
+} 
+mschart.refresh();
+
+//控件支持的事件如下
+mschart.AxisActivated = function( ... ){   }
+mschart.AxisLabelActivated = function( ... ){   }
+mschart.AxisLabelSelected = function( ... ){   }
+mschart.AxisLabelUpdated = function( ... ){   }
+mschart.AxisSelected = function( ... ){   }
+mschart.AxisTitleActivated = function( ... ){   }
+mschart.AxisTitleSelected = function( ... ){   }
+mschart.AxisTitleUpdated = function( ... ){   }
+mschart.AxisUpdated = function( ... ){   }
+mschart.ChartActivated = function( ... ){   }
+mschart.CharSelected = function( ... ){   }
+mschart.ChartUpdated = function( ... ){   }
+mschart.DataUpdated = function( ... ){   }
+mschart.DonePainting = function( ... ){   }
+mschart.FootnoteActivated = function( ... ){   }
+mschart.FootnoteSelected = function( ... ){   }
+mschart.FootnoteUpdated = function( ... ){   }
+mschart.LegendActivated = function( ... ){   }
+mschart.LegendSelected = function( ... ){   }
+mschart.LegendUpdated = function( ... ){   }
+mschart.PlotActivated = function( ... ){   }
+mschart.PlotSelected = function( ... ){   }
+mschart.PlotUpdated = function( ... ){   }
+mschart.PointActivated = function( ... ){   }
+mschart.PoinLabelActivated = function( ... ){   }
+mschart.PointLabelSelected = function( ... ){   }
+mschart.PointLabelUpdated = function( ... ){   }
+mschart.PointSelected = function( ... ){   }
+mschart.PointUpdated = function( ... ){   }
+mschart.SeriesActivated = function( ... ){   }
+mschart.SeriesSelected = function( ... ){   }
+mschart.SeriesUpdated = function( ... ){   }
+mschart.TitleActivated = function( ... ){   }
+mschart.TitleSelected = function( ... ){   }
+mschart.TitleUpdated = function( ... ){   }
+mschart.DragDrop = function( ... ){   }
+mschart.DragOver = function( ... ){   }
+mschart.GotFocus = function( ... ){   }
+mschart.LostFocus = function( ... ){   }
+mschart.Validate = function( ... ){   }
+mschart.OLECompleteDrag = function( ... ){   }
+mschart.OLEDragDrop = function( ... ){   }
+mschart.OLEDragOver = function( ... ){   }
+mschart.OLEGiveFeedback = function( ... ){   }
+mschart.OLESetData = function( ... ){   }
+mschart.OLEStartDrag = function( ... ){   }
+mschart.Click = function( ... ){   }
+mschart.DblClick = function( ... ){   }
+mschart.KeyDown,
+mschart.KeyUp = function( ... ){   }
+mschart.KeyPress = function( ... ){   }
+mschart.MouseDown = function( ... ){   }
+mschart.MouseUp = function( ... ){   }
+mschart.MouseMove = function( ... ){   }
+
+winform.show() 
+win.loopMessage();
+ 

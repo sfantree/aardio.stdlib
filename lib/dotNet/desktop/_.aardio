@@ -1,0 +1,216 @@
+﻿import dotNet;
+
+var compiler = dotNet.createCompiler("C#");  
+compiler.Parameters.CompilerOptions = "/optimize";
+compiler.Source = $"~\lib\dotNet\desktop\.res\netVirtualDesktop.aardio"
+var netVirtualDesktop = compiler.import("netVirtualDesktop");
+compiler = null;
+
+namespace dotNet;
+
+class desktop{
+	ctor(name){
+		this = netDesktop.Create();
+		if(name){
+			this.SetName(name);
+		}
+	}; 
+}
+
+namespace desktop;
+netDesktop = netVirtualDesktop.Desktop;
+
+fromName = function(name){
+	var idx = netDesktop.SearchDesktop(idxOrNameOrNetObj);
+	if(idx>=0) return netDesktop.FromIndex(idx);	
+}
+
+fromIndex = function(idx){
+	return netDesktop.FromIndex(idx-1)
+}
+
+fromWindow = function(hwnd){
+	return netDesktop.FromWindow(hwnd)
+}
+
+current = function(){
+	return netDesktop.Current;
+}
+ 
+first = function(){
+	return netDesktop.FromIndex(0)	
+}
+
+last = function(){
+	return netDesktop.FromIndex(netDesktop.Count -1)
+}
+
+index = function(param){
+	if(type.isString(param)){
+		var idx = netDesktop.SearchDesktop(param);
+		if(idx>=0) return idx+1;
+	}
+	elseif( ..dotNet.getObject(param)){
+		return netDesktop.FromDesktop(param)+1;
+	}
+	elseif(desktop===null){ 
+		return netDesktop.FromDesktop(current())+1;
+	} 
+} 
+
+each = function(){
+	var count = netDesktop.Count;
+	var i = -1;
+	var cur = index() - 1;
+	return function(){
+		i++;
+		if(i<count)return netDesktop.DesktopNameFromIndex(i),i+1,cur==i
+	}
+}
+
+get = function(param){
+	if( ..dotNet.getObject(param)){
+		return param;
+	}
+	elseif( type.isString(param) ) {
+		var idx = netDesktop.SearchDesktop(param);
+		if(idx>=0) return netDesktop.FromIndex(idx);
+	} 
+	elseif( type(param) == "number" ) {
+		return netDesktop.FromIndex(param-1)
+	}
+	elseif( param === null ){
+		return current();
+	}
+	else {
+		error("参数类型错误",2)
+	}	
+}
+
+remove = function(param){
+	var desktop;
+	if(param===null) desktop = last;
+	else desktop = get(param);
+	
+	if(desktop) return desktop.Remove();
+}
+
+removeAll = function(){
+	if(_WIN_VER_BUILD>=22000){
+		return netDesktop.RemoveAll();
+	}
+}
+
+switch = function(param){
+	if(param===null) error("参数错误",2);
+	var desktop = get(param);
+	if( desktop) return desktop.MakeVisible() 
+}
+
+getName = function(param){
+	var desktop = get(param);
+	if(desktop) return netDesktop.DesktopNameFromDesktop(desktop);
+}
+
+setName = function(param,name){
+	var desktop = get(param);
+	if(desktop) desktop.SetName(name);
+}
+
+isVisible = function(param){
+	var desktop = get(param);
+	if( desktop) return desktop.IsVisible
+}
+
+pinWindow = function(hwnd){
+	netDesktop.PinWindow(hwnd);	
+}
+
+unpinWindow = function(hwnd){
+	netDesktop.UnpinWindow(hwnd);	
+}
+
+isWindowPinned = function(hwnd){
+	return netDesktop.IsWindowPinned(hwnd)
+}
+
+pinApplication = function(hwnd){
+	return netDesktop.PinApplication(hwnd)
+}
+
+unpinApplication = function(hwnd){
+	return netDesktop.UnpinApplication(hwnd)
+}
+
+isApplicationPinned = function(hwnd){
+	return netDesktop.IsApplicationPinned(hwnd)
+}
+
+setWallpaper = function(path,desktop){
+	if(_WIN_VER_BUILD>=22000){
+		desktop = get(desktop);
+		if(desktop) desktop.SetWallpaperPath(..io.localpath(desktop):path); 
+	}
+}
+
+setAllWallpapers = function(path){
+	if(_WIN_VER_BUILD>=22000){
+		desktop = get(desktop);
+		if(desktop){
+			desktop.SetAllWallpaperPaths(..io.localpath(desktop):path);
+		}
+	}
+}
+
+/**intellisense()
+dotNet.desktop = Win10 / Win11 虚拟桌面管理\n在鼠标与键盘钩子回调函数中必须在退出回调函数以后异步调用此扩展库
+dotNet.desktop( = 创建虚拟桌面，返回 .Net 对象 
+dotNet.desktop(.(name) = 创建新的虚拟桌面，\n可选用 @name 参数指定虚拟桌面名称
+dotNet.desktop() = !stdDotNetDesktop.
+end intellisense**/
+
+/**intellisense(!stdDotNetDesktop)
+MakeVisible() = 切换到指定桌面
+IsVisible = 是否当前显示桌面
+Remove() = 移除桌面
+SetName(__) = 设置桌面为参数@1指定的名称
+Left = 上一个虚拟桌面\n!stdDotNetDesktop.
+Right = 下一个虚拟桌面\n!stdDotNetDesktop.
+MoveWindow(.(hwnd) = 移动窗口到指定桌面,\n@hwnd 指定窗口句柄
+hasWindow(.(hwnd) = 虚拟桌面上是否包含指定窗口,\n@hwnd 指定要查找的窗口句柄
+end intellisense**/
+	
+/**intellisense(dotNet.desktop)
+get(__) = 获取桌面对象，\n参数@1可以是虚拟桌面名称，虚拟桌面对象，或桌面索引,\n起始索引为 1
+get() = !stdDotNetDesktop.
+fromWindow(.(hwnd) = 自参数 @hwnd 指定的窗口句柄获取虚拟桌面对象
+fromWindow() = !stdDotNetDesktop.
+fromName(.(name) = 自参数 @name 指定的虚拟桌面名称获取虚拟桌面对象
+fromName() = !stdDotNetDesktop.
+fromIndex(.(index) = 自参数 @index 指定的桌面索引取虚拟桌面对象,\n起始索引为 1
+fromIndex() = !stdDotNetDesktop.
+first() = 第一个虚拟桌面\n!stdDotNetDesktop.
+last() = 最后一个虚拟桌面\n!stdDotNetDesktop.
+current() = 当前虚拟桌面\n!stdDotNetDesktop.
+index( = 获取桌面索引,起始索引为 1
+index(.(name) = 获取桌面索引,@name 指定的虚拟桌面名称
+index(.(desktop) = 获取桌面索引,@desktop 指定的虚拟桌面对象
+index(.() = 获取当前桌面索引
+each() = @for name,index,current in dotNet.desktop.each(){
+	console.log(name,index,current)__/*遍历虚拟桌面,\n@name 为桌面名称,@index 为桌面索引,\n@current 为 true 则为当前桌面*/
+}
+remove(__) = 移除桌面，\n参数@1可以是虚拟桌面名称，虚拟桌面对象，或桌面索引,\n起始索引为 1,\n\n不指定参数移除最后一个桌面
+removeAll() = 移除所有桌面,仅 Win11 可用
+switch(__) = 切换到指定桌面，\n参数@1可以是虚拟桌面名称，虚拟桌面对象，或桌面索引,\n起始索引为 1
+getName(__) = 获取桌面名称，\n参数@1可以是虚拟桌面名称，虚拟桌面对象，或桌面索引,\n起始索引为 1
+setName(.(desktop,name) = 设置虚拟桌面名称为 @name 指定的字符串，\n参数@desktop可以是虚拟桌面名称，虚拟桌面对象，或桌面索引,\n起始索引为 1
+isVisible(__) = 指定的桌面是否显示，\n参数@1可以是虚拟桌面名称，虚拟桌面对象，或桌面索引,\n起始索引为 1
+pinWindow(.(hwnd) = 在所有虚拟桌面显示参数 @hwnd 指定句柄的窗口
+unpinWindow(.(hwnd) = 取消在所有虚拟桌面显示参数 @hwnd 指定句柄的窗口
+isWindowPinned(.(hwnd) = 参数 @hwnd 指定句柄的窗口是否固定在所有虚拟桌面显示
+pinApplication(.(hwnd) = 在所有虚拟桌面显示参数 @hwnd 指定窗口句柄的应用程序
+unpinApplication(.(hwnd) = 取消在所有虚拟桌面显示参数 @hwnd 定窗口句柄的应用程序
+isApplicationPinned(.(hwnd) = 参数 @hwnd 指定窗口句柄的应用程序是否固定在所有虚拟桌面显示
+setWallpaper(.(path,desktop) = 设置 @desktop 参数指定桌面的壁纸，仅 Win11 可用，\n参数@desktop 可以是虚拟桌面名称，虚拟桌面对象，或桌面索引
+setAllWallpapers(.(path) = 设置所有桌面壁纸，仅 Win11 可用，
+end intellisense**/

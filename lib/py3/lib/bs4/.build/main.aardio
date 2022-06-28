@@ -1,0 +1,29 @@
+import fsys;
+import ide; 
+
+//获取生成 EXE 文件所在目录
+var publisDir = ide.getPublisDir();
+if(!#publisDir) return; 
+
+//获取发布后 bs4 存储位置
+var pyLibTarget =  fsys.joinpath(publisDir,"\lib\py3\lib\bs4\.py\" ); 
+
+if( ! ( io.exist(pyLibTarget+"bs4") 
+	&& io.exist(pyLibTarget+"soupsieve") ) ){ 
+	io.createDir( pyLibTarget );
+	
+	//查找扩展库中 Python 模块 matplotlib 所在目录
+	var libPath,libDir = io.libpath("py3.lib.bs4");
+	var pyLibSrc = fsys.joinpath(libDir,"\.py\*.*");
+	
+	//清除缓存
+	fsys.delete(fsys.joinpath(libDir,"\.py\bs4\__pycache__"));
+	fsys.delete(fsys.joinpath(libDir,"\.py\soupsieve\__pycache__"));
+	fsys.delete(fsys.joinpath(libDir,"\.py\bs4\builder\__pycache__"));
+	fsys.delete(fsys.joinpath(libDir,"\.py\bs4\tests\__pycache__"));
+	fsys.delete(fsys.joinpath(libDir,"\.py\bs4\__pycache__"));
+	
+	//复制 matplotlib 模块到发布目录
+	fsys.copy(pyLibSrc,pyLibTarget,0x10/*_FOF_NOCONFIRMATION*/  | 0x200/*_FOF_NOCONFIRMMKDIR*/); 
+}
+

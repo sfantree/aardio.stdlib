@@ -1,0 +1,20 @@
+import console; 
+var dll = raw.loadDll( "/libspeech_vad_demo.dll" );
+
+var main1 = dll.api( "main1","int(string, string, string)", "cdcel" ); 
+
+var filename = "C:\Users\lin\CLionProjects\speech-vad-demo\pcm\16k_1.pcm";
+var filename_ansi = string.fromto( filename );
+
+var output_filename_prefix = "16k_1.pcm";
+var output_filename_prefix_ansi = string.fromto( output_filename_prefix );
+
+var output_dir = "G:\chromedl\aardio\project\noproject\webrtcvad\output"
+var output_dir_ansi = string.fromto( output_dir );
+
+var result = main1(filename_ansi, output_filename_prefix_ansi, output_dir_ansi);
+
+console.log(result);
+
+console.pause(true);
+ 

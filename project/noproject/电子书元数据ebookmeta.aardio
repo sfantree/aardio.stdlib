@@ -1,0 +1,11 @@
+import console; 
+import process.popen;
+
+var eBookMetaBin = "C:\Program Files (x86)\Calibre2\ebook-meta.exe";
+var eBookPath = "H:\tgdownload\高情商聊天术.epub"
+
+var prcs = process.popen(eBookMetaBin, eBookPath)
+var textOutput = prcs.read(-1)
+console.log(textOutput)
+
+console.pause(true);

@@ -1,0 +1,8 @@
+import win.ui;
+/*DSG{{*/
+mainForm = win.form(text="sqlitemodel";right=959;bottom=591)
+mainForm.add()
+/*}}*/
+
+mainForm.show();
+return win.loopMessage();

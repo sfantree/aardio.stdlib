@@ -1,0 +1,19 @@
+﻿import fsys;
+import ide; 
+
+var publisDir = ide.getPublisDir();
+if(!#publisDir)return; 
+
+var pyPubDir =  fsys.joinpath(publisDir,"\lib\py2\.res\DLLs\" ); 
+if( ! io.exist(pyPubDir) ){ 
+	io.createDir( fsys.joinpath(publisDir,"\lib\py2\.res\" ) );
+		
+	var libPath,libDir = io.libpath("py2")
+	..fsys.copy( fsys.joinpath(libDir,"\.res\DLLs\") ,pyPubDir,0x10/*_FOF_NOCONFIRMATION*/  | 0x200/*_FOF_NOCONFIRMMKDIR*/); 
+}
+
+var pyPubDir =  fsys.joinpath(publisDir,"\lib\py2\.res\Lib.zip" ); 
+if( ! io.exist(pyPubDir) ){ 
+	var libPath,libDir = io.libpath("py2")
+	..fsys.copy( fsys.joinpath(libDir,"\.res\Lib.zip") ,pyPubDir,0x10/*_FOF_NOCONFIRMATION*/  | 0x200/*_FOF_NOCONFIRMMKDIR*/); 
+}

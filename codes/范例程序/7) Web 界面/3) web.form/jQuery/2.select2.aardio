@@ -1,0 +1,86 @@
+//Select2 下拉搜索框
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="Select2 - 支持 Win7 以及 Win7 以后的系统";right=759;bottom=469;bgcolor=16777215)
+winform.add(
+edit={cls="edit";left=442;top=13;right=739;bottom=453;edge=1;multiline=1;z=2};
+static={cls="static";text="Static";left=6;top=7;right=371;bottom=459;clip=1;transparent=1;z=1}
+)
+/*}}*/
+
+import web.form;
+var wb = web.form(winform.static);
+
+import web.json;
+wb.external={
+	getData = function(){
+		var data = {
+    		{
+      			"id": 1,
+      			"text": "aardio",
+      			"selected": true
+    		},
+    		{
+      			"id": 2,
+      			"text": "Delphi"
+    		},
+    		{
+      			"id": 3,
+      			"text": "Python",
+      			"disabled": true
+    		}
+  		}
+  		
+		return web.json.stringifyArray(data); 
+	}
+	
+	onSelect2Change = function(value){
+		winform.edit.print("选择了",value);
+	}	
+}
+
+/*
+Select2 v3.5.3 支持 IE8+, 也就是支持 Win7 以及 Win7 以后的系统
+文档： https://select2.github.io/select2/#documentation
+
+下面使用 CDN 服务器加载 JS 文件初始化可能有点慢，实际开发请先下载到本地。
+aardio 可直接支持加载资源目录（发布可嵌入 EXE）下的网页文件。
+*/
+
+wb.html = /**
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8"> 
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <script src="http://lib.sinaapp.com/js/jquery/1.12.4/jquery-1.12.4.min.js"></script>
+	<script src="http://lib.baomitu.com/select2/3.5.3/select2.min.js"></script>
+	<link href="http://lib.baomitu.com/select2/3.5.3/select2.min.css" rel="stylesheet" /> 
+	<style type="text/css">
+    html,body{ height:100%; margin:0; } 
+    </style>
+</head>
+<body>    
+	<!-- 注意 Select2 v3.x 用 input / Select2 v4.x 用 select  -->
+	<input type="text" id="example" style="width:100%;" > 
+	
+	<script> 
+	$(document).ready(function() {  
+    	$('#example').select2({
+    	    placeholder: '请选择',
+    	   "data": eval( external.getData() ) //调用 aardio 函数获取数据
+    	});
+    	
+    	$('#example').on('change.select2', function (e) {  
+    	    //响应事件并调用 aardio 函数
+    		external.onSelect2Change(e.val);
+		});
+
+	});
+	</script>
+</body>
+</html>
+**/
+
+winform.show();
+win.loopMessage();

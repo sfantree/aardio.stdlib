@@ -1,0 +1,232 @@
+
+/*
+SqlLite+listview综合应用改进加强版
+*/
+
+import win.ui;
+import sqlite;
+import console;
+/*DSG{{*/
+var winform = ..win.form( bottom=433;parent=...;right=596;text="aardio Form" )
+winform.add(
+ed_kg={ bottom=70;right=371;left=279;top=48;z=5;edge=1;cls="edit" };
+listview={ top=100;bgcolor=16777215;bottom=369;right=561;left=31;cls="listview";
+items={  };z=1;gridLines=1;edge=1;fullRow=1 };
+static={ bottom=38;right=91;left=49;text="name:";top=18;z=7;transparent=1;cls="static" };
+ed_name={ bottom=37;right=201;left=109;top=13;z=3;edge=1;cls="edit" };
+static2={ bottom=34;right=260;left=218;text="age:";top=14;z=8;transparent=1;cls="static" };
+static4={ bottom=70;right=90;left=48;text="love:";top=55;z=10;transparent=1;cls="static" };
+static3={ bottom=72;right=261;left=219;text="kg:";top=52;z=9;transparent=1;cls="static" };
+btnDelete={ bottom=415;right=560;left=473;top=388;z=2;text="删除表中数据";cls="button" };
+btn_adddb={ bottom=67;text="添加中数据到数据库";left=416;top=12;z=11;right=555;cls="button" };
+ed_love={ bottom=73;right=200;left=108;top=53;z=4;edge=1;cls="edit" };
+ed_age={ bottom=32;right=369;left=277;top=10;z=6;edge=1;cls="edit" }
+)
+/*}}*/
+
+winform.listview.setExtended(0x4/*_LVS_EX_CHECKBOXES*/ | 0x80000/*_LVS_EX_SNAPTOGRID*/ | 0x1/*_LVS_EX_GRIDLINES*/ | 0x100/*_LVS_EX_FLATSB*/ | 0x1000000/*_LVS_EX_AUTOAUTOARRANGE*/ );//勾选框
+winform.listview.insertColumn("id",50,1)
+winform.listview.insertColumn("name",100,2)
+winform.listview.insertColumn("age",150,3)
+winform.listview.insertColumn("kg",100,4)
+winform.listview.insertColumn("love",100,5)
+
+
+
+
+var sqlConnection = sqlite("\db.db") //连接数据库
+if(not sqlConnection.existsTable("filea")){        //如果不存在表，则创建数据表
+            sqlConnection.exec("CREATE TABLE filea(
+                     id INTEGER PRIMARY KEY AUTOINCREMENT,  
+                     name,
+                     age,
+                     kg,
+                     love
+                    );"
+            )
+            win.msgbox("创建表成功","aardio")
+            //创建索引利于查询
+            //sqlConnection.exec("create index 索引名字 on 表名字(索引字段名字)")            
+}else {
+
+                var db=sqlConnection.getTable("SELECT * FROM filea");//查询全表数据
+                    //将查询到的数据显示于listview
+                 for(i=1;#db;1){        
+                 winform.listview.addItem();
+                 winform.listview.setItemText(tostring(db[ i ].id),i,1)
+                 winform.listview.setItemText(tostring(db[ i ].name),i,2)
+                 winform.listview.setItemText(tostring(db[ i ].age),i,3)
+                 winform.listview.setItemText(tostring(db[ i ].kg),i,4)
+                 winform.listview.setItemText(tostring(db[ i ].love),i,5)
+                 }
+}
+//刷新listview
+Refresh_main=function(){
+
+        winform.listview.clear();//先清空，再显示，实现刷新
+        var db=sqlConnection.getTable("SELECT * FROM filea");
+        
+                 for(i=1;#db;1){        
+                 winform.listview.addItem();
+                 winform.listview.setItemText(tostring(db[ i ].id),i,1)
+                 winform.listview.setItemText(tostring(db[ i ].name),i,2)
+                 winform.listview.setItemText(tostring(db[ i ].age),i,3)
+                 winform.listview.setItemText(tostring(db[ i ].kg),i,4)
+                 winform.listview.setItemText(tostring(db[ i ].love),i,5)
+        }
+}
+
+//删除所选数据
+delete_db = function(){
+        
+for(i=1;winform.listview.count;1){        
+
+                if(winform.listview.getChecked(i)){
+               
+                        var id=winform.listview.getItemText(i,1)
+                        sqlConnection.exec("DELETE FROM filea WHERE id="+id+"")
+                }
+}
+win.msgbox("删除成功","系统提示")
+Refresh_main()        
+}
+//查询表中相同的并删除
+delete_thesame = function(name){
+
+        sqlConnection.exec("DELETE FROM filea where name not in(select max(id) from filea group by name)")
+        
+}
+//查询表中相同姓名
+select_db = function(name){
+
+        return sqlConnection.getTable("select name from filea where name='"+name+"'");
+        
+}
+//查询表中有相同数据的便覆盖掉
+the_same = function(name,age,kg,love){
+        
+        var num = sqlConnection.exec("insert into filea(name,age,kg,love) select '"+name+"','"+age+"','"+kg+"','"+love+"' where not exists(select * from filea where name='"+name+"');")
+        win.msgbox("添加成功","系统提示")
+        Refresh_main()
+        
+}
+//修改表中数据
+update_db = function(id,name,age,kg,love){
+        var doubt=win.msgboxTest("确定修改并且更新到数据库？","系统提示");
+        if(doubt){
+         
+         sqlConnection.exec("UPDATE filea SET name='"+name+"',age='"+age+"',kg='"+kg+"',love='"+love+"' WHERE id ='"+id+"'");
+         
+        }
+        
+}
+
+
+//添加
+add_db =function(name,age,kg,love){
+
+                var add=sqlConnection.exec("insert into filea (name,age,kg,love) values('"+name+"','"+age+"','"+kg+"','"+love+"')")
+               
+                win.msgbox("添加成功","系统提示")
+                Refresh_main();        
+               
+}
+
+
+winform.listview.onnotify = function(id,code,ptr){
+    if(code==0xFFFFFF4B){// 滚动条
+        if(!winform.listview.editlable) return ;
+        edit = winform.listview.editlable;
+        rc=winform.listview.getItemRect(edit.listViewNotifyMessage.iItem,edit.listViewNotifyMessage.iSubItem,,2/*_LVIR_LABEL*/);
+        if(rc.top<rc.bottom-rc.top){//选中行向上滚动到了列标题及其以上的位置，不处理的话编辑框会覆盖掉列标题。
+            rc.top-=math.abs(rc.bottom);rc.bottom=rc.top;
+        }else {
+            rc.right += 5; rc.bottom += 5;
+        }
+        edit.setRect(rc);
+        winform.listview.redraw();//经测试，这行会引起滚动条位置变化时listview控件闪烁，如果在意这个问题，请主动给listview控件增加_WS_CLIPCHILDREN样式，可以省略掉这行。
+    }
+    if(code=0xFFFFFFFD/*_NM_DBLCLK*/ ){ //code=0xFFFFFFFE/*_NM_CLICK鼠标单击*/
+        var notifyMessage = winform.listview.getNotifyMessage(code,ptr);
+        if( ! notifyMessage.iItem && notifyMessage.iSubItem ) return ;
+        
+        var edit = winform.listview.editlable
+        if( ! edit ){
+            winform.listview.addCtrl(
+                editlable = {
+                    cls="edit";font = LOGFONT( h = 11 );left = 0;top = 0;
+                    right = 50;bottom = 50;autoResize = false ;hide = 1;edge = 1;                    
+                    wndproc = function( hwnd, message, wParam, lParam ){
+                        if( ( message = 0x8/*_WM_KILLFOCUS*/)
+                            || message == 0x101/*_WM_KEYUP*/ && wParam == 0xD/*_VK_RETURN*/){
+                            // 按下了回车键或失去焦点，更新listview数据
+                            owner.parent.setItemText( owner.text, //格子内容
+                                                      owner.listViewNotifyMessage.iItem, //行号
+                                                      owner.listViewNotifyMessage.iSubItem );//列号
+                            //console.log(owner.text, owner.listViewNotifyMessage.iItem, owner.listViewNotifyMessage.iSubItem) //测试显示数据
+                            var focus=owner.listViewNotifyMessage.iItem
+                            var id=winform.listview.getItemText(focus,1);//focus=第i行,第1列
+                            var name=winform.listview.getItemText(focus,2);
+                            var age=winform.listview.getItemText(focus,3);
+                            var kg=winform.listview.getItemText(focus,4);
+                            var love=winform.listview.getItemText(focus,5);
+                            console.log(id,name,age,kg,love)
+                            //更新语句update
+                            update_db(id,name,age,kg,love);
+                            //调用刷新
+                            Refresh_main();
+                            owner.show(false);
+                        }
+                    }  
+                }
+            )  
+            edit = winform.listview.editlable;
+        }
+        edit.listViewNotifyMessage = notifyMessage;
+        edit.text=winform.listview.getItemText(notifyMessage.iItem,notifyMessage.iSubItem);
+        var rc=winform.listview.getItemRect( notifyMessage.iItem,notifyMessage.iSubItem,,2/*_LVIR_LABEL*/ )
+        rc.right += 5; rc.bottom += 5;
+        edit.setRect(rc);
+        edit.show();
+        edit.setFocus();// 获取焦点
+    }
+}
+
+
+//删除所选数据
+winform.btnDelete.oncommand = function(){
+     var bool=win.msgboxTest("确定删除？","系统提示")
+     
+     if(bool){
+             delete_db();
+     }
+}
+//添加数据到db
+winform.btn_adddb.oncommand = function(){
+        
+        var name=winform.ed_name.text;
+        var age =winform.ed_age.text;
+        var kg  =winform.ed_kg.text;
+        var love=winform.ed_love.text;
+        var name_01;
+        var num=select_db(name);
+        for(i=1;#num;1){
+               
+                name_01=num[ i ].name;
+
+            }
+    if(name_01!=null){
+   
+       win.msgbox("该名称数据库已经存在","系统提示")
+               
+    }else {
+            
+                 if(name!="" ? age!=null ? kg!=null ? love!=""){
+                        add_db(name,age,kg,love)
+                }        
+    }
+}
+
+
+winform.show()  
+win.loopMessage();

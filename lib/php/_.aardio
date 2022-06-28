@@ -1,0 +1,117 @@
+import win;
+win.addenv("PATH","~\lib\php\.dll",true);
+win.addenv("PATH","~\lib\php\.dll\ext",true);
+win.addenv("PHPRC","~\lib\php\.dll",true );
+
+__php5ts_dll = ..raw.loadDll( "~\lib\php\.dll\php5ts.dll") 
+var dll = ..raw.loadDll( "~\lib\php\.dll\phpEmbed.dll" )
+
+var php_new = dll.api("php_new","pointer(POINTER aardioCall )" );
+var php_free = dll.api("php_free","void(pointer vm)" );
+ 
+var php_dofile = dll.api("php_dofile","bool(pointer vm,string filename,pointer script)" );
+var php_eval = dll.api("php_eval","string(pointer vm,string str,string name,pointer &pretBuffer)" ); 
+var php_free_pret = dll.api("php_free_pret","void(pointer pretBuffer)" );
+
+var php_get_string = dll.api("php_get_string","string(pointer vm,string name,pointer &pretBuffer)" );
+var php_set_string = dll.api("php_set_string","string(pointer vm,string name,string value)" ); 
+var php_set_print = dll.api("php_set_print","string(pointer vm,pointer ub_write)" ); 
+
+namespace php { 
+
+	_docode = function(code){
+		var func = assert( loadcode(code) );
+		return tostring( func() );
+	}
+	_docode_c = ..raw.tocdecl(
+		_docode,
+		"string(string code)"
+	);
+	
+	var vm; 
+	
+	self.begin =  function(){ 
+		if(vm)
+			self.end(vm);
+			
+		vm = php_new( _docode_c  );
+		if(!vm)
+			error("打开PHP解释器失败",2)
+ 
+	};
+ 
+	self.end = function(){
+		if(!vm)return;
+		
+		php_free(vm);
+		vm = null;
+	}
+	..table.add_gc(self,"end"); 
+	
+	dofile = function(filename="/undefined.php",code){ 
+		if(!vm) self.begin();
+			
+		return php_dofile( vm,..io.fullpath(filename),code  )
+	}
+	
+	exec = function(code,name="/undefined.php"){
+		if(code[1]!='<'#)
+			code = ..string.format('<?php\r\n%s\r\n?>', code)
+			
+		return dofile(name,code);
+	}
+	
+	
+	self.eval = function(code,name="/undefined.php"){
+		if(!vm) self.begin();
+			
+    	var str,pret = php_eval(vm,code,..io.fullpath(name));  
+    	
+    	if(pret){
+			php_free_pret(pret); 
+		}
+		return str;
+	}
+
+	self@ = {
+		_get = function(k){ 
+			if(!vm) self.begin();
+			if( k=="print" )
+				return self[["_ vm print"]];
+				
+			var str,pret = php_get_string(vm,k); 
+			
+			if(pret){
+				php_free_pret(pret); 
+			}
+			return str;
+		}
+		_set = function(k,v){
+			if(!vm) self.begin();
+			
+			if( k=="print" ){ 
+				if(type(v)!=type.function)
+					error("php.print 必须赋值为函数对象.",2)
+				self[["_ vm print"]] = v;
+				self[["_ vm print_c"]] = ..raw.tocdecl(v,"int(string msg,INT len)",self); 
+				php_set_print(vm,self[["_ vm print_c"]]); 
+			}
+			
+			v = tostring(v)	
+			if(v){  
+				php_set_string(vm,k,v);
+			}
+		}
+		
+	} 
+}
+
+/**intellisense(php)
+begin() = 启动PHP解释器\n此函数应当与php.end()函数成对调用
+end() = 重置PHP解释器\n此函数应当begin()函数成对调用.
+eval(__) = 返回PHP表达式的值.\n此函数在遇到PHP致命错误时、会中断进程\n推荐使用php.exec()函数替代.
+exec(__) = 执行PHP代码.
+dofile("/__") = 在参数中指定文件路径\n也可以增加一个参数直接传入PHP代码.
+print = @.print = function( msg ) {\n	io.print("PHP输出内容:", msg) \n}
+end intellisense**/
+ 

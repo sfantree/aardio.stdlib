@@ -1,0 +1,71 @@
+import win.ui;
+/*DSG{{*/
+mainForm = win.form(text="aardio form";right=427;bottom=458)
+mainForm.add(
+button={cls="button";text="清空";left=124;top=390;right=293;bottom=429;z=2};
+listview={cls="listview";left=9;top=10;right=417;bottom=375;acceptfiles=1;edge=1;mode="icon";z=1}
+)
+/*}}*/
+
+import fsys.info
+import win.imageList
+import process
+import fsys.table
+var fsystable = fsys.table("/paths.table")
+
+mainForm.enableDpiScaling();
+mainForm.show();
+
+var add = function(filePath,dontsave){
+        var sfi = fsys.info.get(filePath, 0x100/*_SHGFI_ICON*/|0x4000/*_SHGFI_SYSICONINDEX*/)
+        var imageList = win.imageList(topointer(sfi.returnValue))
+        mainForm.listview.setImageList( imageList,0/*_LVSIL_NORMAL*/ )
+        var spth = io.splitpath(filePath)
+        var itemtext = spth.file
+        if(!#itemtext) itemtext = spth.drive
+        mainForm.listview.addItem(itemtext,,sfi.iIcon)
+        ::DestroyIcon(sfi.hIcon)
+        imageList.destroy()
+        if(dontsave) return ; 
+        if(!fsystable) fsystable = fsys.table("/paths.table")
+        table.push(fsystable,filePath)
+        fsystable.save()
+}
+
+for(k,v in fsystable){
+        if(k = "_gc") continue ;
+        if(!io.exist(fsystable[k])){
+                fsystable[k] = null
+                fsystable.save()
+                continue;
+        }
+        add(fsystable[k],true)
+}
+
+mainForm.listview.wndproc = function(hwnd,message,wParam,lParam){
+        select(message) { 
+                case 0x233/*_WM_DROPFILES*/{ 
+                        var tmpfiletab = win.getDropFile(wParam)
+                        for(i=1;#tmpfiletab;1){
+                                add(tmpfiletab[i])
+                        }
+                } 
+        }
+}
+mainForm.listview.onnotify = function(id,code,ptr){
+        select(code) {
+            case 0xFFFFFFFD/*_NM_DBLCLK*/ {
+                    var nm = mainForm.listview.getNotifyMessage(code,ptr)
+                    if(nm.iItem){
+                        process.execute(fsystable[nm.iItem])
+                }
+            }        
+    }
+}
+mainForm.button.oncommand = function(id,event){
+        fsystable = null
+        collectgarbage("collect")
+        string.save("/paths.table","{}" )
+        mainForm.listview.clear()
+}
+return win.loopMessage(); 

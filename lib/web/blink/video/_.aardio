@@ -1,0 +1,22 @@
+﻿import web.npPlugin.flash;
+namespace web.blink;
+
+video = {
+	["/video.js"] = $"~\lib\web\blink\video\.res\video.min.js";
+	["/video-js.css"] = $"~\lib\web\blink\video\.res\video-js.min.css";
+	["/video-js.swf"] = $"~\lib\web\blink\video\.res\video-js.swf";
+	["/videojs-flash.js"] = $"~\lib\web\blink\video\.res\videojs-flash.min.js";
+}
+
+/**intellisense()
+web.blink.video = 传入 wsock.tcp.asynHttpServer 对象 run 函数参数以启用 video.js 
+end intellisense**/
+
+/**details(说明)
+Minblink 不支持原版 video.js, 
+这里的 video.js 已经针对 Miniblink 做了修改，详细说明请参考：
+https://github.com/aardio/video-js-blink
+
+也可以直接将这些 JS 复制到 HTML 项目目录并引用这些 JS，
+然后在 video.min.js 内修改 video-js.swf 的地址
+end details**/

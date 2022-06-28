@@ -1,0 +1,87 @@
+//fileSystem 嵌入文件系统
+import web.kit;
+namespace web.kit.fileSystem;
+	
+var fileIds = {};
+self["?fopen"] = ..raw.tocdecl( function(path){ 
+	path = ..string.fromto(path,0,65001); 
+	var f = {};
+	if(  ..io.exist(path) ){
+		f.handle = ..io.open(path,"rb");
+		f.isfile = true;
+	}
+	else {
+		f.handle = self[path] || ..string.load(path);
+		f.pos = 1;
+	}
+	if(f.handle){
+		var fid = ..table.push( fileIds,f);
+		if( f.handle ) return fid;
+	}
+	else {
+		..web.kit.onError( "加载失败:" + path );
+	}
+	
+},"addr(string path)");
+
+self["?fclose"] = ..raw.tocdecl( function(fid){
+	var f = fileIds[fid];
+	if(!f) return;
+	
+	if( f.isfile  ) f.handle.close();
+	fileIds[fid] = null;
+},"void(addr fid)");
+
+self["?fsize"] = ..raw.tocdecl( function(fid){
+	var f = fileIds[fid];
+	if(!f) return;
+	
+	if( ! f.isfile ) return #f.handle;
+	else return f.handle.size(1)  
+},"INT(addr fid)");
+
+self["?fread"] = ..raw.tocdecl( function(fid,buffer,size){
+	var f = fileIds[fid];
+	if(!f) return;
+	
+	var s;
+	if( ! f.isfile ){
+		s = ..string.sub(f.handle,f.pos,f.pos + size);
+		f.pos = f.pos + #s;
+	}
+	else {
+		s = f.handle.read(size)
+	}
+	::CopyMemory(buffer,s,#s);
+	return #s;
+},"int(addr fid,pointer buffer,INT size)");
+
+self["?fseek"] = ..raw.tocdecl( function(fid,offset,origin){
+	var f = fileIds[fid];
+	if(!f) return;
+	
+	if( f.isfile ){
+		return f.handle.seek( ( { [0] = "set";"cur";"end"} )[origin],offset);
+	}
+	
+	var pos;
+	if( origin == 0 )
+		pos = offset;
+	elseif( origin = 1 )
+		pos = f.pos + offset;
+	else 
+		pos = #f.handle + offset;
+		
+	if( pos > #f.handle ) return -1;
+	f.pos = pos;
+	return 0;
+},"int(addr fid,int offset,int origin)");
+
+var wke = ..web.kit._dll;
+wke.wkeSetFileSystem(self["?fopen"], self["?fclose"], self["?fsize"], self["?fread"], self["?fseek"]);
+
+/**intellisense()
+web.kit.fileSystem = 导入此模块以后 web.kit 即可支持嵌入资源文件。\n允许在此名字空间以访问路径为键名指定要返回的文件内容,\n键名中的路径必须用反斜杆替换正斜杆
+end intellisense**/
+
+

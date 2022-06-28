@@ -1,0 +1,94 @@
+//file 剪贴板文件
+import win;
+namespace win.clip.file;
+  
+class DROPFILES{ 
+   INT pFiles = 20; 
+   struct pt = {int x;int y};
+   bool fNC;
+   bool fWide = true;    
+}
+var uDropEffect = ::User32.RegisterClipboardFormat('Preferred DropEffect') 
+
+write = function(file,effect="copy",rep){
+	
+    if(type(file)=="table"){
+        var t ={}
+        for(i=1;#file;1) t[i] = ..io.fullpath(file[i]); 
+    	file = ..string.join(t,'\0')
+    }
+    else {
+    	file = ..io.fullpath(file);
+    }
+     
+    if(!#file) error("参数错误",2);
+	file = ..string.toUnicode(file);
+	
+	if(!::User32.OpenClipboard(0)) return;	 
+	if(rep===null || rep) ::User32.EmptyClipboard();
+
+	var gBuffer = ::GlobalAlloc(0x40/*_GMEM_ZEROINIT*/ | 0x2/*_GMEM_MOVEABLE*/ | 0x2000/*_GMEM_DDESHARE*/, 4);
+    var pBuffer =  ::GlobalLock(gBuffer);
+     
+    ::CopyMemoryByStruct(pBuffer,{int effect = ( effect="copy"? 1/*_DROPEFFECT_COPY*/ :2/*_DROPEFFECT_MOVE*/)  },4);
+    ::GlobalUnlock(gBuffer);
+    
+    ::User32.SetClipboardDataP(uDropEffect,gBuffer); 
+		
+	var gBuffer = ::GlobalAlloc(0x40/*_GMEM_ZEROINIT*/ | 0x2/*_GMEM_MOVEABLE*/ | 0x2000/*_GMEM_DDESHARE*/
+		, 20 + #file + 4);
+    var pBuffer =  ::GlobalLock(gBuffer);
+    var stDrop = DROPFILES();
+    
+    ::CopyMemoryByStruct(pBuffer,stDrop,20/*raw.sizeof(DROPFILES()*/); 
+    ::CopyMemory(topointer(pBuffer,20),file,#file);
+	::GlobalUnlock(gBuffer); 
+	
+	var hdl = ::User32.SetClipboardDataP(0xF/*_CF_HDROP*/,gBuffer);
+	::User32.CloseClipboard();
+	return hdl;
+}
+
+read = function(){
+
+	if(!::User32.OpenClipboard(0))
+		return;	
+	
+	var file = {}; 
+	var effect;
+	var hdrop = ::User32.GetClipboardDataP(15);
+	if(hdrop) {
+		effect = topointer(::User32.GetClipboardData(uDropEffect) );
+		if( !effect)
+			 effect = "copy"
+		else {
+			effect  = ..raw.convert(effect,{int num}).num;
+			if(  effect & 1/*_DROPEFFECT_COPY*/  )
+				effect = "copy"
+			elseif( effect & 2/*_DROPEFFECT_MOVE*/ )
+				effect = "move"	 
+		}
+		
+		file = ..win.getDropFile(hdrop,false/*不可释放*/) 
+    }
+     
+	::User32.CloseClipboard() 
+	
+	return file,effect;
+}
+
+/**intellisense(win.clip.file)
+read() = 返回剪贴板文件路径数组,\n第二个返回值指明复制类型,复制为"copy",剪切则为"move"
+write(.(文件路径) = 将文件复制到剪贴板\n可选使用参数@3指定在复制前是否清空剪贴板,默认清空
+write(.(文件路径,"copy") = 将文件复制到剪贴板\n参数@1可用字符串或字符串数组指定一个或多个文件路径\n可选使用参数@3指定在复制前是否清空剪贴板,默认清空
+write(.(文件路径,"move") = 将文件剪切到剪贴板\n参数@1可用字符串或字符串数组指定一个或多个文件路径\n可选使用参数@3指定在复制前是否清空剪贴板,默认清空
+end intellisense**/
+
+ /**intellisense()
+_CF_HDROP=@0xF/*_CF_HDROP*/
+_DROPEFFECT_NONE=@0/*_DROPEFFECT_NONE*/
+_DROPEFFECT_COPY=@1/*_DROPEFFECT_COPY*/
+_DROPEFFECT_MOVE=@2/*_DROPEFFECT_MOVE*/
+_DROPEFFECT_LINK=@4/*_DROPEFFECT_LINK*/
+_DROPEFFECT_SCROLL=@0x80000000/*_DROPEFFECT_SCROLL*/
+end intellisense**/

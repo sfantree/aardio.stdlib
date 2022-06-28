@@ -1,0 +1,29 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=343;bottom=231)
+winform.add(
+button={cls="button";text="Button";left=104;top=176;right=200;bottom=208;z=1};
+button3={cls="button";text="Button";left=224;top=176;right=320;bottom=208;z=2};
+edit={cls="edit";left=24;top=32;right=296;bottom=136;edge=1;multiline=1;z=3}
+)
+/*}}*/
+
+winform.todoTask = function(winform, t){
+    var sleepTime = t * 1000.00;
+	sleep(sleepTime);
+	winform.edit.print("task finish!");
+}
+
+
+winform.button.oncommand = function(id,event){
+    //todoTask(3);
+    // 耗时操作
+	
+    thread.invoke(
+		winform.todoTask,
+		winform, 3
+	)
+}
+
+winform.show();
+win.loopMessage();

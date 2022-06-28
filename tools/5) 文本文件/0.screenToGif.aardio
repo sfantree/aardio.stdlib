@@ -1,0 +1,15 @@
+//极简录屏/Gif123
+import process;
+import process.cache;
+
+var path = process.cache.find("Gif123\.exe");
+if(path){
+	process.execute(path);	
+}
+else {
+	/*
+    只有在界面线程里才需要用 process.openUrl() 创建线程打开网页。
+	在这里如果使用 process.openUrl() ，那么创建的线程还没执行完，主线程就退出了。
+	*/
+	process.execute("https://gif123.aardio.com/"); 
+}

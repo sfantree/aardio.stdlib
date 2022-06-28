@@ -1,0 +1,27 @@
+import console; 
+
+libgmp = ..raw.loadDll("G:\chromedl\libgmp-6.1.2-2-mingw32-dll-10\bin\libgmp-10.dll");
+
+class mpz {
+	int mp_alloc;
+	int mp_size;
+	pointer mp_d;
+};
+
+
+// void mpz_init (mpz_ptr);
+mpz_init= libgmp.api("__gmpz_init","void(struct &mpz_ptr)")
+// void mpz_clear (mpz_ptr);
+mpz_clear= libgmp.api("__gmpz_clear","void(struct &mpz_ptr)");
+// void mpz_init_set_ui (mpz_ptr, unsigned long int);
+mpz_init_set_ui= libgmp.api("__gmpz_init_set_ui","void(struct &mpz_ptr, INT int)");
+
+
+var m1 = mpz();
+//m1 = mpz_init(m1);
+
+
+//mpz_clear(m1);
+
+console.pause(true);
+ 

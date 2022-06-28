@@ -1,0 +1,51 @@
+//browser 浏览器
+import web.form;
+import win.ui.ctrl.static;
+import winex;
+
+namespace web; 
+  
+class browser{
+
+	ctor(option){
+		var snapshot = {}
+	 	for hwnd,title,threadId,processId in ..winex.each( "IEFrame" ) { 
+	 		snapshot[hwnd] = true;
+	 	} 
+	 	
+		this._object =  ..com.CreateObject("InternetExplorer.Application")
+	 	this._browser = this._object; 
+	 	if(!this._browser){
+			return null, err;
+		} 
+		..table.mixin( this._browser,option);
+			
+	 	var hwndBrowser;
+	 	try{
+	 		hwndBrowser = this._object.HWND
+	 	}
+	 	
+	 	if(!hwndBrowser){
+	 		for hwnd,title,threadId,processId in ..winex.each( "IEFrame" ) { 
+	 			if( ! snapshot[hwnd] ){
+	 				hwndBrowser = hwnd;
+	 			}
+	 		} 
+	 	}
+	 	
+	 	this._form = ..table.mixin( ..win.ui.ctrl.static()
+	 		,{hwnd = hwndBrowser ;web = this } );  
+	}; 
+	 
+	@_metaProperty;
+}
+ 
+namespace browser {  
+	_metaProperty =  ..web.form._metaProperty  
+}
+
+/******intellisense( ) 
+web.browser = 调用IE浏览器,\这个库兼容性不好，有的系统上会失败,非管理权限使用代码打开指定网址后会自动断开IE对象\n建议使用web.form则不会有此限制
+web.browser(初始化参数) = @.browser(\n	Menubar = false; \n	AddressBar = true; \n	ToolBar = true; \n	Resizable = true; \n	Visible = true;\n)
+?web.browser = !wb.
+end intellisense******/

@@ -1,0 +1,268 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=759;bottom=469)
+winform.add(
+button={cls="button";text="Button";left=49;top=45;right=145;bottom=80;z=1};
+button2={cls="button";text="Button";left=49;top=94;right=145;bottom=126;z=2}
+)
+/*}}*/
+
+var codeUtf8 = /** 
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <windows.h>
+
+int __stdcall DllMain(void * hinstDLL, unsigned long fdwReason, void * lpvReserved) {
+
+	if (fdwReason == 1/*DLL_PROCESS_ATTACH*/ ){ 
+		
+	}
+	return 1;
+}
+
+__declspec(dllexport) int Test_Square(int x) 
+{     
+	return x * x;
+}  
+
+__declspec(dllexport) int Test_SwapInteger(int* x, int* y) 
+{     
+	int tmp = *x;
+	*x = *y;
+	*y = tmp;
+	return 0;
+}  
+
+__declspec(dllexport) double Test_SwapDouble(double* x, double* y) 
+{     
+	double tmp = *x;
+	*x = *y;
+	*y = tmp;
+	return *x + *y;
+} 
+
+__declspec(dllexport) int Test_TwoIntCallback(int(*cb)(int, int) , int x, int y) 
+{     
+	int c = cb(x, y);
+	return c;
+} 
+
+__declspec(dllexport) int Test_TwoIntSum(int x, int y) 
+{     
+	return (x + y);
+	
+}
+
+__declspec(dllexport) int Test_TwoIntSum2(int x, int y) 
+{     
+	return Test_TwoIntCallback(Test_TwoIntSum, x, y);	
+}
+
+__declspec(dllexport) int Test_DoubleArr(double *x) 
+{     
+	x[0] = 0.125;
+	x[1] = 1.234;
+	return -1;
+}
+
+__declspec(dllexport) int Test_CharArr(char *p) 
+{     
+	p[0] = '1';
+	p[1] = '2';
+	p[2] = '3';
+	p[3] = '\0';
+	return -2;
+}
+
+
+__declspec(dllexport) int Test_CharArr2(const char *p) 
+{     
+	return strlen(p);
+}
+
+__declspec(dllexport) char* Test_MemMalloc(void) 
+{     
+	char *p = (char *)malloc(64);
+	p[0] = '1';
+	p[1] = '2';
+	p[2] = '3';
+	p[3] = '\0';
+	//free(p);
+	return p;
+}
+
+__declspec(dllexport) int Test_MemFree(void *p) 
+{     
+	free(p);
+	return 0;
+}
+
+struct st1 {
+    int a;
+    char b;
+};
+
+__declspec(dllexport) int Test_Struct1(struct st1 *p) 
+{     
+	if(p != NULL) {
+	    p->a = 1;
+	    p->b = '2';
+	}
+	return 2;
+}
+
+
+**/
+
+winform.button.oncommand = function(id,event){
+	import tcc; 
+	vm = tcc();//创建TCC编译器 
+	
+	/*
+	加载需要用到的动态库,或静态库
+	在"~\lib\tcc\.res\lib" 目录下查找 "动态库名.def" "静态库名.a"
+	也可以使用 vm.addLibPath() 函数添加搜索库的目录,
+	其实下面的DLL已经默认加载,这里仅用于演示。 
+	*/
+	vm.addLib( 
+		"user32",
+		"kernel32",
+		"gdi32"
+	) 
+	vm.output( "/bin.dll", codeUtf8 ) //编译C源码,生成DLL
+	vm.close(); //收工
+}
+
+var SquareSum = function(a, b){
+	return a * a + b * b;
+}
+
+
+winform.button2.oncommand = function(id,event){
+	var dll = raw.loadDll( "/bin.dll" );
+
+	//导入API,记住第二个参数需要指定cdecl调用约定(也就是C语言调用约定)
+	var func = dll.api( "Test_Square","int(int)", "cdecl" ); 
+	var result1 = func(8);
+	//winform.msgbox(tostring(result))
+	var func2 = dll.api( "Test_SwapInteger","int(int& x, int& y)", "cdecl" ); 
+	var r, o1, o2 =  func2(1, 2);
+	
+	var func2 = dll.api( "Test_SwapDouble","double(double& x, double& y)", "cdecl" ); 
+	var r, o1, o2 =  func2(1.2, 2.3);
+	//winform.msgbox((r)); return;
+	
+	var func4 =  dll.api( "Test_TwoIntSum","int(int x, int y)", "cdecl" ); 
+	var r2 =  func4(123, 456);
+	//winform.msgbox((r2));
+	
+	var func5 =  dll.api( "Test_TwoIntSum2","int(int x, int y)", "cdecl" ); 
+	var r2 =  func5(123, 456);
+	//winform.msgbox((r2));
+	
+	
+	//var SquareSum_c = raw.tocdecl(SquareSum, "int(int a, int b)" )
+	
+	
+	/*
+	__declspec(dllexport) int Test_TwoIntCallback(int(*cb)(int, int) , int x, int y) 
+	{     
+		int c = cb(x, y);
+		return c;
+	} 
+	*/
+	
+	var func3 = dll.api("Test_TwoIntCallback","int(pointer cb, int x, int y)", "cdecl");
+	
+	var SquareSum_c2 = raw.tocdecl(SquareSum, "int(int a, int b)" )
+	var SquareSum_c = raw.tocdecl(function(a, b){
+		var r = a * a + b * b;
+		return r;
+	},"int(int a, int b)")
+	 
+    winform.msgbox(type(SquareSum_c));
+	var r = func3(SquareSum_c, 3, 4);
+	winform.msgbox(r); return;
+	
+	//var d1 = raw.buffer(64);
+	var func7 = dll.api("Test_DoubleArr","int(struct& x)", "cdecl");
+	var x7 = { 
+	    double buffer[2] = {0.0;0.0} 
+	};
+	
+	var r7 = func7(x7);
+	
+	var func71 = dll.api("Test_DoubleArr","int(point x)", "cdecl");
+	var x71 = raw.buffer(64);
+	//winform.msgbox(string.hex(x71));
+	var r71, r72 = func71(x71);
+	//var x7s = raw.struct(x7, x71);
+	var info = raw.convert( x71, {double buffer[2]} )
+	//winform.msgbox(info)
+	
+	//winform.msgbox(string.hex(x71));
+	
+	
+	
+	//winform.msgbox((raw.tostring(d1)));
+	
+	
+	//Test_CharArr2
+	var func8 = dll.api("Test_CharArr2","int(string p)", "cdecl");
+	var p8 = "中国";
+	
+	//winform.msgbox(string.hex(p8));
+	
+	var p81 = string.fromto(p8, 0, 936);
+	var p8 = "中国";
+	var p82 = string.toUnicode(p8);
+	
+	var r8 = func8(p82);
+	//winform.msgbox((r8));
+	//winform.msgbox((r));
+	
+	
+	//Test_CharArr
+	var func9 = dll.api("Test_CharArr","int(point p)", "cdecl");
+	var x91 = raw.buffer(64);
+	var r91 = func9(x91);
+	var s9 = raw.str(x91);
+	
+	
+	var func10 = dll.api("Test_MemMalloc","int(void)", "cdecl");
+	var r101 = func10();
+	var p101 = topointer(r101);
+	var s101 = raw.str(p101);
+	//winform.msgbox(string.hex(s101));
+	
+	
+	var func11 = dll.api("Test_MemFree","int(point)", "cdecl");
+	var r111 = func11(p101);
+	//winform.msgbox(string.hex(s101));
+	//winform.msgbox(r111);
+	
+	class st {
+		int a;
+		byte b;
+	};
+	
+	var st1 = st();
+	var func12 = dll.api("Test_Struct1","int(struct&)", "cdecl");
+	var r121, r122 = func12(st1);
+	winform.msgbox(r122);
+	
+	var func121 = dll.api("Test_Struct1","int(point)", "cdecl");
+	var st21 = raw.buffer(raw.sizeof(st()));
+	//var st22 = raw.buffer(raw.sizeof(st()));
+	var r123 = func121(st21);
+	
+	var st22 = raw.convert(st21, st());
+	winform.msgbox(st22);
+	
+}
+
+winform.show();
+win.loopMessage();
+return winform;

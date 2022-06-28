@@ -1,0 +1,24 @@
+//搜索类名
+import console; 
+import com.wmi;
+
+var wmi = com.wmi("\root\cimv2") 
+
+//WMI 的查询语法为 WQL (SQL for WMI)
+//https://docs.microsoft.com/en-us/windows/win32/wmisdk/like-operator
+var classes = wmi.ExecQuery("SELECT * FROM meta_class WHERE __class LIKE 'Win32_%'")
+
+var qualName = { "dynamic","static" }
+
+for i,cls in com.each(classes) {
+
+  if(!cls.Methods_.Count){ continue; }
+ 
+  for i,q  in ..com.each(cls.Qualifiers_) {
+  	if( !qualName || ..table.find(qualName,..string.lower(q.Name) ) ){ 
+  		console.log(cls.Path_.Class)
+  	}
+  }      
+} 
+
+console.pause(true);

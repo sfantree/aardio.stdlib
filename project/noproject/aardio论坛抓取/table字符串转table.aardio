@@ -1,0 +1,13 @@
+import console;
+
+var tab = {1;2;3};
+var str = table.tostring(tab);
+var tab2 = str;
+// table的字符串形式转table
+// eval tostring逆变换
+var tab3 = eval(str);
+var tab4 = table.clone(tab);
+
+console.varDump(tab,tab2,tab3);
+
+console.pause(true);

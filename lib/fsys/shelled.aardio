@@ -1,0 +1,70 @@
+﻿//shelled 保护目录
+import fsys;
+import win.reg;
+
+namespace fsys.shelled;
+
+lock = function(path,shellId){
+	if(..fsys.isDir(path)){
+		var secPath = path + "." + (shellId : "{2559a1f2-21d7-11d4-bdaf-00c04f60b9f0}");
+
+		..fsys.rename(path,secPath);  
+		..fsys.attrib(secPath,,2/*_FILE_ATTRIBUTE_HIDDEN*/|4/*_FILE_ATTRIBUTE_SYSTEM*/);	
+	
+		::Shell32.SHChangeNotify(0x800/*_SHCNE_ATTRIBUTES*/,1/*_SHCNF_srcPath*/,..io.fullpath(secPath),0);	
+		return ..io.exist(secPath);	
+	} 
+}
+
+unlock = function(path,shellId){
+	var secPath;	
+	if(!shellId && ..io.exist(path)){
+		secPath = path;
+		path = ..string.match(path,"(.+)\.%\{\}");
+		
+		if(!path){
+			path = secPath;
+			secPath = path + ".{2559a1f2-21d7-11d4-bdaf-00c04f60b9f0}";
+		}
+	}
+	else {
+		secPath = path + "." + (shellId : "{2559a1f2-21d7-11d4-bdaf-00c04f60b9f0}");
+	}
+	
+	if(..fsys.isDir(secPath)){  
+		..fsys.attrib(secPath,2/*_FILE_ATTRIBUTE_HIDDEN*/|4/*_FILE_ATTRIBUTE_SYSTEM*/)
+		..fsys.rename(secPath,path); 
+		
+		::Shell32.SHChangeNotify(0x800/*_SHCNE_ATTRIBUTES*/,1/*_SHCNF_srcPath*/,..io.fullpath(path),0);
+		return ..io.exist(path);
+	} 
+}
+
+folderIds = function(){
+	var ids = {};
+	var reg = ..win.regReader("HKEY_CLASSES_ROOT\CLSID\");
+	for(clsid,writetime in reg.eachKey() ){  
+		var subKey =  reg.open(clsid,true); 
+		if(subKey){ 
+			var shellKey = subKey.open("ShellFolder",true) 
+			if(shellKey){  
+				..table.push( ids,{clsid,subKey.queryValue("")});
+				shellKey.close(); 
+			}
+			subKey.close();
+		} 
+	}
+	reg.close();
+	
+	return ids;
+}
+
+/**intellisense(fsys.shelled)
+lock( = 设置为保护目录
+lock(.(path,shellFolderId) = 设置为保护目录。\n成功返回保护目录路径，失败返回 null。\n@path 指定设为保护目录之前的原始路径,@shellId 指定 Shell 文件夹 CLSID
+unlock(= 取消设置为保护目录。\n成功返回恢复后的目录路径，失败返回 null。\n
+unlock(.(path,shellFolderId) = 取消设置为保护目录。\n成功返回恢复后的目录路径，失败返回 null。\n\n@path 指定设为保护目录之前的原始路径,@shellId 指定 Shell 文件夹 CLSID
+unlock(.(shelledPath) = 取消设置为保护目录。\n成功返回恢复后的目录路径，失败返回 null。\n\n@shelledPath 指定保护目录路径
+folderIds() = 返回一个数组,\n数组中包含所有 所有 Shell 文件夹 CLSID 与 名称组成的数组
+end intellisense**/
+

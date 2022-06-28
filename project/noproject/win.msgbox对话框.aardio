@@ -1,0 +1,4 @@
+import win;
+win.msgbox("内容","标题")
+win.msgbox( "无图标", , 0xF0/*_MB_ICONMASK*/);
+::User32.MessageBox(0 ,"无图标","标题",0)

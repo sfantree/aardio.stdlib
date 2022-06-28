@@ -1,0 +1,14 @@
+﻿import dotNet;
+
+::UIAutomationTypes := dotNet.load("UIAutomationTypes");
+::UIAutomationClient := dotNet.load("UIAutomationClient");
+::UIAutomationClient.import("System.Windows.Automation"); 
+
+/**intellisense()
+System.Windows.Automation = .Net System.Windows.Automation 名字空间\n!dotNetNameSpace.
+end intellisense**/
+
+/**intellisense(::)
+::UIAutomationClient = UIAutomationClient.dll 程序集，\n在标准库 System.Windows.Automation 中导入。\n!dotNetCrlAssembly.
+::UIAutomationTypes = UIAutomationTypes.dll 程序集，\n在标准库 System.Windows.Automation 中导入。\n!dotNetCrlAssembly.
+end intellisense**/

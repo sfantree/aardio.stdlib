@@ -1,0 +1,35 @@
+﻿//环境变量
+import win;
+import process.popen
+
+//在父进程中指定环境变量
+string.setenv("TESTENV","测试变量值");
+
+//也可以用下面的方法
+//import environment
+//environment.user().set("TESTENV","测试变量值")
+
+//打开命令行,隐藏命令行窗口
+var prcs = process.popen.cmd(`echo %TESTENV%`) 
+
+//也可以在 process 或 process.popen 参数@3中通过 environment为目标进程指定环境变量
+var prcs = process.popen("cmd.exe","/c echo %TESTENV2%",{
+	environment = {
+		TESTENV2 = "测试变量值2"
+	}
+})
+
+import fsys.environment;
+import process.batch;
+var prcs = process.batch( `
+@echo off
+set TESTENV3=测试变量值3<?
+	print( fsys.environment.expand("%appdata%") )
+
+?>&
+echo %TESTENV3%
+`)
+
+//显示结果
+import win;
+win.msgbox(prcs.read(-1))

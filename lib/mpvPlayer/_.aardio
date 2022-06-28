@@ -1,0 +1,434 @@
+﻿class mpvPlayer{
+	ctor( winform,optString ){
+		this.context = topointer( api.mpv_create() );
+		api.mpv_set_option(this.context, "wid", 4/*_MPV_FORMAT_INT64*/, {long value= winform.hwnd});
+		api.mpv_set_option_string(this.context, "input-default-bindings", "yes");
+		api.mpv_set_option_string(this.context, "input-vo-keyboard", "yes");
+    
+    	if( type(optString) == type.table ){
+    		for name,value in ..table.eachName(optString){
+    			api.mpv_set_option_string(this.context,name,value);
+    		}
+    		optString = null;
+    	}
+    	if (api.mpv_initialize(this.context) < 0)
+        	error("mpv failed to initialize");
+        	
+        ..table.gc(this,"destroy");
+	};
+	commandAsync = function(reply, ...){
+		var args = {...};
+		for(k,v in args) args[k] = tostring(v);
+		args.length = #args + 1;//在数组尾部增加一个null指针
+		return api.mpv_command_async(this.context,0,replyRegistry.reg(reply), {string args[] = args});
+	};
+	loadfileAsync = function(reply,filename){
+		return this.commandAsync(reply,"loadfile",..io.fullpath(filename) );
+	};
+	command  = function( ...){
+		var args = {...};
+		for(k,v in args) args[k] = tostring(v);
+		args.length = #args + 1;//在数组尾部增加一个null指针
+		return api.mpv_command(this.context, {string args[] = args});
+	};
+	loadFile = function(filename){
+		return this.command("loadfile",..io.exist(filename) : filename );
+	};
+	loadSubtitle = function(filename,flag,title,lang){
+		this.command("sub-add",..io.fullpath(filename),flag :"select",title,lang);
+	};
+	setSubtitle = function(id){
+		this.setOption("sid",id);
+	};
+	pause = function(paused){
+		this.setProperty("pause",paused ? "yes" : "no");	
+	};
+	seek = function(pos){
+		return this.command("seek",pos,"absolute" )	
+	};
+	stop = function(){
+		return this.command("stop")	
+	};
+	screenshotToFile = function(filename,flag){
+		return this.command("screenshot-to-file",..io.fullpath(filename) ,flag:"subtitles");
+	};
+	setOption= function(name,value){
+		if( type(name) == "table" ) for(k,v in name){
+			this.setOption(k,v);
+			return;
+		}
+		
+		return api.mpv_set_option_string(this.context,name,tostring(value));
+	};
+	setProperty = function(name,value,format){
+		if( type(format) == type.string ) format = typeFormat[format];
+		
+		var t  = type(value);
+		if( t == type.string ){
+			if(format===null) format = 1/*_MPV_FORMAT_STRING*/
+		}
+		elseif( t == type.boolean ){ 
+			format = 3/*_MPV_FORMAT_FLAG*/;  
+			value = value ? 1:0; 
+		}
+		elseif( t == type.number ){
+			if(format===null) format = 5/*_MPV_FORMAT_DOUBLE*/
+		}
+		
+		if( (format==1/*_MPV_FORMAT_STRING*/) || (format == 2/*_MPV_FORMAT_OSD_STRING*/) )
+			return api.mpv_set_property(this.context,name,format,{string v = value});
+		elseif(format == 3/*_MPV_FORMAT_FLAG*/){
+			return api.mpv_set_property(this.context,name,format,{int v = value});
+		}
+		elseif(format == 5/*_MPV_FORMAT_DOUBLE*/){
+			return api.mpv_set_property(this.context,name,format,{double v = value});
+		}
+		elseif(format == 4/*_MPV_FORMAT_INT64*/){
+			return api.mpv_set_property(this.context,name,format,{long v = value});
+		}
+		elseif( value[["_struct"]] ){
+			var t = ..string.match(value[["_struct"]],"\w+");
+			format = typeFormat[t];
+			if(!format) error("错误类型",2);
+			return api.mpv_set_property(this.context,name,format,value);
+		}
+		else {
+			error("错误类型",2)
+		}
+	};
+	getProperty = function(name,value){
+		if( value[["_struct"]] ){
+			var t = ..string.match(value[["_struct"]],"\w+");
+			format = typeFormat[t];
+			if(format) {
+				var err = api.mpv_get_property(this.context,name,format,value);
+				if(!err) return value;
+				return null,err;
+			}
+		} 
+		elseif( value ){ 
+			if( value =="string" ){
+				var value = { string v}
+				var err = api.mpv_get_property(this.context,name,1/*_MPV_FORMAT_STRING*/,value);
+				if(!err) return value.v;
+				return null,err;
+			}
+			elseif( value =="bool" ){
+				var value = { bool v}
+				var err = api.mpv_get_property(this.context,name,3/*_MPV_FORMAT_FLAG*/,value);
+				if(!err) return value.v;
+				return null,err;
+			}
+			elseif( value =="double" ){
+				var value = { double v}
+				var err = api.mpv_get_property(this.context,name,5/*_MPV_FORMAT_DOUBLE*/,value);
+				if(!err) return value.v;
+				return null,err;
+			}
+			elseif( value =="long" ){
+				var value = { long v}
+				var err = api.mpv_get_property(this.context,name,4/*_MPV_FORMAT_INT64*/,value);
+				if(!err) return value.v;
+				return null,err;
+			}
+			elseif( value =="int" ){
+				var value = { long v}
+				var err = api.mpv_get_property(this.context,name,3/*_MPV_FORMAT_FLAG*/,value);
+				if(!err) return value.v;
+				return null,err;
+			}
+		}
+		
+		error("错误类型",2)
+	};
+	getMediaTitle = function(){
+		var title = this.getProperty("media-title","string") ;
+		if(!title) return;
+		
+		if(!..string.isUtf8(title)) title = ..string.fromto(title,0,65001);
+		return title;
+	};
+	getVolume = function(){
+		return this.getProperty("volume","double") ; 
+	};
+	setVolume = function(v){ 
+		return this.setProperty("volume",v,"double");	
+	};
+	getTrackCount = function(){
+		return this.getProperty("track-list/count","long") 
+	};
+	getTrackId = function(idx){
+		return this.getProperty("track-list/"+(idx-1)+"/id","long") 
+	};
+	getTrackType = function(idx){
+		return this.getProperty("track-list/"+(idx-1)+"/type","string") 
+	};
+	getTrackSrcId = function(idx){
+		return this.getProperty("track-list/"+(idx-1)+"/src-id","long") 
+	};
+	getTrackTitle = function(idx){
+		return this.getProperty("track-list/"+(idx-1)+"/title","string") 
+	};
+	getTrackLang = function(idx){
+		return this.getProperty("track-list/"+(idx-1)+"/lang","string") 
+	};
+	getTrackDefault = function(idx){
+		return this.getProperty("track-list/"+(idx-1)+"/default","bool") 
+	};
+	getTrackForced = function(idx){
+		return this.getProperty("track-list/"+(idx-1)+"/forced","bool") 
+	};
+	getTrackSelected = function(idx){
+		return this.getProperty("track-list/"+(idx-1)+"/selected","bool") 
+	};
+	getTrackCodec = function(idx){
+		return this.getProperty("track-list/"+(idx-1)+"/codec","string") 
+	};
+	getTrackExternal = function(idx){
+		return this.getProperty("track-list/"+(idx-1)+"/external","bool") 
+	};
+	getTrackExternalFile = function(idx){
+		return this.getProperty("track-list/"+(idx-1)+"/external-filename","string") 
+	};
+	getTrackFfmpegIndex  = function(idx){
+		return this.getProperty("track-list/"+(idx-1)+"/ff-index","long") 
+	};
+    getTrackDecoderDesc  = function(idx){
+		return this.getProperty("track-list/"+(idx-1)+"/decoder-desc","string") 
+	}; 
+	getTrackDemuxSize   = function(idx){
+		return this.getProperty("track-list/"+(idx-1)+"/demux-w","long"),this.getProperty("track-list/"+(idx-1)+"/demux-H","long");
+	};
+	getTrackDemuxChannelCount  = function(idx){
+		return this.getProperty("track-list/"+(idx-1)+"/demux-channel-count","long");
+	};
+	getTrackDemuxChannels  = function(idx){
+		return this.getProperty("track-list/"+(idx-1)+"/demux-channels","string");
+	};
+	getTrackDemuxSamplerate  = function(idx){
+		return this.getProperty("track-list/"+(idx-1)+"/demux-samplerate","long");
+	};
+	getTrackDemuxFps  = function(idx){
+		return this.getProperty("track-list/"+(idx-1)+"/audio-channels","long");
+	}; 
+    getTrackReplaygainTrackPeak = function(idx){
+		return this.getProperty("track-list/"+(idx-1)+"/replaygain-track-peak","double");
+	}; 
+    getTrackReplaygainTrackGain= function(idx){
+		return this.getProperty("track-list/"+(idx-1)+"/replaygain-track-gain","double");
+	}; 
+	getTrackReplaygainAlbumPeak = function(idx){
+		return this.getProperty("track-list/"+(idx-1)+"/replaygain-album-peak","double");
+	}; 
+    getTrackReplaygainAlbumGain= function(idx){
+		return this.getProperty("track-list/"+(idx-1)+"/replaygain-album-gain","double");
+	};
+	eventName = function(id){
+		var name = api.mpv_event_name(id);
+		if(name) return ..raw.str( topointer(name) );
+	};
+	requestLogMessages = function(minLevel){
+		return api.mpv_request_log_messages(this.context,minLevel)
+	};
+	observeProperty = function(name,format=5/*_MPV_FORMAT_DOUBLE*/){
+		if( type(format) == type.string ) format = typeFormat[format];
+		return api.mpv_observe_property(this.context,0,0,name,format)
+	};
+	waitEvent = function(timeout){
+		var event = api.mpv_wait_event(this.context,timeout);
+		if(!event) error("mpv_wait_event error",2);
+		
+		var event =  ..raw.convert( topointer(event), { 
+    		int id; 
+    		int err;
+    		long replyUserdata; 
+    		ptr data;
+		} ) 
+		
+		if( !event.id ){
+			return event;
+		}
+		elseif( (event.id == 0x16/*_MPV_EVENT_PROPERTY_CHANGE*/) && this.onPropertyChange ){
+			 var property = ..raw.convert(event.data, {
+    			str name; 
+    			int format; 
+    			ptr data;
+			 } );
+
+			 if(  property.format == 5/*_MPV_FORMAT_DOUBLE*/){
+			 	property.value = ..raw.convert( property.data,{double value}).value;
+			 }
+			 elseif(  property.format == 4/*_MPV_FORMAT_INT64*/){
+			 	property.value = ..raw.convert( property.data,{long value}).value;
+			 }
+			 elseif(  property.format == 3/*_MPV_FORMAT_FLAG*/){
+			 	property.value = ..raw.convert( property.data,{int value}).value;
+			 }
+			 elseif(  property.format == 1/*_MPV_FORMAT_STRING*/){
+			 	property.value = ..raw.convert( property.data,{string value}).value;
+			 }
+			 elseif(  property.format == 2/*_MPV_FORMAT_OSD_STRING*/){
+			 	property.value = ..raw.convert( property.data,{string value}).value;
+			 }
+			 
+			 this.onPropertyChange(property.name,property.value,property)
+		}
+		elseif(event.id == 5/*_MPV_EVENT_COMMAND_REPLY*/ ){
+			var reply = replyRegistry[ event.replyUserdata ];
+			if(reply){
+				replyRegistry.unReg(event.replyUserdata);
+				reply(event.err);
+			}
+		}
+		elseif( (event.id == 2/*_MPV_EVENT_LOG_MESSAGE*/) && this.onLogMessage ){
+			var message = ..raw.convert(event.data, { 
+    				string prefix; 
+    				string level; 
+    				string text;
+    				int levelId;
+			} );
+			this.onLogMessage(message.message,message.prefix,message.level,message.levelId);
+		}
+		elseif( (event.id == 7/*_MPV_EVENT_END_FILE*/) && this.onEndFile ){
+			var data = ..raw.convert(event.data, { 
+    				int reason; 
+    				int err;  
+			} );
+			this.onEndFile(data.reason,data.err);
+		}
+		
+		return event;
+	} 
+	destroy = function(){
+		if(this.context){
+			api.mpv_terminate_destroy(this.context);
+			this.context = null;
+		};
+	}
+}
+
+import fsys;
+import util.registry;
+if( !_WIN7_LATER ){
+	error("MPV仅支持WIN7以上操作系统以及aardio v23.x",2)
+}
+
+namespace mpvPlayer{
+	
+	::Kernel32.SetEnvironmentVariableW("HOME",..io.fullpath("/") );
+	::Kernel32.SetEnvironmentVariableW("MPV_HOME",..io.fullpath("/") );
+
+	if(! ::Kernel32.LoadLibrary("d3dcompiler_43.dll") ){
+		::Kernel32.LoadLibrary(..fsys.appdata("aardio/std/d3d/d3dcompiler_43.dll",$"~\lib\mpvPlayer\.dll\d3dcompiler_43.dll"));
+	}
+	
+	_dllPath = ..fsys.appdata("aardio/std/mpvPlayer/20171209/libmpv-1.dll",$"~\lib\mpvPlayer\.dll\mpv-1.dll");
+	api = ..raw.loadDll(_dllPath,"libmpv-1.dll","cdecl");
+	replyRegistry = ..util.registry();
+	
+	typeFormat = {
+		double = 5/*_MPV_FORMAT_DOUBLE*/;
+		bool = 3/*_MPV_FORMAT_FLAG*/;
+		int = 3/*_MPV_FORMAT_FLAG*/;
+		long = 4/*_MPV_FORMAT_INT64*/;
+		string = 1/*_MPV_FORMAT_STRING*/;
+	}
+}
+
+/*
+关于MPV组件以及相关开发文档:
+https://github.com/mpv-player/mpv
+https://sourceforge.net/projects/mpv-player-windows/files/libmpv/
+https://github.com/mpv-player/mpv/blob/master/libmpv/client.h
+http://mpv.io/manual/master/#options
+http://mpv.io/manual/master/#list-of-input-commands
+http://mpv.io/manual/master/#properties
+https://github.com/mpv-player/mpv-examples/tree/master/libmpv
+*/
+
+/**intellisense()
+mpvPlayer = 开源万能视频播放器
+mpvPlayer(.(winform) = 创建MPV播放器控件,
+mpvPlayer() = !stdmpvPlayer.
+end intellisense**/
+
+/**intellisense(!stdmpvPlayer)
+command (.(->->->) = 发送命,\n参数为一个或多个字符串参数,非字符串参数自动调用tostring转换为字符串\n注意MPV组件的任何函数的字符串参数都是使用UTF8编码，与aardio默认编码一致
+commandAsync(.(reply,->->->) = 异步发送命令,参数@1指定回调函数,\n其他为一个或多个字符串参数,非字符串参数自动调用tostring转换为字符串
+loadFile(.(filename) = 加载视频文件,参数指定文件路径或者视频网址\n注意MPV组件的字符串参数都是使用UTF8编码，与aardio默认编码一致\n注意MPV组件的任何函数的字符串参数都是使用UTF8编码，与aardio默认编码一致
+loadSubtitle(.(filename,flag,title,lang) = 加载字幕文件,\n除参数@1用于指定字幕文件路径以外其他参数可选\n其他参数参考函数源码以及MPV文档
+setSubtitle(.(id) = 切换到指定的字幕\n字幕ID使用getTrackId()函数获取
+pause(.(paused) = 参数为true时暂停,为false时继续播放
+seek(.(pos) = 切换到指定位置播放,参数为秒数
+stop() = 停止播放视频
+screenshotToFile(.(filename,flag) =  截图,\n除参数@1用于指定保存文件路径以外其他参数可选\n其他参数参考函数源码以及MPV文档
+setOption(.(name,value) = 设置选项，\n也可以用一个表包含多个键值对用于设置多个选项,\n参考文档 http://mpv.io/manual/master/#options
+setProperty(.(name,value,format) = 设置属性\n如果值不是一个结构体,可用format指定值类型\nformat可选值为"string","bool","double","long","int",\nformat也可以用数值常量指定类型,参考MPV文档，\n所有可用属性参考文档 http://mpv.io/manual/master/#properties
+getProperty(.(name,value) = 获取属性\nvalue参数可以是一个结构体,这时候返回值为结构体\nvalue也可以使用"string","bool","double","long","int"等指定返回值类型,这时候直接返回对应的值\n\n所有可用属性参考文档 http://mpv.io/manual/master/#properties
+getMediaTitle() = 返回视频文件标题
+getVolume() = 返回播放音量
+setVolume(__) = 设置音量，值可以为0到100
+getTrackCount() = 获取轨道数量
+getTrackId(.(索引) = 获取轨道ID
+getTrackType(.(索引) = 获取轨道类型,返回值为字符串\n可能的类型为"video","audio","sub",其中"sub"为加载的字幕
+getTrackSrcId(.(索引) = 获取源文件轨道ID
+getTrackTitle(.(索引) = 获取轨道标题
+getTrackLang(.(索引) = 获取轨道语言
+getTrackDefault (.(索引) = 是否默认轨道
+getTrackForced(.(索引) = 获取轨道强制标识
+getTrackSelected(.(索引) = 获取轨道是否当前选用轨道
+getTrackCodec(.(索引) = 获取轨道解码器名称，例如h264
+getTrackExternal(.(索引) = 获取轨道是否外挂的文件，主要指外挂字幕
+getTrackExternalFile(.(索引) = 获取轨道外挂文件路径
+getTrackFfmpegIndex(.(索引) = 获取轨道FFmpeg索引
+getTrackDecoderDesc(.(索引) = 获取轨道解码成功的友好的解码器名称
+getTrackDemuxSize(.(索引) = 获取轨道大小
+getTrackDemuxChannelCount(.(索引) = 获取通道数
+getTrackDemuxChannels(.(索引) = 获取通道
+getTrackDemuxSamplerate(.(索引) = 获取轨道音频采样率
+getTrackDemuxFps(.(索引) = 获取轨道视频FPS
+getTrackReplaygainTrackPeak(.(索引) = 获取轨道回放增益峰值
+getTrackReplaygainTrackGain(.(索引) = 获取轨道回放增益 
+getTrackReplaygainAlbumPeak(.(索引) = 获取专辑回放增益峰值
+getTrackReplaygainAlbumGain(.(索引) = 获取专辑回放增益峰值
+eventName(.(id) = 使用参数指定的事件ID返回事件名称
+requestLogMessages(.(minLevel) = 设置日志信息级别
+observeProperty(.(name,format) = 订阅属性变更事件\nformat可选值为"string","bool","double","long","int",\n也可以使用 _MPV_FORMAT 前缀的常量指定format\n不指定formart时默认为"double",
+waitEvent(.(timeout) = 等待视频播放器事件\n参数指定超时秒数,如果在界面线程中建议指定为0\n返回的 event.id为0时为无效事件\n此函数也负责触发对象的默认事件，例如onPropertyChange,onEndFile等等\n通常应当在窗口定时器中持续调用此事件
+end intellisense**/
+
+ /**intellisense()
+_MPV_FORMAT_NONE=@0/*_MPV_FORMAT_NONE*/
+_MPV_FORMAT_STRING=@1/*_MPV_FORMAT_STRING*/
+_MPV_FORMAT_OSD_STRING=@2/*_MPV_FORMAT_OSD_STRING*/
+_MPV_FORMAT_FLAG=@3/*_MPV_FORMAT_FLAG*/
+_MPV_FORMAT_INT64=@4/*_MPV_FORMAT_INT64*/
+_MPV_FORMAT_DOUBLE=@5/*_MPV_FORMAT_DOUBLE*/
+_MPV_FORMAT_NODE=@6/*_MPV_FORMAT_NODE*/
+_MPV_FORMAT_NODE_ARRAY=@7/*_MPV_FORMAT_NODE_ARRAY*/
+_MPV_FORMAT_NODE_MAP=@8/*_MPV_FORMAT_NODE_MAP*/
+_MPV_FORMAT_BYTE_ARRAY=@9/*_MPV_FORMAT_BYTE_ARRAY*/
+_MPV_EVENT_NONE=@0/*_MPV_EVENT_NONE*/
+_MPV_EVENT_SHUTDOWN=@1/*_MPV_EVENT_SHUTDOWN*/
+_MPV_EVENT_LOG_MESSAGE=@2/*_MPV_EVENT_LOG_MESSAGE*/
+_MPV_EVENT_GET_PROPERTY_REPLY=@3/*_MPV_EVENT_GET_PROPERTY_REPLY*/
+_MPV_EVENT_SET_PROPERTY_REPLY=@4/*_MPV_EVENT_SET_PROPERTY_REPLY*/
+_MPV_EVENT_COMMAND_REPLY=@5/*_MPV_EVENT_COMMAND_REPLY*/
+_MPV_EVENT_START_FILE=@6/*_MPV_EVENT_START_FILE*/
+_MPV_EVENT_END_FILE=@7/*_MPV_EVENT_END_FILE*/
+_MPV_EVENT_FILE_LOADED=@8/*_MPV_EVENT_FILE_LOADED*/
+_MPV_EVENT_IDLE=@0xB/*_MPV_EVENT_IDLE*/
+_MPV_EVENT_TICK=@0xE/*_MPV_EVENT_TICK*/
+_MPV_EVENT_CLIENT_MESSAGE=@0x10/*_MPV_EVENT_CLIENT_MESSAGE*/
+_MPV_EVENT_VIDEO_RECONFIG=@0x11/*_MPV_EVENT_VIDEO_RECONFIG*/
+_MPV_EVENT_AUDIO_RECONFIG=@0x12/*_MPV_EVENT_AUDIO_RECONFIG*/
+_MPV_EVENT_SEEK=@0x14/*_MPV_EVENT_SEEK*/
+_MPV_EVENT_PLAYBACK_RESTART=@0x15/*_MPV_EVENT_PLAYBACK_RESTART*/
+_MPV_EVENT_PROPERTY_CHANGE=@0x16/*_MPV_EVENT_PROPERTY_CHANGE*/
+_MPV_EVENT_QUEUE_OVERFLOW=@0x18/*_MPV_EVENT_QUEUE_OVERFLOW*/
+_MPV_END_FILE_REASON_EOF=@0/*_MPV_END_FILE_REASON_EOF*/
+_MPV_END_FILE_REASON_STOP=@2/*_MPV_END_FILE_REASON_STOP*/
+_MPV_END_FILE_REASON_QUIT=@3/*_MPV_END_FILE_REASON_QUIT*/
+_MPV_END_FILE_REASON_ERROR=@4/*_MPV_END_FILE_REASON_ERROR*/
+_MPV_END_FILE_REASON_REDIRECT=@5/*_MPV_END_FILE_REASON_REDIRECT*/
+end intellisense**/

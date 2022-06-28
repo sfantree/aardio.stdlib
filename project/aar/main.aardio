@@ -1,0 +1,50 @@
+import console;
+import fsys;
+import math;
+import string;
+
+// 生成长度为length的字符串
+var getRandomChar = function(length) {
+    if(type(length) != type.number) {
+        return "";
+    }
+     math.randomize();
+     var s = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+     var result = "";
+     for(i=1;length;1){
+     	var index = math.random(1, string.len(s));
+     	result = result + string.pack(s[index]);
+     }
+     return result;
+}
+
+var targetfilename = (getRandomChar(5));
+
+var arg = _CMDLINE;
+
+// IDE调试
+if( _STUDIO_INVOKED ) {
+    arg = "1 2 3";
+}
+
+var cmd_arg = string.split(arg, " ");
+if(string.find(cmd_arg[1], ".aardio")) {
+    if(io.exist(cmd_arg[1])) {
+        fsys.copy(cmd_arg[1], targetfilename);
+    }
+}
+//console.dump(cmd_arg);
+
+var code = string.load(targetfilename);
+
+if(code) {
+    loadcodex(code);
+}
+
+fsys.delete(targetfilename);
+//console.pause(true);
+/*
+if(arg="") return eval('io.print(">> aardio 欢迎您！\n>>当前代码未被执行！！\n>>请正确保存为aardio文件类型后再试！！")'); 
+if(!string.find(arg,".aardio")) arg+=".aardio";
+loadcodex(string.load(arg));
+*/

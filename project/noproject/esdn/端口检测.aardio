@@ -1,0 +1,17 @@
+
+// 通信测试 端口检测
+import console; 
+
+import wsock.tcp.client;
+
+var stdtcpclient1 = wsock.tcp.client();
+
+var visitBaidu = stdtcpclient1.connectTimeout("www.baidu.com", 443, 3);
+console.log("能否访问百度" , visitBaidu : false );
+stdtcpclient1.close();
+
+var stdtcpclient2 = wsock.tcp.client();
+var visitGoogle = stdtcpclient2.connectTimeout("www.google.com", 443, 3);
+console.log("能否访问谷歌" , visitGoogle : false );
+stdtcpclient2.close();
+console.pause(true);

@@ -1,0 +1,41 @@
+//透明 3D
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="WebView2 - 透明3D";right=757;bottom=467;border="none")
+winform.add()
+/*}}*/
+
+import web.view;
+var wb = web.view(winform);
+
+//窗口透明
+winform.transparent(true);
+
+//webView2 控件透明
+wb.defaultBackgroundColor = 0x00000000;
+
+wb.external = { 
+    winform = winform;
+}
+
+//因为要加载远程资源，第一次可能有点慢，实际开发使用本地文件即可
+wb.go("https://www.html5tricks.com/demo/html5-css3-3d-cube-puzzle/index2.html")
+
+//等待页面加载完成后，执行下面的Javascript
+wb.waitEle("body","
+
+//这里方便演示动态修改远程网页的 CSS 背景为透明色,直接改CSS可以更简单
+this.style.backgroundColor='#00000000'
+
+//异步执行以刷新透明背景后显示
+setTimeout(()=>aardio.winform.show(),100);
+this.onmouseup= function(e){
+    
+       if(e.button == 2){
+          aardio.winform.close();
+       } 
+   }
+");
+
+ 
+win.loopMessage();

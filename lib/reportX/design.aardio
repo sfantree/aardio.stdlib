@@ -1,0 +1,24 @@
+﻿import reportX;
+import com.activeX;
+import process;
+
+namespace reportX.design{
+	_reportOcxPath = ..fsys.getSpecial( 0x1c /*_CSIDL_LOCAL_APPDATA*/  ,"aardio/std/ReportX.ocx"); 
+    ..com.activeX.regsvr32(_reportOcxPath)
+    
+     
+    self.execute = function(){
+    	..process.execute("~\lib\reportX\.dll\design.exe");
+    }
+    
+    help = function(){
+    	..process.execute("~\lib\reportX\.dll\reportx.chm");	
+    }
+    
+    
+}
+
+/**intellisense(reportX.design)
+execute() = 运行报表设计器
+help() = 打开帮助文档
+end intellisense**/

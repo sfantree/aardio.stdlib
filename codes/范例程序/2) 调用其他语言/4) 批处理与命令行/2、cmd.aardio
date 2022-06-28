@@ -1,0 +1,16 @@
+//批量执行CMD命令
+
+import process.popen
+
+//打开命令行,隐藏命令行窗口
+var prcs = process.popen.cmd(`
+CD "C:\Program Files"
+C:
+dir 
+mkdir test
+rmdir test
+`)
+
+//显示结果
+import win;
+win.msgbox(prcs.read(-1))

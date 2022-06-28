@@ -1,0 +1,57 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="listview原地编辑效果 by adsadss ";right=522;bottom=300;parent=...)
+winform.add(
+listview={cls="listview";left=26;top=23;right=505;bottom=217;bgcolor=16777215;edge=1;fullRow=1;gridLines=1;z=1};
+static={cls="static";text="static";left=28;top=228;right=498;bottom=278;color=255;font=LOGFONT(h=-14;weight=700);transparent=1;z=2}
+)
+/*}}*/
+
+winform.static.text=/*
+点击单元格开始编辑。按回车键结束编辑。
+listview必须有fullRow=1属性。
+*/
+winform.listview.insertColumn("测试项1",80)
+winform.listview.insertColumn("测试项2",100)
+winform.listview.insertColumn("测试项3",-1)
+for(i=1;9;1){
+    winform.listview.addItem({tostring(i);"点我1";"点我2"});
+}
+
+winform.listview.onnotify = function(id,code,ptr){
+    // listView的消息回调是 _nm_ 开头，而不是 _lvn_ 
+    if(code = 0xFFFFFFFD/*_NM_DBLCLK*/ ){
+        //0xFFFFFFFD
+        var notifyMessage = winform.listview.getNotifyMessage(code,ptr);
+        if( ! notifyMessage.iItem && notifyMessage.iSubItem ) return ;
+        
+        var edit = winform.listview.editlable
+        if( ! edit ){
+            winform.listview.addCtrl(
+                editlable = {
+                    cls="edit";font = LOGFONT( h = 11 );left = 0;top = 0;
+                    right = 50;bottom = 50;autoResize = false ;hide = 1;edge = 1;  
+                    wndproc = function( hwnd, message, wParam, lParam ){
+                        if( ( message = 0x8/*_WM_KILLFOCUS*/)
+                            || message == 0x101/*_WM_KEYUP*/ && wParam == 0xD/*_VK_RETURN*/){
+                            // 按下了回车键或失去焦点，更新listview数据
+                            owner.parent.setItemText( owner.text, owner.listViewNotifyMessage.iItem
+                                , owner.listViewNotifyMessage.iSubItem );
+                            owner.show(false);
+                        }
+                    }  
+                }
+            )  
+            edit = winform.listview.editlable;
+        }
+        edit.listViewNotifyMessage = notifyMessage;
+        edit.text=winform.listview.getItemText(notifyMessage.iItem,notifyMessage.iSubItem);
+        var rc=winform.listview.getItemRect( notifyMessage.iItem,notifyMessage.iSubItem,,2/*_LVIR_LABEL*/ )
+        rc.right += 5; rc.bottom += 5;
+        edit.setRect(rc);
+        edit.show();
+        edit.setFocus();// 获取焦点
+    }
+}
+winform.show()  
+win.loopMessage();

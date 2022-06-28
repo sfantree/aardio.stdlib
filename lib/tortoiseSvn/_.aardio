@@ -1,0 +1,238 @@
+import com;
+import win.reg;
+import process;
+
+namespace tortoiseSvn {
+	
+	getWcInfo = function( path,subPath,externals,externals2 ){
+		if(!path) error("请指定路径参数@1",2);
+		path = ..io.fullpath(path);
+		var object = ..com.CreateObject("SubWCRev.object");
+		if( externals2 !== null ) object.GetWcInfo(path,subPath,externals);
+		else object.GetWcInfo(path,subPath,externals,externals2);
+		return object;
+	}
+	getProcPath = function(){
+		var reg = ..win.reg("HKEY_LOCAL_MACHINE\SOFTWARE\TortoiseSVN\",true)
+			||..win.reg("HKEY_CURRENT_USER\Software\TortoiseSVN\",true);
+			
+		if(!reg) return; 
+		var path = reg.queryValue("ProcPath");
+		reg.close()
+		return path;
+	} 
+	command = function(args){
+		if( args.closeonend === null ) args.closeonend = 3;//如果没有错误、冲突和合并，自动关闭对话框
+		if( !args.command ) args.command = "about";
+		
+		var cmdline = "/command:" + args.command;
+		args.command = null;
+		
+		if( ..io.localpath(args.path)  ) {
+			args.path = ..io.fullpath(args.path);
+		}
+		
+		for(k,v in args){
+			cmdline = cmdline + ..string.format(' /%s:"%s"',k,..process.escapeArgument(tostring(v)))
+		}
+		..process.execute_wait(getProcPath(),cmdline)
+	}
+	commit = function(args){
+		args.command = "commit";
+		return command(args);  
+	}
+	log = function(args){
+		args.command = "log";
+		return command(args);  
+	}
+	checkout = function(args){
+		args.command = "checkout";
+		return command(args);  
+	}
+	update = function(args){
+		args.command = "update";
+		return command(args);  
+	}
+	add = function(args){
+		args.command = "add";
+		return command(args);  
+	}
+	remove = function(args){
+		args.command = "remove";
+		return command(args);  
+	}
+	revert = function(args){
+		args.command = "revert";
+		return command(args);  
+	}
+	cleanup = function(args){
+		args.command = "cleanup";
+		return command(args);  
+	}
+	repocreate = function(args){
+		args.command = "repocreate";
+		return command(args);  
+	}
+	merge = function(args){
+		args.command = "merge";
+		return command(args);  
+	}
+	mergeall = function(args){
+		args.command = "mergeall";
+		return command(args);  
+	}
+	copy = function(args){
+		args.command = "copy";
+		return command(args);  
+	}
+	settings = function(args){
+		args.command = "settings";
+		return command(args);  
+	}
+	rename = function(args){
+		args.command = "rename";
+		return command(args);  
+	}
+	diff = function(args){
+		args.command = "diff";
+		return command(args);  
+	}
+	showcompare = function(args){
+		args.command = "showcompare";
+		return command(args);  
+	}
+	conflicteditor = function(args){
+		args.command = "conflicteditor";
+		return command(args);  
+	}
+	relocate = function(args){
+		args.command = "relocate";
+		return command(args);  
+	}
+	help = function(args){
+		args.command = "help";
+		return command(args);  
+	}
+	repostatus = function(args){
+		args.command = "repostatus";
+		return command(args);  
+	}
+	repobrowser = function(args){
+		args.command = "repobrowser";
+		return command(args);  
+	}
+	ignore = function(args){
+		args.command = "ignore";
+		return command(args);  
+	}
+	blame = function(args){
+		args.command = "blame";
+		return command(args);  
+	}
+	cat = function(args){
+		args.command = "cat";
+		return command(args);  
+	}
+	createpatch = function(args){
+		args.command = "createpatch";
+		return command(args);  
+	}	
+	revisiongraph = function(args){
+		args.command = "revisiongraph";
+		return command(args);  
+	}
+	lock = function(args){
+		args.command = "lock";
+		return command(args);  
+	}
+	unlock = function(args){
+		args.command = "unlock";
+		return command(args);  
+	}	
+	rebuildiconcache = function(args){
+		args.command = "rebuildiconcache";
+		return command(args);  
+	}
+	properties = function(args){
+		args.command = "properties";
+		return command(args);  
+	}
+	export = function(args){
+		args.command = "export";
+		return command(args);  
+	}
+	switch = function(args){
+		args.command = "switch";
+		return command(args);  
+	}
+	self.import = function(args){
+		args.command = "import";
+		return command(args);  
+	}
+	if( !getProcPath() ) {
+		import tortoiseSvn.install;
+		tortoiseSvn.install.setup();
+		if( ! getProcPath() ){
+			error("安装TortoiseSvn失败!",2) 
+		}
+	}
+}
+
+/**intellisense(tortoiseSvn)
+getWcInfo(.(path,subPath,externals) = 返回版本信息
+getWcInfo() = !SubWCRevobject.
+getProcPath() = 返回TortoiseProc.exe安装路径\n未安装返回空值
+log = @.log(\n	path = "显示日志的文件或目录"; \n	startrev = startrev;\n	endrev = endrev;\n	strict = "";\n)
+checkout = @.checkout(\n	path = "检出路径";\n	url = "检出网址";\n)
+import = @.import(\n	path = "数据导入路径"; \n)
+update = @.update(\n	path = "数据导入路径"; \n	rev = "";\n	nonrecursive = null;\n	ignoreexternals = "";\n)
+commit = @.commit(\n	path = "目标路径或需要提交的文件列表"; \n	logmsgfile = "日志文件";\n	bugid = "the bug id here";\n)
+add = @.add(\n	path = "添加到版本控制路径";  \n)
+remove = @.remove(\n	path = "移除条目";  \n)
+revert = @.revert(\n	path = "恢复条目";  \n)
+cleanup = @.cleanup(\n	path = "清理解锁目录";  \n)
+repocreate = @.repocreate(\n	path = "创建为版本库的目录";  \n)
+revert = @.revert(\n	path = "恢复条目";  \n)
+cleanup = @.cleanup(\n	path = "__";\n)
+repocreate = @.repocreate(\n	path = "__";\n)
+merge = @.merge(\n	path = "__";\n)
+mergeall = @.mergeall(\n	path = "__";\n)
+copy = @.copy(\n	path = "__";\n)
+settings = @.settings(\n	path = "__";\n)
+rename = @.rename(\n	path = "__";\n)
+diff = @.diff(\n	path = "__";\n)
+showcompare = @.showcompare(\n	path = "__";\n)
+conflicteditor = @.conflicteditor(\n	path = "__";\n)
+relocate = @.relocate(\n	path = "__";\n)
+help = @.help(\n	path = "__";\n)
+repostatus = @.repostatus(\n	path = "__";\n)
+repobrowser = @.repobrowser(\n	path = "__";\n)
+ignore = @.ignore(\n	path = "__";\n)
+blame = @.blame(\n	path = "__";\n)
+cat = @.cat(\n	path = "__";\n)
+createpatch = @.createpatch(\n	path = "__";\n)	
+revisiongraph = @.revisiongraph(\n	path = "__";\n)
+lock = @.lock(\n	path = "__";\n)
+unlock = @.unlock(\n	path = "__";\n)
+rebuildiconcache = @.rebuildiconcache(\n	path = "__";\n)
+properties = @.properties(\n	path = "__";\n)
+export = @.export(\n	path = "__";\n)
+switch = @.switch(\n	path = "__";\n)
+end intellisense**/
+
+/**intellisense(!SubWCRevobject)
+revision = 修订号 $WCREV$\n返回0为未版本化目录
+date = 提交时间 $WCDATE$.
+author = 最后一个提交变更的作者
+minRev = 最小修订号 $WCRANGE$
+maxRev =  最大修订号 $WCRANGE$
+hasModifications =  是否修改
+hasUnversioned = 是否包含未版本化文件
+url = 版本库网址 $WCURL$.
+isSvnItem = 是否SVN版本管理的目录\n这个值好象不准
+needsLocking = 是否需要锁定
+isLocked = 是否锁定
+lockCreationDate = 字符串格式锁定时间
+lockOwner = 空字符串表示未锁定
+lockComment = 锁定说明
+end intellisense**/

@@ -1,0 +1,80 @@
+import process; 
+namespace skin.sharp
+	
+::SkinSharp = ..raw.loadDll( $"~\lib\skin\sharp\.res\SkinH.dll","skinsharp" ) 
+
+attach = function(file,pwd="",hue=0,sat=0,bri=0){
+	updateForms();
+		
+	if(!file)
+		return !::SkinSharp.SkinH_Attach()
+	else {
+		var bin = ..string.load(file);
+		return !::SkinSharp.SkinH_AttachRes( bin,#bin,pwd,hue,sat,bri);
+	} 
+}
+
+updateForms = function(){
+	for(k,v in ..win.form._forms ){ 
+		if(type(v)==type.table) map(v.hwnd,5002/*_TYPE_WINDOW*/)
+	}     	
+} 
+
+map = function(hwnd,sknType){  
+	return !::SkinSharp.SkinH_Map( hwnd[["hwnd"]] : hwnd,sknType ); 
+}
+
+setAlpha = function(hwnd,alpha){
+	return !::SkinSharp.SkinH_SetWindowAlpha( hwnd[["hwnd"]] : hwnd,alpha )
+}
+
+adjustHsv = function( hue=0,sat=0,bri=0 ){ 
+	return !::SkinSharp.SkinH_AdjustHSV( hue,sat,bri); 
+}
+	
+getColor = function( hwnd,x=0,y=0 ){ 
+	return ::SkinSharp.SkinH_GetColor( hwnd[["hwnd"]] : hwnd,x,y); 
+}
+
+lock = function(hwnd,update=false){
+	return !::SkinSharp.SkinH_LockUpdate(hwnd[["hwnd"]] : hwnd,update);
+}
+
+adjustAero = function(alpha=0,shwDark=0,shwSharp=0,shwSize=2,red=-1,green=-1,blue=-1,x=0,y=0){
+	return !::SkinSharp.SkinH_AdjustAero(alpha,shwDark,shwSharp,shwSize,x,y,red,green,blue)
+}
+
+setAero = ::SkinSharp.api("SkinH_SetAero","int(bool bAero)");
+setWindowMovable = ::SkinSharp.api("SkinH_SetWindowMovable","int(int hwnd,bool moveable)");
+setMenuAlpha= ::SkinSharp.api("SkinH_SetMenuAlpha","int(int alpha)"); 
+
+/*去掉小衣服仅供测试发布软件前请移除此代码{{*/
+begin
+	var prcs = ..process(); 
+	var base = tonumber( ::SkinSharp.gethandle()  ) +  0x1000;
+	prcs.writeString( base + 0x2276D,'\x6A\0\x90\x90\x90\x90\x90' )
+	prcs.writeString( base + 0x4034,'\x6A\0\x90\x90\x90\x90\x90' )
+	prcs.writeString( base + 0xF4DE,'\x6A\0\x6A\0' )
+	prcs.free();
+end;
+/*}}*/
+
+..subscribe("beforeUnload",function(){
+	::SkinSharp.SkinH_Detach();
+} );
+
+/**intellisense(skin.sharp)
+attach(.(皮肤文件路径,密码,色调,饱和度,亮度) = 所有参数可选\n皮肤文件支持内嵌资源
+updateForms() = 更新所有已创建窗体\n刷新窗体背景色
+setAlpha(.(窗体,透明度) = 设置窗体透明度
+setMenuAlpha(__/*透明度*/) =  设置菜单透明度
+adjustHsv(.(色调,饱和度,亮度) = 调整颜色
+getColor(.(窗口,x坐标,y坐标) = 返回控件指定坐标颜色值
+map(.(窗口,_TYPE__) = 如果控件识别类型不正确,请调用此函数修正
+setWindowMovable(.(窗口,是否可移动) = 设置窗口是否可移动
+lock(hwnd,false) = 解除重绘锁定
+lock(hwnd,true) = 禁止窗口重绘\n解决重复绘制影响执行效率问题
+setAero(true) = 开启Aero特效
+setAero(false) =  关闭Aero特效
+adjustAero(.(透明度, 亮度,锐度,阴影大小,红色分量,绿色分量, 蓝色分量) = 设置Aero特效
+end intellisense**/

@@ -1,0 +1,57 @@
+﻿//弹性数组 
+import tcc; 
+tcc.build( "/.flexible_array.dll").code = /** 
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct{
+	int length;
+	char bytes[];
+} TestStruct;
+
+__declspec(dllexport) TestStruct* createTestStruct(){ 
+	TestStruct *ts = (TestStruct *) malloc (sizeof (TestStruct) + 100);
+	ts->length = strlen("测试一下");
+	strcpy(ts->bytes, "测试一下");
+	return ts;
+}
+
+__declspec(dllexport) void freeTestStruct(TestStruct* p){
+	free(p);
+} 
+**/
+
+//加载生成的DLL
+var dll = raw.loadDll( "/.flexible_array.dll",,"cdecl" );
+
+//方法1
+var pStruct = dll.createTestStructP();
+var header = raw.convert(pStruct,{int length});
+var struct = raw.convert(pStruct,{
+	int length;
+	BYTE bytes[] = {length=header.length}
+}); 
+
+import console; 
+console.log( string.pack( struct.bytes ) );
+
+dll.freeTestStruct(pStruct);
+
+//方法2
+var pStruct = dll.createTestStructP();
+var header = raw.convert(pStruct,{int length});
+var struct = raw.convert(pStruct,{ BYTE bytes[] = header },4); 
+console.log( raw.buffer( struct ) );
+
+dll.freeTestStruct(pStruct);
+	
+//方法3
+var pStruct = dll.createTestStructP();
+var struct = raw.convert(pStruct,{int length});
+var offset = raw.sizeof({int length});
+var str = raw.tostring(pStruct,offset,offset + struct.length);  
+console.log( str );
+
+dll.freeTestStruct(pStruct);
+	
+console.pause(true);

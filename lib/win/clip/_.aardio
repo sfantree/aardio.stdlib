@@ -1,0 +1,83 @@
+namespace win.clip;
+  
+readUnicode = function(){
+	if(!::User32.OpenClipboard(0)) return;
+		
+	var txt;	
+	var hClip =  User32.GetClipboardDataP(0xD/*_CF_UNICODETEXT*/);
+	if(hClip){
+		var p = ::GlobalLock(hClip)
+		if(p){ 
+			txt = ..raw.str(p,true);
+			::GlobalUnlock(hClip)
+		}
+	} 
+	::User32.CloseClipboard();  
+
+	return txt;
+}
+
+read = function(){ 
+	var s = readUnicode();
+	if(s) return ..string.fromto(readUnicode(),0,65001);
+}
+
+write = function(str,rep){ 
+	str = ..string.toUnicode(str);
+	if(!str) return;
+	
+	if(!::User32.OpenClipboard(0)) return;
+	if(rep===null || rep) User32.EmptyClipboard();
+	
+	var clipbuffer = ::GlobalAlloc(0x2000/*_GMEM_DDESHARE*/, #str+2);
+    var buffer =  ::GlobalLock(clipbuffer);
+    
+    ::CopyMemory(buffer,str,#str+2); 
+	::GlobalUnlock(clipbuffer); 
+	
+	var hdl =  ::User32.SetClipboardDataP(0xD/*_CF_UNICODETEXT*/,clipbuffer);
+	::User32.CloseClipboard();
+	return hdl;
+}
+
+writeBitmap = function(hBmp,own,rep){ 
+	if(!::User32.OpenClipboard(0)) return;
+	if(rep===null || rep) User32.EmptyClipboard(); 
+	  
+	if(!own) hBmp = ::User32.CopyImageP(hBmp,0x0/*_IMAGE_BITMAP*/,0,0,0x4/*_LR_COPYRETURNORG*/) 
+	var hdl = ::User32.SetClipboardDataP (0x2/*_CF_BITMAP*/,hBmp);
+	::User32.CloseClipboard();
+	return hdl;
+}
+
+readBitmap = function(){ 
+	if(!::User32.OpenClipboard(0))
+		return;	 
+		
+	var hBmp = User32.GetClipboardDataP(0x2/*_CF_BITMAP*/);  
+	hBmp = hBmp ? ::User32.CopyImageP(hBmp,0/*_IMAGE_BITMAP*/, 0, 0, 0x40/*_LR_DEFAULTSIZE*/)
+	::User32.CloseClipboard();  
+	return hBmp;
+}
+
+formats = function(){
+	if(!::User32.OpenClipboard(0)) return;	 
+	
+	var r = {}	
+	for f in lambda(f) ::User32.EnumClipboardFormats(f) : null {
+		..table.push(r,f);
+	}	
+	  
+	::User32.CloseClipboard();
+	return r;
+}
+
+/**intellisense(win.clip)
+readUnicode() = 读取剪贴板UTF16编码文本
+read() = 读取剪贴板文本
+write(__) = 写入文本到剪贴板,\n可选使用参数@2指定在复制前是否清空剪贴板,默认清空,\n成功返回剪贴板数据句柄
+writeBitmap( = 写入位图到剪贴板,\n成功返回剪贴板数据句柄
+writeBitmap(.(位图句柄,接管位图,清空剪贴板) = 写入位图到剪贴板\n\n除位图句柄以外其他参数为可选参数,\n如果接管位图参数为 true,则由剪贴板负责释放参数指定的位图,\n如清空剪贴板为 false（默认为 true）,则复制前不执行清空操作
+readBitmap() = 读取剪贴板位图句柄\n返回的位图句柄用完要自行销毁\n读取失败返回null
+formats() = 获取剪贴板所有可用类型,\n位置越靠前优先级越高,应优先使用,\n返回值为数组,数组元素为表示格式的数值,例如 _CF_UNICODETEXT 
+end intellisense**/

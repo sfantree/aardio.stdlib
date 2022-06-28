@@ -1,0 +1,28 @@
+
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="WebView2 网页截图";right=1108;bottom=759)
+/*}}*/
+
+import web.view;
+var wb = web.view(winform,,0/*自动调试端口*/);
+winform.show();
+
+wb.go("http://www.baidu.com");
+wb.wait("baidu");
+
+import web.socket.chrome;
+var ws = wb.openRemoteDebugging();
+ws.Runtime.enable();//启用 Runtime.executionContextCreated
+
+//截图
+import crypt;
+import process.imageView;
+ws.Page.captureScreenshot().end = function(result,err){
+   if(result[["data"]]){ 
+       string.save("/screenshot.png",crypt.decodeBin(result[["data"]]) )
+       process.imageView("/screenshot.png");
+   } 
+} 
+
+win.loopMessage();

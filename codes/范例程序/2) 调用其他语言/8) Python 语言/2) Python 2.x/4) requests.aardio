@@ -1,0 +1,29 @@
+//命名参数
+import console;
+import py2;  
+
+var requests = py2.import("requests");
+console.log("requests 版本：",requests.__version__)
+
+var ses = requests.Session();
+
+/*
+在 aardio 中调用 Python 函数，只有通过 invoke 方法才能传递匿名参数，
+invoke 的第一个参数必须是表（且没有指定元表，没有 pyObject 字段）才会支持命名参数。
+如果参数@1符合上述命名参数规则，则该表中的数组成员作为普通的匿名参数按索引顺序传给 Python 函数。
+如果参数不符合上述规则，则所有参数视为匿名参数传递（即等价于通过 call 方法调用）
+
+根据 aardio 的语法，如果参数@1是表，且首先写名值对成员，则可以省略外层的 {}
+那么可以模仿 Python 命名参数与匿名参数混写的语法，唯一与 Python 的区别是命名参数必须写在最前面。
+*/
+var res = ses.get.invoke(verify=true,"https://www.aardio.com");
+//注意：aardio 中 true 是小写，等价于Python 中首字母大写的 True
+
+/*
+如果开全局代理，Python 可能会报错（SSLEOFError），
+这个问题是 Python 的问题与 aardio 无关，解决方案请自行上网搜索。
+也可以改用 aardio 中的 inet.http 或 web.rest.client 等抓取网页。
+*/
+ 
+console.log( res ? res.text );
+console.pause()

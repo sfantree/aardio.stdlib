@@ -1,0 +1,53 @@
+import console; 
+import win;
+/*
+thread.works = 线程工作项管理
+thread.works(线程数,工作函数,等待延时,初始化函数,->->->)
+*/
+import thread.works;
+function DoBusyWork(t){
+	var number = t[2];
+	import math;
+	// 模拟工作耗时
+	sleep(math.abs( 1500 * math.sin(number * number) ))
+	
+	// 返回
+	t[2] = number * number;
+	return t;
+}
+
+PreHandleList = {};
+ResultList = {};
+
+console.dump(PreHandleList)
+console.dump(ResultList)
+
+for(i=1; 30;1){
+	var t = math.floor( (math.random() * 50) );
+	table.push(PreHandleList, t);
+} 
+//console.dump(PreHandleList)
+
+//console.dump("haha")
+scanWorks = thread.works( 2, DoBusyWork);
+
+for(i=1;#PreHandleList;1){
+	console.log("push", i)
+	scanWorks.push({i, PreHandleList[i]});
+} 
+
+import win.timer;
+var timer = win.timer(, 200);
+
+
+timer.onTimer = function(){ 
+	//console.dump("timer.onTimer")
+	while( var t1 = scanWorks.pop() ) { 
+		table.push(ResultList, t1);
+		console.dump(ResultList)
+	}
+}
+timer.enable();
+
+win.loopMessage();
+scanWorks.quit();

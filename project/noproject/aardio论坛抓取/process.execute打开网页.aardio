@@ -1,0 +1,4 @@
+import process
+process.execute("C:\Program Files\Internet Explorer\IEXPLORE.EXE", "http://www.baidu.com")
+//下面写法亦可，使用你电脑默认的浏览器打开网站。不限定是IE浏览器。
+//process.execute("IEXPLORE.EXE","http://www.baidu.com")

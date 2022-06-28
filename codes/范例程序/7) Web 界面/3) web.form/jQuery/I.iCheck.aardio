@@ -1,0 +1,88 @@
+//iCheck 选框美化
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="iCheck - 选框美化，支持 Win7 以及 Win7 以后的系统";right=759;bottom=469;bgcolor=16777215)
+winform.add(
+button={cls="button";text="调用 jQuery 对象";left=458;top=417;right=638;bottom=463;db=1;dr=1;z=3};
+edit={cls="edit";left=457;top=8;right=747;bottom=410;autohscroll=false;db=1;dr=1;dt=1;edge=1;multiline=1;vscroll=1;z=2};
+static={cls="static";text="Static";left=6;top=7;right=441;bottom=453;clip=1;db=1;dl=1;dr=1;dt=1;transparent=1;z=1}
+)
+/*}}*/
+
+import web.form;
+var wb = web.form(winform.static);
+
+wb.external = {
+	onIfChecked = function(event){
+		winform.edit.print( "点选:",event.target.value,event.target.outerHTML);
+	}
+}
+
+winform.button.oncommand = function(id,event){
+	wb.jQuery('input[name="chk[2]"]').iCheck("toggle")
+}
+
+/*
+iCheck 支持 IE8+, 也就是支持 Win7 以及 Win7 以后的系统
+文档： http://icheck.fronteed.com/
+
+下面使用 CDN 服务器加载 JS 文件初始化可能有点慢，实际开发请先下载到本地。
+aardio 可直接支持加载资源目录（发布可嵌入 EXE）下的网页文件。
+*/
+ 
+wb.html = /**
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <script src="http://lib.sinaapp.com/js/jquery/1.12.4/jquery-1.12.4.min.js"></script>
+  <script src="https://lib.baomitu.com/iCheck/1.0.3/icheck.min.js"></script>
+  <link rel="stylesheet" href="https://lib.baomitu.com/iCheck/1.0.3/skins/square/blue.min.css" />
+  <style type="text/css">
+    html, body { margin: 20;  }
+  </style>
+</head>
+
+<body>
+  <div>
+    <p>
+      <label>
+        <input type="checkbox" name="chk[1]" disabled>
+        测试1
+      </label>
+
+      <label>
+        <input type="checkbox" name="chk[2]">
+        测试2
+      </label>
+
+      <label for="baz[1]">测试3</label>
+      <input type="radio" name="quux[2]" id="rd[1]" checked>
+
+      <label for="baz[2]">测试4</label>
+      <input type="radio" name="quux[2]" id="baz[2]">
+    </p>
+  </div>
+  <script>
+    $(document).ready(function () {
+      $('input[type="checkbox"],input[type="radio"]').iCheck({
+        //指定外观主题，必须引入对应的 /skins/flat/orange.min.css
+        checkboxClass: 'icheckbox_square-blue',
+        radioClass: 'iradio_square-blue'
+      });
+
+	  //响应事件
+      $('input[type="checkbox"],input[type="radio"]').on('ifChecked', function (event) {
+        external.onIfChecked(event);
+      });
+    })
+
+  </script>
+</body>
+</html>
+**/
+
+winform.show();
+win.loopMessage();

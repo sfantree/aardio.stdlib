@@ -1,0 +1,49 @@
+﻿//tooltip 屏幕提示
+import win.ui.tooltip;
+import process;
+
+namespace winex;
+
+class tooltip{
+	ctor(form,close,balloon){
+		this = ..win.ui.tooltip.tracking(form,close,balloon);
+	};
+	onHyperlinkClick = function(href,title){
+		..process.openUrl(href);  
+	};
+ 	wndproc = {
+		[0x201/*_WM_LBUTTONDOWN*/]=function(hwnd,message,wParam,lParam){
+			if(!this.ptInClientRect(lParam)){
+				this.popup(false); 
+			} 
+		} 
+	}; 
+}
+
+namespace tooltip{
+    
+    var default;
+    trackPopup = function(text,x,y){
+    	if(!default) default = ..winex.tooltip();
+    	default.trackPopup(text,x,y);
+    	
+    	if(text){
+    		default.capture = true;
+    	}
+    }
+}
+
+
+/**intellisense()
+winex.tooltip = 创建手动控制坐标、显示的提示控件，\n只能用于界面线程
+winex.tooltip( = 创建提示控件,默认使用默认手动跟踪模式，\n返回 win.ui.tooltip 对象
+winex.tooltip(.(ownerForm,hasCloseButton,balloon) =  创建提示控件,默认使用默认手动跟踪模式。\n@ownerForm 参数指定所有者窗口，省略则默认置顶窗口，\n@hasCloseButton 参数指定是否显示关闭按钮,可省略默认值为 true \n@balloon 参数指定是否启用汽泡外观,可省略默认值为 true\n如果未指定所有者窗口、或未设置提示标题，提示中的超链接可能无法点击 
+winex.tooltip() = !winUiTooltip.
+end intellisense**/
+
+/**intellisense(winex.tooltip)
+trackPopup( = 在屏幕任意坐标显示简单气泡提示，\n在提示窗口外部点击自动隐藏。\n\n只能用于界面线程
+trackPopup(.(true,x,y) = 弹出简单气泡提示,\n@x,@y参数指定显示坐标
+trackPopup(.(text,x,y) = 弹出简单气泡提示 @text 指定文本内容的提示,\n@x,@y参数指定显示坐标
+trackPopup(.(false) = 隐藏简单气泡提示
+end intellisense**/

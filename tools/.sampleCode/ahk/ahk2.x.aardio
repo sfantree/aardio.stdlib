@@ -1,0 +1,67 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="嵌入 AutoHotkey 演示";right=599;bottom=399)
+winform.add(
+edit={cls="edit";left=17;top=18;right=565;bottom=374;edge=1;multiline=1;z=1}
+)
+/*}}*/
+
+winform.show();
+
+/*
+aardio 中路径以斜杆开始表示应用程序根目录，
+应用程序根目录在开发时指工程目录或工程外独立启动的文件所在目录，发布后指 EXE 所在目录。
+以下代码导入 \AutoHotkey\Lib\path\libName.ahk ，自动转存为 %A_MyDocuments%\AutoHotkey\Lib\path\libName.ahk ，
+支持 aardio 内嵌资源目录（要创建工程）下的文件，可生成独立 EXE 文件。
+*/ 
+//ahk.import("path/libName"); //在 AHK 中可以使用 #include <path/libName> 引用。
+
+import ahk.thread;
+var ahk2 = ahk.thread();
+
+//直接定义允许 AHK 调用的 aardio 函数（函数名以on开头）	
+ahk2.onTest = function(param){
+    winform.edit.print( "winform.onTest被ahk调用",param ); 
+    return 123
+}
+
+//运行 AHK 代码，应用程序根目录已设为 AHK 工作目录 %A_WorkingDir%  
+ahk2.run(`
+#NoTrayIcon ;不显示托盘图标
+Persistent( true)  ;保持ahk线程不退出
+
+; AHK 默认是局部变量，定义全局变量要用 global 语句，aardio 则是默认全局变量，定义局部变量要用 var 语句
+global gVar := "<?="允许嵌入 aardio 代码"?>" ;  参考 https://bbs.aardio.com/doc/reference/the%20language/template_syntax.html
+
+; 定义函数与 aardio 有点像，aardio 一般会写为 GetPoint = function(hwnd){ return value;}
+GetPoint(hwnd){   
+    
+    ; 新语法 := 后面是表达式,和其他编程语言类似字符串放引号里,变量不用放百分号里
+    point := Struct(  "UInt x; UInt y;" ) ; 参考 https://hotkeyit.github.io/v2/docs/commands/Struct.htm
+    
+    ; 取结构体指针，aardio 里调用 API 时结构体总是自动转为指针，不需要写这些代码
+    ptr := point[]
+   
+    ; DllCall("user32.dll\GetCursorPos", "Ptr", ptr)   
+    GetCursorPos(ptr) ; 参考 https://hotkeyit.github.io/v2/docs/commands/WinApi.htm
+
+    ; 直接调用aardio函数，支持任意类型、不定个数的调用参数
+    ret := aardio.onTest({ x : point.x, y : point.y })
+
+    return { x : 1, y : 2}
+}`)
+
+//直接修改ahk全局变量的值
+ahk2.setGlobal("gVar","测试一下");
+ 
+/*
+直接调用ahk里定义的全局函数，
+参数和返回值自动支持各种数据类型，就像调用普通aardio函数。
+是不是很神奇？！
+*/
+var point = ahk2.GetPoint(ahk2.external.hwnd);
+winform.edit.print("调用ahk函数的返回值：",point);
+
+ 
+
+win.loopMessage(); 

@@ -1,0 +1,144 @@
+﻿import util.registry;
+
+namespace raw;
+
+class argsPointer{
+	ctor( ... ){
+		var args = {...}
+		if(type(args[#args])=="function") {
+			var callback = ..table.pop(args)
+			if( (#args == 1) && (type(args[1])=="table") && #args[1] ) args = args[1]; 
+			
+			_dll.getArgsPointer(_callback
+				,_registry.reg({args,callback})
+				,..table.unpackArgs(args)
+				);
+			
+			return args;	 
+		}
+		else {
+			if( (#args == 1) && (type(args[1])=="table") && #args[1] ) args = args[1]; 
+			if(args@) error("参数数组不应指定元表",2);
+			
+			var structType = args[1][["_struct"]];
+			if(!structType){ error("参数必须指定结构体或结构体数组",2) } 
+			var sizeItem = ..raw.sizeof(args[1]);
+			
+			var structPtr = {}
+			for(i=1;#args;1){
+				if(args[i][["_struct"]]!=structType) error("数组中的结构体类型必须相同",2)
+				structPtr[i] = ..raw.realloc(sizeItem,,args[i])
+			}
+			
+			var structPtrArrayPtr = ..raw.realloc(sizeItem*#args,,{ptr items[]=structPtr}) 
+			
+			this = args;
+			this@ = {
+				_topointer = structPtrArrayPtr;
+				_get = {
+					freePtr = function(){
+						if(!structPtrArrayPtr) return this;
+						this.updateArray();
+						
+						for(i=1;#structPtr;1) structPtr[i] = ..raw.realloc(0,structPtr[i]);
+						structPtrArrayPtr = ..raw.realloc(0,structPtrArrayPtr);
+						return this;
+					};
+					updateArray = function(){
+						if(!structPtrArrayPtr) return this;
+						var c = ..raw.convert;
+						for(i=1;#structPtr;1)c(structPtr[i],args[i]);
+						return this;
+					};
+					updatePtr = function(){
+						if(!structPtrArrayPtr) return;
+						if(#args!=#structPtr) error("不允许改变数组长度",2);
+						
+						var c = ..raw.convert;
+						for(i=1;#args;1){
+							if(args[i][["_struct"]]!=structType) error("数组中的结构体类型必须相同",2);
+							c(args[i],structPtr[i]);
+						}
+						
+						return this;
+					};	
+				};
+				gcdata = ..gcdata(   
+					_gc = function(){ this.freePtr();} 
+				)
+			} 
+		}
+	};
+}
+
+namespace argsPointer{
+	_dll = ..raw.loadDll($"~\lib\raw\argsPointer\.res\argsPointer.dll","std.raw.argsPointer.dll","cdecl");
+	
+	_registry = ..util.registry();
+	_callback = ..raw.tocdecl( function(id,pArgs){
+		var d = _registry.unReg(id);
+		d[2](pArgs,d[1]); 
+	},"void(int id,ptr pArgs)")
+	
+	convert = function(ptr,len,template){
+		var t = type(template);
+		if(t=="class") template = template();
+		elseif(t=="string") return ..raw.convertArray(ptr,len,template);
+		if(!template[["_struct"]]) error("参数@3必须指定结构体或结构体类",2);
+		
+		var items = ..raw.convertArray(ptr,len);
+		var c = ..raw.convert;
+		for(k,v in items){
+			if(v) items[k] = c(v,{_struct=template._struct});
+		}
+		
+		return items;
+	}
+}
+
+/**intellisense()
+raw.argsPointer = 用于将 API 调用过程中的参数转为数组指针\n用法请参考：aardio 范例 -> aardio 语言 -> 语言扩展 -> 结构体二级指针\n\n注意普通结构体可以任意嵌套数组,与静态API函数兼容且用法更简洁,\n如无特殊原因,一般不必要用到 raw.argsPointer
+raw.argsPointer( = 用于将 API 调用过程中的参数转为数组指针,\n\n结构体在 API 调用参数中传址而非值,\n因此调用参数为结构体则转为结构体的二级指针。\n如果结构体用于表示静态类型数组,\n则转为二维数组指针
+raw.argsPointer(.(args->->->,callback) =  @args 可以是一个或多个用于调用 API 的参数,\n也可以是包含一个或多个调用参数的数组。\n此函数会使用 @args 参数调用一个中间 API 函数,\n并在该 API 中得到调用参数列表的指针地址,\n并将该指针作为第一个回调参数以回调 @callback 指定的函数,\n指针参数之后的第2个回调参数为实际调用参数的数组,\n注意在调用此函数结束后将释放参数指针,并返回新的参数值
+raw.argsPointer(.(structArgs,->->->) = @structArgs 可以是一个或多个用于调用 API 的结构体参数,\n也可以是包含一或多个结构体参数的数组,该数组不可指定元表。\n数组中的结构体必须为同一结构体类型,\n\n此函数返回传入参数的数组,\n返回数组已绑定内存指针,可作为 API 函数的指针参数使用,\n可使用 freePtr 函数释放绑定的内存指针,\n注意不要在 aardio 改变数组的长度或成员的结构体类型,\n有这些需求应当创建新的 raw.argsPointer 对象
+raw.argsPointer.convert( = 用于将参数列表指针转换回调用数组,\n此函数与 raw.convertArray 的主要区别是对结构体参数的处理,\n对于结构体数组会首先转换为指针数组,再将指针转换为结构体
+raw.argsPointer.convert(.(指针,数组长度,结构体) = 用于将参数列表指针转换回调用数组,\n参数@3可以指定结构体或结构体类,\n实际转换时参数@3仅是模板作用不会被修改,\n返回结构体数组
+raw.argsPointer() = !rawArgsPointerArgs.
+!rawArgsPointerArgs.updateArray() = 此函数返回对象自身,\n在返回之前自对象绑定的原始指针获取最新的数组值,\n创建 raw.argsPointer 对象时如未指定回调函数则此函数可用
+!rawArgsPointerArgs.updatePtr() = 此函数返回对象自身,可用于 API 函数的指针参数,\n在返回之前写入最新的数组值到指针绑定的内存,\n创建 raw.argsPointer 对象时如未指定回调函数则此函数可用
+!rawArgsPointerArgs.freePtr() = 释放对象绑定的内存指针,\n在返回之前自对象绑定的内存指针获取最新的数组值,\n创建 raw.argsPointer 对象时如未指定回调函数则此函数可用\n\n调用此函数释放以后对象仍然可以使用,但不能再作为 API 参数使用,\n即使没有主动调用此函数,在对象不再使用时仍然会被垃圾收集器自动释放
+end intellisense**/
+
+/**details(实现原理)
+aardio 中的对象比原生静态语言使用的原始数据要复杂得多，
+例如 aardio 结构体与静态语言的原始结构体在内存中的结构实际是不一样的。
+
+aardio 对象之所以能作为参数用于调用静态语言实现的 API 函数，
+是因为 aardio 在其中作了隐式的转换，打破了动/静态语言之间原本不可逾越的鸿沟。
+这很方便，但这种无感的自动转换也会让我们产生错觉,让我们忘记了 aardio 并不是 C/C++，
+也忘记了不可逾越的鸿沟仍然实际存在。
+
+这种鸿沟的存在有其必要性 —— 正如火车不能允许任意乘客在任意时间下地用双脚原生地奔跑。
+对于动态语言 —— 不能百分百完美地套用静态语言的写法和习惯，aardio 支持静态类型的目的
+也只是为了调用和利用静态语言的能力而并不是让自己变成静态语言。
+
+以结构体为例：
+
+1、aardio 结构体作为调用 API 的参数时会分配一块临时的内存,
+并将 aardio 结构体的值复制过去，然后将该内存的指针作为调用 API 的参数,
+在调用 API 结束后再将内存中新的值同步到 aardio 结构体，然后立即释放临时内存，
+释放临时内存是立即操作，而非等待垃圾回收器操作。
+
+raw.argsPointer 的回调用法就是基于这个原理,
+利用了一个中间 API 函数在被调用时回调 aardio 函数以拦截到原始参数指针。
+
+2、当以 aardio 结构体对象作为参数调用 raw.buffer,raw.realloc 等分配内存的函数时，
+也会将结构体的值复制过去，这时候 raw.buffer,raw.realloc 得到的原始指针里存储的就是
+原始结构体，所以这些指针可以直接用于 API 的原始数据类型指针 —— 而不再需要转换。
+使用 raw.convert() 函数 可以将指针指向的内存再次同步到 aardio 结构体。
+
+raw.argsPointer 的非回调用法就是基于这个原理，但简化了分配内存、同步数据的操作。
+
+注意普通结构体可以任意嵌套数组,与静态API函数兼容且用法更简洁,
+如无特殊原因,一般不必要用到 raw.argsPointer 。
+end details**/

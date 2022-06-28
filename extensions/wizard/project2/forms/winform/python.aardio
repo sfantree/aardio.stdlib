@@ -1,0 +1,60 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio + Python";right=759;bottom=469;parent=...)
+winform.add()
+/*}}*/
+
+import web.form;
+var wb = web.form( winform,5/*_UIFLAG_DIALOG*/|4/*_UIFLAG_NO3DBORDER*/ | 8/*_UIFLAG_SCROLL_NO*/,,,true);
+wb.noScriptErr = true;
+
+wb.html = /** 
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />  
+    <title>Python</title> 
+	<style>body { font-family: "Segoe UI", sans-serif;  }</style>
+	<script>
+	
+	window.pythonVersion = "py3"
+	onClickVersion = function(radio){
+		document.getElementById("py3").style.display = "none";
+		document.getElementById("py2").style.display = "none";
+		document.getElementById(radio.value).style.display = "";
+		window.pythonVersion = radio.value;
+	}
+	
+	</script>
+</head>
+<body style="white-space:pre;font-size:12pt;word-wrap: break-word;word-break: normal;overflow:hidden">
+请选择 Python 版本：<label><input type="radio" name="version" value="py3" checked onclick="onClickVersion(this)">Python 3</label> <label><input type="radio" name="version" value="py2" onclick="onClickVersion(this)">Python 2.7</label>
+<span id="py3">
+aardio 与 Python 可以非常方便地相互调用库和函数。
+在 aardio 中可使用 py3.import("模块名称") 导入 Python 模块。
+
+也可以在 aardio 中导入在 py3.export 名字空间下建立的用户库，
+这些库都可以在 Python 中作为模块使用 import 语句导入。
+ 
+Python 与 aardio 混合编程范例目录：
+aardio 范例 / 调用其他语言 / Python 语言 
+</span><span id="py2" style="display:none">
+aardio 与 Python 可以非常方便地相互调用库和函数。
+在 aardio 中可使用 py2.import("模块名称") 导入 Python 模块。
+
+也可以在 aardio 中导入在 py2.export 名字空间下建立的用户库，
+这些库都可以在 Python 中作为模块使用 import 语句导入。
+ 
+Python 与 aardio 混合编程范例目录：
+aardio 范例 / 调用其他语言 / Python 语言 
+</span> 
+**/
+
+winform.getTemplatePath = function(){
+	return io.fullpath("/template/python/" + wb.eval("window.pythonVersion")) 
+}
+
+winform.show(true);
+win.loopMessage();
+return winform;

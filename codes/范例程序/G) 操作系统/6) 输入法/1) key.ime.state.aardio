@@ -1,0 +1,117 @@
+//输入法状态
+import fonts.fontAwesome;
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="输入法状态";right=432;bottom=262)
+winform.add(
+edit={cls="edit";left=12;top=14;right=423;bottom=236;db=1;dl=1;dr=1;dt=1;edge=1;multiline=1;z=2};
+imeState={cls="plus";text="中";left=402;top=298;right=458;bottom=326;align="left";bgcolor=15780518;border={radius=11};clipBk=false;db=1;disabled=1;dr=1;iconStyle={align="right";font=LOGFONT(name='FontAwesome');padding={right=11}};iconText='\uF186';textPadding={left=13};transparent=1;z=1}
+)
+/*}}*/
+
+/*
+完整示例请参考：
+ImTip（通用输入法提示工具） https://imtip.aardio.com/
+*/
+
+//显示输入状态栏
+import key.ime.stateBar;
+imeBar = key.ime.stateBar(winform);
+
+//切换输入法状态显示 2 秒，设为 0 一直显示
+imeBar.timeout = 2;
+
+//设置兼容的输入窗口类名（鼠标在窗口内时，在鼠标位置显示输入状态提示）
+imeBar.editorClasses = {["_WwG"]=1;["AVL_AVView"]=1;["OneNote::DocumentCanvas"]=1};
+
+//修改背景颜色，格式 0xAARRGGBB
+imeBar.background = 0xE5A6CAF0; 
+
+//修改字体颜色，格式 0xAARRGGBB
+imeBar.argbColor = 0xFF000000;
+
+//水平偏移像素
+imeBar.offsetX = 30
+
+//垂直偏移像素
+imeBar.offsetY = 0
+
+//修改边框样式
+//imeBar.border =   {color=0x805F9EA0;radius=11;width=2};
+
+//自定义显示字符
+imeBar.tipChars = {
+	halfShape = '\uF186';//半角
+	fullShape = '\uF1DB';//全角
+	capital = '\uF031';//大写
+	symbol = '。';//中文标点
+	close = '\uF05E';//默认键盘
+	lang = '中'; //中文输入
+	en = '英'; //英文输入
+}
+
+/*
+//中英状态显示不同颜色
+imeBar.openStyle = {
+	//中文模式样式
+	[true] = {
+		background = 0xE500CAF0;
+		argbColor = 0xFFFF0000;
+		iconColor = 0xFFFF0000;
+	};
+	//英文模式样式
+	[false] = {
+		background = 0xE5A6CA00;
+		argbColor = 0xFF0000FF;
+		iconColor = 0xFF0000FF;
+	};
+}
+
+*/
+//修改文本字体（中/En）
+//imeBar.font = ::LOGFONT(name='隶书';point=11;);
+//imeBar.textRenderingHint = 4/*_TextRenderingHintAntiAlias*/;
+
+//修改图标字体（全角、半角、大写、中文标点等）
+//imeBar.iconStyle.font = ::LOGFONT(name='FontAwesome');
+//imeBar.iconTextRenderingHint = 3/*_TextRenderingHintAntiAliasGridFit*/;
+
+//重新启动输入状态提示并刷新样式（参数为 false 时关闭提示）
+imeBar.imeWatch(true);
+
+//不想看到符号，字体图标的颜色设为全透明即可
+/*
+imeBar.iconColor = 0;
+imeBar.align = "center"; //居中显示
+imeBar.width = winform.dpiScale(36);
+imeBar.textPadding = { left = 0; }
+*/
+
+//下面创建托盘图标
+import win.util.tray;
+winform.tray = win.util.tray(winform)  
+winform.tray.tip = "鼠标提示" //设置鼠标提示 
+
+//响应托盘消息
+winform.onTrayMessage = {
+	[0x205/*_WM_RBUTTONUP*/  ] = function(wParam){ 
+	    win.setForeground(winform.hwnd); //弹出托盘菜单以前,一定要前置主窗口中,不然不点击菜单不会消失
+	    winform.popmenu.popup(); 
+	};
+	[0x202/*_WM_LBUTTONUP*/] = function(wParam){ 
+		
+	};
+}
+
+//下面创建托盘弹出菜单
+import win.ui.menu;
+winform.popmenu = win.ui.popmenu(winform);//创建弹出菜单
+winform.popmenu.add('设置（暂未实现）',function(id){
+	winform.show();
+});
+winform.popmenu.add();//分隔线
+winform.popmenu.add('退出',function(id){ 
+	winform.close() 
+});
+
+win.loopMessage();

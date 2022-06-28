@@ -1,0 +1,161 @@
+﻿
+// listview+sqlite实现数据展示和保存功能
+
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="工作日志表";right=1197;bottom=604)
+winform.add(
+button={cls="button";text="插入数据";left=525;top=579;right=640;bottom=599;db=1;dl=1;z=2};
+button2={cls="button";text="导出数据到excel文件";left=1035;top=579;right=1197;bottom=599;db=1;dr=1;z=10};
+button3={cls="button";text="筛选数据";left=843;top=579;right=934;bottom=599;db=1;dr=1;z=12};
+button4={cls="button";text="全部数据";left=939;top=579;right=1030;bottom=599;db=1;dr=1;z=13};
+car={cls="edit";text="popdes";left=80;top=579;right=149;bottom=599;align="center";border=1;db=1;dl=1;hidesel=1;z=3};
+checkbox={cls="checkbox";left=497;top=580;right=521;bottom=599;db=1;dl=1;z=9};
+datetimepick={cls="datetimepick";left=739;top=579;right=839;bottom=599;db=1;dr=1;edge=1;z=11};
+edit2={cls="edit";text="操作人:";left=3;top=579;right=81;bottom=599;align="center";border=1;db=1;disabled=1;dl=1;hidesel=1;z=4};
+edit4={cls="edit";text="机台号:";left=155;top=579;right=233;bottom=599;align="center";border=1;db=1;disabled=1;dl=1;hidesel=1;z=6};
+edit6={cls="edit";text="芯片编号:";left=312;top=579;right=390;bottom=599;align="center";border=1;db=1;disabled=1;dl=1;hidesel=1;z=8};
+jth={cls="edit";text="JT001";left=232;top=579;right=305;bottom=599;align="center";border=1;db=1;dl=1;hidesel=1;z=5};
+listview={cls="listview";left=0;top=0;right=1198;bottom=573;asel=false;db=1;dl=1;dr=1;dt=1;fullRow=1;gridLines=1;msel=false;vscroll=1;z=1};
+xpbh={cls="edit";text="PIC001";left=389;top=579;right=497;bottom=599;align="center";border=1;db=1;dl=1;hidesel=1;z=7}
+)
+/*}}*/
+ 
+//设置每列的表格 名称和宽度
+winform.listview.insertColumn("序号",50) 
+winform.listview.insertColumn("芯片种类",100) 
+winform.listview.insertColumn("芯片编号",100) 
+winform.listview.insertColumn("机台号",100) 
+winform.listview.insertColumn("操作人",100) 
+winform.listview.insertColumn("第一通道",100)
+winform.listview.insertColumn("第二通道",100)  
+winform.listview.insertColumn("最后通道",100) 
+winform.listview.insertColumn("操作时间",100)  
+ 
+import win.ui.tooltip; 
+var tooltipCtrl = win.ui.tooltip( winform );//在窗口上创建tooltip控件 
+tooltipCtrl.addTool(winform.checkbox,"勾选启用自增功能!" )
+tooltipCtrl.addTool(winform.xpbh,"勾选启用自增功能!" )
+ 
+import sqlite
+var conn = sqlite("/customData.db")//打开数据库连接
+ 
+//如果没有则创建一个数据表
+if( not conn.existsTable("工作日志表") ) {  
+    conn.exec( "CREATE TABLE 工作日志表( 芯片种类,芯片编号,机台号,操作人,第一通道,第二通道,最后通道,操作时间);" );
+} 
+ 
+var 只加载当天数据 = function(){
+    winform.listview.clear();
+    var dateStart= tostring(time.now(),"%Y-%m-%d","chs");
+    var dateEnd= tostring(time.now().addday(1),"%Y-%m-%d","chs");
+    //加载当天的数据
+    for rowid,芯片种类,芯片编号,机台号,操作人,第一通道,第二通道,最后通道,操作时间 in conn.each("SELECT rowid,* FROM [工作日志表] where 操作时间 Between '"++dateStart++"' and '"++dateEnd++"'") {
+        winform.listview.addItem({rowid,芯片种类,芯片编号,机台号,操作人,第一通道,第二通道,最后通道,操作时间});
+    }
+    //滚动条运动到最后一条数据位置
+    winform.listview.ensureVisible(winform.listview.count)  
+}
+ 
+var 读取全部数据 = function(){
+    winform.listview.clear();
+    //读取数据库中的已有数据
+    for rowid,芯片种类,芯片编号,机台号,操作人,第一通道,第二通道,最后通道,操作时间 in conn.each("SELECT rowid,* FROM [工作日志表]") {
+        winform.listview.addItem({rowid,芯片种类,芯片编号,机台号,操作人,第一通道,第二通道,最后通道,操作时间});
+    }
+    //滚动条运动到最后一条数据位置
+    winform.listview.ensureVisible(winform.listview.count)  
+}
+ 
+读取全部数据();
+//只加载当天数据();//只显示当天数据,可避免数据多的时候卡顿
+ 
+//使最后一列自适应宽度
+winform.listview.adjust = function(cx,cy){
+    winform.listview.fillParent(winform.listview.columnCount);
+}
+ 
+//预设插入数据指令
+var cmd = conn.prepare("INSERT INTO [工作日志表] VALUES ( @芯片种类,@芯片编号,@机台号,@操作人,@第一通道,@第二通道,@最后通道,@操作时间 );")
+var 插入数据 = function(d1,d2,d3,d4,d5,d6,d7,d8){
+    //插入测试数据, 模拟随机数据
+    cmd.step(
+        芯片种类 = d1;
+        芯片编号 = d2;
+        机台号 = d3;
+        操作人 = d4;
+        第一通道 = d5;
+        第二通道 = d6;
+        最后通道 = d7;
+        操作时间 = d8;
+    );
+    for rowid,芯片种类,芯片编号,机台号,操作人,第一通道,第二通道,最后通道,操作时间 in conn.each("SELECT rowid,* FROM [工作日志表]",{rowid = conn.lastInsertRowid();}) {
+        winform.listview.addItem({rowid,芯片种类,芯片编号,机台号,操作人,第一通道,第二通道,最后通道,操作时间});
+    }
+    winform.listview.ensureVisible(winform.listview.count) 
+}
+ 
+ 
+winform.button.oncommand = function(id,event){
+    //插入测试数据, 模拟随机数据
+    插入数据(
+        "1x8",
+        winform.xpbh.text,
+        winform.jth.text,
+        winform.car.text,
+        string.format("%.02f", -9.58+math.round(math.random(),2)),
+        string.format("%.02f", -9.83+math.round(math.random(),2)),
+        string.format("%.02f", -9.77+math.round(math.random(),2)),
+        time.now()
+    )
+    //是否要自动更新芯片编号
+    if(winform.checkbox.checked){
+        try{
+            var ret = string.match(winform.xpbh.text,"\d+$");
+            var cNum = string.format("%0"++#ret++"s", (tonumber(ret))+1);
+            winform.xpbh.text = string.replace(winform.xpbh.text,"\d+$",cNum );  
+        }
+        catch(e){
+            winform.msgboxErr("编号框里填入的值,结尾不是数字,不能开启自增模式!")
+            winform.checkbox.checked = false;
+        }
+    }
+}
+ 
+winform.datetimepick.setFormat("yyyy'-'MM'-'dd");
+winform.button3.oncommand = function(id,event){
+    //获取筛选日期
+    var datestart = winform.datetimepick.text;
+    //从筛选日期+1天
+    var dateend = tostring(winform.datetimepick.time.addday(1),"%Y-%m-%d","chs");
+    //清空表格
+    winform.listview.clear();
+    //加载筛选日期当天的数据
+    for rowid,芯片种类,芯片编号,机台号,操作人,第一通道,第二通道,最后通道,操作时间 in conn.each("SELECT rowid,* FROM [工作日志表] where 操作时间 Between '"++datestart++"' and '"++dateend++"'") {
+        winform.listview.addItem({rowid,芯片种类,芯片编号,机台号,操作人,第一通道,第二通道,最后通道,操作时间});
+    }
+    winform.listview.ensureVisible(winform.listview.count)
+}
+ 
+winform.button4.oncommand = function(id,event){
+    读取全部数据();
+}
+ 
+//导出数据到excel
+import string.database;
+var strDb = string.database(",");
+var 实时保存数据 = function(path){
+    strDb.save(path,winform.listview.items);
+}
+ 
+import fsys.dlg;
+winform.button2.oncommand = function(id,event){
+    var path = fsys.dlg.save("EXCEL文件|*.csv","数据另存为...","/data",,,(tostring(time.now(),"%Y年%m月%d日","chs"))++".csv");
+    if(path){
+        实时保存数据(path);
+    }
+}
+ 
+winform.show();
+win.loopMessage();
+return winform;

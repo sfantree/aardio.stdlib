@@ -1,0 +1,20 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="注册";right=447;bottom=207;border="dialog frame";exmode="none";max=false;min=false;mode="popup")
+winform.add(
+btnOk={cls="button";text="注册";left=240;top=128;right=376;bottom=168;z=1};
+editUseName={cls="edit";text="aardio";left=56;top=64;right=352;bottom=96;edge=1;multiline=1;z=2}
+)
+/*}}*/
+
+if(mainForm){
+	win.setOwner(winform.hwnd,mainForm.hwnd);
+}
+
+winform.btnOk.oncommand = function(id,event){
+	winform.endModal(winform.editUseName.text)
+}
+
+winform.show();
+win.loopMessage();
+return winform;

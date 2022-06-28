@@ -1,0 +1,52 @@
+//ValueTuple 
+import console;
+import dotNet; 
+ 
+//加载程序集 TestValueTuple.dll 并导入 TestValueTuple 名字空间
+dotNet.import("TestValueTuple");
+
+//直接获取 C# 中的 tupleValue
+var tuple = TestValueTuple.Class1.tupleValue;
+/*
+ValueTuple 要 .Net 4.7 以上才能支持（ Windows 10 1703 开始自带.Net 4.7 ）。
+也可以自行下载 System.ValueTuple.dll 并通过 dotNet.reference() 函数引入，可支持 .Net 4.4 以及更新版本。
+不过如果你用了 ValueTuple 这么新的语法，再去考虑 .Net 4.7 以下的版本是无意义的，毕竟 .Net 4.7 也比较普及了。
+ValueTuple 最多只能有7个元素，使用字段 Item1, Item2, Item3, Item4, Item5, Item6, Item7 访问。
+*/
+console.log(tuple) //调用 tostring(tuple)
+console.log(tuple.Item1) //返回第 1 个元素的值
+console.log(tuple.Item2) //返回第 2 个元素的值
+
+tuple.Item7 = 123; //可以修改值，并不是只读的
+console.log(tuple.Item7) //返回第 7 个元素的值
+
+//那如果有第 8 个元素怎么办呢？通过 Rest 字段放到下一个 ValueTuple 里。
+console.log(tuple.Rest) //调用 tostring(tuple.Rest)
+console.log(tuple.Rest.Item1) //返回第 8 个元素的值
+//实际上你没有必要使用超过 8 个元素的元组。
+
+//在 aardio 中创建 tuple，最多支持 8 个参数
+import System.ValueTuple;
+var tuple = System.ValueTuple.Create(21,22,23,24,25,26,27,28)
+ 
+//遍历 tuple 
+for i,v in System.ValueTuple.each(tuple){
+	console.log(i,v)
+}
+
+console.pause();
+
+//下面是 TestValueTuple.dll 的 C# 源码（DLL 要用 VS 编译，但可以在  aardio 里调用）
+/*
+namespace TestValueTuple
+{
+    public class Class1
+    {
+        public static (double, int, int, int, int, int, int, int, int, int, int) tupleValue = (12.3, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22);
+        public static (double, int) GetTupleValue()
+        {
+            return (12.3, 22);
+        }
+    }
+}
+*/

@@ -1,0 +1,17 @@
+io.open();//打开控制台
+thread.create(
+    function(){
+        sleep(2000)
+        
+        //设置信息
+        thread.set("信号","信号")
+    }
+)
+
+do{
+    io.print("没有收到信号")
+    sleep(200)
+   
+}while(!thread.get("信号"))  //循环条件 判断有无信号，没信号则继续等待
+
+io.print("收到信号，完毕")

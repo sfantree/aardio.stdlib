@@ -1,0 +1,75 @@
+import win.ui;
+import process;
+/*DSG{{*/
+mainForm = ..win.form( bottom=431;parent=...;text="aardio Form";right=306 )
+mainForm.add(
+button2={ bottom=29;right=295;left=231;top=12;z=5;text="关闭窗口";cls="button" };
+listview={ bgcolor=16777215;bottom=425;right=297;left=8;cls="listview";top=35;z=4;gridLines=1;edge=1;fullRow=1 };
+button={ bottom=30;text="开始多开";left=156;top=11;z=3;right=222;cls="button" };
+combobox={ bottom=30;right=147;left=94;top=10;z=2;
+items={ "1";"2";"3";"4";"5" };mode="dropdownlist";edge=1;cls="combobox" };
+static2={ bottom=30;text="多开web窗口:";left=12;right=94;top=12;transparent=1;z=1;cls="static" }
+)
+/*}}*/
+
+mainForm.listview.insertColumn("序号",40,1)
+mainForm.listview.insertColumn("窗口名",80,2)
+mainForm.listview.insertColumn("窗口状态",-1,3)
+
+//打开多个web窗口
+mainForm.button.oncommand = function(id,event){
+        mainForm.button.disabled=1;
+        var 多开数=mainForm.combobox.selText;
+        标题="窗口"
+        for(i=1;多开数;1){
+                var child,wb = mainForm.loadForm(
+                /***
+import win.ui;
+import web.form;
+/*DSG{{*/
+var winform = ..win.form( bottom=533;parent=...;right=755;text="aardio Form";scroll=1 )
+winform.add(  )
+/*}}*/
+
+winform.setPos(0,0)
+
+//创建web窗体
+var wb = web.form( winform
+        ,//可输入_UIFLAG_ 前缀的常量自定义外观
+        ,//可输入_DLCTL_ 前缀的常量以控制下载行为
+        ,//"USER AGENT"
+        );
+
+//打开目标网站
+wb.go("")
+//显示窗体
+winform.show()
+wb.wait("");//等待指定网址,可以使用模式匹配语法
+
+//启动消息循环
+win.loopMessage();
+return winform,wb;
+
+                ***/
+                , mainForm)
+                child.text=标题+'('+tostring(i)+')';
+                child.show();
+                mainForm.listview.addItem({tostring(i);child.text;"打开web成功"});
+        }
+}
+
+//关闭指定窗口
+mainForm.button2.oncommand = function(id,event){
+        当前行=mainForm.listview.selIndex;
+        结束的窗口=mainForm.listview.getItemText(当前行,2,)
+        var hwnd=win.find(,tostring(结束的窗口));
+        win.close(hwnd);
+        mainForm.listview.delItem(mainForm.listview.selIndex);
+        for(i=1;mainForm.listview.count;1){
+                mainForm.listview.setItemText(tostring(i),i,1);
+        }
+}
+
+
+mainForm.show()
+win.loopMessage();

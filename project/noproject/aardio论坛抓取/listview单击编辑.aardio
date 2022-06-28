@@ -1,0 +1,78 @@
+//编辑listview
+
+import win.ui;
+/*DSG{{*/
+var winform = win.form( bottom=244;parent=...;text="aardio Form";right=343 )
+winform.add(
+listview={ bgcolor=16777215;bottom=188;right=311;left=26;cls="listview";top=23;z=1;gridLines=1;edge=1;fullRow=1 };
+static={ bottom=234;color=255;right=325;left=25;top=201;font=LOGFONT( h=-14;weight=700 );transparent=1;text="static";z=2;cls="static" }
+)
+/*}}*/
+
+winform.static.text=/*
+点击单元格开始编辑。按回车键结束编辑。
+listview必须有fullRow=1属性。
+*/
+winform.listview.insertColumn("测试项",80)
+winform.listview.insertColumn("测试项",100)
+winform.listview.insertColumn("测试项",100)
+for(i=1;9;1){
+    winform.listview.addItem({tostring(i);"点我1";"点我2"});
+}
+
+
+winform.listview.onnotify = function(id,code,ptr){
+    if(code==0xFFFFFF4B || code==0xFFFFFF4C){// 滚动
+        if(!winform.editlable || !winform.listview.prepos) return ;
+        pos=winform.listview.prepos;
+        rc=winform.listview.getItemRect(pos.iItem+1,pos.iSubItem+1,,2/*_LVIR_LABEL*/)
+        if(rc.top<10){
+            win.show(winform.editlable.hwnd,false);
+            return ;
+        }
+        rc.top-=3;
+        winform.editlable.setRect(rc);
+        winform.listview.redraw();
+        win.show(winform.editlable.hwnd,true)
+    }
+    if(code = 0xFFFFFFFE){// 双击
+    //if(code=0xFFFFFFFE){// 点击
+        pos=raw.convert(ptr,win.ui.ctrl.listview.NMLISTVIEW());
+        if(pos.iItem<0 || pos.iSubItem<0) return ;
+        rc=winform.listview.getItemRect(pos.iItem+1,pos.iSubItem+1,,2/*_LVIR_LABEL*/)
+        if(winform.editlable){// 更新edit
+            if(winform.editlable.modified && winform.listview.prepos){// 输入框内容变化时
+                winform.listview.setItemText(winform.editlable.text,winform.listview.prepos.iItem+1,winform.listview.prepos.iSubItem+1);
+            }
+            rc.top-=3;
+            winform.editlable.text=winform.listview.getItemText(pos.iItem+1,pos.iSubItem+1);
+            winform.editlable.setRect(rc);
+            winform.listview.redraw();
+            win.show(winform.editlable.hwnd,true);
+        }else {// 创建edit
+            winform.add(
+                editlable = {
+                    cls="edit";font=LOGFONT( weight=700 );bottom=rc.bottom;border=1;right=rc.right;left=rc.left;top=rc.top-3;z=1;text=winform.listview.getItemText(pos.iItem+1,pos.iSubItem+1);id=123;autoResize=false}
+            )
+            // 相应回车键
+            winform.editlable.wndproc = function(hwnd,message,wParam,lParam){
+                if(message == 0x101/*_WM_KEYUP*/ && wParam == 0xD/*_VK_RETURN*/){// 按下了回车键，更新listview数据
+                    winform.listview.setItemText(winform.editlable.text,winform.listview.prepos.iItem+1,winform.listview.prepos.iSubItem+1);
+                    win.show(winform.editlable.hwnd,false)
+                }
+                //无返回值则继续调用默认回调函数
+            }
+            // 设置父窗口
+            win.setParent(winform.editlable.hwnd,winform.listview.hwnd);
+        }
+        winform.listview.prepos=pos;// 记录位置
+        win.setFocus(winform.editlable.hwnd);// 获取焦点
+        
+        //点击单元格后自动全选
+        winform.editlable.selectAll();
+    }
+     
+}
+
+winform.show()  
+win.loopMessage();

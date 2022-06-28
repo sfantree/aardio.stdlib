@@ -1,0 +1,30 @@
+import console;
+import process;
+import inet.http;
+import inet;
+
+
+var http = inet.http();
+inet.setCookie("http://127.0.0.1", "MTYyMzE1NDMxM3xWemdzekZRRlJnbGlYTURTZFgtMWFING0xU3FDd0FUeWdJMWdvYkROd2drVmxIX0kyT1lKbElDQWVHU2liUDZBWXc9PXz9U43JzvYhHBEAb9-8gjpy5tDhPie3sjrqsrFk8HhV1w==", "session");
+
+var html,err,errCode = http.get( "http://127.0.0.1:8000/internal?" );
+http.close();
+
+if( html ){
+    //string.save("/test.html",html )
+    //process.execute( "/test.html" );
+    console.log( html );
+}
+else {
+    if( http.statusCode ){
+        //服务端返回错误信息
+        console.log( http.lastResponse(), "HTTP错误代码:" + http.statusCode )
+    }
+    else{
+        //本地内部错误
+        console.log( err,errCode );
+    }
+    
+}
+
+console.pause();

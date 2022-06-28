@@ -1,0 +1,55 @@
+﻿//调用 PowerShell
+import win;
+import console;
+import dotNet.ps;
+
+/*
+dotNet.ps 在当前进程运行 PowerShell，
+aardio / .Net(C#) / PowerShell 共享应用程序域，并共享导入的 .Net 程序集与类型。
+*/
+var compiler = dotNet.createCompiler("C#");  
+compiler.Source = /****** 
+namespace CSharpLibrary
+{ 
+    public class Object
+    {
+        //定义一个委托类型
+        public delegate int TestDelegateType(string str,int a);
+        
+        //定义一个事件
+        public event TestDelegateType onTestEvent; 
+  	     
+        public int Test()
+        {   
+            return onTestEvent("你好",123);
+  	    }
+  	    
+  	    //PowerShell 5 不需要加这个函数
+  	    public static Object New(){return new Object(); }
+    }
+}
+******/
+compiler.import("CSharpLibrary"); //编译 C# 代码并导入名字空间
+
+var out,err = dotNet.ps( `
+param($win) # 声明参数，类似 aardio 中 $win = ...
+
+#PowerShell 里 :: 表示访问类的静态成员，New 用于创建对象
+$obj = [CSharpLibrary.Object]::New() #低于 PowerShell 5 需要在类里增加 New 函数或改用 New-Object
+
+# 添加事件，注意下面方括号里是强制类型转换
+$obj.add_onTestEvent( {
+	param($str,$a) # 声明参数
+	
+	# PowerShell 会把所有语句的默认输出塞进返回值，改为赋值语句可避免这个问题
+	$temp = $win.InvokeMember("msgbox","事件被回调了",$str)
+	
+	# return 语句只能改最后一个返回值，与其他语言有较大区别
+	return $a 
+})
+
+$obj.Test()
+`,{win = dotNet.ps.export(win)});
+
+console.log(out,err);
+console.pause(true);

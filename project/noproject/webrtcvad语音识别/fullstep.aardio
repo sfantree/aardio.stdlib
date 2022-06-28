@@ -1,0 +1,255 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=735;bottom=151)
+winform.add(
+btnOpen={cls="button";text="打开文件";left=32;top=88;right=138;bottom=123;z=2};
+button={cls="button";text="Button";left=160;top=88;right=272;bottom=120;font=LOGFONT(name='宋体');z=4};
+edit={cls="edit";left=464;top=80;right=696;bottom=120;edge=1;multiline=1;z=3};
+editPath={cls="edit";left=32;top=32;right=696;bottom=64;edge=1;multiline=1;z=1}
+)
+/*}}*/
+
+import fsys.dlg;
+import process;
+
+/* */
+//winform.
+/* */
+
+winform.btnOpen.oncommand = function(id,event){
+	var path = fsys.dlg.open('所有文件|*.*||',,,winform);
+	if(path){
+		winform.editPath.text = path;
+	}
+}
+
+var transCodec = function () {
+    // ffmpeg -y -i 16k.wav -vn -acodec pcm_s16le -f s16le -ac 1 -ar 16000 16k.pcm
+    var ffmpegBin = "D:\dmMediaConverter\bin\i386-win32\ffmpeg.exe";
+    var inputFileName = winform.editPath.text;
+    var outputFileName = fsys.getFileName(inputFileName) + ".pcm"
+    var outputFullpath = fsys.joinpath(fsys.getTempDir(), outputFileName);
+    var cmdString = string.format("%s -y -i %s -vn -acodec pcm_s16le -f s16le -ac 1 -ar 16000 %s", ffmpegBin, inputFileName, outputFileName)
+    process.executeWait(cmdString);
+}
+
+var transCodec_test = function () {
+    // ffmpeg -y -i 16k.wav -vn -acodec pcm_s16le -f s16le -ac 1 -ar 16000 16k.pcm
+    var ffmpegBin = "D:\dmMediaConverter\bin\i386-win32\ffmpeg.exe";
+    var inputFileName = "‪E:\BaiduNetdiskDownload\斌魔战队迷踪完整版\迷踪一击必杀：听懂一节课你将明白什么聊天【更多情感课程+VX：DS857333】.mp3";
+    var outputFileName = fsys.getFileName(inputFileName) + ".pcm"
+    var outputFullpath = fsys.joinpath(fsys.getTempDir(), outputFileName);
+    var cmdString = string.format('"%s" -y -i "%s" -vn -acodec pcm_s16le -f s16le -ac 1 -ar 16000 "%s"', ffmpegBin, inputFileName, outputFileName)
+    //console.log(cmdString);
+    process.executeWait(cmdString);
+    winform.msgbox("ahah");
+    //
+}
+
+var getNowTimeString = function(){
+	import time;
+	var tm = time.now();
+	tm.format = "%Y%m%d_%H%M%S";
+	return tostring(tm);
+}
+
+// voiceFilePath pcm文件路径
+var baiduASR = function(voiceFilePath){
+	//import console; 
+
+	//https://ai.baidu.com/ai-doc/SPEECH/Vk38lxily
+	
+	
+	var API_KEY = 'kVcnfD9iW2XVZSMaLMrtLYIz'
+	var SECRET_KEY = 'O9o1O213UgG5LFn0bDGNtoRN3VWl2du6'
+	var CUID = '123456PYTHON'
+	var RATE = 16000
+	var DEV_PID = 1537 // 1537 表示识别普通话，使用输入法模型。根据文档填写PID，选择语言及识别模型
+	var ASR_URL = 'http://vop.baidu.com/server_api'
+	var SCOPE = 'audio_voice_assistant_get' 
+	var TOKEN_URL = 'http://openapi.baidu.com/oauth/2.0/token'
+	
+	import web.rest.jsonLiteClient;
+	
+	var http = web.rest.jsonLiteClient(); 
+	var baidu_auth = http.api("http://openapi.baidu.com/oauth/2.0/token");
+	
+	// fetch_token
+	
+	/*
+	params = {'grant_type': 'client_credentials',
+              	'client_id': API_KEY,
+              	'client_secret': SECRET_KEY}
+	*/
+	var jsonData = baidu_auth.post(
+		grant_type = "client_credentials";
+		client_id = API_KEY;
+		client_secret = SECRET_KEY;
+	)
+	//console.log( jsonData[["access_token"]] );
+	var tokenString = jsonData[["access_token"]];
+	//console.dump(tokenString);
+	
+	
+	
+	import crypt.bin;
+	import fsys;
+	//var voiceFilePath = "G:\chromedl\aardio\project\noproject\webrtcvad\output\16k_1.pcm_12990-23729_A.pcm";
+	if(not io.exist(voiceFilePath)) {
+    	console.pause(true);
+	}
+	var voiceFileExt = fsys.getExtensionName(voiceFilePath);
+	//console.dump(voiceFileExt);
+	var voiceFileLength = #(string.load(voiceFilePath));
+	//console.dump(voiceFileLength);
+	var voiceFileBase64 = crypt.bin.encodeBase64( string.load(voiceFilePath) ) 
+	//console.dump(voiceFileBase64);
+	
+	/*
+	https://github.com/Baidu-AIP/speech-demo/blob/master/rest-api-asr/python/asr_json.py
+	params = {'dev_pid': DEV_PID,
+             	#"lm_id" : LM_ID,    #测试自训练平台开启此项
+              	'format': FORMAT,
+              	'rate': RATE,
+              	'token': tokenString,
+              	'cuid': CUID,
+              	'channel': 1,
+              	'speech': speech,
+              	'len': length
+              	}
+	*/
+	var restClient = web.rest.jsonLiteClient(); 
+	var postTable = {
+		dev_pid = DEV_PID;
+		format = voiceFileExt;
+		rate = RATE;
+		token = tokenString;
+		cuid = CUID;
+		channel = 1;
+		speech = voiceFileBase64;
+		len = voiceFileLength;
+	}
+	var postJsonString = web.json.stringify(postTable)
+	var jsonData = restClient.post(ASR_URL, postJsonString) 
+	
+	//console.dump(jsonData[["result"]][[1]]);
+	return jsonData[["result"]][[1]];
+}
+
+
+
+
+
+import fsys;
+import process;
+import console;
+
+winform.button.oncommand = function(id,event){
+	// 1. 待转码的 媒体文件 转 pcm格式
+	var FFmpegBin = "D:\dmMediaConverter\bin\i386-win32\ffmpeg.exe";
+	var InputFileName = "E:\BaiduNetdiskDownload\斌魔战队迷踪完整版\迷踪一击必杀：听懂一节课你将明白什么聊天【更多情感课程+VX：DS857333】.mp3";
+
+    //winform.msgbox(io.exist(InputFileName))
+    
+    // 绝对路径
+    var OutputFileName = string.format("%s.pcm", fsys.joinpath(fsys.getTempDir(), fsys.getFileName(InputFileName))   )
+	// winform.msgbox(outputFileName);
+	//var cmdString = string.format('"%s" -y -i "%s" -vn -acodec pcm_s16le -f s16le -ac 1 -ar 16000 "%s"', FFmpegBin, InputFileName, OutputFileName)
+    var parameterString = string.format(' -y -i "%s" -vn -acodec pcm_s16le -f s16le -ac 1 -ar 16000 "%s"', InputFileName, OutputFileName)
+    //winform.msgbox(cmdString);
+	//console.log(cmdString);
+	
+	// process.execute的一个坑 命令行中可执行文件和参数要分开
+	var pid = process.executeWait(FFmpegBin, parameterString);
+	//var pid = process.execute(FFmpegBin);
+	//winform.msgbox(pid);
+	
+	
+	// 2. VAD分割 一个pcm -> 多个pcm
+	
+	var nowtime = getNowTimeString();
+	var vadOutputDir = fsys.joinpath(fsys.getTempDir(), nowtime);
+	
+	
+	if(not io.exist(vadOutputDir)) {
+	    fsys.createDir(vadOutputDir, true)
+	}
+	winform.edit.print((vadOutputDir));
+	
+	var dll = raw.loadDll( "/libspeech_vad_demo.dll" );
+	var main1 = dll.api( "main1","int(string, string, string)", "cdcel" );
+	
+	var filename = OutputFileName;
+	var filename_ansi = string.fromto( filename );
+	
+	var output_filename_prefix = "16k_1.pcm";
+	var output_filename_prefix_ansi = string.fromto( output_filename_prefix );
+	
+	var output_dir = vadOutputDir;
+	var output_dir_ansi = string.fromto( output_dir );
+	
+	var result = main1(filename_ansi, output_filename_prefix_ansi, output_dir_ansi);
+	
+	
+	// 3.遍历vadOutputDir的所有文件
+	var pcmFilenames = {};
+	fsys.enum( vadOutputDir, "*.pcm",
+		function(dir,filename,fullpath,findData){ 
+			if(filename){
+				 table.push(pcmFilenames, fullpath);
+	           	//winform.edit.printf('%s\n', filename)
+	        }
+		},
+		false
+	);
+	
+	// 以时间顺序 排序拆分文件
+	table.sort(pcmFilenames, function(filename){
+			var a = ..string.match(owner,"16k_1.pcm_(\d+)-\d+_A.pcm");
+		    var b = ..string.match(filename,"16k_1.pcm_(\d+)-\d+_A.pcm");
+		    return tonumber(a,10) < tonumber(b,10);  
+		});
+	
+	//console.dump(pcmFilenames)
+	
+	var OutputResultTxt = string.format("%s.txt", OutputFileName);
+	if(not io.exist(OutputResultTxt)) {
+	    string.save("", OutputResultTxt);
+	}
+	
+	//var file = io.open(OutputResultTxt, "a+t");
+			
+	/*
+	for(i=1;#args;1){
+			file.write( ..string.crlf(args[i]),'\t');
+		}
+		file.write('\n');
+*/
+	
+	
+	
+	for(i=1; #pcmFilenames;1){
+		//winform.edit.printf('%s\n', pcmFilenames[i])
+		var detectResult = baiduASR(pcmFilenames[i]);
+		//winform.edit.print(detectResult);
+		console.dump(i);
+		console.dump(detectResult);
+		//var writeStr = string.format("%d\n\%s\n", i, detectResult)
+		//file.write( writeStr );
+	}
+	
+	//file.close();
+	
+}
+
+winform.edit.oncommand = function(id,event){
+	
+}
+
+winform.editPath.oncommand = function(id,event){
+	
+}
+
+winform.show();
+win.loopMessage();
+return winform;

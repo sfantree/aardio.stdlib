@@ -1,0 +1,6 @@
+﻿import dotNet;
+dotNet.import("System.Collections","mscorlib")
+
+/**intellisense()
+System.Collections = .Net System.Collections 名字空间\n!dotNetNameSpace.
+end intellisense**/

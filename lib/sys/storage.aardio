@@ -1,0 +1,173 @@
+//storage 存储设备
+import fsys.file;
+import fsys.drives;
+
+namespace sys.storage;
+ 
+queryProperty = function(devicePath){
+    if(devicePath===null){
+        for(i=0;4;1){
+            var p = queryProperty(i);
+            if( p ) return p;
+        }
+        return;
+    }
+    elseif( type(devicePath) == type.number ){
+    	devicePath = ..string.format( "\\.\PhysicalDrive%d",devicePath);
+    }
+    elseif(! ..string.match(devicePath,"\\\\\p\\") ){
+        devicePath = "\\.\" + devicePath;
+    }
+    
+    var file = ..fsys.file(devicePath,0);
+    if (!file) return; 
+    
+    var query = {
+        INT propertyId;//_StorageDeviceProperty
+        INT queryType;//_PropertyStandardQuery
+        BYTE additionalParameters[1];  
+    }
+     
+    var descriptor = {  
+        INT version; 
+        INT size; 
+        BYTE deviceType; 
+        BYTE deviceTypeModifier; 
+        BYTE removableMedia; 
+        BYTE commandQueueing; 
+        addr vendorIdOffset; 
+        addr productIdOffset;  
+        addr productRevisionOffset; 
+        addr serialNumberOffset; 
+        int busType; 
+        INT rawPropertiesLength;   
+        BYTE rawDeviceProperties[]={length=1};
+      } 
+
+    if (file.deviceIoControl( 0x002d1400/*IOCTL_STORAGE_QUERY_PROPERTY*/,query,descriptor))  {
+     
+        var buffer = ..raw.buffer(descriptor.size); 
+        file.deviceIoControl( 0x002d1400/*IOCTL_STORAGE_QUERY_PROPERTY*/ ,query,buffer);
+        
+        descriptor.rawDeviceProperties.length = descriptor.rawPropertiesLength : 1;
+        ..raw.convert(buffer,descriptor); 
+        
+        var trim = function(n){
+            if( n <= 0 ) return;
+            var s = ..raw.str(buffer,,n);
+            if( s ) return ..string.trim(s);
+        }
+
+    	with(descriptor){
+    	    isUsbDevice = busType == 7/*_BusTypeUsb*/;
+    		devicePath = devicePath;
+        	vendorId = trim(vendorIdOffset);
+        	productRevision = trim(productRevisionOffset);
+        	productId = trim(productIdOffset);
+        	serialNumber = trim(serialNumberOffset); 
+        	if(#serialNumber==8){
+        		var s = {};
+   				for(i=1;8;2) ..table.push(s,serialNumber[i+1],serialNumber[i]); 
+   				serialNumber = ..string.pack(s);
+        	}
+        }
+    }
+    
+    file.close();
+    return descriptor;             
+}
+
+isUsbDevice = function(devicePath){
+	return queryProperty(devicePath)[["isUsbDevice"]];
+}
+
+getDeviceNumber = function(devicePath){
+    if( type(devicePath) != type.string ) error("请指定设备名或盘符",2);
+    
+    if( ..string.startWith(devicePath,"\Device\",true) ) devicePath = ..string.replace(devicePath,"^\\Device\\","\\\\.\\"); 
+    if(! ..string.match(devicePath,"\\\\\p\\") ){
+        devicePath = "\\.\" + devicePath;
+    }
+
+    var file = ..fsys.file(devicePath,0 ); 
+    if (!file) return; 
+ 
+    var deviceNumber = { 
+        int deviceType; 
+        INT deviceNumber;   
+        INT partitionNumber;
+    }
+    var ret = file.deviceIoControl(0x002d1080/*IOCTL_STORAGE_GET_DEVICE_NUMBER*/
+        ,null,deviceNumber)
+    file.close();
+    
+    if( ret ) return deviceNumber;
+}
+
+getDevices = function(flat,usb){
+	var ds = {};
+	for ld in ..fsys.drives.each() {
+		var inf = getDeviceNumber(ld);
+		if(!inf) continue;  
+		if(usb && (!isUsbDevice(inf.deviceNumber) ) ) continue;
+		
+		if(! ds[inf.deviceNumber] ) ds[inf.deviceNumber] = {ld};
+		else ..table.push(ds[inf.deviceNumber] ,ld) ;	
+	}
+	
+	if(flat){
+		var r = {}
+		for(i,d in ds) ..table.append(r,d);
+		..table.sort(r);
+		return r;
+	}
+	return ds;
+}
+
+getUsbDevices = lambda(flat) getDevices(flat,true);
+
+/**intellisense()
+sys.storage = 存储设备属性\n不需要管理权限
+sys.storage.getUsbDevices( = 返回 U盘 分区
+sys.storage.getUsbDevices(.(true) = 返回 U盘 分区盘符数组
+sys.storage.getUsbDevices(.() = 返回U盘分区列表，\n键为 U盘 设备序号,值为该 U盘 建立的所有分区盘符数组。\n注意设备序号不一定是连续的数值。
+sys.storage.getDevices( = 返回硬盘分区
+sys.storage.getDevices(.(flat,isUsb) = 返回硬盘分区,所有参数都可省略。\n\n如果 @flat 参数为 true 则返回分区盘符数组,\n否则返回硬盘分区列表,键为设备序号,值为该设备创建的分区盘符数组。\n注意设备序号不一定是连续的数值。\n\n@isUsb 如果为 true，则仅返回 USB 设备创建的分区
+sys.storage.queryProperty(.("设备路径) = 可指定设备名、分区盘符、存储设备序号等\n如果不指定参数则自动获取硬盘设备路径
+sys.storage.isUsbDevice(.("设备路径) = 检测是否 U盘,\n参数可指定设备名、分区盘符、存储设备序号等
+sys.storage.queryProperty() = !sysStorageProperty.
+!sysStorageProperty.serialNumber = 序列号
+!sysStorageProperty.productRevision = 产品版本
+!sysStorageProperty.isUsbDevice = 是否 USB 设备
+!sysStorageProperty.productId = 产品ID
+!sysStorageProperty.vendorId = 厂商ID
+!sysStorageProperty.deviceType = 设备类型  
+!sysStorageProperty.deviceTypeModifier = SCSI-2额外的设备类型  
+!sysStorageProperty.removableMedia = 是否可移动  
+!sysStorageProperty.commandQueueing = 是否支持命令队列  
+!sysStorageProperty.busType = 总线类型\n使用 _BusType 前缀常量\n例如U盘是 _BusTypeUsb,其值为7
+sys.storage.getDeviceNumber(.("设备名") = 参数指定分区设备名,或直接指定盘符\n返回存储设备序号
+sys.storage.getDeviceNumber() = !sysStorageDeviceNumber.
+!sysStorageDeviceNumber.deviceType = 类型\n使用 _FILE_DEVICE_ 前缀常量
+!sysStorageDeviceNumber.deviceNumber = 设备序号
+!sysStorageDeviceNumber.partitionNumber = 分区序号
+end intellisense**/
+
+ /**intellisense()
+_BusTypeUnknown=@0/*_BusTypeUnknown*/
+_BusTypeScsi=@1/*_BusTypeScsi*/
+_BusTypeAtapi=@2/*_BusTypeAtapi*/
+_BusTypeAta=@3/*_BusTypeAta*/
+_BusType1394=@4/*_BusType1394*/
+_BusTypeSsa=@5/*_BusTypeSsa*/
+_BusTypeFibre=@6/*_BusTypeFibre*/
+_BusTypeUsb=@7/*_BusTypeUsb*/
+_BusTypeRAID=@8/*_BusTypeRAID*/
+_BusTypeMaxReserved=@0x7F/*_BusTypeMaxReserved*/
+_PropertyStandardQuery=@0/*_PropertyStandardQuery*/
+_PropertyExistsQuery=@1/*_PropertyExistsQuery*/
+_PropertyMaskQuery=@2/*_PropertyMaskQuery*/
+_PropertyQueryMaxDefined=@3/*_PropertyQueryMaxDefined*/
+_StorageDeviceProperty=@0/*_StorageDeviceProperty*/
+_StorageAdapterProperty=@1/*_StorageAdapterProperty*/
+end intellisense**/

@@ -1,0 +1,128 @@
+﻿//nat 自动端口映射
+import com;
+import wsock.tcp.client; 
+
+namespace sys.upnp;
+
+class nat{
+	ctor(){
+		this.natter = ..com.TryCreateObject("HNetCfg.NATUPnP") 
+	}; 
+	valid = function(){
+		return !!(this.natter && this.natter.StaticPortMappingCollection);
+	};
+	each = function(){ 
+		if( !this.valid() ) return function(){}
+		return ..com.each(this.natter.StaticPortMappingCollection);
+	};
+	item = function(externalPort,protocol){
+		if( !this.valid() ) return null;
+		
+		var mappingPort;
+		try{
+			mappingPort = this.natter.StaticPortMappingCollection.getItem(2024,protocol : "TCP")	
+		}
+		
+		return mappingPort;
+	};
+	count = function(){
+		if( !this.valid() ) return 0;
+		return this.natter.StaticPortMappingCollection.Count;
+	};
+	getTable = function(){
+		
+		var tab = ..table.array();
+		if( !this.valid() ) return tab;
+		
+		for i,m in this.each() {
+			 ..table.push(tab,{
+			 	protocol = m.protocol,
+			 	description = m.description,
+			 	externalPort = m.externalPort,
+			 	externalIPAddress = m.externalIPAddress,
+			 	internalPort = m.internalPort,
+			 	internalClient = m.internalClient,
+			 	enabled = m.enabled,
+			 	comObject = m;
+			 })
+		} 
+		
+		return tab;
+	}; 
+	add = function(externalPort,protocol,internalPort,internalClient,description){
+		if( !this.valid() ) return;
+
+		var mappingPort,err;
+		
+		try{
+			mappingPort = this.natter.StaticPortMappingCollection.Add(externalPort
+				,protocol:"TCP",internalPort:externalPort,
+				internalClient : ..wsock.tcp.client.getLocalIp(),
+				true,
+				description:""
+			);
+		} 
+		catch(e){
+			err = e;
+		}
+		
+		return mappingPort,err;
+	};
+	remove = function(externalPort,protocol){
+		if( !this.valid() ) return;
+		
+		var succeeded,err;
+		try{
+			this.natter.StaticPortMappingCollection.Remove(externalPort,protocol : "TCP");
+			succeeded = true;
+		}
+		catch(e){
+			err = e;
+		}
+		
+		return succeeded,err;
+	};
+	close = function(){
+		if(this.natter){
+			..com.Release(this.natter);
+			this.natter = null;
+		}
+	};
+}
+
+//https://docs.microsoft.com/en-us/windows/win32/api/natupnp/nn-natupnp-iupnpnat
+/**intellisense()
+sys.upnp = 通用即插即用 Universal Plug and Play
+sys.upnp.nat = Network Address Translation 自动端口映射
+sys.upnp.nat() = 创建 UPnP 自动端口映射管理器,\n如果设备不支持自动端口映射或连接到受限的访客网络则所有函数忽略不执行,\n注意在XP系统上此对象的所有函数也会忽略不执行\n!sysUpnpNat.
+end intellisense**/
+
+/**intellisense(!sysUpnpNat)
+valid() = 检测当前系统以及路由器是否支持 UPnP 自动端口映射,\n注意连接到路由器设置受限的访客网络也可能不支持 UPnP
+item(.(externalPort,protocol) = 获取指定的端口映射对象,\n@externalPort 用一个数值指定外网端口,\n@protocol 用一个字符串指定网络协议,省略则为"TCP"
+item() = !sysUpnpNatMappingPort.
+each() = @for index,mappingPort in ??.each() {\n	\n}\n!sysUpnpNatMappingPort.
+getTable() = 返回所有端口映射数据为一个数组，\n每个数组成员为包含以下字段的普通表对象：\nprotocol 协议,\ndescription 描述,\nexternalPort 外部端口,\nexternalIPAddress 外网地址,\ninternalPort 内网端口,\ninternalClient 内网地址,\ncomObject 此映射对象的 COM 对象
+count = 返回端口映射对象总数
+add( = 添加端口映射,\n成功返回端口映射对象,失败返回null,\n如果指定外网端口已映射到其他主机,则添加该端口会失败,\n如果添加之前已映射到本机的端口则会成功
+add(.(externalPort,protocol,internalPort,internalClient,description) = 添加端口映射,\n除参数 @1 以外，所有参数都是可选参数,\n全部参数如下：\n@externalPort 外网端口,数值,\n@protocol 网络协议,默认为"TCP"\n@internalPort 内网端口,默认与外端端口相同,数值\n@internalClient 内网地址,默认获取本机联网的网卡IP地址,字符串值\n@description 描述,默认为空字符串
+add() = !sysUpnpNatMappingPort.
+remove(.(externalPort,protocol) = 移除指定的端口映射对象,成功返回 true,\n@externalPort 用一个数值指定外网端口,\n@protocol 用一个字符串指定网络协议,省略则为"TCP"
+close() = 关闭对象,一般可省略
+end intellisense**/
+
+/**intellisense(!sysUpnpNatMappingPort)
+description = 描述
+editDescription(__) = 设置描述,参数应为字符串
+internalClient = 内网IP地址或主机名
+editInternalClient(__) = 设置内网IP地址或主机名,参数应为字符串
+editInternalPort(__) = 设置内网端口,参数应为数值
+enabled = 是否启用\n注意这是只读属性,\n修改此属性应当调用 enable 函数
+enable(__) = 设置是否启用,即修改 enabled 属性的值,\n参数可为 true 或 false
+externalIPAddress = 外网 IP 地址
+externalPort = 外网端口
+internalPort = 内网端口
+protocol = 网络协议
+end intellisense**/
+
+//https://docs.microsoft.com/en-us/windows/win32/api/natupnp/nn-natupnp-istaticportmapping

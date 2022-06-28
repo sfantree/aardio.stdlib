@@ -1,0 +1,39 @@
+//ATL嵌入控件
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="Microsoft.Ink 手写识别";right=811;bottom=689)
+winform.add(
+edit={cls="edit";left=11;top=629;right=801;bottom=679;db=1;dl=1;dr=1;edge=1;multiline=1;z=2};
+inkEdit={cls="atlax";text="InkEd.InkEdit";left=9;top=9;right=803;bottom=624;db=1;dl=1;dr=1;dt=1;edge=1;transparent=1;z=1}
+)
+/*}}*/
+
+/*
+1、拖一个 custom 控件放到界面上,控件类名改为"atlax"
+2、然后在 atlax 控件的文本属性中指定要创建的 COM 类名为 "InkEd.InkEdit"
+*/
+if( "IInkEdit" == winform.inkEdit.getControlTypeName() ){
+	var inkEdit = winform.inkEdit.getControl(); 
+	inkEdit.Enabled=true; //启用
+	inkEdit.UseMouseForInput=true;//允许鼠标输入
+	inkEdit.BackColor=0xDCF8FF; //背景色
+	inkEdit.RecognitionTimeout=1000 //识别速度,写的快这个值可以改小
+	inkEdit.InkMode=inkEdit.IEM_InkAndGesture;//收集墨迹和手势
+	inkEdit.InkInsertMode=0  //文本模式
+	inkEdit.Locked=false;//关闭只读
+	inkEdit.SelFontName="Tahoma"; //字体
+	inkEdit.SelFontSize=12; //文字大小
+	inkEdit.SelInksDisplayMode = 1
+	
+	inkEdit.Change = function(){
+		winform.edit.text = inkEdit.Text;
+	}
+}
+else {
+    var wb = winform.inkEdit.getControl();
+	wb.Navigate("about:当前系统不支持Microsoft Ink")
+}
+
+winform.show() 
+win.loopMessage(); 
+

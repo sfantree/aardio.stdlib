@@ -1,0 +1,63 @@
+// 图片加水印
+
+import console;
+//import inet.whttp
+import gdip;     
+import win
+
+//http=inet.whttp()
+
+function imgEdit(codeText){
+        var bmp = gdip.bitmap("/cat.jpg");
+        //图形对象graphics(可以看作是画板)
+        var graphics = gdip.graphics(  bmp )
+
+        //创建刷子
+        var brush = gdip.solidBrush(0xFF000000);
+        var brush1 = gdip.solidBrush(0xFFFFFFFF);
+        //用刷子填充矩形内部  
+        //graphics.fillRectangle( brush1, 1, 1, 100, 25 )
+        
+        //创建FontFamily
+        var family = gdip.family("微软雅黑");
+        
+        //创建stringFormat
+        var strformat = gdip.stringformat ( );
+        
+        //设置样式
+        strformat.align = 0/*_GdipStringAlignmentNear*/;
+        
+        //创建Font
+        var curFont = family.createFont(  25,2/*_GdipFontStyleItalic*/, 2/*_GdipUnitPixel*/)
+        
+        //设置文字抗据齿
+        graphics.smoothingMode = 4/*_GdipSmoothingModeAntiAlias*/ ;
+        
+        //消除走样,且边作平滑处理
+        graphics.textRenderingHint = 3/*_GdipTextRenderingHintAntiAliasGridFit*/;
+
+        //设置文字区域
+        rclayout = gdip.RECTF();
+        rclayout.x = 1
+        rclayout.y = 1
+        rclayout.width = 310 //在这里指的是宽度
+        rclayout.height = 155 //在这里指的是高度
+               
+        graphics.drawString( codeText  , curFont
+        , rclayout, strformat,brush);
+        
+        bmp.save("/codeText.jpg", 100)
+
+
+        //删除所有GDI+对象   
+        brush.delete()
+        curFont.delete()
+        strformat.delete();
+        family.delete();
+        bmp.dispose();
+        graphics.delete();
+}
+
+imgEdit("猫猫")
+
+console.pause(true);

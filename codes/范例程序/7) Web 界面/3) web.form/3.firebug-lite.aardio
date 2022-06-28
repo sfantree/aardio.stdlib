@@ -1,0 +1,71 @@
+//Firebug Lite
+import win.ui;
+/*DSG{{*/
+winform = win.form(text="请稍候正在加载 firebug-lite.js...... CDN 服务器较慢,建议先下载到本地";right=1095;bottom=687)
+winform.add()
+/*}}*/
+
+import web.form;
+var wb = web.form(winform);
+
+wb.onDocumentReady = function(url,mainFrameJSState,frameJSState){
+    winform.text = "firebug-lite.js 已加载，请按 F12 试一试!"
+}
+ 
+
+wb.html = /**
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <script src="https://cdn.jsdelivr.net/gh/aardio/firebug-lite@1.4.1/build/firebug-lite.js#startOpened"></script>
+</head>
+<body>
+    <div id="header">现在主流的浏览器都提供开发工具，都可以通过按F12打开开发工具非常方便</div>
+    <div id="container">
+        在 web.form 里只要简单的在代码中加上下面的代码也可以启动一个简单的开发工具：<br><br>
+        <xmp>
+        <script src="https://cdn.jsdelivr.net/gh/aardio/firebug-lite@1.4.1/build/firebug-lite.js#startOpened"></script>
+    	</xmp>
+    </div>
+</body>
+</html>
+**/
+
+winform.show();
+win.loopMessage();
+
+/*
+firebug lite支持的参数如下：
+	saveCookies - false
+	startOpened - false
+	startInNewWindow - false
+	showIconWhenHidden - true
+	overrideConsole - true
+	ignoreFirebugElements - true
+	disableXHRListener - false
+	disableWhenFirebugActive - true
+	enableTrace - false
+	enablePersistent - false
+
+可以直接写在js网址后面，多个参数用逗号分开，例如：
+	path/to/firebug-lite.js#enableTrace=true,overrideConsole=false
+
+只写选项不写值默认就是(true)例如:
+	path/to/firebug-lite.js#enableTrace,overrideConsole=false
+
+也可以这样写：
+	<script type="text/javascript"
+	src="https://gcore.jsdelivr.net/gh/aardio/firebug-lite@1.4.1/build/firebug-lite.js">
+	{
+    	overrideConsole: false,
+    	startInNewWindow: true,
+    	startOpened: true,
+    	enableTrace: true
+	}
+	</script>
+	
+注意：
+	不要改为压缩版 firebug-lite.min.js，这个JS压缩后会出错
+*/

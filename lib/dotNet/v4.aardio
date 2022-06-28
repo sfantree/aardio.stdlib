@@ -1,0 +1,57 @@
+﻿//v4 运行时
+import dotNet.version;
+
+class dotNet.v4{
+	ctor(){ 
+		var fw = ..dotNet.version.getFrameworks("^v4!\D"); 
+		if( ..table.next(fw) ){
+			import ..dotNet;
+			return true;
+		}
+		
+		return false;
+	}; 
+}
+
+if(!dotNet.v4()){
+    import inet.installer;
+    
+    //https://docs.microsoft.com/zh-cn/dotnet/framework/get-started/system-requirements
+    if(_WIN7_LATER){ //WIN7 SP1 
+    	if(!inet.installer(" .NET Framework 4.8"
+        	,"https://go.microsoft.com/fwlink/?linkid=2088631"
+        	,"/passive /norestart"
+    	)) {
+    		
+    	}   
+    }
+    else{
+    	var dll = ..raw.loadDll("msi.dll");
+		var v = {
+  			INT cbSize = 20;
+  			INT major;
+  			INT minor;
+  			INT build;
+  			INT platformId;
+		}
+		dll.DllGetVersion(v);
+		
+		if(v.major<3 || (v.major==3 && v.minor<1) ){
+			error("系统至少要安装 Windows Installer 3.1 或以上版本",2)
+		}
+
+    	if(!inet.installer(" .NET Framework 4.0"
+        	,"http://download.microsoft.com/download/5/6/2/562A10F9-C9F4-4313-A044-9C94E0A8FAC8/dotNetFx40_Client_x86_x64.exe"
+        	,"/passive /norestart"
+    	)) {
+    		return;
+    	}
+    	
+    	dotNet.v4(); 
+    }
+}
+
+/**intellisense()
+dotNet.v4 = 导入此库，如果 .Net v4.x 未安装则自动安装。\n如果 .Net 4.x 已安装，则自动导入 dotNet 库。\n导入其他 dotNet 库前导入此库才能修改默认运行时版本为 4.0。\n注意 .NET 3.5的运行时是 v2.0，.Net 4.5 的运行时是 v4.0，\nWin7 自带 .NET2.0 运行时，Win10 自带 .NET4.0 运行时。\n获取系统已安装 .Net 版本信息请使用标准库 dotNet.version
+dotNet.v4() = 如果已成功安装 .Net 4.x 则返回 true
+end intellisense**/

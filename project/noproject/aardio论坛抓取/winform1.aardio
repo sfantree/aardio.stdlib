@@ -1,0 +1,12 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=159;bottom=159;bgcolor=255;border="none")
+winform.add()
+/*}}*/
+
+win.modifyStyle(winform.hwnd, 0xC00000/*_WS_CAPTION*/,);
+
+//winform.redraw()
+winform.show();
+
+win.loopMessage();

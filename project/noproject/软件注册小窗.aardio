@@ -1,0 +1,124 @@
+//RUNAS//
+import win.ui;
+import inet.mac;
+import sys.hd;
+ import sys.cpu;
+import console;
+/*DSG{{*/
+var winform = ..win.form(cls="TY_FORM";text="注册";right=487;bottom=127;border="thin";max=false)
+winform.add(
+Btn_CopyMachineCode={cls="button";text="复制机器码";left=376;top=16;right=472;bottom=40;z=5};
+Btn_RegSoft={cls="button";text="注册软件(&R)";left=376;top=48;right=472;bottom=112;z=6};
+static={cls="static";text="机器码：";left=16;top=21;right=72;bottom=45;transparent=1;z=1};
+static2={cls="static";text="注册码：";left=16;top=53;right=72;bottom=77;transparent=1;z=2};
+TB_MachineCode={cls="edit";left=72;top=16;right=368;bottom=40;edge=1;readonly=1;z=3};
+TB_RegCode={cls="edit";left=72;top=48;right=368;bottom=112;edge=1;multiline=1;z=4}
+)
+/*}}*/
+
+//****************  正常变量  ******************************************
+//验证是否注册
+var regCode = string.load("\info.dat")
+winform.TB_RegCode.text = regCode;
+var regFlag=false;
+
+//****************  用户标识  ******************************************
+var currentUser = "123456112";
+//****************  函数 ***********************************************
+math.randomize();
+function encryptDate( dateTick, currentUser ){
+	var cryptNum = tonumber(currentUser) * tonumber(string.left(currentUser,1));
+	//取加密日期
+	var rstr=string.split("ABCDEFGHIJKLMNOPQRSTUVWXYZ","");
+	var tick = tostring( dateTick + cryptNum);
+	var tb = {};
+	for(i=1;#tick;1){
+		table.push( tb, rstr[math.random(1, #rstr)] ++ tick[[i]] );
+	}
+	var tickStr = string.reverse(string.join(tb));
+	return tickStr;
+}
+function decryptDate( cryptStr, currentUser ){
+	//try{
+		if( cryptStr == null ) cryptStr="";
+		var cryptNum = tonumber(currentUser) * tonumber(string.left(currentUser,1));
+		num = string.reverse( string.replace(cryptStr,"[A-Z]+","") );
+		num = tonumber( num ) - cryptNum ;
+		return num, time(num);
+	//}
+	//return 0,time.now().addday(-1);	
+}
+//********************************************************************
+var cpuInfo = sys.cpu.getInfo(1,{ INT eax;INT ebx;INT ecx;INT edx } )
+var cpu = string.format("%08X%08X",cpuInfo.edx,cpuInfo.eax )
+var hd  = string.trim( sys.hd.getInfo().sSerialNumber );
+var mac = string.upper( string.replace( inet.mac.getAddress("www.baidu.com"),"@@-","" ) );
+
+winform.TB_MachineCode.text = cpu ++ "-" ++ hd ++ "-" ++ mac ;
+
+function checkReg( alert=false ){
+	//取本机硬件信息
+	var mc = string.split(winform.TB_RegCode.text,"<->");
+	var cpu2 = math.abs( string.crc32( cpu ++ currentUser) )
+	var hd2 = math.abs( string.crc32( hd ++ currentUser) )
+	var mac2 = math.abs( string.crc32( mac ++ currentUser) )
+	//console.log( mc[1],mc[2],mc[3] )
+	//console.log( cpu2,hd2,mac2 )
+	//先验证硬件信息是否对，如果不对，直接返回失败
+	if( cpu2==mc[1] || hd2==mc[2] || mac2==mc[3] ){
+		//console.log("硬件对了");
+		//硬件信息正确，检测时间是否到期
+		if( string.trim(winform.TB_RegCode.text)=="" ){
+			win.msgboxErr("软件未注册！","提示",,winform.hwnd);
+			regFlag=false;
+			return regFlag;
+		}
+		var rc = string.split( winform.TB_RegCode.text,"<->");
+		//长度不对，失败
+		if( #rc<5 )return false;
+		//加密时间戳改动了，失败
+		if( math.abs( string.crc32( rc[5] ++ currentUser) ) != rc[4] )return false;
+		var myTick,myTime = decryptDate( rc[5], currentUser );
+		//console.log( rc[5],myTick ,tonumber( time.now() ), myTime );
+		if( myTick <= tonumber( time.now() ) ){
+			if( alert ){
+				win.msgboxErr("软件注册码已过期，请联系管理员！","提示",,winform.hwnd);
+			}
+			regFlag=false;
+		}else{
+			string.save("\info.dat",string.trim(winform.TB_RegCode.text) );
+			regFlag=true;
+			if( alert ){
+				win.msgbox("注册成功！软件使用日期截止到" ++ tostring(myTime) )
+				winform.endModal( true );
+				winform.close();
+			}
+		}
+		return regFlag;
+	}else {
+		//硬件不对，滚犊子
+		//console.log("硬件不对啊");
+		if( alert ){
+			win.msgboxErr("注册失败！","提示",,winform.hwnd);
+		}
+		return false;
+	}
+}
+winform.Btn_CopyMachineCode.oncommand = function(id,event){
+	//winform.msgbox( winform.Btn_CopyMachineCode.text );
+	import win.clip;
+	win.clip.write( winform.TB_MachineCode.text );
+	win.msgbox("机器码已复制到剪贴板上！");	
+}
+winform.Btn_RegSoft.oncommand = function(id,event){
+	checkReg( true );
+}
+winform.onClose = function(hwnd,message,wParam,lParam){
+    winform.endModal( regFlag );
+}
+
+regFlag = checkReg( false );
+
+winform.show() 
+win.loopMessage();
+return winform,regFlag;

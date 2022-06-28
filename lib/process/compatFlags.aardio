@@ -1,0 +1,65 @@
+﻿import win.reg;
+import process;
+
+namespace process;
+
+class compatFlags{
+	ctor( path,flags ){
+		var reg = ..win.reg("HKEY_CURRENT_USER\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers");
+		if(flags){
+			reg.setSzValue(..io.fullpath(path),flags);	
+		}
+		else {
+			reg.delValue(..io.fullpath(path))
+		}
+		
+		reg.close();
+	}; 
+}
+
+compatFlags.win95 = function(path){
+	return compatFlags(path,"WIN95");
+}
+
+compatFlags.win98 = function(path){
+	return compatFlags(path,"WIN98");
+}
+
+compatFlags.winXpSp2 = function(path){
+	return compatFlags(path,"WINXPSP2");
+}
+	
+compatFlags.winXpSp3 = function(path){
+	return compatFlags(path,"WINXPSP3");
+}
+
+compatFlags.vistaSp1 = function(path){
+	return compatFlags(path,"VISTASP1");
+}
+
+compatFlags.vistaSp2 = function(path){
+	return compatFlags(path,"VISTASP2");
+}
+
+compatFlags.win7 = function(path){
+	return compatFlags(path,"WIN7RTM");
+}
+
+compatFlags.win8 = function(path){
+	return compatFlags(path,"WIN8RTM");
+}
+	
+/**intellisense()
+process.compatFlags(.(path,flags) = 设置path指定路径的应用程序以兼容模式启动,\nflags使用一个字符串指定兼容模式可用参数参考库源代码
+end intellisense**/
+
+/**intellisense(process.compatFlags)
+win95(.(path) = 设置path指定路径的应用程序以WIN95兼容模式启动 
+win98(.(path) = 设置path指定路径的应用程序以WIN98兼容模式启动 
+winXpSp2(.(path) = 设置path指定路径的应用程序以WINXPSP2兼容模式启动 
+winXpSp3(.(path) = 设置path指定路径的应用程序以WINXPSP3兼容模式启动 
+vistaSp1(.(path) = 设置path指定路径的应用程序以VISTASP1兼容模式启动 
+vistaSp2(.(path) = 设置path指定路径的应用程序以VISTASP2兼容模式启动 
+win7(.(path)  = 设置path指定路径的应用程序以WIN7兼容模式启动
+win8(.(path) = 设置path指定路径的应用程序以WIN8兼容模式启动
+end intellisense**/

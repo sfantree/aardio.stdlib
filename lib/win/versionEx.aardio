@@ -1,0 +1,73 @@
+﻿//versionEx 扩展版本信息
+import win.reg;
+import win.version;
+
+win.versionEx = win.version;
+namespace win.versionEx{ 
+	
+	var reg = ..win.regReader("HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion")
+	updateBuildRevision = reg.queryValue("UBR") : 0;
+	
+	productName = reg.queryValue("ProductName");
+	if(isWin11Later){
+		productName = ..string.replace(productName,"Windows\s+10","Windows 11");
+	}
+	
+	editionId = reg.queryValue("EditionID"); 
+	
+	//https://docs.microsoft.com/en-us/windows/release-health/release-information
+	var win10ReleaseId = {
+		[10240] = "1507";
+		[10586] = "1511";
+		[14393] = "1607";//SERVER 2016
+		[15063] = "1703";
+		[16299] = "1709";
+		[17134] = "1803";
+		[17763] = "1809";//SERVER 2019
+		[18362] = "1903";
+		[18363] = "1909";
+		[19041] = "2004";//20H1
+		[19042] = "2009";//20H2
+		[19043] = "2104";//21H1
+		[19044] = "2109";//21H2
+	}	
+	if(isWin10Later){
+		releaseId = win10ReleaseId[buildNumber]
+		if(!releaseId){
+			releaseId = reg.queryValue("ReleaseId");
+		}
+	} 
+	
+	displayVersion = reg.queryValue("DisplayVersion") : (majorVersion +"." + minorVersion);
+  
+  	/*
+  	因 Win10 存在重复的 ReleaseId,应改用对应的构建版本号检测,
+  	isWin10ReleaseLater 已废弃,请不要再使用。 
+  	*/
+	isWin10ReleaseLater = function(releaseId){ 
+		if(isWin11Later) return true;
+		
+		if( isWin10Later ) {
+			if(releaseId){
+				return tonumber(self.releaseId) >= tonumber(releaseId)
+			}
+			
+			for(build,releaseVersion in win10ReleaseId){
+				if(releaseVersion==releaseId){
+					return self.buildNumber >= build;
+				}
+			}
+		}
+	}
+}
+
+/**intellisense(!winVersion)
+productName = 产品名称,例如"Windows 10 Pro","Windows Server (R) 2008 Standard"等等\n需要导入win.versionEx此属性才可用
+editionId = 版本ID，例如 "Professional","ServerStandard"等等\n需要导入win.versionEx此属性才可用
+updateBuildRevision = 更新版本号\n需要导入win.versionEx此属性才可用
+releaseId = Win10 以后使用的发行ID，例如1709,2009 这种,\nreleaseId 属性为 2009 对应 displayVersion 属性为 20H2\n需要导入win.versionEx此属性才可用\n\nreleaseId 的数据类型是字符串,但包含的是数值,\n要特别注意 Win10,Win11 存在相同的 releaseId。\n检测与 releaseId 存在对应关系的构建版本号（buildNumber）更可靠
+end intellisense**/
+
+/**intellisense()
+win.versionEx = 导入后 win.versionEx 指向 win.version 并进行扩展,\n增加 productName,editionId,updateBuildRevision 等字段,\n增强 format 函数,以及改变 displayVersion 为 Win10,Win11 格式\n\naardio 内建以下全局常量也可用于检测系统版本：\n_WINXP,_WIN7_LATER,_WIN10_LATER,_WINE,\n_WIN_VER_MAJOR,_WIN_VER_MINOR,_WIN_VER_BUILD 等\n!winVersion.
+end intellisense**/
