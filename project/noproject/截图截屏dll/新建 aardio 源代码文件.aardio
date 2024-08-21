@@ -1,8 +1,0 @@
-import console; 
-
-var sc = raw.loadDll("/ScreenCaptureDll.dll");
-
-var InitCaptureDlg = 
-
-console.pause(true);
-

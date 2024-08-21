@@ -1,6 +1,0 @@
-﻿import dotNet;
-dotNet.import("System.IO","mscorlib");
-
-/**intellisense()
-System.IO = .Net System.IO 名字空间\n!dotNetNameSpace.
-end intellisense**/
